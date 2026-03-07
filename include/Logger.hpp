@@ -13,10 +13,10 @@
  * Exported Functions/Classes:
  * - Logger: Class definition
  * - registerSecret: Register secret
- * - info: Info
- * - warn: Warn
- * - error: Error
- * - debug: Debug
+ * - LOG_INFO: Info macro
+ * - LOG_WARN: Warn macro
+ * - LOG_ERROR: Error macro
+ * - LOG_DEBUG: Debug macro
  * - printRedacted: Print redacted
  * - redact: Redact
  */
@@ -25,20 +25,32 @@
 #include <Arduino.h>
 #include <vector>
 
+#ifdef ENABLE_DEBUG_LOG
+  #define LOG_INFO(msg)  Logger::_info(msg)
+  #define LOG_WARN(msg)  Logger::_warn(msg)
+  #define LOG_ERROR(msg) Logger::_error(msg)
+  #define LOG_DEBUG(msg) Logger::_debug(msg)
+#else
+  #define LOG_INFO(msg)
+  #define LOG_WARN(msg)
+  #define LOG_ERROR(msg)
+  #define LOG_DEBUG(msg)
+#endif
+
 class Logger {
 public:
   // Add a sensitive string to the redaction list
   static void registerSecret(const String& secret);
 
-  // Core logging functions
-  static void info(const String& message);
-  static void warn(const String& message);
-  static void error(const String& message);
+  // Core logging functions (internal use only, use macros instead)
+  static void _info(const String& message);
+  static void _warn(const String& message);
+  static void _error(const String& message);
 /**
  * @brief Debug
  * @param message
  */
-  static void debug(const String& message);
+  static void _debug(const String& message);
 
 private:
   static std::vector<String> secrets;

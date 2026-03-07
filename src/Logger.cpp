@@ -64,7 +64,7 @@ void Logger::printRedacted(const String& level, const String& message) {
  * @brief Info
  * @param message
  */
-void Logger::info(const String& message) {
+void Logger::_info(const String& message) {
   printRedacted("INFO", message);
 }
 
@@ -72,7 +72,7 @@ void Logger::info(const String& message) {
  * @brief Warn
  * @param message
  */
-void Logger::warn(const String& message) {
+void Logger::_warn(const String& message) {
   printRedacted("WARN", message);
 }
 
@@ -80,7 +80,7 @@ void Logger::warn(const String& message) {
  * @brief Error
  * @param message
  */
-void Logger::error(const String& message) {
+void Logger::_error(const String& message) {
   printRedacted("ERROR", message);
 }
 
@@ -88,6 +88,6 @@ void Logger::error(const String& message) {
  * @brief Debug
  * @param message
  */
-void Logger::debug(const String& message) {
+void Logger::_debug(const String& message) {
   printRedacted("DEBUG", message);
 }

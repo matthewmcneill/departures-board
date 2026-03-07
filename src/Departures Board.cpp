@@ -136,7 +136,7 @@ bool sleepClock = true;             // Showing the clock in sleep mode?
 bool dateEnabled = false;           // Showing the date on screen?
 bool weatherEnabled = false;        // Showing weather at station location. Requires an OpenWeatherMap API key.
 bool enableBus = false;             // Include Bus services on the board?
-bool firmwareUpdates = true;        // Check for and install firmware updates automatically at boot?
+bool firmwareUpdates = false;       // Check for and install firmware updates automatically at boot? DEFAULT OFF FOR FORK
 bool dailyUpdateCheck = false;      // Check for and install firmware updates at midnight?
 byte sleepStarts = 0;               // Hour at which the overnight sleep (screensaver) begins
 byte sleepEnds = 6;                 // Hour at which the overnight sleep (screensaver) ends
@@ -277,8 +277,9 @@ rdStation station;
 // Station Messages (shared)
 stnMessages messages;
 
-#include "gfx/DisplayEngine.hpp"
+#include "Logger.hpp"
 
+#include "gfx/DisplayEngine.hpp"
 #include "webgui/WebHandlers.hpp"
 
 //
@@ -296,12 +297,34 @@ void setup(void) {
   String buildDate = String(__DATE__);
   String notice = "\x80 " + buildDate.substring(buildDate.length()-4) + F(" Gadec Software (github.com/gadec-uk)");
 
+  LOG_INFO("Mounting LittleFS...");
   bool isFSMounted = LittleFS.begin(true);    // Start the File System, format if necessary
+  if (!isFSMounted) LOG_WARN("LittleFS failed to mount. Format may be required.");
+  else LOG_INFO("LittleFS mounted successfully.");
+  
   strcpy(station.location,"");                // No default location
   strcpy(weatherMsg,"");                      // No weather message
   strcpy(nrToken,"");                         // No default National Rail token
   tflAppkey="";                               // No default TfL AppKey
   loadApiKeys();                              // Load the API keys from the apiKeys.json
+  
+#ifdef ENABLE_DEBUG_LOG
+  Serial.begin(115200);
+  delay(2000); // Give the serial monitor time to connect after a flash/reset
+#endif
+  
+  Logger::registerSecret(String(nrToken));
+  Logger::registerSecret(tflAppkey);
+  // Optional: add openweather map key here as well if needed in future
+  
+  LOG_INFO("Starting Departures Board...");
+  
+  // Test redaction immediately to prove it works
+  LOG_DEBUG("Test Redaction: National Rail Token is: " + String(nrToken));
+  
+  LOG_DEBUG("Test Redaction: National Rail Token is: " + String(nrToken));
+  
+  LOG_INFO("Loading configuration settings...");
   loadConfig();                               // Load the configuration settings from config.json
   u8g2.setContrast(brightness);               // Set the panel brightness to the user saved level
   if (flipScreen) u8g2.setFlipMode(1);
@@ -325,8 +348,12 @@ void setup(void) {
   wm.setConnectTimeout(8);
   wm.setConnectRetries(2);
 
+  wm.setConnectRetries(2);
+
+  LOG_INFO("Starting WiFiManager AutoConnect...");
   bool result = wm.autoConnect("Departures Board");    // Attempt to connect to WiFi (or enter interactive configuration mode)
   if (!result) {
+      LOG_ERROR("WiFiManager AutoConnect failed. Restarting device.");
       // Failed to connect/configure
       ESP.restart();
   }
@@ -340,8 +367,10 @@ void setup(void) {
   updateMyUrl();
   if (MDNS.begin(hostname)) {
     MDNS.addService("http","tcp",80);
+    LOG_INFO(String("mDNS responder started: ") + hostname + ".local");
   }
 
+  LOG_INFO("WiFi Connected successfully.");
   wifiConnected=true;
   WiFi.setAutoReconnect(true);
   u8g2.clearBuffer();                                             // Clear the display
@@ -370,6 +399,8 @@ void setup(void) {
   server.on(F("/brightness"),handleBrightness);                 // Used by the Web GUI to interactively set the panel brightness
   server.on(F("/ota"),handleOtaUpdate);                         // Used by the Web GUI to initiate a manual firmware/WebApp update
   server.on(F("/control"),handleControl);                       // Endpoint for automation
+  
+  LOG_INFO("Local webserver endpoints configured.");
 
   server.on(F("/update"), HTTP_GET, []() {
     server.sendHeader("Connection", "close");
@@ -409,14 +440,22 @@ void setup(void) {
     server.send(200, contentTypeHtml, successPage);
   });
 
+  server.on(F("/success"), HTTP_GET, []() {
+    server.send(200, contentTypeHtml, successPage);
+  });
+
   server.begin();     // Start the local web server
+  LOG_INFO("Local webserver started on port 80.");
 
   // Check for Firmware updates?
   if (firmwareUpdates) {
+    LOG_INFO("Checking for firmware updates on GitHub...");
     progressBar(F("Checking for firmware updates"),40);
     if (ghUpdate.getLatestRelease()) {
+      LOG_INFO("Firmware updates found. Attempting update...");
       checkForFirmwareUpdate();
     } else {
+      LOG_WARN(String("Firmware update check failed: ") + ghUpdate.getLastError());
       for (int i=15;i>=0;i--) {
         showUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError().c_str(),"",i,false);
         delay(1000);
@@ -442,9 +481,11 @@ void setup(void) {
   configTime(0,0, ntpServer);   // Configure NTP server for setting the clock
   setenv("TZ",ukTimezone,1);    // Configure UK TimeZone (default and fallback if custom is invalid)
   tzset();                      // Set the TimeZone
+  LOG_INFO("Time zone configured as UK default.");
   if (timezone!="") {
     setenv("TZ",timezone.c_str(),1);
     tzset();
+    LOG_INFO(String("Custom Timezone configured: ") + timezone);
   }
 
   // Check the clock has been set successfully before continuing
@@ -482,21 +523,25 @@ void setup(void) {
   }
 
   if (boardMode == MODE_RAIL) {
+      LOG_INFO("Initialising National Rail Interface (board mode)...");
       progressBar(F("Initialising National Rail interface"),67);
       altStationActive = setAlternateStation();  // Check & set the alternate station if appropriate
       raildata = new raildataXmlClient();
       int res = raildata->init(wsdlHost, wsdlAPI, &raildataCallback);
       if (res != UPD_SUCCESS) {
+        LOG_ERROR(String("National Rail init failed with result code: ") + String(res));
         showWsdlFailureScreen();
         while (true) { server.handleClient(); yield();}
       }
       progressBar(F("Initialising National Rail interface"),70);
       raildata->cleanFilter(platformFilter,cleanPlatformFilter,sizeof(platformFilter));
   } else if (boardMode == MODE_TUBE) {
+      LOG_INFO("Initialising TfL Interface (board mode)...");
       progressBar(F("Initialising TfL interface"),70);
       tfldata = new TfLdataClient();
       startupProgressPercent=70;
   } else if (boardMode == MODE_BUS) {
+      LOG_INFO("Initialising BusTimes Interface (board mode)...");
       progressBar(F("Initialising BusTimes interface"),70);
       busdata = new busDataClient();
       // Create a cleaned filter

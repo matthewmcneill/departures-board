@@ -517,12 +517,18 @@ void showUpdateCompleteScreen(const char *title, const char *msg1, const char *m
  * @return true if successful
  */
 bool saveFile(String fName, String fData) {
+  LOG_INFO("Attempting to save " + String(fData.length()) + " bytes to file: " + fName);
   File f = LittleFS.open(fName,"w");
   if (f) {
     f.println(fData);
     f.close();
+    LOG_INFO("Successfully saved file: " + fName);
     return true;
-  } else return false;
+  } else {
+    LOG_ERROR("Failed to open file for writing: " + fName);
+    LOG_ERROR("LittleFS Storage: " + String(LittleFS.totalBytes()) + " total, " + String(LittleFS.usedBytes()) + " used.");
+    return false;
+  }
 }
 
 /**
@@ -551,6 +557,9 @@ String getBuildTime() {
   return String(buildtime);
 }
 
+/**
+ * @brief Check post web upgrade
+ */
 void checkPostWebUpgrade() {
   String prevGUI = loadFile(F("/webver"));
   prevGUI.trim();
@@ -662,7 +671,7 @@ void loadApiKeys() {
 
 // Write a default config file so that the Web GUI works initially (force Tube mode if no NR token)
 void writeDefaultConfig() {
-    String defaultConfig = "{\"crs\":\"\",\"station\":\"\",\"lat\":0,\"lon\":0,\"weather\":" + String((openWeatherMapApiKey.length())?"true":"false") + F(",\"sleep\":false,\"showDate\":false,\"showBus\":false,\"update\":true,\"sleepStarts\":23,\"sleepEnds\":8,\"brightness\":20,\"tubeId\":\"\",\"tubeName\":\"\",\"mode\":") + String((!nrToken[0])?"1":"0") + "}";
+    String defaultConfig = "{\"crs\":\"\",\"station\":\"\",\"lat\":0,\"lon\":0,\"weather\":" + String((openWeatherMapApiKey.length())?"true":"false") + F(",\"sleep\":false,\"showDate\":false,\"showBus\":false,\"update\":false,\"sleepStarts\":23,\"sleepEnds\":8,\"brightness\":20,\"tubeId\":\"\",\"tubeName\":\"\",\"mode\":") + String((!nrToken[0])?"1":"0") + "}";
     saveFile(F("/config.json"),defaultConfig);
     strcpy(crsCode,"");
     strcpy(tubeId,"");
@@ -920,6 +929,9 @@ void update_progress(int cur, int total) {
 
 // Attempts to install newer firmware if available
 bool checkForFirmwareUpdate() {
+  LOG_WARN("Firmware Auto-Update is disabled for this custom fork.");
+  return false;
+
   bool result = true;
 
   if (!isFirmwareUpdateAvailable()) return result;

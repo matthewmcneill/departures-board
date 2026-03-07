@@ -234,6 +234,7 @@ void handleStreamFlashFile(String filename, const uint8_t *filedata, size_t cont
  *        Validates OpenWeatherMap key if provided.
  */
 void handleSaveKeys() {
+  LOG_INFO("API configuration request received (handleSaveKeys).");
   String newJSON, owmToken, nrToken;
   JsonDocument doc;
   bool result = true;
@@ -262,10 +263,12 @@ void handleSaveKeys() {
         } else {
           nrToken = settings[F("nrToken")].as<String>();
           if (!nrToken.length()) msg+=F("\n\nNote: Only Tube and Bus Departures will be available without a National Rail token.");
+          LOG_INFO("API keys successfully validated and saved.");
         }
       }
     } else {
       msg = F("Invalid JSON format. No changes have been saved.");
+      LOG_ERROR("API keys update failed: Invalid JSON format received.");
       result = false;
     }
     if (result) {
@@ -294,11 +297,13 @@ void handleSaveKeys() {
  * @brief Endpoint to save configuration settings POSTed from index.htm
  */
 void handleSaveSettings() {
+  LOG_INFO("Configuration settings update requested (handleSaveSettings).");
   String newJSON;
 
   if ((server.method() == HTTP_POST) && (server.hasArg("plain"))) {
     newJSON = server.arg("plain");
     saveFile(F("/config.json"),newJSON);
+    LOG_INFO("Settings saved to /config.json successfully.");
     if ((!crsCode[0] && !tubeId[0]) || server.hasArg("reboot")) {
       // First time setup or base config change, we need a full reboot
       sendResponse(200,F("Configuration saved. The system will now restart."));
@@ -640,6 +645,7 @@ void handleEraseWiFi() {
  * @brief Endpoint to factory reset the app (delete WiFi, format FS and reboot)
  */
 void handleFactoryReset() {
+  LOG_WARN("Factory reset initiated. Wiping WiFi credentials and formatting LittleFS.");
   sendResponse(200,F("Factory reseting the Departures Board..."));
   delay(1000);
   WiFiManager wm;
