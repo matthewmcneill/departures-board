@@ -11,14 +11,14 @@
  * - Waveshare ESP32-S3-Nano (env: esp32s3nano)
  * Both use a 3.12" 256x64 OLED Display Panel with SSD1322 controller on-board.
  *
- * PIN CONNECTIONS:
+ * PIN CONNECTIONS (Configurable via platformio.ini):
  * OLED PANEL     ESP32 MINI     ESP32-S3 NANO
  * 1  VSS         GND            GND
  * 2  VCC_IN      3.3V           3.3V
  * 4  D0/CLK      IO18           D13 (SCK)
  * 5  D1/DIN      IO23           D11 (COPI/MOSI)
- * 14 D/C#        IO5            D9
- * 16 CS#         IO26           D10
+ * 14 D/C#        DISPLAY_DC_PIN DISPLAY_DC_PIN  (e.g., IO5, D9)
+ * 16 CS#         DISPLAY_CS_PIN DISPLAY_CS_PIN  (e.g., IO26, D10)
  *
  *
  * Module: src/Departures Board.cpp
