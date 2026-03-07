@@ -6,15 +6,19 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * ESP32 "Mini" Board with 3.12" 256x64 OLED Display Panel with SSD1322 controller on-board.
+ * Supported Hardware:
+ * - ESP32 "Mini" (env: esp32dev)
+ * - Waveshare ESP32-S3-Nano (env: esp32s3nano)
+ * Both use a 3.12" 256x64 OLED Display Panel with SSD1322 controller on-board.
  *
- * OLED PANEL     ESP32 MINI
- * 1 VSS          GND
- * 2 VCC_IN       3.3V
- * 4 D0/CLK       IO18
- * 5 D1/DIN       IO23
- * 14 D/C#        IO5
- * 16 CS#         IO26
+ * PIN CONNECTIONS:
+ * OLED PANEL     ESP32 MINI     ESP32-S3 NANO
+ * 1  VSS         GND            GND
+ * 2  VCC_IN      3.3V           3.3V
+ * 4  D0/CLK      IO18           D13 (SCK)
+ * 5  D1/DIN      IO23           D11 (COPI/MOSI)
+ * 14 D/C#        IO5            D9
+ * 16 CS#         IO26           D10
  *
  *
  * Module: src/Departures Board.cpp
@@ -93,8 +97,8 @@ static const char defaultHostname[] = "DeparturesBoard";
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define DIMMED_BRIGHTNESS 1 // OLED display brightness level when in sleep/screensaver mode
 
-// S3 Nano Hardware SPI (Clock=D13, Data=D11, CS=D10, DC=D9)
-U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 10, /* dc=*/ 9, /* reset=*/ U8X8_PIN_NONE);
+// Initialise the display using the variables provided by the platformio.ini build_flags environment
+U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ DISPLAY_CS_PIN, /* dc=*/ DISPLAY_DC_PIN, /* reset=*/ U8X8_PIN_NONE);
 
 // Vertical line positions on the OLED display (National Rail)
 #define LINE0 0
@@ -338,10 +342,12 @@ void setup(void) {
   drawStartupHeading();
   u8g2.sendBuffer();
   progressBar(F("Connecting to Wi-Fi"),20);
+  WiFi.disconnect(true, true);      // PURGE corrupted WiFi NVS configuration from previous crashes
+  WiFi.persistent(false);           // Disable NVS WiFi saving to prevent core v3 panics
   WiFi.mode(WIFI_MODE_NULL);        // Reset the WiFi
-  WiFi.setSleep(WIFI_PS_NONE);      // Turn off WiFi Powersaving
   WiFi.hostname(hostname);          // Set the hostname ("Departures Board")
   WiFi.mode(WIFI_STA);              // Enter WiFi station mode
+  WiFi.setSleep(WIFI_PS_NONE);      // Turn off WiFi Powersaving
   WiFiManager wm;                   // Start WiFiManager
   wm.setAPCallback(wmConfigModeCallback);     // Set the callback for config mode notification
   wm.setWiFiAutoReconnect(true);              // Attempt to auto-reconnect WiFi
@@ -351,7 +357,10 @@ void setup(void) {
   wm.setConnectRetries(2);
 
   LOG_INFO("Starting WiFiManager AutoConnect...");
+  delay(1000); // Flush logs
   bool result = wm.autoConnect("Departures Board");    // Attempt to connect to WiFi (or enter interactive configuration mode)
+  LOG_INFO("WiFiManager AutoConnect returned.");
+  delay(1000); // Flush logs
   if (!result) {
       LOG_ERROR("WiFiManager AutoConnect failed. Restarting device.");
       // Failed to connect/configure

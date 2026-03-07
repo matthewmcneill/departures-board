@@ -39,9 +39,11 @@ void Logger::registerSecret(const String& secret) {
  * @return return value
  */
 String Logger::redact(const String& message) {
+  if (secrets.empty()) return message;
+
   String redactedMessage = message;
   for (const String& secret : secrets) {
-    if (secret.length() > 0) {
+    if (secret.length() > 0 && redactedMessage.indexOf(secret) >= 0) {
       redactedMessage.replace(secret, "***REDACTED***");
     }
   }

@@ -517,16 +517,18 @@ void showUpdateCompleteScreen(const char *title, const char *msg1, const char *m
  * @return true if successful
  */
 bool saveFile(String fName, String fData) {
-  LOG_INFO("Attempting to save " + String(fData.length()) + " bytes to file: " + fName);
+  LOG_INFO(String("Attempting to save ") + fData.length() + " bytes to file: " + fName);
   File f = LittleFS.open(fName,"w");
   if (f) {
     f.println(fData);
     f.close();
-    LOG_INFO("Successfully saved file: " + fName);
+    LOG_INFO(String("Successfully saved file: ") + fName);
     return true;
   } else {
-    LOG_ERROR("Failed to open file for writing: " + fName);
-    LOG_ERROR("LittleFS Storage: " + String(LittleFS.totalBytes()) + " total, " + String(LittleFS.usedBytes()) + " used.");
+    LOG_ERROR(String("Failed to open file for writing: ") + fName);
+    char fsErr[64];
+    sprintf(fsErr, "LittleFS Storage: %zu total, %zu used.", LittleFS.totalBytes(), LittleFS.usedBytes());
+    LOG_ERROR(String(fsErr));
     return false;
   }
 }
