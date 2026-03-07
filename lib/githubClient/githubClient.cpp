@@ -7,6 +7,22 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/githubClient/githubClient.cpp
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - getLatestRelease: Get latest release
+ * - getLastError: Get last error
+ * - whitespace: Whitespace
+ * - startDocument: Start document
+ * - key: Key
+ * - value: Value
+ * - endArray: End array
+ * - endObject: End object
+ * - endDocument: End document
+ * - startArray: Start array
+ * - startObject: Start object
  */
 
 #include <githubClient.h>
@@ -21,6 +37,10 @@ github::github(String repository, String token) {
     accessToken = token; // Initialise with a GitHub token if the repository is private
 }
 
+/**
+ * @brief Get latest release
+ * @return Return value
+ */
 bool github::getLatestRelease() {
 
     lastErrorMsg = "";
@@ -103,21 +123,40 @@ bool github::getLatestRelease() {
     return true;
 }
 
+/**
+ * @brief Get last error
+ * @return Return value
+ */
 String github::getLastError() {
     return lastErrorMsg;
 }
 
+/**
+ * @brief Whitespace
+ * @param c
+ */
 void github::whitespace(char c) {}
 
+/**
+ * @brief Start document
+ */
 void github::startDocument() {
     currentArray = "";
     currentObject = "";
 }
 
+/**
+ * @brief Key
+ * @param key
+ */
 void github::key(String key) {
     currentKey = key;
 }
 
+/**
+ * @brief Value
+ * @param value
+ */
 void github::value(String value) {
     if (currentKey == "tag_name") releaseId = value;
     else if ((currentKey == "name") && (currentArray=="")) releaseDescription = value;
@@ -133,20 +172,35 @@ void github::value(String value) {
     }
 }
 
+/**
+ * @brief End array
+ */
 void github::endArray() {
     currentArray = "";
 }
 
+/**
+ * @brief End object
+ */
 void github::endObject() {
     currentObject = "";
 }
 
+/**
+ * @brief End document
+ */
 void github::endDocument() {}
 
+/**
+ * @brief Start array
+ */
 void github::startArray() {
     currentArray = currentKey;
 }
 
+/**
+ * @brief Start object
+ */
 void github::startObject() {
     currentObject = currentKey;
 }

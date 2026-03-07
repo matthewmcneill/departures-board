@@ -7,6 +7,24 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/raildataXmlClient/raildataXmlClient.cpp
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - compareTimes: Compare times
+ * - removeHtmlTags: Remove html tags
+ * - replaceWord: Replace word
+ * - pruneFromPhrase: Prune from phrase
+ * - fixFullStop: Fix full stop
+ * - trim: Trim
+ * - equalsIgnoreCase: Equals ignore case
+ * - serviceMatchesFilter: Service matches filter
+ * - cleanFilter: Clean filter
+ * - updateDepartures: Update departures
+ * - getLastError: Get last error
+ * - deleteService: Delete service
+ * - sanitiseData: Sanitise data
  */
 
 #include <raildataXmlClient.h>
@@ -228,6 +246,12 @@ bool raildataXmlClient::serviceMatchesFilter(const char* filter, const char* ser
   return false;
 }
 
+/**
+ * @brief Clean filter
+ * @param rawFilter
+ * @param cleanedFilter
+ * @param maxLen
+ */
 void raildataXmlClient::cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen) {
     if (!rawFilter || rawFilter[0] == '\0') {
         if (maxLen > 0) cleanedFilter[0] = '\0';
@@ -501,10 +525,18 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
     }
 }
 
+/**
+ * @brief Get last error
+ * @return Return value
+ */
 String raildataXmlClient::getLastError() {
     return lastErrorMessage;
 }
 
+/**
+ * @brief Delete service
+ * @param x
+ */
 void raildataXmlClient::deleteService(int x) {
 
   if (x==xStation.numServices-1) {
@@ -519,6 +551,9 @@ void raildataXmlClient::deleteService(int x) {
   xStation.numServices--;
 }
 
+/**
+ * @brief Sanitise data
+ */
 void raildataXmlClient::sanitiseData() {
 
   int i=0;

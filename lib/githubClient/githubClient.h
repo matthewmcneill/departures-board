@@ -7,6 +7,23 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/githubClient/githubClient.h
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - github: Class definition
+ * - getLatestRelease: Get latest release
+ * - getLastError: Get last error
+ * - whitespace: Whitespace
+ * - startDocument: Start document
+ * - key: Key
+ * - value: Value
+ * - endArray: End array
+ * - endObject: End object
+ * - endDocument: End document
+ * - startArray: Start array
+ * - startObject: Start object
  */
 #pragma once
 #include <JsonListener.h>
@@ -41,18 +58,61 @@ class github: public JsonListener {
 
         github(String repository, String token);
 
+/**
+ * @brief Get latest release
+ * @return Return value
+ */
         bool getLatestRelease();
         //bool downloadAssetToLittleFS(String url, String filename);
 
         String getLastError();
 
+/**
+ * @brief Whitespace
+ * @param c
+ * @return Return value
+ */
         virtual void whitespace(char c);
+/**
+ * @brief Start document
+ * @return Return value
+ */
         virtual void startDocument();
+/**
+ * @brief Key
+ * @param key
+ * @return Return value
+ */
         virtual void key(String key);
+/**
+ * @brief Value
+ * @param value
+ * @return Return value
+ */
         virtual void value(String value);
+/**
+ * @brief End array
+ * @return Return value
+ */
         virtual void endArray();
+/**
+ * @brief End object
+ * @return Return value
+ */
         virtual void endObject();
+/**
+ * @brief End document
+ * @return Return value
+ */
         virtual void endDocument();
+/**
+ * @brief Start array
+ * @return Return value
+ */
         virtual void startArray();
+/**
+ * @brief Start object
+ * @return Return value
+ */
         virtual void startObject();
 };

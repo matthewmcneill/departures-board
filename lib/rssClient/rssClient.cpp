@@ -7,6 +7,14 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/rssClient/rssClient.cpp
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - trim: Trim
+ * - loadFeed: Load feed
+ * - getLastError: Get last error
  */
 
 #include <rssClient.h>
@@ -108,6 +116,10 @@ int rssClient::loadFeed(String url) {
     return UPD_SUCCESS;
 }
 
+/**
+ * @brief Get last error
+ * @return Return value
+ */
 String rssClient::getLastError() {
     return lastErrorMessage;
 }

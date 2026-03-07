@@ -7,6 +7,21 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/weatherClient/weatherClient.cpp
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - updateWeather: Update weather
+ * - whitespace: Whitespace
+ * - startDocument: Start document
+ * - key: Key
+ * - value: Value
+ * - endArray: End array
+ * - endObject: End object
+ * - endDocument: End document
+ * - startArray: Start array
+ * - startObject: Start object
  */
 
 #include <weatherClient.h>
@@ -15,6 +30,13 @@
 
 weatherClient::weatherClient() {}
 
+/**
+ * @brief Update weather
+ * @param apiKey
+ * @param lat
+ * @param lon
+ * @return Return value
+ */
 bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
 
     unsigned long perfTimer = millis();
@@ -93,14 +115,29 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
     return true;
 }
 
+/**
+ * @brief Whitespace
+ * @param c
+ */
 void weatherClient::whitespace(char c) {}
 
+/**
+ * @brief Start document
+ */
 void weatherClient::startDocument() {}
 
+/**
+ * @brief Key
+ * @param key
+ */
 void weatherClient::key(String key) {
     currentKey = key;
 }
 
+/**
+ * @brief Value
+ * @param value
+ */
 void weatherClient::value(String value) {
     if (currentObject == F("weather") && weatherItem==0) {
         // Only read the first weather entry in the array
@@ -111,17 +148,32 @@ void weatherClient::value(String value) {
     else if (currentKey == F("speed")) windSpeed = value.toFloat() * 2.23694;
 }
 
+/**
+ * @brief End array
+ */
 void weatherClient::endArray() {}
 
+/**
+ * @brief End object
+ */
 void weatherClient::endObject() {
     if (currentObject == F("weather")) weatherItem++;
     currentObject = "";
 }
 
+/**
+ * @brief End document
+ */
 void weatherClient::endDocument() {}
 
+/**
+ * @brief Start array
+ */
 void weatherClient::startArray() {}
 
+/**
+ * @brief Start object
+ */
 void weatherClient::startObject() {
     currentObject = currentKey;
 }

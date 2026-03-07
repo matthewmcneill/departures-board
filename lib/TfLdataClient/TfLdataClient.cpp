@@ -7,6 +7,24 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/TfLdataClient/TfLdataClient.cpp
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - updateArrivals: Update arrivals
+ * - pruneFromPhrase: Prune from phrase
+ * - replaceWord: Replace word
+ * - compareTimes: Compare times
+ * - whitespace: Whitespace
+ * - startDocument: Start document
+ * - key: Key
+ * - value: Value
+ * - endArray: End array
+ * - endObject: End object
+ * - endDocument: End document
+ * - startArray: Start array
+ * - startObject: Start object
  */
 
 #include <TfLdataClient.h>
@@ -16,6 +34,15 @@
 
 TfLdataClient::TfLdataClient() {}
 
+/**
+ * @brief Update arrivals
+ * @param station
+ * @param messages
+ * @param locationId
+ * @param apiKey
+ * @param Xcb
+ * @return Return value
+ */
 int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, const char *locationId, String apiKey, tflClientCallback Xcb) {
 
     unsigned long perfTimer=millis();
@@ -271,10 +298,21 @@ bool TfLdataClient::compareTimes(const ugService& a, const ugService& b) {
     return a.timeToStation < b.timeToStation;
 }
 
+/**
+ * @brief Whitespace
+ * @param c
+ */
 void TfLdataClient::whitespace(char c) {}
 
+/**
+ * @brief Start document
+ */
 void TfLdataClient::startDocument() {}
 
+/**
+ * @brief Key
+ * @param key
+ */
 void TfLdataClient::key(String key) {
     currentKey = key;
     if (currentKey == F("id")) {
@@ -298,6 +336,10 @@ void TfLdataClient::key(String key) {
     }
 }
 
+/**
+ * @brief Value
+ * @param value
+ */
 void TfLdataClient::value(String value) {
     if (currentKey == F("destinationName")) {
         String cleanLocation;
@@ -322,12 +364,27 @@ void TfLdataClient::value(String value) {
     }
 }
 
+/**
+ * @brief End array
+ */
 void TfLdataClient::endArray() {}
 
+/**
+ * @brief End object
+ */
 void TfLdataClient::endObject() {}
 
+/**
+ * @brief End document
+ */
 void TfLdataClient::endDocument() {}
 
+/**
+ * @brief Start array
+ */
 void TfLdataClient::startArray() {}
 
+/**
+ * @brief Start object
+ */
 void TfLdataClient::startObject() {}

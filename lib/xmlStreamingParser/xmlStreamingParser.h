@@ -24,6 +24,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *
+ * Module: lib/xmlStreamingParser/xmlStreamingParser.h
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - xmlStreamingParser: Class definition
+ * - state_Begin: State_ begin
+ * - state_StartTag: State_ start tag
+ * - state_TagName: State_ tag name
+ * - state_EmptyTag: State_ empty tag
+ * - state_TagContents: State_ tag contents
+ * - state_Attribute: State_ attribute
+ * - state_EndTag: State_ end tag
+ * - state_CDATA: State_ c d a t a
+ * - state_Comment: State_ comment
+ * - ContextBufferAddChar: context buffer add char
+ * - ChangeState: change state
+ * - parse: Parse
+ * - setListener: Set listener
+ * - reset: Reset
  */
 #pragma once
 
@@ -58,22 +78,77 @@ class xmlStreamingParser {
     char cdataMatch[10];
     uint8_t cdataIndex;
 
+/**
+ * @brief State_ begin
+ * @param character
+ */
     void state_Begin(const char character);
+/**
+ * @brief State_ start tag
+ * @param character
+ */
     void state_StartTag(const char character);
+/**
+ * @brief State_ tag name
+ * @param character
+ */
     void state_TagName(const char character);
+/**
+ * @brief State_ empty tag
+ * @param character
+ */
     void state_EmptyTag(const char character);
+/**
+ * @brief State_ tag contents
+ * @param character
+ */
     void state_TagContents(const char character);
+/**
+ * @brief State_ attribute
+ * @param character
+ */
     void state_Attribute(const char character);
+/**
+ * @brief State_ end tag
+ * @param character
+ */
     void state_EndTag(const char character);
+/**
+ * @brief State_ c d a t a
+ * @param character
+ */
     void state_CDATA(const char character);
+/**
+ * @brief State_ comment
+ * @param character
+ */
     void state_Comment(const char character);
+/**
+ * @brief context buffer add char
+ * @param character
+ */
     void ContextBufferAddChar(const char character);
+/**
+ * @brief change state
+ * @param newState
+ */
     void ChangeState(int newState);
 
   public:
     xmlStreamingParser();
+/**
+ * @brief Parse
+ * @param character
+ */
     void parse(const char character);
+/**
+ * @brief Set listener
+ * @param listener
+ */
     void setListener(xmlListener* listener);
+/**
+ * @brief Reset
+ */
     void reset();
 
 };

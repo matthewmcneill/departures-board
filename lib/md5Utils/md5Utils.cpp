@@ -7,6 +7,14 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/md5Utils/md5Utils.cpp
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - calculateFileMD5: Calculate file m d5
+ * - String: string
+ * - base64ToHex: Base64 to hex
  */
 
 #include <md5Utils.h>
@@ -15,6 +23,11 @@
 
 md5Utils::md5Utils() {}
 
+/**
+ * @brief Calculate file m d5
+ * @param filePath
+ * @return Return value
+ */
 String md5Utils::calculateFileMD5(const char* filePath) {
   File file = LittleFS.open(filePath, "r");
   if (!file || file.isDirectory()) {

@@ -24,6 +24,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *
+ * Module: lib/xmlStreamingParser/xmlStreamingParser.cpp
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - setListener: Set listener
+ * - reset: Reset
+ * - parse: Parse
+ * - state_Begin: State_ begin
+ * - state_StartTag: State_ start tag
+ * - state_TagName: State_ tag name
+ * - state_TagContents: State_ tag contents
+ * - state_Attribute: State_ attribute
+ * - state_EndTag: State_ end tag
+ * - state_CDATA: State_ c d a t a
+ * - state_Comment: State_ comment
+ * - ContextBufferAddChar: context buffer add char
+ * - ChangeState: change state
  */
 #include <xmlStreamingParser.h>
 
@@ -33,16 +51,27 @@ xmlStreamingParser::xmlStreamingParser() {
     reset();
 }
 
+/**
+ * @brief Set listener
+ * @param listener
+ */
 void xmlStreamingParser::setListener(xmlListener* listener) {
     myListener = listener;
 }
 
+/**
+ * @brief Reset
+ */
 void xmlStreamingParser::reset() {
     inAttrQuote=false;
     cdataIndex = 0;
     ChangeState(STATE_BEGIN);
 }
 
+/**
+ * @brief Parse
+ * @param character
+ */
 void xmlStreamingParser::parse(const char character) {
     switch (state) {
         case STATE_BEGIN:
@@ -151,6 +180,10 @@ void xmlStreamingParser::state_StartTag(const char character) {
     }
 }
 
+/**
+ * @brief State_ tag name
+ * @param character
+ */
 void xmlStreamingParser::state_TagName(const char character) {
 
     static bool sawSlash = false;
@@ -204,6 +237,10 @@ void xmlStreamingParser::state_TagName(const char character) {
     }
 }
 
+/**
+ * @brief State_ tag contents
+ * @param character
+ */
 void xmlStreamingParser::state_TagContents(const char character) {
     nextState = STATE_NULL;
 
@@ -245,6 +282,10 @@ void xmlStreamingParser::state_TagContents(const char character) {
     }
 }
 
+/**
+ * @brief State_ attribute
+ * @param character
+ */
 void xmlStreamingParser::state_Attribute(const char character) {
 
     static bool sawSlash = false;
@@ -314,6 +355,10 @@ void xmlStreamingParser::state_Attribute(const char character) {
     }
 }
 
+/**
+ * @brief State_ end tag
+ * @param character
+ */
 void xmlStreamingParser::state_EndTag(const char character) {
 
     nextState=STATE_NULL;
@@ -348,6 +393,10 @@ void xmlStreamingParser::state_EndTag(const char character) {
     }
 }
 
+/**
+ * @brief State_ c d a t a
+ * @param character
+ */
 void xmlStreamingParser::state_CDATA(const char character) {
     static int endMatch = 0;
     const char cdataEnd[] = "]]>";
@@ -376,6 +425,10 @@ void xmlStreamingParser::state_CDATA(const char character) {
     if (character != '\r' && character != '\n') ContextBufferAddChar(character);
 }
 
+/**
+ * @brief State_ comment
+ * @param character
+ */
 void xmlStreamingParser::state_Comment(const char character) {
     static int endMatch = 0;
     const char commentEnd[] = "-->";
@@ -392,6 +445,10 @@ void xmlStreamingParser::state_Comment(const char character) {
     endMatch = 0; // ignore everything
 }
 
+/**
+ * @brief context buffer add char
+ * @param character
+ */
 void xmlStreamingParser::ContextBufferAddChar(const char character) {
     if (length < sizeof(buffer)-2) {
         buffer[length] = character;
@@ -400,6 +457,10 @@ void xmlStreamingParser::ContextBufferAddChar(const char character) {
     }
 }
 
+/**
+ * @brief change state
+ * @param newState
+ */
 void xmlStreamingParser::ChangeState(int newState) {
     state = newState;
     bInitialize=true;

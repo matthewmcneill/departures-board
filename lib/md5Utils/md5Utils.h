@@ -7,6 +7,14 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/md5Utils/md5Utils.h
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - md5Utils: Class definition
+ * - calculateFileMD5: Calculate file m d5
+ * - base64ToHex: Base64 to hex
  */
 
 #pragma once
@@ -17,6 +25,16 @@ class md5Utils {
 
     public:
         md5Utils();
+/**
+ * @brief Calculate file m d5
+ * @param filePath
+ * @return Return value
+ */
         String calculateFileMD5(const char* filePath);
+/**
+ * @brief Base64 to hex
+ * @param base64Hash
+ * @return Return value
+ */
         String base64ToHex(String base64Hash);
 };

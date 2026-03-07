@@ -7,6 +7,28 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/busDataClient/busDataClient.cpp
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - stripTag: Strip tag
+ * - replaceWord: Replace word
+ * - trim: Trim
+ * - equalsIgnoreCase: Equals ignore case
+ * - serviceMatchesFilter: Service matches filter
+ * - cleanFilter: Clean filter
+ * - updateDepartures: Update departures
+ * - getStopLongName: Get stop long name
+ * - whitespace: Whitespace
+ * - startDocument: Start document
+ * - key: Key
+ * - value: Value
+ * - endArray: End array
+ * - endObject: End object
+ * - endDocument: End document
+ * - startArray: Start array
+ * - startObject: Start object
  */
 
 #include <busDataClient.h>
@@ -95,6 +117,12 @@ bool busDataClient::serviceMatchesFilter(const char* filter, const char* service
   return false;
 }
 
+/**
+ * @brief Clean filter
+ * @param rawFilter
+ * @param cleanedFilter
+ * @param maxLen
+ */
 void busDataClient::cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen) {
     if (!rawFilter || rawFilter[0] == '\0') {
         if (maxLen > 0) cleanedFilter[0] = '\0';
@@ -120,6 +148,14 @@ void busDataClient::cleanFilter(const char* rawFilter, char* cleanedFilter, size
     return;
 }
 
+/**
+ * @brief Update departures
+ * @param station
+ * @param locationId
+ * @param filter
+ * @param Xcb
+ * @return Return value
+ */
 int busDataClient::updateDepartures(rdStation *station, const char *locationId, const char *filter, busClientCallback Xcb) {
 
     unsigned long perfTimer=millis();
@@ -340,6 +376,12 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
     }
 }
 
+/**
+ * @brief Get stop long name
+ * @param locationId
+ * @param locationName
+ * @return Return value
+ */
 int busDataClient::getStopLongName(const char *locationId, char *locationName) {
 
     unsigned long perfTimer=millis();
@@ -428,24 +470,54 @@ int busDataClient::getStopLongName(const char *locationId, char *locationName) {
     return UPD_SUCCESS;
 }
 
+/**
+ * @brief Whitespace
+ * @param c
+ */
 void busDataClient::whitespace(char c) {}
 
+/**
+ * @brief Start document
+ */
 void busDataClient::startDocument() {}
 
+/**
+ * @brief Key
+ * @param key
+ */
 void busDataClient::key(String key) {
     currentKey = key;
 }
 
+/**
+ * @brief Value
+ * @param value
+ */
 void busDataClient::value(String value) {
     if (currentKey == F("long_name")) longName = value;
 }
 
+/**
+ * @brief End array
+ */
 void busDataClient::endArray() {}
 
+/**
+ * @brief End object
+ */
 void busDataClient::endObject() {}
 
+/**
+ * @brief End document
+ */
 void busDataClient::endDocument() {}
 
+/**
+ * @brief Start array
+ */
 void busDataClient::startArray() {}
 
+/**
+ * @brief Start object
+ */
 void busDataClient::startObject() {}

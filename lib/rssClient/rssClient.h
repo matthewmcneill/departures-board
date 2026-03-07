@@ -7,6 +7,20 @@
  *
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/rssClient/rssClient.h
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - rssClient: Class definition
+ * - trim: Trim
+ * - startTag: Start tag
+ * - endTag: End tag
+ * - parameter: Parameter
+ * - value: Value
+ * - attribute: Attribute
+ * - loadFeed: Load feed
+ * - getLastError: Get last error
  */
 
 #pragma once
@@ -37,18 +51,56 @@ class rssClient: public xmlListener {
         String currentPath = "";
         String lastErrorMessage = "";
 
+/**
+ * @brief Trim
+ * @param str
+ */
         void trim(char* str);
 
+/**
+ * @brief Start tag
+ * @param tagName
+ * @return Return value
+ */
         virtual void startTag(const char *tagName);
+/**
+ * @brief End tag
+ * @param tagName
+ * @return Return value
+ */
         virtual void endTag(const char *tagName);
+/**
+ * @brief Parameter
+ * @param param
+ * @return Return value
+ */
         virtual void parameter(const char *param);
+/**
+ * @brief Value
+ * @param value
+ * @return Return value
+ */
         virtual void value(const char *value);
+/**
+ * @brief Attribute
+ * @param attribute
+ * @return Return value
+ */
         virtual void attribute(const char *attribute);
 
     public:
 
         rssClient();
+/**
+ * @brief Load feed
+ * @param url
+ * @return Return value
+ */
         int loadFeed(String url);
+/**
+ * @brief Get last error
+ * @return Return value
+ */
         String getLastError();
         char rssTitle[MAX_RSS_TITLES][MAX_RSS_TITLE_SIZE];
         int numRssTitles = 0;

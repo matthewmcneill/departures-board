@@ -20,6 +20,21 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
+ *
+ * Module: lib/HTTPUpdateGitHub/HTTPUpdateGitHub.h
+ * Description: Exported functions and classes.
+ *
+ * Exported Functions/Classes:
+ * - HTTPUpdate: Class definition
+ * - handleUpdate: Handle update
+ * - onStart: On start
+ * - onEnd: On end
+ * - onError: On error
+ * - onProgress: On progress
+ * - getLastError: Get last error
+ * - getLastErrorString: Get last error string
+ * - runUpdate: Run update
+ * - _setLastError: _set last error
  */
 
  #ifndef ___HTTP_UPDATE_H___
@@ -70,19 +85,46 @@
          _rebootOnUpdate = reboot;
      }
 
+/**
+ * @brief Handle update
+ * @param client
+ * @param uri
+ * @param token
+ * @return Return value
+ */
      HTTPUpdateResult handleUpdate(WiFiClient& client, const String& uri, const String& token);
 
      // Notification callbacks
      void onStart(HTTPUpdateStartCB cbOnStart)          { _cbStart = cbOnStart; }
      void onEnd(HTTPUpdateEndCB cbOnEnd)                { _cbEnd = cbOnEnd; }
      void onError(HTTPUpdateErrorCB cbOnError)          { _cbError = cbOnError; }
+/**
+ * @brief On progress
+ * @param cbOnProgress
+ */
      void onProgress(HTTPUpdateProgressCB cbOnProgress) { _cbProgress = cbOnProgress; }
 
+/**
+ * @brief Get last error
+ * @return Return value
+ */
      int getLastError(void);
+/**
+ * @brief Get last error string
+ * @return Return value
+ */
      String getLastErrorString(void);
 
  protected:
 
+/**
+ * @brief Run update
+ * @param in
+ * @param size
+ * @param md5
+ * @param U_FLASH
+ * @return Return value
+ */
      bool runUpdate(Stream& in, uint32_t size, String md5, int command = U_FLASH);
 
      // Set the error and potentially use a CB to notify the application

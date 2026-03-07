@@ -1,0 +1,16 @@
+# PlatformIO
+.pio/
+
+# Build logs
+build_log.txt
+error_log.txt
+
+# VS Code workspace
+.vscode/
+
+# macOS
+.DS_Store
+
+# Compiled binaries
+*.bin
+*.elf
