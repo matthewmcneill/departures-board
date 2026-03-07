@@ -127,7 +127,8 @@ static const char successPage[] PROGMEM =
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define DIMMED_BRIGHTNESS 1 // OLED display brightness level when in sleep/screensaver mode
 
-U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 26, /* dc=*/ 5, /* reset=*/ U8X8_PIN_NONE);
+// S3 Nano Hardware SPI (Clock=D13, Data=D11, CS=D10, DC=D9)
+U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 10, /* dc=*/ 9, /* reset=*/ U8X8_PIN_NONE);
 
 // Vertical line positions on the OLED display (National Rail)
 #define LINE0 0
