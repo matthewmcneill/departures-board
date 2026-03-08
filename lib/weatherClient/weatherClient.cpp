@@ -9,19 +9,19 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/weatherClient/weatherClient.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of the OpenWeatherMap JSON client.
  *
  * Exported Functions/Classes:
- * - updateWeather: Update weather
- * - whitespace: Whitespace
- * - startDocument: Start document
- * - key: Key
- * - value: Value
- * - endArray: End array
- * - endObject: End object
- * - endDocument: End document
- * - startArray: Start array
- * - startObject: Start object
+ * - weatherClient::updateWeather: Connects to API and updates current weather properties.
+ * - weatherClient::whitespace: JSON whitespace handler.
+ * - weatherClient::startDocument: JSON handler triggered at start of document.
+ * - weatherClient::key: JSON handler triggered for each object key.
+ * - weatherClient::value: JSON handler triggered for each key value.
+ * - weatherClient::endArray: JSON handler triggered when exiting an array.
+ * - weatherClient::endObject: JSON handler triggered when exiting an object.
+ * - weatherClient::endDocument: JSON handler triggered at end of document.
+ * - weatherClient::startArray: JSON handler triggered when entering an array.
+ * - weatherClient::startObject: JSON handler triggered when entering an object.
  */
 
 #include <weatherClient.h>
@@ -31,11 +31,11 @@
 weatherClient::weatherClient() {}
 
 /**
- * @brief Update weather
- * @param apiKey
- * @param lat
- * @param lon
- * @return Return value
+ * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
+ * @param apiKey The user's OpenWeatherMap API key.
+ * @param lat The latitude of the location.
+ * @param lon The longitude of the location.
+ * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
 bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
 
@@ -116,27 +116,27 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
 }
 
 /**
- * @brief Whitespace
- * @param c
+ * @brief JSON whitespace handler.
+ * @param c The whitespace char.
  */
 void weatherClient::whitespace(char c) {}
 
 /**
- * @brief Start document
+ * @brief JSON handler triggered at start of document.
  */
 void weatherClient::startDocument() {}
 
 /**
- * @brief Key
- * @param key
+ * @brief JSON handler triggered for each object key.
+ * @param key The string name of the parsed key.
  */
 void weatherClient::key(String key) {
     currentKey = key;
 }
 
 /**
- * @brief Value
- * @param value
+ * @brief JSON handler triggered for each key value.
+ * @param value The scalar string value.
  */
 void weatherClient::value(String value) {
     if (currentObject == F("weather") && weatherItem==0) {
@@ -149,12 +149,12 @@ void weatherClient::value(String value) {
 }
 
 /**
- * @brief End array
+ * @brief JSON handler triggered when exiting an array.
  */
 void weatherClient::endArray() {}
 
 /**
- * @brief End object
+ * @brief JSON handler triggered when exiting an object.
  */
 void weatherClient::endObject() {
     if (currentObject == F("weather")) weatherItem++;
@@ -162,17 +162,17 @@ void weatherClient::endObject() {
 }
 
 /**
- * @brief End document
+ * @brief JSON handler triggered at end of document.
  */
 void weatherClient::endDocument() {}
 
 /**
- * @brief Start array
+ * @brief JSON handler triggered when entering an array.
  */
 void weatherClient::startArray() {}
 
 /**
- * @brief Start object
+ * @brief JSON handler triggered when entering an object.
  */
 void weatherClient::startObject() {
     currentObject = currentKey;

@@ -9,20 +9,10 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/weatherClient/weatherClient.h
- * Description: Exported functions and classes.
+ * Description: Client to fetch and parse weather data from the OpenWeatherMap REST API.
  *
  * Exported Functions/Classes:
- * - weatherClient: Class definition
- * - updateWeather: Update weather
- * - whitespace: Whitespace
- * - startDocument: Start document
- * - key: Key
- * - value: Value
- * - endArray: End array
- * - endObject: End object
- * - endDocument: End document
- * - startArray: Start array
- * - startObject: Start object
+ * - class weatherClient: Streaming JSON parser and HTTP client to fetch weather data.
  */
 #pragma once
 #include <JsonListener.h>
@@ -47,60 +37,59 @@ class weatherClient: public JsonListener {
         weatherClient();
 
 /**
- * @brief Update weather
- * @param apiKey
- * @param lat
- * @param lon
- * @return Return value
+ * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
+ * @param apiKey The user's OpenWeatherMap API key.
+ * @param lat The latitude of the location.
+ * @param lon The longitude of the location.
+ * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
         bool updateWeather(String apiKey, String lat, String lon);
 
 /**
- * @brief Whitespace
- * @param c
- * @return Return value
+ * @brief JSON whitespace handler.
+ * @param c The whitespace char.
  */
         virtual void whitespace(char c);
+
 /**
- * @brief Start document
- * @return Return value
+ * @brief JSON handler triggered at start of document.
  */
         virtual void startDocument();
+
 /**
- * @brief Key
- * @param key
- * @return Return value
+ * @brief JSON handler triggered for each object key.
+ * @param key The string name of the parsed key.
  */
         virtual void key(String key);
+
 /**
- * @brief Value
- * @param value
- * @return Return value
+ * @brief JSON handler triggered for each key value.
+ * @param value The scalar string value.
  */
         virtual void value(String value);
+
 /**
- * @brief End array
- * @return Return value
+ * @brief JSON handler triggered when exiting an array.
  */
         virtual void endArray();
+
 /**
- * @brief End object
- * @return Return value
+ * @brief JSON handler triggered when exiting an object.
  */
         virtual void endObject();
+
 /**
- * @brief End document
- * @return Return value
+ * @brief JSON handler triggered at end of document.
  */
         virtual void endDocument();
+
 /**
- * @brief Start array
- * @return Return value
+ * @brief JSON handler triggered when entering an array.
  */
         virtual void startArray();
+
 /**
- * @brief Start object
- * @return Return value
+ * @brief JSON handler triggered when entering an object.
  */
         virtual void startObject();
 };
