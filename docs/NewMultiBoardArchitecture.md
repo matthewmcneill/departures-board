@@ -2,7 +2,7 @@
 
 ## Current Implementation Overview
 
-You've correctly identified the current design pattern: `rdStation` and `rdService` (defined in `lib/stationData/stationData.h`) act as monolithic "mega structures". 
+The current design pattern: `rdStation` and `rdService` (defined in `lib/stationData/stationData.h`) act as monolithic "mega structures". 
 
 Instead of having different types of station or service objects for National Rail, TfL, and buses, the codebase uses a single, unified `rdStation` struct containing an array of `rdService` structs. 
 
