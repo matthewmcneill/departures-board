@@ -9,10 +9,10 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/xmlListener/xmlListener.h
- * Description: Exported functions and classes.
+ * Description: Abstract interface for consuming streamed XML parsing events.
  *
  * Exported Functions/Classes:
- * - xmlListener: Class definition
+ * - class xmlListener: Defines the callback interface for handling XML tags, text, and attributes.
  */
 
 #pragma once
@@ -23,9 +23,33 @@ class xmlListener {
 
   public:
 
+/**
+     * @brief Triggered when a new opening XML tag is encountered.
+     * @param tagName The name of the parsed tag.
+     */
     virtual void startTag(const char *tagName) = 0;
+
+    /**
+     * @brief Triggered when a closing XML tag is encountered.
+     * @param tagName The name of the parsed closing tag.
+     */
     virtual void endTag(const char *tagName) = 0;
+
+    /**
+     * @brief Triggered when an entity or parameter is encountered.
+     * @param param The parameter string.
+     */
     virtual void parameter(const char *param) = 0;
+
+    /**
+     * @brief Triggered when inner text/value of an XML node is parsed.
+     * @param value The text value contained within an XML tag.
+     */
     virtual void value(const char *value) = 0;
+
+    /**
+     * @brief Triggered when an attribute of an XML tag is parsed.
+     * @param attribute The attribute string (e.g. name="value").
+     */
     virtual void attribute(const char *attribute) = 0;
 };
