@@ -9,12 +9,11 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/md5Utils/md5Utils.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of MD5 utilities.
  *
  * Exported Functions/Classes:
- * - calculateFileMD5: Calculate file m d5
- * - String: string
- * - base64ToHex: Base64 to hex
+ * - md5Utils::calculateFileMD5: Calculates the MD5 hash of a specified file on the LittleFS system.
+ * - md5Utils::base64ToHex: Converts a base64 encoded MD5 hash into a hex string.
  */
 
 #include <md5Utils.h>
@@ -24,9 +23,9 @@
 md5Utils::md5Utils() {}
 
 /**
- * @brief Calculate file m d5
- * @param filePath
- * @return Return value
+ * @brief Calculates the MD5 hash of a specified file on the LittleFS system.
+ * @param filePath The absolute path to the file on LittleFS (e.g. "/webgui.html").
+ * @return A 32-character hexadecimal MD5 string, or empty if the file cannot be read.
  */
 String md5Utils::calculateFileMD5(const char* filePath) {
   File file = LittleFS.open(filePath, "r");
@@ -63,9 +62,11 @@ String md5Utils::calculateFileMD5(const char* filePath) {
   return String(hexString);
 }
 
-//
-// Converts a base64 encoded MD5 hash (as provided in the GitHub response headers) and converts to Hex
-//
+/**
+ * @brief Converts a base64 encoded MD5 hash (such as those from GitHub headers) into a hex string.
+ * @param base64Hash The base64 encoded string.
+ * @return A 32-character hexadecimal MD5 string.
+ */
 String md5Utils::base64ToHex(String base64Hash) {
     // Base64 decoding map
     const char base64Table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

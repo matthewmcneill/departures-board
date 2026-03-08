@@ -9,12 +9,10 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/md5Utils/md5Utils.h
- * Description: Exported functions and classes.
+ * Description: Utilities for MD5 calculation and base64-to-hex conversion.
  *
  * Exported Functions/Classes:
- * - md5Utils: Class definition
- * - calculateFileMD5: Calculate file m d5
- * - base64ToHex: Base64 to hex
+ * - class md5Utils: Wrapper class for MD5 generation operations.
  */
 
 #pragma once
@@ -26,15 +24,15 @@ class md5Utils {
     public:
         md5Utils();
 /**
- * @brief Calculate file m d5
- * @param filePath
- * @return Return value
+ * @brief Calculates the MD5 hash of a specified file on the LittleFS system.
+ * @param filePath The absolute path to the file on LittleFS (e.g. "/webgui.html").
+ * @return A 32-character hexadecimal MD5 string, or empty if the file cannot be read.
  */
         String calculateFileMD5(const char* filePath);
 /**
- * @brief Base64 to hex
- * @param base64Hash
- * @return Return value
+ * @brief Converts a base64 encoded MD5 hash (such as those from GitHub headers) into a hex string.
+ * @param base64Hash The base64 encoded string.
+ * @return A 32-character hexadecimal MD5 string.
  */
         String base64ToHex(String base64Hash);
 };
