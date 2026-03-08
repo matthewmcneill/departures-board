@@ -9,22 +9,23 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/raildataXmlClient/raildataXmlClient.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of the National Rail SOAP XML client.
  *
  * Exported Functions/Classes:
- * - compareTimes: Compare times
- * - removeHtmlTags: Remove html tags
- * - replaceWord: Replace word
- * - pruneFromPhrase: Prune from phrase
- * - fixFullStop: Fix full stop
- * - trim: Trim
- * - equalsIgnoreCase: Equals ignore case
- * - serviceMatchesFilter: Service matches filter
- * - cleanFilter: Clean filter
- * - updateDepartures: Update departures
- * - getLastError: Get last error
- * - deleteService: Delete service
- * - sanitiseData: Sanitise data
+ * - raildataXmlClient::compareTimes: Custom comparator to sort services chronologically.
+ * - raildataXmlClient::init: Fetches the SOAP host and API endpoint URL from WSDL definitions.
+ * - raildataXmlClient::removeHtmlTags: Strips all HTML tags from a character array.
+ * - raildataXmlClient::replaceWord: Replaces all occurrences of a target string with a replacement string in-place.
+ * - raildataXmlClient::pruneFromPhrase: Truncates a string from the first occurrence of a target phrase.
+ * - raildataXmlClient::fixFullStop: Ensures a string ends with exactly one full stop.
+ * - raildataXmlClient::trim: Trims leading and trailing whitespace from a character array.
+ * - raildataXmlClient::equalsIgnoreCase: Compares two character arrays case-insensitively.
+ * - raildataXmlClient::serviceMatchesFilter: Evaluates if a given service matches the configured platform filter.
+ * - raildataXmlClient::cleanFilter: Normalizes a user-provided filter string.
+ * - raildataXmlClient::updateDepartures: Scrapes and parses the XML departure board.
+ * - raildataXmlClient::getLastError: Retrieves the last error message.
+ * - raildataXmlClient::deleteService: Removes a service from the array by its index.
+ * - raildataXmlClient::sanitiseData: Cleans HTML tags, ampersands, and unwanted text from scraped data payloads.
  */
 
 #include <raildataXmlClient.h>
@@ -36,7 +37,12 @@ raildataXmlClient::raildataXmlClient() {
     firstDataLoad=true;
 }
 
-// Custom comparator function to compare time strings
+/**
+ * @brief Custom comparator to sort services chronologically.
+ * @param a First service element.
+ * @param b Second service element.
+ * @return True if 'a' is chronologically earlier than 'b'.
+ */
 bool raildataXmlClient::compareTimes(const rdiService& a, const rdiService& b) {
     // Convert time strings to integers for comparison
     int hour1, minute1, hour2, minute2;
@@ -54,9 +60,13 @@ bool raildataXmlClient::compareTimes(const rdiService& a, const rdiService& b) {
     return minute1 < minute2;
 }
 
-//
-// This function obtains the SOAP host and api url from the given wsdlHost and wsdlAPI
-//
+/**
+ * @brief Fetches the SOAP host and API endpoint URL from the provided WSDL definitions.
+ * @param wsdlHost The WSDL host domain.
+ * @param wsdlAPI The WSDL API path.
+ * @param RDcb Progress callback to run while loading data.
+ * @return Connection status constant.
+ */
 int raildataXmlClient::init(const char *wsdlHost, const char *wsdlAPI, rdCallback RDcb)
 {
     Xcb = RDcb;
@@ -141,9 +151,10 @@ int raildataXmlClient::init(const char *wsdlHost, const char *wsdlAPI, rdCallbac
     return UPD_DATA_ERROR;
 }
 
-//
-// Function to remove HTML tags from a character array
-//
+/**
+ * @brief Strips all HTML tags from a character array in-place.
+ * @param input The character array.
+ */
 void raildataXmlClient::removeHtmlTags(char* input) {
     bool inTag = false;
     char* output = input; // Output pointer
@@ -161,9 +172,12 @@ void raildataXmlClient::removeHtmlTags(char* input) {
     *output = '\0'; // Null-terminate the output
 }
 
-//
-// Function to replace occurrences of a word or phrase in a character array
-//
+/**
+ * @brief Replaces all occurrences of a target string with a replacement string in-place.
+ * @param input The string buffer to modify.
+ * @param target The exact word or phrase to look for.
+ * @param replacement The string to inject.
+ */
 void raildataXmlClient::replaceWord(char* input, const char* target, const char* replacement) {
     // Find the first occurrence of the target word
     char* pos = strstr(input, target);
@@ -184,9 +198,11 @@ void raildataXmlClient::replaceWord(char* input, const char* target, const char*
     }
 }
 
-//
-// Function to prune messages from the point at which a word or phrase is found
-//
+/**
+ * @brief Truncates a string from the first occurrence of a target phrase in-place.
+ * @param input The character array.
+ * @param target The string fragment to detect and prune from.
+ */
 void raildataXmlClient::pruneFromPhrase(char* input, const char* target) {
     // Find the first occurance of the target word or phrase
     char* pos = strstr(input,target);
@@ -194,9 +210,10 @@ void raildataXmlClient::pruneFromPhrase(char* input, const char* target) {
     if (pos) input[pos - input] = '\0';
 }
 
-//
-// Function to ensure there's one and only one fullstop at the end of messages.
-//
+/**
+ * @brief Ensures a string ends with exactly one full stop in-place.
+ * @param input The character array to normalize.
+ */
 void raildataXmlClient::fixFullStop(char *input) {
     if (input[0]) {
         while (input[0] && (input[strlen(input)-1] == '.' || input[strlen(input)-1] == ' ')) input[strlen(input)-1] = '\0'; // Remove all trailing full stops
@@ -204,13 +221,23 @@ void raildataXmlClient::fixFullStop(char *input) {
     }
 }
 
-// Trim leading and trailing spaces in-place
+/**
+ * @brief Trims leading and trailing whitespace from a character array in-place.
+ * @param start Pointer to the start of the character array.
+ * @param end Pointer to the end of the character array.
+ */
 void raildataXmlClient::trim(char* &start, char* &end) {
   while (start <= end && isspace(*start)) start++;
   while (end >= start && isspace(*end)) end--;
 }
 
-// Compare strings case-insensitively
+/**
+ * @brief Compares two character arrays case-insensitively.
+ * @param a The first character array.
+ * @param a_len The length of the first character array.
+ * @param b The second character array (null-terminated).
+ * @return True if the strings match regardless of case.
+ */
 bool raildataXmlClient::equalsIgnoreCase(const char* a, int a_len, const char* b) {
   for (int i = 0; i < a_len; i++) {
     if (tolower(a[i]) != tolower(b[i])) return false;
@@ -218,7 +245,12 @@ bool raildataXmlClient::equalsIgnoreCase(const char* a, int a_len, const char* b
   return b[a_len] == '\0';
 }
 
-// Check if the service is in the filter list (if there is one)
+/**
+ * @brief Evaluates if a given service matches the configured platform filter.
+ * @param filter The comma-separated string of desired platform numbers.
+ * @param serviceId The currently parsed platform number.
+ * @return True if the platform is found in the filter, or if the filter is empty.
+ */
 bool raildataXmlClient::serviceMatchesFilter(const char* filter, const char* serviceId) {
   if (filter == nullptr || filter[0] == '\0') return true; // empty filter = match all
 
@@ -247,10 +279,10 @@ bool raildataXmlClient::serviceMatchesFilter(const char* filter, const char* ser
 }
 
 /**
- * @brief Clean filter
- * @param rawFilter
- * @param cleanedFilter
- * @param maxLen
+ * @brief Normalizes a user-provided filter string (e.g. platform numbers).
+ * @param rawFilter The original filter input.
+ * @param cleanedFilter The output buffer for the normalized filter.
+ * @param maxLen The maximum length of the output buffer.
  */
 void raildataXmlClient::cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen) {
     if (!rawFilter || rawFilter[0] == '\0') {
@@ -278,9 +310,19 @@ void raildataXmlClient::cleanFilter(const char* rawFilter, char* cleanedFilter, 
 }
 
 
-//
-// Updates the Departure Board data from the SOAP API
-//
+/**
+ * @brief Main function to execute the SOAP request, download departure data, and parse the XML into the structured station format.
+ * @param station Pointer to the station object to populate.
+ * @param messages Pointer to the station messages object.
+ * @param crsCode The station CRS code (e.g. EDB).
+ * @param customToken The API auth token.
+ * @param numRows Maximum number of services to fetch.
+ * @param includeBusServices Whether to include bus replacement services.
+ * @param callingCrsCode An optional filter CRS code for services traversing a specific destination.
+ * @param platforms Comma-separated list of platform numbers to filter by.
+ * @param timeOffset Time offset in minutes.
+ * @return Connection status constant.
+ */
 int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *messages, const char *crsCode, const char *customToken, int numRows, bool includeBusServices, const char *callingCrsCode, const char *platforms, int timeOffset) {
 
     unsigned long perfTimer=millis();
@@ -526,16 +568,16 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
 }
 
 /**
- * @brief Get last error
- * @return Return value
+ * @brief Retrieves the last error message encountered during API operations.
+ * @return A string containing the error.
  */
 String raildataXmlClient::getLastError() {
     return lastErrorMessage;
 }
 
 /**
- * @brief Delete service
- * @param x
+ * @brief Removes a service from the internal parsing array by its index and shifts subsequent elements.
+ * @param x The array index to delete.
  */
 void raildataXmlClient::deleteService(int x) {
 
@@ -552,7 +594,7 @@ void raildataXmlClient::deleteService(int x) {
 }
 
 /**
- * @brief Sanitise data
+ * @brief Cleans HTML tags, ampersands, and unwanted text from scraped data payloads.
  */
 void raildataXmlClient::sanitiseData() {
 

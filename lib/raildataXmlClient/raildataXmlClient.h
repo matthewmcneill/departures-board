@@ -9,30 +9,11 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/raildataXmlClient/raildataXmlClient.h
- * Description: Exported functions and classes.
+ * Description: Client to fetch and parse SOAP XML requests from National Rail Darwin API.
  *
  * Exported Functions/Classes:
- * - void: Void
- * - raildataXmlClient: Class definition
- * - compareTimes: Compare times
- * - removeHtmlTags: Remove html tags
- * - replaceWord: Replace word
- * - pruneFromPhrase: Prune from phrase
- * - fixFullStop: Fix full stop
- * - sanitiseData: Sanitise data
- * - deleteService: Delete service
- * - trim: Trim
- * - equalsIgnoreCase: Equals ignore case
- * - serviceMatchesFilter: Service matches filter
- * - startTag: Start tag
- * - endTag: End tag
- * - parameter: Parameter
- * - value: Value
- * - attribute: Attribute
- * - init: Init
- * - cleanFilter: Clean filter
- * - updateDepartures: Update departures
- * - getLastError: Get last error
+ * - class raildataXmlClient: Streaming XML parser and SOAP client for National Rail data.
+ * - rdCallback: Type definition for progress callbacks.
  */
 
 #pragma once
@@ -41,10 +22,9 @@
 #include <stationData.h>
 
 /**
- * @brief Void
- * @param state
- * @param id
- * @return Return value
+ * @brief Callback function definition to report progress during long API initialization or updates.
+ * @param state The current progress state.
+ * @param id Optional identifier or count of items processed.
  */
 typedef void (*rdCallback) (int state, int id);
 
@@ -109,131 +89,126 @@ class raildataXmlClient: public xmlListener {
 
         rdCallback Xcb;
 /**
- * @brief Compare times
- * @param a
- * @param b
- * @return Return value
+ * @brief Custom comparator to sort services chronologically.
+ * @param a First service element.
+ * @param b Second service element.
+ * @return True if 'a' is chronologically earlier than 'b'.
  */
         static bool compareTimes(const rdiService& a, const rdiService& b);
 /**
- * @brief Remove html tags
- * @param input
+ * @brief Strips all HTML tags from a character array in-place.
+ * @param input The character array.
  */
         void removeHtmlTags(char* input);
 /**
- * @brief Replace word
- * @param input
- * @param target
- * @param replacement
+ * @brief Replaces all occurrences of a target string with a replacement string in-place.
+ * @param input The string buffer to modify.
+ * @param target The exact word or phrase to look for.
+ * @param replacement The string to inject.
  */
         void replaceWord(char* input, const char* target, const char* replacement);
 /**
- * @brief Prune from phrase
- * @param input
- * @param target
+ * @brief Truncates a string from the first occurrence of a target phrase in-place.
+ * @param input The character array.
+ * @param target The string fragment to detect and prune from.
  */
         void pruneFromPhrase(char* input, const char* target);
 /**
- * @brief Fix full stop
- * @param input
+ * @brief Ensures a string ends with exactly one full stop in-place.
+ * @param input The character array to normalize.
  */
         void fixFullStop(char* input);
 /**
- * @brief Sanitise data
+ * @brief Cleans HTML tags, ampersands, and unwanted text from scraped data payloads.
  */
         void sanitiseData();
 /**
- * @brief Delete service
- * @param x
+ * @brief Removes a service from the internal parsing array by its index and shifts subsequent elements.
+ * @param x The array index to delete.
  */
         void deleteService(int x);
 /**
- * @brief Trim
- * @param start
- * @param end
+ * @brief Trims leading and trailing whitespace from a character array in-place.
+ * @param start Pointer to the start of the character array.
+ * @param end Pointer to the end of the character array.
  */
         void trim(char* &start, char* &end);
 /**
- * @brief Equals ignore case
- * @param a
- * @param a_len
- * @param b
- * @return Return value
+ * @brief Compares two character arrays case-insensitively.
+ * @param a The first character array.
+ * @param a_len The length of the first character array.
+ * @param b The second character array (null-terminated).
+ * @return True if the strings match regardless of case.
  */
         bool equalsIgnoreCase(const char* a, int a_len, const char* b);
 /**
- * @brief Service matches filter
- * @param filter
- * @param serviceId
- * @return Return value
+ * @brief Evaluates if a given service matches the configured platform filter.
+ * @param filter The comma-separated string of desired platform numbers.
+ * @param serviceId The currently parsed platform number.
+ * @return True if the platform is found in the filter, or if the filter is empty.
  */
         bool serviceMatchesFilter(const char* filter, const char* serviceId);
 
 /**
- * @brief Start tag
- * @param tagName
- * @return Return value
+ * @brief XML handler triggered for a start tag.
+ * @param tagName Name of the starting tag.
  */
         virtual void startTag(const char *tagName);
 /**
- * @brief End tag
- * @param tagName
- * @return Return value
+ * @brief XML handler triggered for an end tag.
+ * @param tagName Name of the ending tag.
  */
         virtual void endTag(const char *tagName);
 /**
- * @brief Parameter
- * @param param
- * @return Return value
+ * @brief XML handler triggered for a parameter.
+ * @param param Parameter data.
  */
         virtual void parameter(const char *param);
 /**
- * @brief Value
- * @param value
- * @return Return value
+ * @brief XML handler triggered for a text value.
+ * @param value Scalar text value.
  */
         virtual void value(const char *value);
 /**
- * @brief Attribute
- * @param attribute
- * @return Return value
+ * @brief XML handler triggered for an attribute.
+ * @param attribute Attribute data.
  */
         virtual void attribute(const char *attribute);
 
     public:
         raildataXmlClient();
 /**
- * @brief Init
- * @param wsdlHost
- * @param wsdlAPI
- * @param RDcb
- * @return Return value
+ * @brief Fetches the SOAP host and API endpoint URL from the provided WSDL definitions.
+ * @param wsdlHost The WSDL host domain.
+ * @param wsdlAPI The WSDL API path.
+ * @param RDcb Progress callback to run while loading data.
+ * @return Connection status constant.
  */
         int init(const char *wsdlHost, const char *wsdlAPI, rdCallback RDcb);
 /**
- * @brief Clean filter
- * @param rawFilter
- * @param cleanedFilter
- * @param maxLen
+ * @brief Normalizes a user-provided filter string (e.g. platform numbers).
+ * @param rawFilter The original filter input.
+ * @param cleanedFilter The output buffer for the normalized filter.
+ * @param maxLen The maximum length of the output buffer.
  */
         void cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen);
 /**
- * @brief Update departures
- * @param station
- * @param messages
- * @param crsCode
- * @param customToken
- * @param numRows
- * @param includeBusServices
- * @param callingCrsCode
- * @param platforms
- * @param timeOffset
- * @return Return value
+ * @brief Main function to execute the SOAP request, download departure data, and parse the XML into the structured station format.
+ * @param station Pointer to the station object to populate.
+ * @param messages Pointer to the station messages object.
+ * @param crsCode The station CRS code (e.g. EDB).
+ * @param customToken The API auth token.
+ * @param numRows Maximum number of services to fetch.
+ * @param includeBusServices Whether to include bus replacement services.
+ * @param callingCrsCode An optional filter CRS code for services traversing a specific destination.
+ * @param platforms Comma-separated list of platform numbers to filter by.
+ * @param timeOffset Time offset in minutes.
+ * @return Connection status constant.
  */
         int updateDepartures(rdStation *station, stnMessages *messages, const char *crsCode, const char *customToken, int numRows, bool includeBusServices, const char *callingCrsCode, const char *platforms, int timeOffset);
 /**
- * @brief Get last error
- * @return Return value
+ * @brief Retrieves the last error message encountered during API operations.
+ * @return A string containing the error.
  */
         String getLastError();
 };
