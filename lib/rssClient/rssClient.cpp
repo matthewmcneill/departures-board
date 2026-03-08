@@ -9,12 +9,17 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/rssClient/rssClient.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of the RSS XML client.
  *
  * Exported Functions/Classes:
- * - trim: Trim
- * - loadFeed: Load feed
- * - getLastError: Get last error
+ * - rssClient::trim: Trims leading and trailing whitespace from a character array.
+ * - rssClient::loadFeed: Connects to the URL and extracts RSS item titles.
+ * - rssClient::getLastError: Retrieves the last error message.
+ * - rssClient::startTag: XML handler triggered for a start tag.
+ * - rssClient::endTag: XML handler triggered for an end tag.
+ * - rssClient::parameter: XML handler triggered for a parameter.
+ * - rssClient::value: XML handler triggered for a text value.
+ * - rssClient::attribute: XML handler triggered for an attribute.
  */
 
 #include <rssClient.h>
@@ -25,7 +30,10 @@
 
 rssClient::rssClient() {}
 
-// Trim leading and trailing spaces in-place
+/**
+ * @brief Trims leading and trailing whitespace from a character array in-place.
+ * @param str The character array to trim.
+ */
 void rssClient::trim(char* str) {
     char* start = str;
     while (*start && isspace(static_cast<unsigned char>(*start)))
@@ -41,7 +49,11 @@ void rssClient::trim(char* str) {
         memmove(str, start, end - start + 1);
 }
 
-// Load the RSS feed item titles
+/**
+ * @brief Connects to the provided URL, fetches the RSS feed, and streams the XML to extract item titles.
+ * @param url The URL of the RSS feed to fetch (supports HTTP and HTTPS).
+ * @return Connection status constant.
+ */
 int rssClient::loadFeed(String url) {
     HTTPClient http;
     WiFiClient client;
@@ -117,13 +129,17 @@ int rssClient::loadFeed(String url) {
 }
 
 /**
- * @brief Get last error
- * @return Return value
+ * @brief Retrieves the last error message encountered during RSS fetch operations.
+ * @return A string containing the error description.
  */
 String rssClient::getLastError() {
     return lastErrorMessage;
 }
 
+/**
+ * @brief XML handler triggered for a start tag.
+ * @param tag Name of the starting tag.
+ */
 void rssClient::startTag(const char *tag)
 {
     tagLevel++;
@@ -133,6 +149,10 @@ void rssClient::startTag(const char *tag)
     tagPath = grandParentTagName + "/" + parentTagName + "/" + tagName;
 }
 
+/**
+ * @brief XML handler triggered for an end tag.
+ * @param tag Name of the ending tag.
+ */
 void rssClient::endTag(const char *tag)
 {
     tagLevel--;
@@ -141,10 +161,18 @@ void rssClient::endTag(const char *tag)
     grandParentTagName="??";
 }
 
+/**
+ * @brief XML handler triggered for a parameter.
+ * @param param Parameter data.
+ */
 void rssClient::parameter(const char *param)
 {
 }
 
+/**
+ * @brief XML handler triggered for a text value.
+ * @param value Scalar text value.
+ */
 void rssClient::value(const char *value)
 {
     if (tagPath.endsWith("/item/title")) {
@@ -155,6 +183,10 @@ void rssClient::value(const char *value)
     }
 }
 
+/**
+ * @brief XML handler triggered for an attribute.
+ * @param attr Attribute data.
+ */
 void rssClient::attribute(const char *attr)
 {
 }

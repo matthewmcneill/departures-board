@@ -9,18 +9,10 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/rssClient/rssClient.h
- * Description: Exported functions and classes.
+ * Description: Client to fetch and parse RSS feeds via HTTP/HTTPS.
  *
  * Exported Functions/Classes:
- * - rssClient: Class definition
- * - trim: Trim
- * - startTag: Start tag
- * - endTag: End tag
- * - parameter: Parameter
- * - value: Value
- * - attribute: Attribute
- * - loadFeed: Load feed
- * - getLastError: Get last error
+ * - class rssClient: Streaming XML parser and HTTP client to fetch and decode RSS feeds.
  */
 
 #pragma once
@@ -52,39 +44,34 @@ class rssClient: public xmlListener {
         String lastErrorMessage = "";
 
 /**
- * @brief Trim
- * @param str
+ * @brief Trims leading and trailing whitespace from a character array in-place.
+ * @param str The character array to trim.
  */
         void trim(char* str);
 
 /**
- * @brief Start tag
- * @param tagName
- * @return Return value
+ * @brief XML handler triggered for a start tag.
+ * @param tagName Name of the starting tag.
  */
         virtual void startTag(const char *tagName);
 /**
- * @brief End tag
- * @param tagName
- * @return Return value
+ * @brief XML handler triggered for an end tag.
+ * @param tagName Name of the ending tag.
  */
         virtual void endTag(const char *tagName);
 /**
- * @brief Parameter
- * @param param
- * @return Return value
+ * @brief XML handler triggered for a parameter.
+ * @param param Parameter data.
  */
         virtual void parameter(const char *param);
 /**
- * @brief Value
- * @param value
- * @return Return value
+ * @brief XML handler triggered for a text value.
+ * @param value Scalar text value.
  */
         virtual void value(const char *value);
 /**
- * @brief Attribute
- * @param attribute
- * @return Return value
+ * @brief XML handler triggered for an attribute.
+ * @param attribute Attribute data.
  */
         virtual void attribute(const char *attribute);
 
@@ -92,14 +79,14 @@ class rssClient: public xmlListener {
 
         rssClient();
 /**
- * @brief Load feed
- * @param url
- * @return Return value
+ * @brief Connects to the provided URL, fetches the RSS feed, and streams the XML to extract item titles.
+ * @param url The URL of the RSS feed to fetch (supports HTTP and HTTPS).
+ * @return Connection status constant.
  */
         int loadFeed(String url);
 /**
- * @brief Get last error
- * @return Return value
+ * @brief Retrieves the last error message encountered during RSS fetch operations.
+ * @return A string containing the error description.
  */
         String getLastError();
         char rssTitle[MAX_RSS_TITLES][MAX_RSS_TITLE_SIZE];
