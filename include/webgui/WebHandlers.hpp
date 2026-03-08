@@ -344,28 +344,32 @@ void handleFileList() {
   if (!server.hasArg("dir")) path="/"; else path = server.arg("dir");
   File root = LittleFS.open(path);
 
-  String output=F("<html><body style=\"font-family:Helvetica,Arial,sans-serif\"><h2>Departures Board File System</h2>");
+  // Use chunked transfer encoding to stream the HTML out rather than fragmenting the heap
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, contentTypeHtml, "");
+
+  server.sendContent(F("<html><body style=\"font-family:Helvetica,Arial,sans-serif\"><h2>Departures Board File System</h2>"));
   if (!root) {
-    output+=F("<p>Failed to open directory</p>");
+    server.sendContent(F("<p>Failed to open directory</p>"));
   } else if (!root.isDirectory()) {
-    output+=F("<p>Not a directory</p>");
+    server.sendContent(F("<p>Not a directory</p>"));
   } else {
-    output+=F("<table>");
+    server.sendContent(F("<table>"));
     File file = root.openNextFile();
     while (file) {
-      output+=F("<tr><td>");
+      server.sendContent(F("<tr><td>"));
       if (file.isDirectory()) {
-        output+="[DIR]</td><td><a href=\"/rmdir?f=" + String(file.path()) + F("\" title=\"Delete\">X</a></td><td><a href=\"/dir?dir=") + String(file.path()) + F("\">") + String(file.name()) + F("</a></td></tr>");
+        server.sendContent("[DIR]</td><td><a href=\"/rmdir?f=" + String(file.path()) + F("\" title=\"Delete\">X</a></td><td><a href=\"/dir?dir=") + String(file.path()) + F("\">") + String(file.name()) + F("</a></td></tr>"));
       } else {
-        output+=String(file.size()) + F("</td><td><a href=\"/del?f=")+ String(file.path()) + F("\" title=\"Delete\">X</a></td><td><a href=\"/cat?f=") + String(file.path()) + F("\">") + String(file.name()) + F("</a></td></tr>");
+        server.sendContent(String(file.size()) + F("</td><td><a href=\"/del?f=")+ String(file.path()) + F("\" title=\"Delete\">X</a></td><td><a href=\"/cat?f=") + String(file.path()) + F("\">") + String(file.name()) + F("</a></td></tr>"));
       }
       file = root.openNextFile();
     }
   }
 
-  output += F("</table><br>");
-  output += getFSInfo() + F("<p><a href=\"/upload\">Upload</a> a file</p></body></html>");
-  server.send(200,contentTypeHtml,output);
+  server.sendContent(F("</table><br>"));
+  server.sendContent(getFSInfo() + F("<p><a href=\"/upload\">Upload</a> a file</p></body></html>"));
+  server.sendContent(""); // End of chunked transmission
 }
 
 /**
@@ -558,47 +562,97 @@ void handleInfo() {
   int hours = (uptime % msDay) / msHour;
   int minutes = ((uptime % msDay) % msHour) / msMin;
 
+  // Let WebServer handle chunked transfer encoding automatically
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/plain", ""); // Sending empty string with content-length unknown starts chunked mode
+
   sprintf(sysUptime,"%d days, %d hrs, %d min", days,hours,minutes);
 
-  String message = "Hostname: " + String(hostname) + F("\nFirmware version: v") + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + " " + getBuildTime() + F("\nSystem uptime: ") + String(sysUptime) + F("\nFree Heap: ") + String(ESP.getFreeHeap()) + F("\nMax Free Block: ") + String(ESP.getMaxAllocHeap()) + F("\nFree LittleFS space: ") + String(LittleFS.totalBytes() - LittleFS.usedBytes());
-  message+="\nCore Plaform: " + String(ESP.getCoreVersion()) + F("\nCPU speed: ") + String(ESP.getCpuFreqMHz()) + F("MHz\nCPU Temperature: ") + String(temperatureRead()) + F("\nWiFi network: ") + String(WiFi.SSID()) + F("\nWiFi signal strength: ") + String(WiFi.RSSI()) + F("dB");
+  server.sendContent("Hostname: " + String(hostname) + F("\nFirmware version: v") + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + " " + getBuildTime());
+  server.sendContent(F("\nSystem uptime: "));
+  server.sendContent(String(sysUptime));
+  server.sendContent(F("\nFree Heap: "));
+  server.sendContent(String(ESP.getFreeHeap()));
+  server.sendContent(F("\nMax Free Block: "));
+  server.sendContent(String(ESP.getMaxAllocHeap()));
+  server.sendContent(F("\nFree LittleFS space: "));
+  server.sendContent(String(LittleFS.totalBytes() - LittleFS.usedBytes()));
+  server.sendContent("\nCore Plaform: " + String(ESP.getCoreVersion()) + F("\nCPU speed: ") + String(ESP.getCpuFreqMHz()) + F("MHz"));
+  server.sendContent(F("\nCPU Temperature: "));
+  server.sendContent(String(temperatureRead()));
+  server.sendContent(F("\nWiFi network: "));
+  server.sendContent(String(WiFi.SSID()));
+  server.sendContent(F("\nWiFi signal strength: "));
+  server.sendContent(String(WiFi.RSSI()));
+  server.sendContent(F("dB"));
+  
   getLocalTime(&timeinfo);
-
   sprintf(sysUptime,"%02d:%02d:%02d %02d/%02d/%04d",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon+1,timeinfo.tm_year+1900);
-  message+="\nSystem clock: " + String(sysUptime);
-  message+="\nCRS station code: " + String(crsCode) + F("\nNaptan station code: ") + String(tubeId) + F("\nSuccessful: ") + String(dataLoadSuccess) + F("\nFailures: ") + String(dataLoadFailure) + F("\nTime since last data load: ") + String((int)((millis()-lastDataLoadTime)/1000)) + F(" seconds");
-  if (dataLoadFailure) message+="\nTime since last failure: " + String((int)((millis()-lastLoadFailure)/1000)) + F(" seconds");
-  message+=F("\nLast Result: ");
+  
+  server.sendContent(F("\nSystem clock: "));
+  server.sendContent(String(sysUptime));
+  server.sendContent(F("\nCRS station code: "));
+  server.sendContent(String(crsCode));
+  server.sendContent(F("\nNaptan station code: "));
+  server.sendContent(String(tubeId));
+  server.sendContent(F("\nSuccessful: "));
+  server.sendContent(String(dataLoadSuccess));
+  server.sendContent(F("\nFailures: "));
+  server.sendContent(String(dataLoadFailure));
+  server.sendContent(F("\nTime since last data load: "));
+  server.sendContent(String((int)((millis()-lastDataLoadTime)/1000)));
+  server.sendContent(F(" seconds"));
+  
+  if (dataLoadFailure) {
+    server.sendContent(F("\nTime since last failure: "));
+    server.sendContent(String((int)((millis()-lastLoadFailure)/1000)));
+    server.sendContent(F(" seconds"));
+  }
+  
+  server.sendContent(F("\nLast Result: "));
   switch (boardMode) {
     case MODE_RAIL:
-      message+=raildata->getLastError();
+      server.sendContent(raildata->getLastError());
       break;
 
     case MODE_TUBE:
-      message+=tfldata->lastErrorMsg;
+      server.sendContent(tfldata->lastErrorMsg);
       break;
 
     case MODE_BUS:
-      message+=busdata->lastErrorMsg;
+      server.sendContent(busdata->lastErrorMsg);
       break;
   }
-  message+=F("\nUpdate result code: ");
-  message+=getResultCodeText(lastUpdateResult);
-  message+="\nServices: " + String(station.numServices) + F("\nMessages: ");
+  
+  server.sendContent(F("\nUpdate result code: "));
+  server.sendContent(getResultCodeText(lastUpdateResult));
+  server.sendContent("\nServices: " + String(station.numServices) + F("\nMessages: "));
+  
   int nMsgs = messages.numMessages;
   if (rssEnabled && rssAddedtoMsgs) nMsgs--;
   if (boardMode == MODE_TUBE) nMsgs--;
-  message+=String(nMsgs) + F("\n\n");
+  
+  server.sendContent(String(nMsgs) + F("\n\n"));
 
   if (rssEnabled) {
-    message+="Last RSS result: " + rss.getLastError() + F("\nResult code: ");
-    message+=getResultCodeText(lastRssUpdateResult) + F("\nNext RSS update: ") + String(nextRssUpdate-millis()) + F("ms\n\n");
+    server.sendContent(F("Last RSS result: "));
+    server.sendContent(rss.getLastError());
+    server.sendContent(F("\nResult code: "));
+    server.sendContent(getResultCodeText(lastRssUpdateResult));
+    server.sendContent(F("\nNext RSS update: "));
+    server.sendContent(String((unsigned long)(nextRssUpdate-millis())));
+    server.sendContent(F("ms\n\n"));
   }
 
   if (weatherEnabled) {
-    message+="Last weather result: " + currentWeather.lastErrorMsg + F("\nNext weather update: ") + String(nextWeatherUpdate-millis()) + F("ms");
+    server.sendContent(F("Last weather result: "));
+    server.sendContent(currentWeather.lastErrorMsg);
+    server.sendContent(F("\nNext weather update: "));
+    server.sendContent(String((unsigned long)(nextWeatherUpdate-millis())));
+    server.sendContent(F("ms\n"));
   }
-  sendResponse(200,message);
+
+  server.sendContent(""); // Empty content indicates end of chunked transmission
 }
 
 /**
@@ -687,10 +741,10 @@ void handleOtaUpdate() {
     checkForFirmwareUpdate();
   } else {
     for (int i=15;i>=0;i--) {
-      showUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError().c_str(),"",i,false);
+      showUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError(),"",i,false);
       delay(1000);
     }
-    log_e("FW Update failed: %s\n",ghUpdate.getLastError().c_str());
+    log_e("FW Update failed: %s\n",ghUpdate.getLastError());
   }
   // Always restart
   ESP.restart();
@@ -791,29 +845,34 @@ void handleStationPicker() {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, contentTypeJson, "");
 
-  String buffer;
+  uint8_t buffer[512];
+  size_t bufLen = 0;
   unsigned long timeout = millis() + 5000UL;
+  WiFiClient client = server.client();
 
   while ((httpsClient.connected() || httpsClient.available()) && millis() < timeout) {
     while (httpsClient.available()) {
       char c = httpsClient.read();
-      if (c <= 128) buffer += c;
-      if (buffer.length() >= 1024) {
-        server.sendContent(buffer);
-        buffer = "";
+      if (c <= 128) { // Only printable/standard ASCII
+        buffer[bufLen++] = c;
+      }
+      
+      if (bufLen >= sizeof(buffer)) {
+        client.write(buffer, bufLen);
+        bufLen = 0;
         yield();
       }
     }
   }
 
   // Flush remaining buffer
-  if (buffer.length()) {
-    server.sendContent(buffer);
+  if (bufLen > 0) {
+    client.write(buffer, bufLen);
   }
 
   httpsClient.stop();
-  server.sendContent("");
-  server.client().stop();
+  server.sendContent(""); // empty chunk to terminate
+  client.stop();
 }
 
 /**
@@ -849,7 +908,10 @@ void departureBoardLoop() {
   if ((millis() > nextDataUpdate) && (!isScrollingStops) && (!isScrollingService) && (lastUpdateResult != UPD_UNAUTHORISED) && (!isSleeping) && (wifiConnected)) {
     timer = millis() + 2000;
     if (getStationBoard()) {
-      if ((lastUpdateResult == UPD_SUCCESS) || (lastUpdateResult == UPD_NO_CHANGE && firstLoad)) drawStationBoard(); // Something changed so redraw the board.
+      if ((lastUpdateResult == UPD_SUCCESS) || (lastUpdateResult == UPD_NO_CHANGE && firstLoad)) {
+        drawStationBoard(); // Something changed so redraw the board.
+        dumpBoardToSerial(); 
+      }
     } else if (lastUpdateResult == UPD_UNAUTHORISED) showTokenErrorScreen();
 	  else if (lastUpdateResult == UPD_DATA_ERROR) {
 	    if (noDataLoaded) showNoDataScreen();
@@ -976,7 +1038,10 @@ void undergroundArrivalsLoop() {
 
   if (millis()>nextDataUpdate && !isScrollingService && !isScrollingPrimary && !isSleeping && wifiConnected) {
     if (getUndergroundBoard()) {
-      if (lastUpdateResult == UPD_SUCCESS || lastUpdateResult == UPD_NO_CHANGE) drawUndergroundBoard();
+      if ((lastUpdateResult == UPD_SUCCESS) || (lastUpdateResult == UPD_NO_CHANGE && firstLoad)) {
+         drawUndergroundBoard();
+         dumpBoardToSerial();
+      }
     } else if (lastUpdateResult == UPD_UNAUTHORISED) showTokenErrorScreen();
 	  else if (lastUpdateResult == UPD_DATA_ERROR) {
 	    if (noDataLoaded) showNoDataScreen();
@@ -1110,7 +1175,10 @@ void busDeparturesLoop() {
 
   if (millis()>nextDataUpdate && !isScrollingService && !isScrollingPrimary && !isSleeping && wifiConnected) {
     if (getBusDeparturesBoard()) {
-      if (lastUpdateResult == UPD_SUCCESS || lastUpdateResult == UPD_NO_CHANGE) drawBusDeparturesBoard(); // Something changed so redraw the board.
+      if ((lastUpdateResult == UPD_SUCCESS) || (lastUpdateResult == UPD_NO_CHANGE && firstLoad)) {
+          drawBusDeparturesBoard(); // Something changed so redraw the board.
+          dumpBoardToSerial();
+      }
     } else if (lastUpdateResult == UPD_UNAUTHORISED) showTokenErrorScreen();
 	  else if (lastUpdateResult == UPD_DATA_ERROR) {
 	    if (noDataLoaded) showNoDataScreen();

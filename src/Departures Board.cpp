@@ -455,9 +455,11 @@ void setup(void) {
       LOG_INFO("Firmware updates found. Attempting update...");
       checkForFirmwareUpdate();
     } else {
-      LOG_WARN(String("Firmware update check failed: ") + ghUpdate.getLastError());
+      char errLog[128];
+      snprintf(errLog, sizeof(errLog), "Firmware update check failed: %s", ghUpdate.getLastError());
+      LOG_WARN(errLog);
       for (int i=15;i>=0;i--) {
-        showUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError().c_str(),"",i,false);
+        showUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError(),"",i,false);
         delay(1000);
       }
       u8g2.clearDisplay();

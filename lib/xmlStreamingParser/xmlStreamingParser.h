@@ -30,6 +30,10 @@
  *
  * Exported Functions/Classes:
  * - class xmlStreamingParser: Emits XML tags and data events to an attached xmlListener.
+ *   - xmlStreamingParser(): Constructor.
+ *   - parse(): Feeds a single byte into the streaming parser's state machine.
+ *   - setListener(): Attaches an interface implementation to handle XML parsing events.
+ *   - reset(): Reinitializes the parser state back to zero to begin a new document.
  */
 #pragma once
 

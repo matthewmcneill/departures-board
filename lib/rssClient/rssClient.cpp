@@ -12,21 +12,20 @@
  * Description: Implementation of the RSS XML client.
  *
  * Exported Functions/Classes:
- * - rssClient::trim: Trims leading and trailing whitespace from a character array.
- * - rssClient::loadFeed: Connects to the URL and extracts RSS item titles.
- * - rssClient::getLastError: Retrieves the last error message.
- * - rssClient::startTag: XML handler triggered for a start tag.
- * - rssClient::endTag: XML handler triggered for an end tag.
- * - rssClient::parameter: XML handler triggered for a parameter.
- * - rssClient::value: XML handler triggered for a text value.
- * - rssClient::attribute: XML handler triggered for an attribute.
+ * - class rssClient: Streaming XML parser and HTTP client to fetch and decode RSS feeds.
+ *   - rssClient(): Constructor.
+ *   - loadFeed(): Connects to URL, fetches RSS feed, and extracts item titles.
+ *   - getLastError(): Retrieves the last error message from RSS fetch operations.
+ *   - rssTitle: Attribute array containing the fetched RSS item titles.
+ *   - numRssTitles: Attribute storing the number of fetched RSS titles.
  */
 
 #include <rssClient.h>
 #include <xmlListener.h>
-#include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <HTTPClient.h>
 #include <WiFiClient.h>
+#include <Logger.hpp>
 
 rssClient::rssClient() {}
 
@@ -63,7 +62,7 @@ int rssClient::loadFeed(String url) {
     int redirectCount = 0;
     const int maxRedirects = 5;
 
-    lastErrorMessage = F("Success");
+    strcpy(lastErrorMessage, "Success");
     clientSecure.setInsecure();
     http.setReuse(false);
     numRssTitles = 0;
@@ -96,11 +95,11 @@ int rssClient::loadFeed(String url) {
 
             http.end();
             if (millis() >= dataSendTimeout) {
-                lastErrorMessage += F("Timed out during data receive operation - ");
-                lastErrorMessage += String(dataReceived) + F(" bytes received");
+                snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Timed out during data receive operation - %ld bytes received", dataReceived);
+                LOG_WARN(lastErrorMessage);
                 return UPD_TIMEOUT;
             }
-            lastErrorMessage = "Success: " + String(dataReceived) + F(" bytes took ") + String(millis()-perfTimer) + F("ms with ") + String(redirectCount) + F(" redirects");
+            snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Success: %ld bytes took %lums with %d redirects", dataReceived, static_cast<unsigned long>(millis()-perfTimer), redirectCount);
             return UPD_SUCCESS;
             break;
         } else if (httpCode == HTTP_CODE_MOVED_PERMANENTLY ||
@@ -111,14 +110,16 @@ int rssClient::loadFeed(String url) {
             String newUrl = http.getLocation();
             http.end();  // End current request before retrying
             if (newUrl.length() == 0) {
-                lastErrorMessage = F("HTTP Redirect without Location header!");
+                strcpy(lastErrorMessage, "HTTP Redirect without Location header!");
+                LOG_WARN(lastErrorMessage);
                 return UPD_HTTP_ERROR;
                 break;
             }
             url = newUrl;
             redirectCount++;
         } else {
-            lastErrorMessage = "GET failed, error: " + String(httpCode) + " " + http.errorToString(httpCode);
+            snprintf(lastErrorMessage, sizeof(lastErrorMessage), "GET failed, error: %d %s", httpCode, http.errorToString(httpCode).c_str());
+            LOG_WARN(lastErrorMessage);
             http.end();
             return UPD_HTTP_ERROR;
             break;
@@ -132,7 +133,7 @@ int rssClient::loadFeed(String url) {
  * @brief Retrieves the last error message encountered during RSS fetch operations.
  * @return A string containing the error description.
  */
-String rssClient::getLastError() {
+const char* rssClient::getLastError() {
     return lastErrorMessage;
 }
 

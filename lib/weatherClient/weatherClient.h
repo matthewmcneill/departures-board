@@ -13,6 +13,10 @@
  *
  * Exported Functions/Classes:
  * - class weatherClient: Streaming JSON parser and HTTP client to fetch weather data.
+ *   - weatherClient(): Constructor.
+ *   - updateWeather(): Connects to OpenWeatherMap API, retrieves current weather, and parses JSON.
+ *   - currentWeather: Attribute containing the formatted current weather description.
+ *   - lastErrorMsg: Attribute containing the last error message from API operations.
  */
 #pragma once
 #include <JsonListener.h>
@@ -32,7 +36,7 @@ class weatherClient: public JsonListener {
 
     public:
         String currentWeather = "";
-        String lastErrorMsg = "";
+        char lastErrorMsg[128];
 
         weatherClient();
 

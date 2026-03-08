@@ -13,6 +13,9 @@
  *
  * Exported Functions/Classes:
  * - class md5Utils: Wrapper class for MD5 generation operations.
+ *   - md5Utils(): Constructor.
+ *   - calculateFileMD5(): Calculates the MD5 hash of a specified file on the LittleFS system.
+ *   - base64ToHex(): Converts a base64 encoded MD5 hash into a hex string.
  */
 
 #pragma once

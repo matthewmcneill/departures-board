@@ -13,6 +13,11 @@
  *
  * Exported Functions/Classes:
  * - class busDataClient: Parsing and HTML scraping engine for bus data.
+ *   - busDataClient(): Constructor.
+ *   - getStopLongName(): Retrieves the official long name of a bus stop.
+ *   - cleanFilter(): Normalizes a user-provided filter string.
+ *   - updateDepartures(): Scrapes and parses the HTML departures board.
+ *   - lastErrorMsg: Attribute containing the last error message from API operations.
  * - busClientCallback: Type definition for progress callbacks.
  */
 #pragma once
@@ -97,7 +102,7 @@ class busDataClient: public JsonListener {
         bool serviceMatchesFilter(const char* filter, const char* serviceId);
 
     public:
-        String lastErrorMsg = "";
+        char lastErrorMsg[128];
 
         busDataClient();
 /**

@@ -12,21 +12,17 @@
  * Description: Implementation of the OpenWeatherMap JSON client.
  *
  * Exported Functions/Classes:
- * - weatherClient::updateWeather: Connects to API and updates current weather properties.
- * - weatherClient::whitespace: JSON whitespace handler.
- * - weatherClient::startDocument: JSON handler triggered at start of document.
- * - weatherClient::key: JSON handler triggered for each object key.
- * - weatherClient::value: JSON handler triggered for each key value.
- * - weatherClient::endArray: JSON handler triggered when exiting an array.
- * - weatherClient::endObject: JSON handler triggered when exiting an object.
- * - weatherClient::endDocument: JSON handler triggered at end of document.
- * - weatherClient::startArray: JSON handler triggered when entering an array.
- * - weatherClient::startObject: JSON handler triggered when entering an object.
+ * - class weatherClient: Streaming JSON parser and HTTP client to fetch weather data.
+ *   - weatherClient(): Constructor.
+ *   - updateWeather(): Connects to OpenWeatherMap API, retrieves current weather, and parses JSON.
+ *   - currentWeather: Attribute containing the formatted current weather description.
+ *   - lastErrorMsg: Attribute containing the last error message from API operations.
  */
 
 #include <weatherClient.h>
 #include <JsonListener.h>
 #include <WiFiClient.h>
+#include <Logger.hpp>
 
 weatherClient::weatherClient() {}
 
@@ -40,7 +36,7 @@ weatherClient::weatherClient() {}
 bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
 
     unsigned long perfTimer = millis();
-    lastErrorMsg = "";
+    strcpy(lastErrorMsg, "");
 
     JsonStreamingParser parser;
     parser.setListener(this);
@@ -51,7 +47,8 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
         delay(200);
     }
     if (retryCounter>=15) {
-        lastErrorMsg += F("Connection timeout");
+        strcpy(lastErrorMsg, "Connection timeout");
+        LOG_WARN(lastErrorMsg);
         return false;
     }
 
@@ -65,7 +62,8 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
     if (!httpClient.available()) {
         // no response within 8 seconds so exit
         httpClient.stop();
-        lastErrorMsg += F("Response timeout (GET)");
+        strcpy(lastErrorMsg, "Response timeout (GET)");
+        LOG_WARN(lastErrorMsg);
         return false;
     }
 
@@ -75,11 +73,15 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
         httpClient.stop();
 
         if (statusLine.indexOf(F("401")) > 0) {
-            lastErrorMsg = F("Not Authorized");
+            strcpy(lastErrorMsg, "Not Authorized");
+            LOG_ERROR(lastErrorMsg);
         } else if (statusLine.indexOf(F("500")) > 0) {
-            lastErrorMsg = F("Server Error");
+            strcpy(lastErrorMsg, "Server Error");
+            LOG_WARN(lastErrorMsg);
         } else {
-            lastErrorMsg = statusLine;
+            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg)-1);
+            lastErrorMsg[sizeof(lastErrorMsg)-1] = '\0';
+            LOG_WARN(lastErrorMsg);
         }
         return false;
     }
@@ -105,11 +107,12 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
     }
     httpClient.stop();
     if (millis() >= dataSendTimeout) {
-        lastErrorMsg += F("Data timeout");
+        strcpy(lastErrorMsg, "Data timeout");
+        LOG_WARN(lastErrorMsg);
         return false;
     }
 
-    lastErrorMsg="Success - took " + String(millis()-perfTimer) + F("ms");
+    snprintf(lastErrorMsg, sizeof(lastErrorMsg), "Success - took %lums", static_cast<unsigned long>(millis()-perfTimer));
 
     currentWeather = description + " " + String((int)round(temperature)) + F("\xB0 Wind: ") + String((int)round(windSpeed)) + F("mph");
     return true;

@@ -26,6 +26,13 @@
  *
  * Exported Functions/Classes:
  * - class HTTPUpdate: Core class handling the HTTP request, redirects, parsing MD5 headers, and writing to flash.
+ *   - HTTPUpdate(): Constructor.
+ *   - ~HTTPUpdate(): Destructor.
+ *   - rebootOnUpdate(): Configures whether to reboot on update success.
+ *   - handleUpdate(): Handles the full OTA update process from a custom URL.
+ *   - onStart(), onEnd(), onError(), onProgress(): Registers callback functions for update events.
+ *   - getLastError(): Retrieves the last error code encountered.
+ *   - getLastErrorString(): Retrieves a human-readable string for the last error.
  */
 
  #ifndef ___HTTP_UPDATE_H___

@@ -13,6 +13,11 @@
  *
  * Exported Functions/Classes:
  * - class xmlListener: Defines the callback interface for handling XML tags, text, and attributes.
+ *   - startTag(): Triggered when a new opening XML tag is encountered.
+ *   - endTag(): Triggered when a closing XML tag is encountered.
+ *   - parameter(): Triggered when an entity or parameter is encountered.
+ *   - value(): Triggered when inner text/value of an XML node is parsed.
+ *   - attribute(): Triggered when an attribute of an XML tag is parsed.
  */
 
 #pragma once

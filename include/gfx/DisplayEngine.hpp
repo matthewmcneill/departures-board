@@ -1606,3 +1606,50 @@ void drawBusDeparturesBoard() {
   u8g2.sendBuffer();
 }
 
+/**
+ * @brief Dump the current station board data to the serial monitor for debugging
+ */
+void dumpBoardToSerial() {
+#ifdef ENABLE_DEBUG_LOG
+  LOG_DEBUG("--- BOARD DATA DUMP ---");
+  
+  String locationName = String(station.location);
+  if (boardMode == MODE_TUBE) locationName = tubeName;
+  else if (boardMode == MODE_BUS) locationName = busName;
+  
+  LOG_DEBUG("Station/Stop: " + locationName);
+  if (station.numServices == 0) {
+    LOG_DEBUG("No scheduled services at this time.");
+  } else {
+    for (int i = 0; i < station.numServices; i++) {
+        String svcType = "[TRN]";
+        if (boardMode == MODE_TUBE) svcType = "[TFL]";
+        else if (boardMode == MODE_BUS) svcType = "[BUS]";
+        
+        String plat = (station.service[i].platform[0] && !hidePlatform) ? (" Plat " + String(station.service[i].platform)) : "";
+        String etd = String(station.service[i].etd);
+        if (boardMode == MODE_TUBE) {
+            etd = String(station.service[i].timeToStation / 60) + " mins";
+            if (station.service[i].timeToStation <= 60) etd = "Due";
+        }
+        
+        LOG_DEBUG(String(i+1) + ". " + svcType + " " + String(station.service[i].sTime) + plat + " to " + String(station.service[i].destination) + " - " + etd);
+        
+        if (station.service[i].isCancelled) {
+            LOG_DEBUG("   -> CANCELLED");
+        } else if (station.service[i].via[0]) {
+            LOG_DEBUG("   -> " + String(station.service[i].via));
+        }
+    }
+  }
+
+  if (messages.numMessages > 0) {
+    LOG_DEBUG("--- MESSAGES ---");
+    for (int i = 0; i < messages.numMessages; i++) {
+        LOG_DEBUG(String(i+1) + ": " + String(messages.messages[i]));
+    }
+  }
+  LOG_DEBUG("-----------------------");
+#endif
+}
+

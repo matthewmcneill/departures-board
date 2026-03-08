@@ -13,6 +13,9 @@
  *
  * Exported Functions/Classes:
  * - class TfLdataClient: Main JSON parsing and request engine for TfL data.
+ *   - TfLdataClient(): Constructor.
+ *   - updateArrivals(): Connects to TfL API, requests arrival times and disruptions, and parses JSON.
+ *   - lastErrorMsg: Attribute containing the last error message from API operations.
  * - tflClientCallback: Type definition for progress callbacks.
  */
 #pragma once
@@ -75,7 +78,7 @@ class TfLdataClient: public JsonListener {
         static bool compareTimes(const ugService& a, const ugService& b);
 
     public:
-        String lastErrorMsg = "";
+        char lastErrorMsg[128];
 
         TfLdataClient();
 /**

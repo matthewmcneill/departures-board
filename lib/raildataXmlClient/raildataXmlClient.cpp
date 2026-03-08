@@ -12,25 +12,19 @@
  * Description: Implementation of the National Rail SOAP XML client.
  *
  * Exported Functions/Classes:
- * - raildataXmlClient::compareTimes: Custom comparator to sort services chronologically.
- * - raildataXmlClient::init: Fetches the SOAP host and API endpoint URL from WSDL definitions.
- * - raildataXmlClient::removeHtmlTags: Strips all HTML tags from a character array.
- * - raildataXmlClient::replaceWord: Replaces all occurrences of a target string with a replacement string in-place.
- * - raildataXmlClient::pruneFromPhrase: Truncates a string from the first occurrence of a target phrase.
- * - raildataXmlClient::fixFullStop: Ensures a string ends with exactly one full stop.
- * - raildataXmlClient::trim: Trims leading and trailing whitespace from a character array.
- * - raildataXmlClient::equalsIgnoreCase: Compares two character arrays case-insensitively.
- * - raildataXmlClient::serviceMatchesFilter: Evaluates if a given service matches the configured platform filter.
- * - raildataXmlClient::cleanFilter: Normalizes a user-provided filter string.
- * - raildataXmlClient::updateDepartures: Scrapes and parses the XML departure board.
- * - raildataXmlClient::getLastError: Retrieves the last error message.
- * - raildataXmlClient::deleteService: Removes a service from the array by its index.
- * - raildataXmlClient::sanitiseData: Cleans HTML tags, ampersands, and unwanted text from scraped data payloads.
+ * - class raildataXmlClient: Streaming XML parser and SOAP client for National Rail data.
+ *   - raildataXmlClient(): Constructor.
+ *   - init(): Fetches the SOAP host and API endpoint URL from WSDL definitions.
+ *   - cleanFilter(): Normalizes a user-provided platform filter string.
+ *   - updateDepartures(): Executes SOAP request, downloads and parses departure XML.
+ *   - getLastError(): Retrieves the last error message.
+ * - rdCallback: Type definition for progress callbacks.
  */
 
 #include <raildataXmlClient.h>
 #include <xmlListener.h>
 #include <WiFiClientSecure.h>
+#include <Logger.hpp>
 #include <stationData.h>
 
 raildataXmlClient::raildataXmlClient() {
@@ -327,7 +321,7 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
 
     unsigned long perfTimer=millis();
     bool bChunked = false;
-    lastErrorMessage = "";
+    strcpy(lastErrorMessage, "");
 
     // Reset the counters
     xStation.numServices=0;
@@ -368,7 +362,8 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
         retryCounter++;
     }
     if(retryCounter>=10) {
-        lastErrorMessage = F("Timed out, no response from connect");    // No response within 3s
+        strcpy(lastErrorMessage, "Timed out, no response from connect");    // No response within 3s
+        LOG_WARN(lastErrorMessage);
         return UPD_NO_RESPONSE;
     }
 
@@ -397,7 +392,8 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
         delay(100);
         retryCounter++;
         if (retryCounter >= 30) {
-            lastErrorMessage = F("Timed out (GET)");
+            strcpy(lastErrorMessage, "Timed out (GET)");
+            LOG_WARN(lastErrorMessage);
             return UPD_TIMEOUT;     // No response within 3s
         }
     }
@@ -410,17 +406,25 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
             if (line.indexOf(F("200 OK")) == -1) {
                 httpsClient.stop();
                 if (line.indexOf(F("401")) > 0) {
-                    lastErrorMessage = line;
+                    strcpy(lastErrorMessage, "UNAUTHORISED: ");
+                    strncat(lastErrorMessage, line.c_str(), sizeof(lastErrorMessage) - strlen(lastErrorMessage) - 1);
+                    LOG_ERROR(lastErrorMessage);
                     return UPD_UNAUTHORISED;
                 } else if (line.indexOf(F("500")) > 0) {
-                    lastErrorMessage = line;
+                    strcpy(lastErrorMessage, "DATA ERROR: ");
+                    strncat(lastErrorMessage, line.c_str(), sizeof(lastErrorMessage) - strlen(lastErrorMessage) - 1);
+                    LOG_WARN(lastErrorMessage);
                     return UPD_DATA_ERROR;
                 } else {
-                    lastErrorMessage = line;
+                    strcpy(lastErrorMessage, "HTTP ERROR: ");
+                    strncat(lastErrorMessage, line.c_str(), sizeof(lastErrorMessage) - strlen(lastErrorMessage) - 1);
+                    LOG_WARN(lastErrorMessage);
                     return UPD_HTTP_ERROR;
                 }
             }
-        } else if (line.startsWith(F("Transfer-Encoding:")) && line.indexOf(F("chunked")) >= 0) bChunked=true;
+        } else if (line.startsWith(F("Transfer-Encoding:")) && line.indexOf(F("chunked")) >= 0) {
+            bChunked = true;
+        }
         if (line == F("\r")) {
             // Headers received
             break;
@@ -467,16 +471,23 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
     }
 
     httpsClient.stop();
-    if (bChunked) lastErrorMessage = F("WARNING: Chunked response! ");
+    if (bChunked) {
+        strcpy(lastErrorMessage, "WARNING: Chunked response! ");
+        LOG_WARN(lastErrorMessage);
+    }
+
     if (millis() >= dataSendTimeout) {
-        lastErrorMessage += F("Timed out during data receive operation - ");
-        lastErrorMessage += String(dataReceived) + F(" bytes received");
+        if (!bChunked) strcpy(lastErrorMessage, "");
+        snprintf(lastErrorMessage + strlen(lastErrorMessage), sizeof(lastErrorMessage) - strlen(lastErrorMessage), 
+                 "Timed out during data receive operation - %d bytes received", dataReceived);
+        LOG_WARN(lastErrorMessage);
         return UPD_TIMEOUT;
     }
 
-    if (!xStation.location[0]) {
-        // We didn't get a location back so probably failed
-        lastErrorMessage += F("Data incomplete - no location in response");
+    if (!xStation.numServices) {
+        if (!bChunked) strcpy(lastErrorMessage, "");
+        strncat(lastErrorMessage, "Data incomplete - no location in response", sizeof(lastErrorMessage) - strlen(lastErrorMessage) - 1);
+        LOG_WARN(lastErrorMessage);
         return UPD_DATA_ERROR;
     }
     if (filterPlatforms && !keepRoute && xStation.numServices) xStation.numServices--;   // Last route added needs filtering out
@@ -559,10 +570,10 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
 
     Xcb(3,xStation.numServices);
     if (noUpdate) {
-        lastErrorMessage += "Success (No Changes) - data [" + String(dataReceived) + F("] load took ") + String(millis()-perfTimer) + F("ms");
+        snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Success (No Changes) - data [%d] load took %lu ms", dataReceived, (unsigned long)(millis()-perfTimer));
         return UPD_NO_CHANGE;
     } else {
-        lastErrorMessage += "Success - data [" + String(dataReceived) + F("] took ") + String(millis()-perfTimer) + F("ms");
+        snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Success - data [%d] took %lu ms", dataReceived, (unsigned long)(millis()-perfTimer));
         return UPD_SUCCESS;
     }
 }
@@ -571,7 +582,7 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
  * @brief Retrieves the last error message encountered during API operations.
  * @return A string containing the error.
  */
-String raildataXmlClient::getLastError() {
+const char* raildataXmlClient::getLastError() {
     return lastErrorMessage;
 }
 

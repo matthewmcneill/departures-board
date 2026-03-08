@@ -12,25 +12,18 @@
  * Description: Implementation of the Transport for London (TfL) Unified API client.
  *
  * Exported Functions/Classes:
- * - TfLdataClient::updateArrivals: Connects to the TfL API, requests arrival times, and parses the JSON response.
- * - TfLdataClient::pruneFromPhrase: Trims a character array by terminating it at the first occurrence of a target phrase.
- * - TfLdataClient::replaceWord: Replaces all occurrences of a target string with a replacement string in-place.
- * - TfLdataClient::compareTimes: Comparator function to sort arrival times.
- * - TfLdataClient::whitespace: JSON whitespace handler.
- * - TfLdataClient::startDocument: JSON handler triggered at start of document.
- * - TfLdataClient::key: JSON handler triggered for each object key.
- * - TfLdataClient::value: JSON handler triggered for each key value.
- * - TfLdataClient::endArray: JSON handler triggered when exiting an array.
- * - TfLdataClient::endObject: JSON handler triggered when exiting an object.
- * - TfLdataClient::endDocument: JSON handler triggered at end of document.
- * - TfLdataClient::startArray: JSON handler triggered when entering an array.
- * - TfLdataClient::startObject: JSON handler triggered when entering an object.
+ * - class TfLdataClient: Main JSON parsing and request engine for TfL data.
+ *   - TfLdataClient(): Constructor.
+ *   - updateArrivals(): Connects to TfL API, requests arrival times and disruptions, and parses JSON.
+ *   - lastErrorMsg: Attribute containing the last error message from API operations.
+ * - tflClientCallback: Type definition for progress callbacks.
  */
 
 #include <TfLdataClient.h>
-#include <JsonListener.h>
 #include <WiFiClientSecure.h>
+#include <JsonListener.h>
 #include <stationData.h>
+#include <Logger.hpp>
 
 TfLdataClient::TfLdataClient() {}
 
@@ -48,7 +41,7 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     unsigned long perfTimer=millis();
     long dataReceived = 0;
     bool bChunked = false;
-    lastErrorMsg = "";
+    strcpy(lastErrorMsg, "");
 
     JsonStreamingParser parser;
     parser.setListener(this);
@@ -64,7 +57,8 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
         delay(200);
     }
     if (retryCounter>=10) {
-        lastErrorMsg = F("Connection timeout");
+        strcpy(lastErrorMsg, "Connection timeout");
+        LOG_WARN(lastErrorMsg);
         return UPD_NO_RESPONSE;
     }
     String request = "GET /StopPoint/" + String(locationId) + F("/Arrivals?app_key=") + apiKey + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
@@ -79,7 +73,8 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     if (!httpsClient.available()) {
         // no response within 8 seconds so exit
         httpsClient.stop();
-        lastErrorMsg = F("Response timeout");
+        strcpy(lastErrorMsg, "Response timeout");
+        LOG_WARN(lastErrorMsg);
         return UPD_TIMEOUT;
     }
 
@@ -88,14 +83,19 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
         httpsClient.stop();
 
-        if (statusLine.indexOf(F("401")) > 0 || statusLine.indexOf(F("429")) > 0) {
-            lastErrorMsg = F("Not Authorized");
+        if (statusLine.indexOf(F("401")) > 0) {
+            strcpy(lastErrorMsg, "Not Authorized");
+            LOG_ERROR(lastErrorMsg);
             return UPD_UNAUTHORISED;
         } else if (statusLine.indexOf(F("500")) > 0) {
-            lastErrorMsg = statusLine;
+            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg) - 1);
+            lastErrorMsg[sizeof(lastErrorMsg) - 1] = '\0';
+            LOG_WARN(lastErrorMsg);
             return UPD_DATA_ERROR;
         } else {
-            lastErrorMsg = statusLine;
+            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg) - 1);
+            lastErrorMsg[sizeof(lastErrorMsg) - 1] = '\0';
+            LOG_WARN(lastErrorMsg);
             return UPD_HTTP_ERROR;
         }
     }
@@ -132,8 +132,8 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     }
     httpsClient.stop();
     if (millis() >= dataSendTimeout) {
-        lastErrorMsg = F("Timed out during data receive operation - ");
-        lastErrorMsg += String(dataReceived) + F(" bytes received");
+        strcpy(lastErrorMsg, "Timed out during data receive operation");
+        LOG_WARN(lastErrorMsg);
         return UPD_TIMEOUT;
     }
 
@@ -143,7 +143,7 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
         delay(200);
     }
     if (retryCounter>=10) {
-        lastErrorMsg = F("Connection timeout [msgs]");
+        strcpy(lastErrorMsg, "Connection timeout [msgs]");
         return UPD_NO_RESPONSE;
     }
     request = "GET /StopPoint/" + String(locationId) + F("/Disruption?getFamily=true&flattenResponse=true&app_key=") + apiKey + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
@@ -156,7 +156,7 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     if (!httpsClient.available()) {
         // no response within 8 seconds so exit
         httpsClient.stop();
-        lastErrorMsg = F("Response timeout [msgs]");
+        strcpy(lastErrorMsg, "Response timeout [msgs]");
         return UPD_TIMEOUT;
     }
 
@@ -166,13 +166,14 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
         httpsClient.stop();
 
         if (statusLine.indexOf(F("401")) > 0) {
-            lastErrorMsg = F("Not Authorized [msgs]");
+            strcpy(lastErrorMsg, "Not Authorized [msgs]");
             return UPD_UNAUTHORISED;
         } else if (statusLine.indexOf(F("500")) > 0) {
-            lastErrorMsg = F("Server Error [msgs]");
+            strcpy(lastErrorMsg, "Server Error [msgs]");
             return UPD_DATA_ERROR;
         } else {
-            lastErrorMsg = statusLine;
+            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg) - 1);
+            lastErrorMsg[sizeof(lastErrorMsg) - 1] = '\0';
             return UPD_HTTP_ERROR;
         }
     }
@@ -205,8 +206,7 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     }
     httpsClient.stop();
     if (millis() >= dataSendTimeout) {
-        lastErrorMsg = F("Timed out during msgs data receive operation - ");
-        lastErrorMsg += String(dataReceived) + F(" bytes received");
+        snprintf(lastErrorMsg, sizeof(lastErrorMsg), "Timed out during msgs data receive operation - %d bytes received", dataReceived);
         return UPD_TIMEOUT;
     }
 
@@ -244,14 +244,15 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     messages->numMessages = xMessages.numMessages;
     for (int i=0;i<xMessages.numMessages;i++) strcpy(messages->messages[i],xMessages.messages[i]);
 
-    if (bChunked) lastErrorMsg = F("WARNING: Chunked response! ");
+    if (bChunked) strcpy(lastErrorMsg, "WARNING: Chunked response! ");
+
     if (station->boardChanged) {
-        lastErrorMsg += F("SUCCESS [Primary Service Changed] Update took: ");
-        lastErrorMsg += String(millis() - perfTimer) + F("ms [") + String(dataReceived) + F("]");
+        snprintf(lastErrorMsg + strlen(lastErrorMsg), sizeof(lastErrorMsg) - strlen(lastErrorMsg), 
+                 "SUCCESS [Primary Service Changed] Update took: %lu ms [%d]", (unsigned long)(millis() - perfTimer), dataReceived);
         return UPD_SUCCESS;
     } else {
-        lastErrorMsg += F("SUCCESS Update took: ");
-        lastErrorMsg += String(millis() - perfTimer) + F("ms [") + String(dataReceived) + F("]");
+        snprintf(lastErrorMsg + strlen(lastErrorMsg), sizeof(lastErrorMsg) - strlen(lastErrorMsg), 
+                 "SUCCESS Update took: %lu ms [%d]", (unsigned long)(millis() - perfTimer), dataReceived);
         return UPD_NO_CHANGE;
     }
 }

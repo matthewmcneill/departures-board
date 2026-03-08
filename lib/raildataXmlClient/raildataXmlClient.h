@@ -13,6 +13,11 @@
  *
  * Exported Functions/Classes:
  * - class raildataXmlClient: Streaming XML parser and SOAP client for National Rail data.
+ *   - raildataXmlClient(): Constructor.
+ *   - init(): Fetches the SOAP host and API endpoint URL from WSDL definitions.
+ *   - cleanFilter(): Normalizes a user-provided platform filter string.
+ *   - updateDepartures(): Executes SOAP request, downloads and parses departure XML.
+ *   - getLastError(): Retrieves the last error message.
  * - rdCallback: Type definition for progress callbacks.
  */
 
@@ -79,7 +84,7 @@ class raildataXmlClient: public xmlListener {
         int id=0;
         int coaches=0;
 
-        String lastErrorMessage = "";
+        char lastErrorMessage[128];
         bool firstDataLoad;
         bool endXml;
 
@@ -210,5 +215,5 @@ class raildataXmlClient: public xmlListener {
  * @brief Retrieves the last error message encountered during API operations.
  * @return A string containing the error.
  */
-        String getLastError();
+        const char* getLastError();
 };

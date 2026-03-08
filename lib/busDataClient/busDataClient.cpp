@@ -12,29 +12,19 @@
  * Description: Implementation of the bustimes.org client.
  *
  * Exported Functions/Classes:
- * - busDataClient::stripTag: Extracts the inner text from an HTML tag string.
- * - busDataClient::replaceWord: Replaces all occurrences of a target string with a replacement string in-place.
- * - busDataClient::trim: Trims leading and trailing whitespace from a character array.
- * - busDataClient::equalsIgnoreCase: Compares two character arrays case-insensitively.
- * - busDataClient::serviceMatchesFilter: Checks if a specific bus service ID matches a filter list.
- * - busDataClient::cleanFilter: Normalizes a user-provided filter string.
- * - busDataClient::updateDepartures: Scrapes and parses the HTML departures board.
- * - busDataClient::getStopLongName: Retrieves the official long name of a bus stop.
- * - busDataClient::whitespace: JSON whitespace handler.
- * - busDataClient::startDocument: JSON handler triggered at start of document.
- * - busDataClient::key: JSON handler triggered for each object key.
- * - busDataClient::value: JSON handler triggered for each key value.
- * - busDataClient::endArray: JSON handler triggered when exiting an array.
- * - busDataClient::endObject: JSON handler triggered when exiting an object.
- * - busDataClient::endDocument: JSON handler triggered at end of document.
- * - busDataClient::startArray: JSON handler triggered when entering an array.
- * - busDataClient::startObject: JSON handler triggered when entering an object.
+ * - class busDataClient: Parsing and HTML scraping engine for bus data.
+ *   - busDataClient(): Constructor.
+ *   - getStopLongName(): Retrieves the official long name of a bus stop.
+ *   - cleanFilter(): Normalizes a user-provided filter string.
+ *   - updateDepartures(): Scrapes and parses the HTML departures board.
+ *   - lastErrorMsg: Attribute containing the last error message from API operations.
+ * - busClientCallback: Type definition for progress callbacks.
  */
 
 #include <busDataClient.h>
-#include <JsonListener.h>
 #include <WiFiClientSecure.h>
-#include <stationData.h>
+#include <JsonListener.h>
+#include <Logger.hpp>
 
 busDataClient::busDataClient() {}
 
@@ -181,7 +171,7 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
     unsigned long perfTimer=millis();
     long dataReceived = 0;
     bool bChunked = false;
-    lastErrorMsg = "";
+    strcpy(lastErrorMsg, "");
 
     WiFiClientSecure httpsClient;
     httpsClient.setInsecure();
@@ -194,7 +184,8 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
         delay(200);
     }
     if (retryCounter>=10) {
-        lastErrorMsg = F("Connection timeout");
+        strcpy(lastErrorMsg, "Connection timeout");
+        LOG_WARN(lastErrorMsg);
         return UPD_NO_RESPONSE;
     }
     String request = "GET /stops/" + String(locationId) + F("/departures HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
@@ -209,7 +200,8 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
     if (!httpsClient.available()) {
         // no response within 8 seconds so exit
         httpsClient.stop();
-        lastErrorMsg = F("Response timeout");
+        strcpy(lastErrorMsg, "Response timeout");
+        LOG_WARN(lastErrorMsg);
         return UPD_TIMEOUT;
     }
 
@@ -219,13 +211,18 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
         httpsClient.stop();
 
         if (statusLine.indexOf(F("401")) > 0 || statusLine.indexOf(F("429")) > 0) {
-            lastErrorMsg = F("Not Authorized");
+            strcpy(lastErrorMsg, "Not Authorized");
+            if (statusLine.indexOf(F("401")) > 0) LOG_ERROR(lastErrorMsg); else LOG_WARN(lastErrorMsg);
             return UPD_UNAUTHORISED;
         } else if (statusLine.indexOf(F("500")) > 0) {
-            lastErrorMsg = statusLine;
+            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg)-1);
+            lastErrorMsg[sizeof(lastErrorMsg)-1] = '\0';
+            LOG_WARN(lastErrorMsg);
             return UPD_DATA_ERROR;
         } else {
-            lastErrorMsg = statusLine;
+            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg)-1);
+            lastErrorMsg[sizeof(lastErrorMsg)-1] = '\0';
+            LOG_WARN(lastErrorMsg);
             return UPD_HTTP_ERROR;
         }
     }
@@ -354,7 +351,8 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
 
     httpsClient.stop();
     if (millis() >= dataSendTimeout) {
-        lastErrorMsg = F("Timed out during msgs data receive operation");
+        strcpy(lastErrorMsg, "Timed out during msgs data receive operation");
+        LOG_WARN(lastErrorMsg);
         return UPD_TIMEOUT;
     }
 
@@ -384,14 +382,25 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
         strcpy(station->service[i].etd,xBusStop.service[i].expected);
     }
 
-    if (bChunked) lastErrorMsg = F("WARNING: Chunked response! ");
+    if (bChunked) {
+        strcpy(lastErrorMsg, "WARNING: Chunked response! ");
+        LOG_WARN(lastErrorMsg);
+    }
     if (station->boardChanged) {
-        lastErrorMsg += F("SUCCESS [Primary Service Changed] Update took: ");
-        lastErrorMsg += String(millis() - perfTimer) + F("ms [") + String(dataReceived) + F("]");
+        if (bChunked) {
+             strcat(lastErrorMsg, "SUCCESS [Primary Service Changed] Update took: ");
+        } else {
+             strcpy(lastErrorMsg, "SUCCESS [Primary Service Changed] Update took: ");
+        }
+        snprintf(lastErrorMsg + strlen(lastErrorMsg), sizeof(lastErrorMsg) - strlen(lastErrorMsg), "%lums [%ld]", static_cast<unsigned long>(millis() - perfTimer), dataReceived);
         return UPD_SUCCESS;
     } else {
-        lastErrorMsg += F("SUCCESS Update took: ");
-        lastErrorMsg += String(millis() - perfTimer) + F("ms [") + String(dataReceived) + F("]");
+        if (bChunked) {
+             strcat(lastErrorMsg, "SUCCESS Update took: ");
+        } else {
+             strcpy(lastErrorMsg, "SUCCESS Update took: ");
+        }
+        snprintf(lastErrorMsg + strlen(lastErrorMsg), sizeof(lastErrorMsg) - strlen(lastErrorMsg), "%lums [%ld]", static_cast<unsigned long>(millis() - perfTimer), dataReceived);
         return UPD_NO_CHANGE;
     }
 }
@@ -407,7 +416,7 @@ int busDataClient::getStopLongName(const char *locationId, char *locationName) {
     unsigned long perfTimer=millis();
     long dataReceived = 0;
     bool bChunked = false;
-    lastErrorMsg = "";
+    strcpy(lastErrorMsg, "");
 
     JsonStreamingParser parser;
     parser.setListener(this);
@@ -420,7 +429,8 @@ int busDataClient::getStopLongName(const char *locationId, char *locationName) {
         delay(200);
     }
     if (retryCounter>=15) {
-        lastErrorMsg = F("Connection timeout");
+        strcpy(lastErrorMsg, "Connection timeout");
+        LOG_WARN(lastErrorMsg);
         return UPD_NO_RESPONSE;
     }
     String request = "GET /api/stops/" + String(locationId) + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
@@ -433,7 +443,7 @@ int busDataClient::getStopLongName(const char *locationId, char *locationName) {
     if (!httpsClient.available()) {
         // no response within 8 seconds so exit
         httpsClient.stop();
-        lastErrorMsg = F("Response timeout");
+        strcpy(lastErrorMsg, "Response timeout");
         return UPD_TIMEOUT;
     }
 
@@ -443,13 +453,18 @@ int busDataClient::getStopLongName(const char *locationId, char *locationName) {
         httpsClient.stop();
 
         if (statusLine.indexOf(F("401")) > 0 || statusLine.indexOf(F("429")) > 0) {
-            lastErrorMsg = F("Not Authorized");
+            strcpy(lastErrorMsg, "Not Authorized");
+            if (statusLine.indexOf(F("401")) > 0) LOG_ERROR(lastErrorMsg); else LOG_WARN(lastErrorMsg);
             return UPD_UNAUTHORISED;
         } else if (statusLine.indexOf(F("500")) || statusLine.indexOf(F("404")) > 0) {
-            lastErrorMsg = statusLine;
+            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg)-1);
+            lastErrorMsg[sizeof(lastErrorMsg)-1] = '\0';
+            if (statusLine.indexOf(F("404")) > 0) LOG_ERROR(lastErrorMsg); else LOG_WARN(lastErrorMsg);
             return UPD_DATA_ERROR;
         } else {
-            lastErrorMsg = statusLine;
+            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg)-1);
+            lastErrorMsg[sizeof(lastErrorMsg)-1] = '\0';
+            LOG_WARN(lastErrorMsg);
             return UPD_HTTP_ERROR;
         }
     }
@@ -476,17 +491,24 @@ int busDataClient::getStopLongName(const char *locationId, char *locationName) {
     }
     httpsClient.stop();
     if (millis() >= dataSendTimeout) {
-        lastErrorMsg = F("Timed out during data receive operation - ");
-        lastErrorMsg += String(dataReceived) + F(" bytes received");
+        snprintf(lastErrorMsg, sizeof(lastErrorMsg), "Timed out during data receive operation - %ld bytes received", dataReceived);
+        LOG_WARN(lastErrorMsg);
         return UPD_TIMEOUT;
     }
 
     strncpy(locationName,longName.c_str(),sizeof(locationName)-1);
     locationName[sizeof(locationName)-1] = '\0';
 
-    if (bChunked) lastErrorMsg = F("WARNING: Chunked response! ");
-    lastErrorMsg += F("SUCCESS Update took: ");
-    lastErrorMsg += String(millis() - perfTimer) + F("ms [") + String(dataReceived) + F("]");
+    if (bChunked) {
+        strcpy(lastErrorMsg, "WARNING: Chunked response! ");
+        LOG_WARN(lastErrorMsg);
+    }
+    if (bChunked) {
+         strcat(lastErrorMsg, "SUCCESS Update took: ");
+    } else {
+         strcpy(lastErrorMsg, "SUCCESS Update took: ");
+    }
+    snprintf(lastErrorMsg + strlen(lastErrorMsg), sizeof(lastErrorMsg) - strlen(lastErrorMsg), "%lums [%ld]", static_cast<unsigned long>(millis() - perfTimer), dataReceived);
     return UPD_SUCCESS;
 }
 

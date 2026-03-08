@@ -14,3 +14,4 @@ error_log.txt
 # Compiled binaries
 *.bin
 *.elf
+build_output.txt

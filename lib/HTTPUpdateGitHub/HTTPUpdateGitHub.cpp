@@ -25,13 +25,22 @@
  * Description: Implementation of the GitHub OTA Update handler.
  *
  * Exported Functions/Classes:
- * - HTTPUpdate::handleUpdate: Main routine to process redirects, headers, and the binary stream.
- * - HTTPUpdate::runUpdate: Uses the ESP32 Update framework to write the stream to flash partitions.
- * - HTTPUpdate::getLastError: Retrieves the last error code encountered.
- * - HTTPUpdate::getLastErrorString: Retrieves a human-readable string for the last error.
+ * - class HTTPUpdate: Core class handling the HTTP request, redirects, parsing MD5 headers, and writing to flash.
+ *   - HTTPUpdate(): Constructor.
+ *   - ~HTTPUpdate(): Destructor.
+ *   - rebootOnUpdate(): Configures whether to reboot on update success.
+ *   - handleUpdate(): Handles the full OTA update process from a custom URL.
+ *   - onStart(), onEnd(), onError(), onProgress(): Registers callback functions for update events.
+ *   - getLastError(): Retrieves the last error code encountered.
+ *   - getLastErrorString(): Retrieves a human-readable string for the last error.
  */
 
  #include <HTTPUpdateGitHub.h>
+#include <Update.h>
+#include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <Logger.hpp>
  #include <StreamString.h>
 
  #include <esp_partition.h>
@@ -128,7 +137,7 @@
 
      while (redirectCount < maxRedirects) {
 
-        log_d("URL: %s\n",url.c_str());
+        LOG_DEBUG("URL: " + url);
         if(!http.begin(client, url))
         {
             return HTTP_UPDATE_FAILED;
@@ -153,7 +162,7 @@
 
         int code = http.GET();
         int len = http.getSize();
-        log_d("HTTP GET result %d\n",code);
+        LOG_DEBUG("HTTP GET result " + String(code));
 
         if (code == HTTP_CODE_MOVED_PERMANENTLY ||
             code == HTTP_CODE_FOUND ||
@@ -161,37 +170,37 @@
             code == HTTP_CODE_PERMANENT_REDIRECT) {
             // Handle redirect
             String newUrl = http.getLocation();
-            log_d("[HTTP] Redirected to: %s\n", newUrl.c_str());
+            LOG_DEBUG("[HTTP] Redirected to: " + newUrl);
             http.end();  // End current request before retrying
             if (newUrl.length() == 0) {
-                log_e("[HTTP] Redirect without Location header!");
+                LOG_ERROR("[HTTP] Redirect without Location header!");
                 return HTTP_UPDATE_FAILED;
             }
             url = newUrl;
             redirectCount++;
         } else {
             if(code <= 0) {
-                log_e("HTTP error: %s\n", http.errorToString(code).c_str());
                 _lastError = code;
+                LOG_ERROR("HTTP error: " + http.errorToString(code));
                 http.end();
                 return HTTP_UPDATE_FAILED;
             }
 
-            log_d("Header read fin.\n");
-            log_d("Server header:\n");
-            log_d(" - code: %d\n", code);
-            log_d(" - len: %d\n", len);
+            LOG_DEBUG("Header read fin.");
+            LOG_DEBUG("Server header:");
+            LOG_DEBUG(" - code: " + String(code));
+            LOG_DEBUG(" - len: " + String(len));
 
             if(http.hasHeader("x-ms-blob-content-md5")) {
-                log_d(" - MD5: %s\n", http.header("x-ms-blob-content-md5").c_str());
+                LOG_DEBUG(" - MD5: " + http.header("x-ms-blob-content-md5"));
                 // Convert the base64 encoded MD5 back to a hex string
                 md5Hex = md5.base64ToHex(String(http.header("x-ms-blob-content-md5")));
-                log_d(" - MD5 Hex: %s\n", md5Hex.c_str());
+                LOG_DEBUG(" - MD5 Hex: " + md5Hex);
             }
 
-            log_d("ESP32 info:\n");
-            log_d(" - free Space: %d\n", ESP.getFreeSketchSpace());
-            log_d(" - current Sketch Size: %d\n", ESP.getSketchSize());
+            LOG_DEBUG("ESP32 info:");
+            LOG_DEBUG(" - free Space: " + String(ESP.getFreeSketchSpace()));
+            LOG_DEBUG(" - current Sketch Size: " + String(ESP.getSketchSize()));
 
             switch(code) {
             case HTTP_CODE_OK:  ///< OK (Start Update)
@@ -204,7 +213,7 @@
                     }
 
                     if(len > sketchFreeSpace) {
-                        log_e("FreeSketchSpace to low (%d) needed: %d\n", sketchFreeSpace, len);
+                        LOG_ERROR("FreeSketchSpace to low (" + String(sketchFreeSpace) + ") needed: " + String(len));
                         startUpdate = false;
                     }
 
@@ -222,11 +231,11 @@
 
                         int command;
                         command = U_FLASH;
-                        log_d("runUpdate flash...\n");
+                        LOG_DEBUG("runUpdate flash...");
 
                         // check for valid first magic byte
                         if(tcp->peek() != 0xE9) {
-                            log_e("Magic header does not start with 0xE9, starts with %d\n",tcp->peek());
+                            LOG_ERROR("Magic header does not start with 0xE9, starts with " + String(tcp->peek()));
                             _lastError = HTTP_UE_BIN_VERIFY_HEADER_FAILED;
                             http.end();
                             return HTTP_UPDATE_FAILED;
@@ -234,7 +243,7 @@
 
                         if(runUpdate(*tcp, len, md5Hex, command)) {
                             ret = HTTP_UPDATE_OK;
-                            log_d("Update ok\n");
+                            LOG_DEBUG("Update ok");
                             http.end();
                             // Warn main app we're all done
                             if (_cbEnd) {
@@ -247,13 +256,13 @@
 
                         } else {
                             ret = HTTP_UPDATE_FAILED;
-                            log_e("Update failed\n");
+                            LOG_ERROR("Update failed");
                         }
                     }
                 } else {
                     _lastError = HTTP_UE_SERVER_NOT_REPORT_SIZE;
                     ret = HTTP_UPDATE_FAILED;
-                    log_e("Content-Length was 0 or wasn't set by Server?!\n");
+                    LOG_ERROR("Content-Length was 0 or wasn't set by Server?!");
                 }
                 break;
             case HTTP_CODE_NOT_MODIFIED:
@@ -271,7 +280,7 @@
             default:
                 _lastError = HTTP_UE_SERVER_WRONG_HTTP_CODE;
                 ret = HTTP_UPDATE_FAILED;
-                log_e("HTTP Code is (%d)\n", code);
+                LOG_ERROR("HTTP Code is (" + String(code) + ")");
                 break;
             }
 
@@ -279,7 +288,7 @@
             return ret;
         }
     }
-    log_e("Too many redirects!");
+    LOG_ERROR("Too many redirects!");
     return HTTP_UPDATE_FAILED;
 }
 
@@ -303,7 +312,7 @@
          _lastError = Update.getError();
          Update.printError(error);
          error.trim(); // remove line ending
-         log_e("Update.begin failed! (%s)\n", error.c_str());
+         LOG_ERROR("Update.begin failed! (" + error + ")");
          return false;
      }
 
@@ -314,7 +323,7 @@
      if(md5.length()) {
          if(!Update.setMD5(md5.c_str())) {
              _lastError = HTTP_UE_SERVER_FAULTY_MD5;
-             log_e("Update.setMD5 failed! (%s)\n", md5.c_str());
+             LOG_ERROR("Update.setMD5 failed! (" + md5 + ")");
              return false;
          }
      }
@@ -323,7 +332,7 @@
          _lastError = Update.getError();
          Update.printError(error);
          error.trim(); // remove line ending
-         log_e("Update.writeStream failed! (%s)\n", error.c_str());
+         LOG_ERROR("Update.writeStream failed! (" + error + ")");
          return false;
      }
 
@@ -335,7 +344,7 @@
          _lastError = Update.getError();
          Update.printError(error);
          error.trim(); // remove line ending
-         log_e("Update.end failed! (%s)\n", error.c_str());
+         LOG_ERROR("Update.end failed! (" + error + ")");
          return false;
      }
 

@@ -29,10 +29,11 @@
  * Description: Implementation of the streaming XML parser state machine.
  *
  * Exported Functions/Classes:
- * - xmlStreamingParser::parse: Feeds a single character into the parser state machine.
- * - xmlStreamingParser::setListener: Attaches an event listener for parser callbacks.
- * - xmlStreamingParser::reset: Resets the parser state.
- * - xmlStreamingParser::state_*: Internal state machine handlers.
+ * - class xmlStreamingParser: Emits XML tags and data events to an attached xmlListener.
+ *   - xmlStreamingParser(): Constructor.
+ *   - parse(): Feeds a single byte into the streaming parser's state machine.
+ *   - setListener(): Attaches an interface implementation to handle XML parsing events.
+ *   - reset(): Reinitializes the parser state back to zero to begin a new document.
  */
 #include <xmlStreamingParser.h>
 

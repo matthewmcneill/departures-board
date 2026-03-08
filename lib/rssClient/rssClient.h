@@ -13,6 +13,11 @@
  *
  * Exported Functions/Classes:
  * - class rssClient: Streaming XML parser and HTTP client to fetch and decode RSS feeds.
+ *   - rssClient(): Constructor.
+ *   - loadFeed(): Connects to URL, fetches RSS feed, and extracts item titles.
+ *   - getLastError(): Retrieves the last error message from RSS fetch operations.
+ *   - rssTitle: Attribute array containing the fetched RSS item titles.
+ *   - numRssTitles: Attribute storing the number of fetched RSS titles.
  */
 
 #pragma once
@@ -41,7 +46,7 @@ class rssClient: public xmlListener {
         String tagPath = "";
         int tagLevel = 0;
         String currentPath = "";
-        String lastErrorMessage = "";
+        char lastErrorMessage[128];
 
 /**
  * @brief Trims leading and trailing whitespace from a character array in-place.
@@ -88,7 +93,7 @@ class rssClient: public xmlListener {
  * @brief Retrieves the last error message encountered during RSS fetch operations.
  * @return A string containing the error description.
  */
-        String getLastError();
+        const char* getLastError();
         char rssTitle[MAX_RSS_TITLES][MAX_RSS_TITLE_SIZE];
         int numRssTitles = 0;
 };
