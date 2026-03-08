@@ -21,8 +21,8 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
-#include "WiFiConfig.hpp"
-#include "Logger.hpp"
+#include <WiFiConfig.hpp>
+#include <Logger.hpp>
 
 char wifiSsid[33] = "";
 char wifiPass[65] = "";

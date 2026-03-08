@@ -17,7 +17,7 @@
  * - Logger::_error: Core error logging function (internal use only, called via macros).
  * - Logger::_debug: Core debug logging function (internal use only, called via macros).
  */
-#include "Logger.hpp"
+#include <Logger.hpp>
 
 std::vector<String> Logger::secrets;
 

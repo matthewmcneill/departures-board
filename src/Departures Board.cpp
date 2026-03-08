@@ -79,7 +79,7 @@
 #include <webgui/webgraphics.h>
 #include <webgui/index.h>
 #include <webgui/keys.h>
-#include "WiFiConfig.hpp"
+#include <WiFiConfig.hpp>
 #include <webgui/pages.h>
 #include <webgui/rssfeeds.h>
 #include <gfx/fonts.h>
@@ -303,7 +303,7 @@ rdStation station;
 // Station Messages (shared)
 stnMessages messages;
 
-#include "Logger.hpp"
+#include <Logger.hpp>
 
 #include "gfx/DisplayEngine.hpp"
 #include "webgui/WebHandlers.hpp"
@@ -365,75 +365,8 @@ void setup(void) {
   u8g2.sendBuffer();
   progressBar(F("Connecting to Wi-Fi"),20);
 
-  // =========================================================================
-  // FIX: WiFi Credentials NVS Bug in ESP32 Arduino Core v3.x
-  // =========================================================================
-  // The ESP32 Arduino Core v3.x has a known bug where writing to the default
-  // WiFi Non-Volatile Storage (NVS) partition during WiFiManager captive portal
-  // execution can trigger a watchdog timeout or "core v3 panic", leading to a
-  // boot loop. 
-  // 
-  // To bypass this, we MUST:
-  // 1. Force wipe the buggy credentials from the NVS: WiFi.disconnect(true, true);
-  // 2. Disable NVS saving completely: WiFi.persistent(false);
-  // 3. Keep our own copy in LittleFS (wifi.json) using the WiFiConfig routines!
-  // =========================================================================
-  WiFi.disconnect(true, true);      // PURGE corrupted WiFi NVS configuration from previous crashes
-  WiFi.persistent(false);           // Disable NVS WiFi saving to prevent core v3 panics
-  
-  WiFi.mode(WIFI_MODE_NULL);        // Reset the WiFi
-  WiFi.hostname(hostname);          // Set the hostname ("Departures Board")
-  WiFi.mode(WIFI_STA);              // Enter WiFi station mode
-  WiFi.setSleep(WIFI_PS_NONE);      // Turn off WiFi Powersaving
-
-  // Attempt to load the credentials we saved manually to LittleFS
-  loadWiFiConfig();
-
-  // If we have an SSID on file, attempt to connect directly outside the portal first
-  if (strlen(wifiSsid) > 0) {
-    LOG_INFO(String("Attempting to connect to saved WiFi network: ") + wifiSsid);
-    WiFi.begin(wifiSsid, wifiPass);
-    int retries = 0;
-    while (WiFi.status() != WL_CONNECTED && retries < 20) {
-      delay(500);
-      retries++;
-    }
-    if (WiFi.status() == WL_CONNECTED) {
-      LOG_INFO("Successfully connected to saved WiFi network.");
-    } else {
-      LOG_WARN("Failed to connect to saved WiFi network. Falling back to portal.");
-    }
-  }
-
-  // If we couldn't connect manually, spin up the WiFiManager captive portal
-  if (WiFi.status() != WL_CONNECTED) {
-    WiFiManager wm;                   // Start WiFiManager
-    
-    // Attach our custom callback so we can grab the SSID/Pass the user enters
-    // and save it to LittleFS before the portal shuts down.
-    wm.setSaveConfigCallback(saveCustomWiFiCallback);
-
-    wm.setAPCallback(wmConfigModeCallback);     // Set the callback for config mode notification
-    wm.setWiFiAutoReconnect(true);              // Attempt to auto-reconnect WiFi
-    wm.setConnectTimeout(8);
-    wm.setConnectRetries(2);
-
-    LOG_INFO("Starting WiFiManager AutoConnect...");
-    delay(1000); // Flush logs
-    bool result = wm.autoConnect("Departures Board");    // Attempt to connect to WiFi (or enter interactive configuration mode)
-    LOG_INFO("WiFiManager AutoConnect returned.");
-    delay(1000); // Flush logs
-    if (!result) {
-        LOG_ERROR("WiFiManager AutoConnect failed. Restarting device.");
-        // Failed to connect/configure
-        ESP.restart();
-    }
-  }
-
-  // Wait for WiFi connection
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(250);
-  }
+  // Hand off Wi-Fi initialization, NVS migration, and captive portal fallback to the WiFiConfig module
+  setupWiFi(hostname, wmConfigModeCallback);
 
   // Get our IP address and store
   updateMyUrl();
