@@ -9,24 +9,11 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/TfLdataClient/TfLdataClient.h
- * Description: Exported functions and classes.
+ * Description: Client to interact with the Transport for London (TfL) Unified API.
  *
  * Exported Functions/Classes:
- * - void: Void
- * - TfLdataClient: Class definition
- * - pruneFromPhrase: Prune from phrase
- * - replaceWord: Replace word
- * - compareTimes: Compare times
- * - updateArrivals: Update arrivals
- * - whitespace: Whitespace
- * - startDocument: Start document
- * - key: Key
- * - value: Value
- * - endArray: End array
- * - endObject: End object
- * - endDocument: End document
- * - startArray: Start array
- * - startObject: Start object
+ * - class TfLdataClient: Main JSON parsing and request engine for TfL data.
+ * - tflClientCallback: Type definition for progress callbacks.
  */
 #pragma once
 #include <JsonListener.h>
@@ -34,9 +21,7 @@
 #include <stationData.h>
 
 /**
- * @brief Void
- * @param (
- * @return Return value
+ * @brief Callback function definition to execute periodic updates (e.g. flashing UI cursors) during long API waits.
  */
 typedef void (*tflClientCallback) ();
 
@@ -68,24 +53,24 @@ class TfLdataClient: public JsonListener {
         stnMessages xMessages;
 
 /**
- * @brief Prune from phrase
- * @param input
- * @param target
- * @return Return value
+ * @brief Trims a character array by terminating it at the first occurrence of a target phrase.
+ * @param input The character array to prune.
+ * @param target The substring indicating where pruning should begin.
+ * @return True if the target was found and pruned, otherwise false.
  */
         bool pruneFromPhrase(char* input, const char* target);
 /**
- * @brief Replace word
- * @param input
- * @param target
- * @param replacement
+ * @brief Replaces all occurrences of a target string with a replacement string in-place.
+ * @param input The string buffer to modify.
+ * @param target The exact word or phrase to look for.
+ * @param replacement The string to inject in place of the target.
  */
         void replaceWord(char* input, const char* target, const char* replacement);
 /**
- * @brief Compare times
- * @param a
- * @param b
- * @return Return value
+ * @brief Comparator function to sort arrival times in ascending chronological order.
+ * @param a The first service entry.
+ * @param b The second service entry.
+ * @return True if a arrives sooner than b.
  */
         static bool compareTimes(const ugService& a, const ugService& b);
 
@@ -94,62 +79,61 @@ class TfLdataClient: public JsonListener {
 
         TfLdataClient();
 /**
- * @brief Update arrivals
- * @param station
- * @param messages
- * @param locationId
- * @param apiKey
- * @param Xcb
- * @return Return value
+ * @brief Connects to the TfL API, requests arrival times and disruptions for a StopPoint, and parses the JSON response.
+ * @param station Pointer to the global rdStation structure to populate with arrival times.
+ * @param messages Pointer to the global stnMessages structure to populate with service status disruptions.
+ * @param locationId The TfL StopPoint Naptan ID.
+ * @param apiKey The TfL Unified API token.
+ * @param Xcb Function callback to execute UI ticks while blocking and waiting for the API.
+ * @return A connection status constant (e.g. UPD_SUCCESS, UPD_TIMEOUT, etc.).
  */
         int updateArrivals(rdStation *station, stnMessages *messages, const char *locationId, String apiKey, tflClientCallback Xcb);
 
 /**
- * @brief Whitespace
- * @param c
- * @return Return value
+ * @brief JSON whitespace handler.
+ * @param c The whitespace char.
  */
         virtual void whitespace(char c);
+
 /**
- * @brief Start document
- * @return Return value
+ * @brief JSON handler triggered at start of document.
  */
         virtual void startDocument();
+
 /**
- * @brief Key
- * @param key
- * @return Return value
+ * @brief JSON handler triggered for each object key.
+ * @param key The string name of the parsed key.
  */
         virtual void key(String key);
+
 /**
- * @brief Value
- * @param value
- * @return Return value
+ * @brief JSON handler triggered for each key value.
+ * @param value The scalar string value.
  */
         virtual void value(String value);
+
 /**
- * @brief End array
- * @return Return value
+ * @brief JSON handler triggered when exiting an array.
  */
         virtual void endArray();
+
 /**
- * @brief End object
- * @return Return value
+ * @brief JSON handler triggered when exiting an object.
  */
         virtual void endObject();
+
 /**
- * @brief End document
- * @return Return value
+ * @brief JSON handler triggered at end of document.
  */
         virtual void endDocument();
+
 /**
- * @brief Start array
- * @return Return value
+ * @brief JSON handler triggered when entering an array.
  */
         virtual void startArray();
+
 /**
- * @brief Start object
- * @return Return value
+ * @brief JSON handler triggered when entering an object.
  */
         virtual void startObject();
 };

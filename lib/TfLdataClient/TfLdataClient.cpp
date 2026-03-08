@@ -9,22 +9,22 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/TfLdataClient/TfLdataClient.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of the Transport for London (TfL) Unified API client.
  *
  * Exported Functions/Classes:
- * - updateArrivals: Update arrivals
- * - pruneFromPhrase: Prune from phrase
- * - replaceWord: Replace word
- * - compareTimes: Compare times
- * - whitespace: Whitespace
- * - startDocument: Start document
- * - key: Key
- * - value: Value
- * - endArray: End array
- * - endObject: End object
- * - endDocument: End document
- * - startArray: Start array
- * - startObject: Start object
+ * - TfLdataClient::updateArrivals: Connects to the TfL API, requests arrival times, and parses the JSON response.
+ * - TfLdataClient::pruneFromPhrase: Trims a character array by terminating it at the first occurrence of a target phrase.
+ * - TfLdataClient::replaceWord: Replaces all occurrences of a target string with a replacement string in-place.
+ * - TfLdataClient::compareTimes: Comparator function to sort arrival times.
+ * - TfLdataClient::whitespace: JSON whitespace handler.
+ * - TfLdataClient::startDocument: JSON handler triggered at start of document.
+ * - TfLdataClient::key: JSON handler triggered for each object key.
+ * - TfLdataClient::value: JSON handler triggered for each key value.
+ * - TfLdataClient::endArray: JSON handler triggered when exiting an array.
+ * - TfLdataClient::endObject: JSON handler triggered when exiting an object.
+ * - TfLdataClient::endDocument: JSON handler triggered at end of document.
+ * - TfLdataClient::startArray: JSON handler triggered when entering an array.
+ * - TfLdataClient::startObject: JSON handler triggered when entering an object.
  */
 
 #include <TfLdataClient.h>
@@ -35,13 +35,13 @@
 TfLdataClient::TfLdataClient() {}
 
 /**
- * @brief Update arrivals
- * @param station
- * @param messages
- * @param locationId
- * @param apiKey
- * @param Xcb
- * @return Return value
+ * @brief Connects to the TfL API, requests arrival times and disruptions for a StopPoint, and parses the JSON response.
+ * @param station Pointer to the global rdStation structure to populate with arrival times.
+ * @param messages Pointer to the global stnMessages structure to populate with service status disruptions.
+ * @param locationId The TfL StopPoint Naptan ID.
+ * @param apiKey The TfL Unified API token.
+ * @param Xcb Function callback to execute UI ticks while blocking and waiting for the API.
+ * @return A connection status constant (e.g. UPD_SUCCESS, UPD_TIMEOUT, etc.).
  */
 int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, const char *locationId, String apiKey, tflClientCallback Xcb) {
 
@@ -256,9 +256,12 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     }
 }
 
-//
-// Function to prune messages from the point at which a word or phrase is found
-//
+/**
+ * @brief Trims a character array by terminating it at the first occurrence of a target phrase.
+ * @param input The character array to prune.
+ * @param target The substring indicating where pruning should begin.
+ * @return True if the target was found and pruned, otherwise false.
+ */
 bool TfLdataClient::pruneFromPhrase(char* input, const char* target) {
     // Find the first occurance of the target word or phrase
     char* pos = strstr(input,target);
@@ -270,9 +273,12 @@ bool TfLdataClient::pruneFromPhrase(char* input, const char* target) {
     return false;
 }
 
-//
-// Function to replace occurrences of a word or phrase in a character array
-//
+/**
+ * @brief Replaces all occurrences of a target string with a replacement string in-place.
+ * @param input The string buffer to modify.
+ * @param target The exact word or phrase to look for.
+ * @param replacement The string to inject in place of the target.
+ */
 void TfLdataClient::replaceWord(char* input, const char* target, const char* replacement) {
     // Find the first occurrence of the target word
     char* pos = strstr(input, target);
@@ -293,25 +299,30 @@ void TfLdataClient::replaceWord(char* input, const char* target, const char* rep
     }
 }
 
-// Custom comparator function to compare time to station
+/**
+ * @brief Comparator function to sort arrival times in ascending chronological order.
+ * @param a The first service entry.
+ * @param b The second service entry.
+ * @return True if a arrives sooner than b.
+ */
 bool TfLdataClient::compareTimes(const ugService& a, const ugService& b) {
     return a.timeToStation < b.timeToStation;
 }
 
 /**
- * @brief Whitespace
- * @param c
+ * @brief JSON whitespace handler.
+ * @param c The whitespace char.
  */
 void TfLdataClient::whitespace(char c) {}
 
 /**
- * @brief Start document
+ * @brief JSON handler triggered at start of document.
  */
 void TfLdataClient::startDocument() {}
 
 /**
- * @brief Key
- * @param key
+ * @brief JSON handler triggered for each object key.
+ * @param key The string name of the parsed key.
  */
 void TfLdataClient::key(String key) {
     currentKey = key;
@@ -337,8 +348,8 @@ void TfLdataClient::key(String key) {
 }
 
 /**
- * @brief Value
- * @param value
+ * @brief JSON handler triggered for each key value.
+ * @param value The scalar string value.
  */
 void TfLdataClient::value(String value) {
     if (currentKey == F("destinationName")) {
@@ -365,26 +376,26 @@ void TfLdataClient::value(String value) {
 }
 
 /**
- * @brief End array
+ * @brief JSON handler triggered when exiting an array.
  */
 void TfLdataClient::endArray() {}
 
 /**
- * @brief End object
+ * @brief JSON handler triggered when exiting an object.
  */
 void TfLdataClient::endObject() {}
 
 /**
- * @brief End document
+ * @brief JSON handler triggered at end of document.
  */
 void TfLdataClient::endDocument() {}
 
 /**
- * @brief Start array
+ * @brief JSON handler triggered when entering an array.
  */
 void TfLdataClient::startArray() {}
 
 /**
- * @brief Start object
+ * @brief JSON handler triggered when entering an object.
  */
 void TfLdataClient::startObject() {}
