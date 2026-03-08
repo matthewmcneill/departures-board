@@ -22,19 +22,10 @@
  *
  *
  * Module: lib/HTTPUpdateGitHub/HTTPUpdateGitHub.h
- * Description: Exported functions and classes.
+ * Description: OTA Update class for fetching binaries from GitHub Releases over HTTPS.
  *
  * Exported Functions/Classes:
- * - HTTPUpdate: Class definition
- * - handleUpdate: Handle update
- * - onStart: On start
- * - onEnd: On end
- * - onError: On error
- * - onProgress: On progress
- * - getLastError: Get last error
- * - getLastErrorString: Get last error string
- * - runUpdate: Run update
- * - _setLastError: _set last error
+ * - class HTTPUpdate: Core class handling the HTTP request, redirects, parsing MD5 headers, and writing to flash.
  */
 
  #ifndef ___HTTP_UPDATE_H___
@@ -86,11 +77,11 @@
      }
 
 /**
- * @brief Handle update
- * @param client
- * @param uri
- * @param token
- * @return Return value
+ * @brief Handles the full OTA update process from a custom URL, such as a GitHub Release asset.
+ * @param client The active WiFiClient (or WiFiClientSecure).
+ * @param uri The URL path of the binary asset.
+ * @param token An optional GitHub Personal Access Token for private repositories.
+ * @return The result status of the update process (HTTP_UPDATE_OK, HTTP_UPDATE_FAILED, etc.).
  */
      HTTPUpdateResult handleUpdate(WiFiClient& client, const String& uri, const String& token);
 
@@ -99,31 +90,32 @@
      void onEnd(HTTPUpdateEndCB cbOnEnd)                { _cbEnd = cbOnEnd; }
      void onError(HTTPUpdateErrorCB cbOnError)          { _cbError = cbOnError; }
 /**
- * @brief On progress
- * @param cbOnProgress
+ * @brief Registers a callback function to handle update progress events.
+ * @param cbOnProgress The callback function accepting downloaded size and total size.
  */
      void onProgress(HTTPUpdateProgressCB cbOnProgress) { _cbProgress = cbOnProgress; }
 
 /**
- * @brief Get last error
- * @return Return value
+ * @brief Retrieves the last error code encountered during the update process.
+ * @return An integer representing the error state.
  */
      int getLastError(void);
+
 /**
- * @brief Get last error string
- * @return Return value
+ * @brief Retrieves a human-readable string for the last error encountered.
+ * @return A string containing the error description.
  */
      String getLastErrorString(void);
 
  protected:
 
 /**
- * @brief Run update
- * @param in
- * @param size
- * @param md5
- * @param U_FLASH
- * @return Return value
+ * @brief Executes the flash write process using the ESP32 Update framework.
+ * @param in The HTTP data stream.
+ * @param size The total size of the binary in bytes.
+ * @param md5 The expected MD5 hash for the binary.
+ * @param command The update command (U_FLASH or U_SPIFFS).
+ * @return True if the update flashed successfully.
  */
      bool runUpdate(Stream& in, uint32_t size, String md5, int command = U_FLASH);
 

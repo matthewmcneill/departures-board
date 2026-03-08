@@ -22,11 +22,13 @@
  *
  *
  * Module: lib/HTTPUpdateGitHub/HTTPUpdateGitHub.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of the GitHub OTA Update handler.
  *
  * Exported Functions/Classes:
- * - String: string
- * - handleUpdate: Handle update
+ * - HTTPUpdate::handleUpdate: Main routine to process redirects, headers, and the binary stream.
+ * - HTTPUpdate::runUpdate: Uses the ESP32 Update framework to write the stream to flash partitions.
+ * - HTTPUpdate::getLastError: Retrieves the last error code encountered.
+ * - HTTPUpdate::getLastErrorString: Retrieves a human-readable string for the last error.
  */
 
  #include <HTTPUpdateGitHub.h>
@@ -51,7 +53,8 @@
  }
 
  /**
-  * return error code as int
+  * @brief Retrieves the last error code encountered during the update process.
+  * @return An integer representing the error state.
   */
  int HTTPUpdate::getLastError(void)
  {
@@ -59,7 +62,8 @@
  }
 
  /**
-  * return error code as String
+  * @brief Retrieves a human-readable string for the last error encountered.
+  * @return A string containing the error description.
   */
  String HTTPUpdate::getLastErrorString(void)
  {
@@ -105,10 +109,12 @@
      return String();
  }
 
- /*
-  * HTTPUpdate is now exposed directly from the library.
-  *  - optionally pass GitHub token for downloads from private repository.
-  *  - handles redirects correctly.
+ /**
+  * @brief Handles the full OTA update process from a custom URL, such as a GitHub Release asset.
+  * @param client The active WiFiClient (or WiFiClientSecure).
+  * @param uri The URL path of the binary asset.
+  * @param token An optional GitHub Personal Access Token for private repositories.
+  * @return The result status of the update process (HTTP_UPDATE_OK, HTTP_UPDATE_FAILED, etc.).
   */
   HTTPUpdateResult HTTPUpdate::handleUpdate(WiFiClient& client, const String& uri = "/", const String& token = "") {
 
@@ -278,11 +284,12 @@
 }
 
  /**
-  * write Update to flash
-  * @param in Stream&
-  * @param size uint32_t
-  * @param md5 String
-  * @return true if Update ok
+  * @brief Executes the flash write process using the ESP32 Update framework.
+  * @param in The HTTP data stream.
+  * @param size The total size of the binary in bytes.
+  * @param md5 The expected MD5 hash for the binary.
+  * @param command The update command (U_FLASH or U_SPIFFS).
+  * @return True if the update flashed successfully.
   */
  bool HTTPUpdate::runUpdate(Stream& in, uint32_t size, String md5, int command)
  {
