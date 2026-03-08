@@ -27,6 +27,14 @@ We adopted fixed-size `char[]` buffers for the API clients:
 - **Predictability:** The memory footprint of the API clients becomes completely deterministic. The application will use exactly the same amount of memory on its 1000th API fetch as it did on its first.
 - **Speed:** Native C operations like `snprintf` or `strncpy` execute significantly faster than `String` concatenations because they bypass the memory manager.
 
+### Tradeoffs and Downsides
+
+While fixed buffers solve fragmentation, they come with their own challenges:
+
+- **Risk of Buffer Overflows/Truncation:** The `String` class automatically resizes if a string gets longer. If an API returns a 50-character station name and our `char platformName[30]` is only 30 bytes, we must truncate it. If we use unsafe functions like `strcpy`, it will overwrite adjacent memory and instantly crash the ESP32.
+- **Wasted Memory Base-load:** If we create a `char destination[128]` to safely hold the absolute longest train destination we expect, but 99% of trains are just going to "London", we are permanently tying up 128 bytes of RAM when we only needed 7 bytes.
+- **Developer Overhead:** Native C-strings lack the convenient concatenation operators (`+`) of `String` class items. Constructing complex URL query strings or JSON payloads requires careful use of `snprintf` and manual size calculations.
+
 ### Implementation Guidelines
 
 To prevent buffer overflow crashes, we strictly adhere to the following rules when working with character arrays:
