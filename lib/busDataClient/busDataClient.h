@@ -9,28 +9,11 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/busDataClient/busDataClient.h
- * Description: Exported functions and classes.
+ * Description: Client to scrape and parse bus departure data from bustimes.org.
  *
  * Exported Functions/Classes:
- * - void: Void
- * - busDataClient: Class definition
- * - stripTag: Strip tag
- * - replaceWord: Replace word
- * - trim: Trim
- * - equalsIgnoreCase: Equals ignore case
- * - serviceMatchesFilter: Service matches filter
- * - getStopLongName: Get stop long name
- * - cleanFilter: Clean filter
- * - updateDepartures: Update departures
- * - whitespace: Whitespace
- * - startDocument: Start document
- * - key: Key
- * - value: Value
- * - endArray: End array
- * - endObject: End object
- * - endDocument: End document
- * - startArray: Start array
- * - startObject: Start object
+ * - class busDataClient: Parsing and HTML scraping engine for bus data.
+ * - busClientCallback: Type definition for progress callbacks.
  */
 #pragma once
 #include <JsonListener.h>
@@ -38,9 +21,7 @@
 #include <stationData.h>
 
 /**
- * @brief Void
- * @param (
- * @return Return value
+ * @brief Callback function definition to execute periodic updates (e.g. flashing UI cursors) during long API waits.
  */
 typedef void (*busClientCallback) ();
 
@@ -81,37 +62,37 @@ class busDataClient: public JsonListener {
         busStop xBusStop;
 
 /**
- * @brief Strip tag
- * @param html
- * @return Return value
+ * @brief Extracts the inner text from an HTML tag string.
+ * @param html The full HTML tag string to parse.
+ * @return The inner text stripped of its surrounding tags.
  */
         String stripTag(String html);
 /**
- * @brief Replace word
- * @param input
- * @param target
- * @param replacement
+ * @brief Replaces all occurrences of a target string with a replacement string in-place.
+ * @param input The string buffer to modify.
+ * @param target The exact word or phrase to look for.
+ * @param replacement The string to inject in place of the target.
  */
         void replaceWord(char* input, const char* target, const char* replacement);
 /**
- * @brief Trim
- * @param start
- * @param end
+ * @brief Trims leading and trailing whitespace from a character array in-place.
+ * @param start Pointer to the start of the character array.
+ * @param end Pointer to the end of the character array.
  */
         void trim(char* &start, char* &end);
 /**
- * @brief Equals ignore case
- * @param a
- * @param a_len
- * @param b
- * @return Return value
+ * @brief Compares two character arrays case-insensitively.
+ * @param a The first character array.
+ * @param a_len The length of the first character array.
+ * @param b The second character array (null-terminated).
+ * @return True if the strings match regardless of case.
  */
         bool equalsIgnoreCase(const char* a, int a_len, const char* b);
 /**
- * @brief Service matches filter
- * @param filter
- * @param serviceId
- * @return Return value
+ * @brief Checks if a specific bus service ID matches a provided comma-separated filter list.
+ * @param filter The comma-separated string of desired bus route numbers.
+ * @param serviceId The currently parsed bus route number.
+ * @return True if the route is found in the filter, or if the filter is empty.
  */
         bool serviceMatchesFilter(const char* filter, const char* serviceId);
 
@@ -120,75 +101,74 @@ class busDataClient: public JsonListener {
 
         busDataClient();
 /**
- * @brief Get stop long name
- * @param locationId
- * @param locationName
- * @return Return value
+ * @brief Connects to bustimes.org API to retrieve the official long name of a bus stop.
+ * @param locationId The stop ID.
+ * @param locationName Output buffer to store the retrieved name.
+ * @return A connection status constant (e.g. UPD_SUCCESS, UPD_TIMEOUT).
  */
         int getStopLongName(const char *locationId, char *locationName);
 /**
- * @brief Clean filter
- * @param rawFilter
- * @param cleanedFilter
- * @param maxLen
+ * @brief Normalizes a user-provided filter string by making it lowercase and removing spaces.
+ * @param rawFilter The original filter input.
+ * @param cleanedFilter The output buffer for the normalized filter.
+ * @param maxLen The maximum length of the output buffer.
  */
         void cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen);
 /**
- * @brief Update departures
- * @param station
- * @param locationId
- * @param filter
- * @param Xcb
- * @return Return value
+ * @brief Connects to bustimes.org, scrapes the HTML departures board, and parses the vehicle times.
+ * @param station Pointer to the global rdStation structure to populate with arrival times.
+ * @param locationId The bustimes.org Stop ID.
+ * @param filter A comma-separated list of bus routes to filter by (or empty for all).
+ * @param Xcb Function callback to execute UI ticks while blocking and waiting for the API.
+ * @return A connection status constant.
  */
         int updateDepartures(rdStation *station, const char *locationId, const char *filter, busClientCallback Xcb);
 
 /**
- * @brief Whitespace
- * @param c
- * @return Return value
+ * @brief JSON whitespace handler.
+ * @param c The whitespace char.
  */
         virtual void whitespace(char c);
+
 /**
- * @brief Start document
- * @return Return value
+ * @brief JSON handler triggered at start of document.
  */
         virtual void startDocument();
+
 /**
- * @brief Key
- * @param key
- * @return Return value
+ * @brief JSON handler triggered for each object key.
+ * @param key The string name of the parsed key.
  */
         virtual void key(String key);
+
 /**
- * @brief Value
- * @param value
- * @return Return value
+ * @brief JSON handler triggered for each key value.
+ * @param value The scalar string value.
  */
         virtual void value(String value);
+
 /**
- * @brief End array
- * @return Return value
+ * @brief JSON handler triggered when exiting an array.
  */
         virtual void endArray();
+
 /**
- * @brief End object
- * @return Return value
+ * @brief JSON handler triggered when exiting an object.
  */
         virtual void endObject();
+
 /**
- * @brief End document
- * @return Return value
+ * @brief JSON handler triggered at end of document.
  */
         virtual void endDocument();
+
 /**
- * @brief Start array
- * @return Return value
+ * @brief JSON handler triggered when entering an array.
  */
         virtual void startArray();
+
 /**
- * @brief Start object
- * @return Return value
+ * @brief JSON handler triggered when entering an object.
  */
         virtual void startObject();
 };

@@ -9,26 +9,26 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/busDataClient/busDataClient.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of the bustimes.org client.
  *
  * Exported Functions/Classes:
- * - stripTag: Strip tag
- * - replaceWord: Replace word
- * - trim: Trim
- * - equalsIgnoreCase: Equals ignore case
- * - serviceMatchesFilter: Service matches filter
- * - cleanFilter: Clean filter
- * - updateDepartures: Update departures
- * - getStopLongName: Get stop long name
- * - whitespace: Whitespace
- * - startDocument: Start document
- * - key: Key
- * - value: Value
- * - endArray: End array
- * - endObject: End object
- * - endDocument: End document
- * - startArray: Start array
- * - startObject: Start object
+ * - busDataClient::stripTag: Extracts the inner text from an HTML tag string.
+ * - busDataClient::replaceWord: Replaces all occurrences of a target string with a replacement string in-place.
+ * - busDataClient::trim: Trims leading and trailing whitespace from a character array.
+ * - busDataClient::equalsIgnoreCase: Compares two character arrays case-insensitively.
+ * - busDataClient::serviceMatchesFilter: Checks if a specific bus service ID matches a filter list.
+ * - busDataClient::cleanFilter: Normalizes a user-provided filter string.
+ * - busDataClient::updateDepartures: Scrapes and parses the HTML departures board.
+ * - busDataClient::getStopLongName: Retrieves the official long name of a bus stop.
+ * - busDataClient::whitespace: JSON whitespace handler.
+ * - busDataClient::startDocument: JSON handler triggered at start of document.
+ * - busDataClient::key: JSON handler triggered for each object key.
+ * - busDataClient::value: JSON handler triggered for each key value.
+ * - busDataClient::endArray: JSON handler triggered when exiting an array.
+ * - busDataClient::endObject: JSON handler triggered when exiting an object.
+ * - busDataClient::endDocument: JSON handler triggered at end of document.
+ * - busDataClient::startArray: JSON handler triggered when entering an array.
+ * - busDataClient::startObject: JSON handler triggered when entering an object.
  */
 
 #include <busDataClient.h>
@@ -38,9 +38,11 @@
 
 busDataClient::busDataClient() {}
 
-//
-// Strip HTML tag from string
-//
+/**
+ * @brief Extracts the inner text from an HTML tag string.
+ * @param html The full HTML tag string to parse.
+ * @return The inner text stripped of its surrounding tags.
+ */
 String busDataClient::stripTag(String html) {
     String result = "";
     int start = html.indexOf(">");
@@ -52,9 +54,12 @@ String busDataClient::stripTag(String html) {
     return result;
 }
 
-//
-// Function to replace occurrences of a word or phrase in a character array
-//
+/**
+ * @brief Replaces all occurrences of a target string with a replacement string in-place.
+ * @param input The string buffer to modify.
+ * @param target The exact word or phrase to look for.
+ * @param replacement The string to inject in place of the target.
+ */
 void busDataClient::replaceWord(char* input, const char* target, const char* replacement) {
     // Find the first occurrence of the target word
     char* pos = strstr(input, target);
@@ -75,13 +80,23 @@ void busDataClient::replaceWord(char* input, const char* target, const char* rep
     }
 }
 
-// Trim leading and trailing spaces in-place
+/**
+ * @brief Trims leading and trailing whitespace from a character array in-place.
+ * @param start Pointer to the start of the character array.
+ * @param end Pointer to the end of the character array.
+ */
 void busDataClient::trim(char* &start, char* &end) {
   while (start <= end && isspace(*start)) start++;
   while (end >= start && isspace(*end)) end--;
 }
 
-// Compare strings case-insensitively
+/**
+ * @brief Compares two character arrays case-insensitively.
+ * @param a The first character array.
+ * @param a_len The length of the first character array.
+ * @param b The second character array (null-terminated).
+ * @return True if the strings match regardless of case.
+ */
 bool busDataClient::equalsIgnoreCase(const char* a, int a_len, const char* b) {
   for (int i = 0; i < a_len; i++) {
     if (tolower(a[i]) != tolower(b[i])) return false;
@@ -89,7 +104,12 @@ bool busDataClient::equalsIgnoreCase(const char* a, int a_len, const char* b) {
   return b[a_len] == '\0';
 }
 
-// Check if the service is in the filter list (if there is one)
+/**
+ * @brief Checks if a specific bus service ID matches a provided comma-separated filter list.
+ * @param filter The comma-separated string of desired bus route numbers.
+ * @param serviceId The currently parsed bus route number.
+ * @return True if the route is found in the filter, or if the filter is empty.
+ */
 bool busDataClient::serviceMatchesFilter(const char* filter, const char* serviceId) {
   if (filter == nullptr || filter[0] == '\0') return true; // empty filter = match all
 
@@ -118,10 +138,10 @@ bool busDataClient::serviceMatchesFilter(const char* filter, const char* service
 }
 
 /**
- * @brief Clean filter
- * @param rawFilter
- * @param cleanedFilter
- * @param maxLen
+ * @brief Normalizes a user-provided filter string by making it lowercase and removing spaces.
+ * @param rawFilter The original filter input.
+ * @param cleanedFilter The output buffer for the normalized filter.
+ * @param maxLen The maximum length of the output buffer.
  */
 void busDataClient::cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen) {
     if (!rawFilter || rawFilter[0] == '\0') {
@@ -149,12 +169,12 @@ void busDataClient::cleanFilter(const char* rawFilter, char* cleanedFilter, size
 }
 
 /**
- * @brief Update departures
- * @param station
- * @param locationId
- * @param filter
- * @param Xcb
- * @return Return value
+ * @brief Connects to bustimes.org, scrapes the HTML departures board, and parses the vehicle times.
+ * @param station Pointer to the global rdStation structure to populate with arrival times.
+ * @param locationId The bustimes.org Stop ID.
+ * @param filter A comma-separated list of bus routes to filter by (or empty for all).
+ * @param Xcb Function callback to execute UI ticks while blocking and waiting for the API.
+ * @return A connection status constant.
  */
 int busDataClient::updateDepartures(rdStation *station, const char *locationId, const char *filter, busClientCallback Xcb) {
 
@@ -377,10 +397,10 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
 }
 
 /**
- * @brief Get stop long name
- * @param locationId
- * @param locationName
- * @return Return value
+ * @brief Connects to bustimes.org API to retrieve the official long name of a bus stop.
+ * @param locationId The stop ID.
+ * @param locationName Output buffer to store the retrieved name.
+ * @return A connection status constant (e.g. UPD_SUCCESS, UPD_TIMEOUT).
  */
 int busDataClient::getStopLongName(const char *locationId, char *locationName) {
 
@@ -471,53 +491,53 @@ int busDataClient::getStopLongName(const char *locationId, char *locationName) {
 }
 
 /**
- * @brief Whitespace
- * @param c
+ * @brief JSON whitespace handler.
+ * @param c The whitespace char.
  */
 void busDataClient::whitespace(char c) {}
 
 /**
- * @brief Start document
+ * @brief JSON handler triggered at start of document.
  */
 void busDataClient::startDocument() {}
 
 /**
- * @brief Key
- * @param key
+ * @brief JSON handler triggered for each object key.
+ * @param key The string name of the parsed key.
  */
 void busDataClient::key(String key) {
     currentKey = key;
 }
 
 /**
- * @brief Value
- * @param value
+ * @brief JSON handler triggered for each key value.
+ * @param value The scalar string value.
  */
 void busDataClient::value(String value) {
     if (currentKey == F("long_name")) longName = value;
 }
 
 /**
- * @brief End array
+ * @brief JSON handler triggered when exiting an array.
  */
 void busDataClient::endArray() {}
 
 /**
- * @brief End object
+ * @brief JSON handler triggered when exiting an object.
  */
 void busDataClient::endObject() {}
 
 /**
- * @brief End document
+ * @brief JSON handler triggered at end of document.
  */
 void busDataClient::endDocument() {}
 
 /**
- * @brief Start array
+ * @brief JSON handler triggered when entering an array.
  */
 void busDataClient::startArray() {}
 
 /**
- * @brief Start object
+ * @brief JSON handler triggered when entering an object.
  */
 void busDataClient::startObject() {}
