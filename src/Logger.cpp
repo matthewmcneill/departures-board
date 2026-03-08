@@ -22,8 +22,8 @@
 std::vector<String> Logger::secrets;
 
 /**
- * @brief Register secret
- * @param secret
+ * @brief Registers a sensitive string (e.g., API key) to be redacted from all future log output.
+ * @param secret The plaintext string that should not appear in the logs.
  */
 void Logger::registerSecret(const String& secret) {
   if (secret.length() > 0) {
@@ -32,9 +32,9 @@ void Logger::registerSecret(const String& secret) {
 }
 
 /**
- * @brief Redact
- * @param message
- * @return return value
+ * @brief Scans a log message and replaces any registered secrets with asterisks.
+ * @param message The original unredacted log string.
+ * @return A safe version of the string with sensitive data hidden.
  */
 String Logger::redact(const String& message) {
   if (secrets.empty()) return message;
@@ -49,9 +49,9 @@ String Logger::redact(const String& message) {
 }
 
 /**
- * @brief Print redacted
- * @param level
- * @param message
+ * @brief Internal function that formats, redacts, and outputs the final log message to Serial.
+ * @param level A string representing the severity level (e.g. "INFO", "ERROR").
+ * @param message The raw message to be logged.
  */
 void Logger::printRedacted(const String& level, const String& message) {
 #ifdef ENABLE_DEBUG_LOG
@@ -61,32 +61,32 @@ void Logger::printRedacted(const String& level, const String& message) {
 }
 
 /**
- * @brief Info
- * @param message
+ * @brief Logs an informational message. Called internally by the LOG_INFO macro.
+ * @param message The information to log.
  */
 void Logger::_info(const String& message) {
   printRedacted("INFO", message);
 }
 
 /**
- * @brief Warn
- * @param message
+ * @brief Logs a warning message. Called internally by the LOG_WARN macro.
+ * @param message The warning to log.
  */
 void Logger::_warn(const String& message) {
   printRedacted("WARN", message);
 }
 
 /**
- * @brief Error
- * @param message
+ * @brief Logs an error message. Called internally by the LOG_ERROR macro.
+ * @param message The error to log.
  */
 void Logger::_error(const String& message) {
   printRedacted("ERROR", message);
 }
 
 /**
- * @brief Debug
- * @param message
+ * @brief Logs a debug message. Called internally by the LOG_DEBUG macro.
+ * @param message The debug information to log.
  */
 void Logger::_debug(const String& message) {
   printRedacted("DEBUG", message);

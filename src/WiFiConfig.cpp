@@ -27,6 +27,10 @@
 char wifiSsid[33] = "";
 char wifiPass[65] = "";
 
+/**
+ * @brief Load Wi-Fi credentials from wifi.json on LittleFS.
+ * Intended to be called on boot before attempting a standard or portal connection.
+ */
 void loadWiFiConfig() {
   LOG_INFO("Loading WiFi credentials from wifi.json...");
   if (LittleFS.exists("/wifi.json")) {
@@ -59,6 +63,10 @@ void loadWiFiConfig() {
   }
 }
 
+/**
+ * @brief Save Wi-Fi credentials to wifi.json on LittleFS.
+ * This function persists the currently loaded wifiSsid and wifiPass character arrays.
+ */
 void saveWiFiConfig() {
   LOG_INFO("Saving WiFi credentials to wifi.json...");
   JsonDocument doc;
@@ -79,6 +87,11 @@ void saveWiFiConfig() {
   f.close();
 }
 
+/**
+ * @brief Callback function executed by WiFiManager when the portal succeeds.
+ * It grabs the plaintext credentials right before the portal exits, saving them
+ * into LittleFS to maintain persistence despite NVS being disabled.
+ */
 void saveCustomWiFiCallback() {
   LOG_INFO("WiFiManager connected. Saving entered credentials to LittleFS...");
   
@@ -90,6 +103,11 @@ void saveCustomWiFiCallback() {
   saveWiFiConfig();
 }
 
+/**
+ * @brief Core initialization routine orchestrating the entire Wi-Fi load/migrate/connect cycle.
+ * @param hostname The hostname to advertise via mDNS and the captive portal's AP name.
+ * @param apCallback An optional callback to run when WiFiManager enters AP mode (e.g. to update the display).
+ */
 void setupWiFi(const char* hostname, void (*apCallback)(WiFiManager*)) {
   // Attempt to load the credentials we saved manually to LittleFS
   loadWiFiConfig();
