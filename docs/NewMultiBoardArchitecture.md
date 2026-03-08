@@ -210,3 +210,35 @@ With the **Carousel Architecture** using pure interfaces (`IStation`, `IService`
 3. **Update the Factory**: In `loadConfig()`, when a user selects "National Rail (REST)" in their web configuration, the board instantiates `TrainStationRest(crs)` into the Carousel slot instead of `TrainStationSOAP(crs)`.
 
 Because the main `loop()` exclusively calls `getActiveBoard().updateData()` and `getActiveBoard().drawHeader()`, it never knows (or cares) if the underlying board fetched data via XML SOAP, JSON REST, or even from a local Bluetooth source. The contract is purely visual, making API transitions completely risk-free.
+
+## UI Extensibility: Mode-Specific Rendering
+
+A critical benefit of moving the UI drawing routines directly into the `IStation` subclasses (e.g., `drawService()`) is the elimination of massive `switch(boardMode)` blocks from the main rendering loop.
+
+### 1. Reclaiming Pixel Space
+The 256x64 OLED screen is severely constrained. In the legacy "mega struct" design, drawing logic was heavily reused. This meant that `MODE_BUS` had to navigate a physical screen layout designed for trains. 
+
+If `BusStation` implements its own isolated `drawService()` routine, it can omit the Platform column entirely. It reclaims those 30 pixels to allow incredibly long bus destination names without truncation, tailoring the layout specifically to the transport mode without breaking the Train layout.
+
+### 2. Streamlining the Core Loop
+The sprawling `Departures Board.cpp` display formatting logic shrinks down to a clean, generic contract:
+
+```cpp
+void loop() {
+    u8g2.clearBuffer();
+
+    // The Station draws its own header (e.g., PAD station name, or Bus Stop name)
+    getActiveBoard().drawHeader(u8g2);
+
+    // The Station draws its next N departing services however it likes! (using N from getNumServices)
+    for (int i=0; i < getActiveBoard().getNumServices(); i++) {
+        getActiveBoard().drawService(u8g2, i, calculateRowY(i));
+    }
+
+    // Animations
+    getActiveBoard().animateTick();
+
+    u8g2.sendBuffer();
+}
+```
+This pushes all complex, mode-specific pixel math down into the concrete classes where it belongs, fully adhering to the **Single Responsibility Principle**.
