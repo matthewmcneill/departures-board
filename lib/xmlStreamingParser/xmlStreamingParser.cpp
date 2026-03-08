@@ -26,22 +26,13 @@
  *
  *
  * Module: lib/xmlStreamingParser/xmlStreamingParser.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of the streaming XML parser state machine.
  *
  * Exported Functions/Classes:
- * - setListener: Set listener
- * - reset: Reset
- * - parse: Parse
- * - state_Begin: State_ begin
- * - state_StartTag: State_ start tag
- * - state_TagName: State_ tag name
- * - state_TagContents: State_ tag contents
- * - state_Attribute: State_ attribute
- * - state_EndTag: State_ end tag
- * - state_CDATA: State_ c d a t a
- * - state_Comment: State_ comment
- * - ContextBufferAddChar: context buffer add char
- * - ChangeState: change state
+ * - xmlStreamingParser::parse: Feeds a single character into the parser state machine.
+ * - xmlStreamingParser::setListener: Attaches an event listener for parser callbacks.
+ * - xmlStreamingParser::reset: Resets the parser state.
+ * - xmlStreamingParser::state_*: Internal state machine handlers.
  */
 #include <xmlStreamingParser.h>
 
@@ -52,15 +43,15 @@ xmlStreamingParser::xmlStreamingParser() {
 }
 
 /**
- * @brief Set listener
- * @param listener
+ * @brief Attaches an interface implementation to handle XML parsing events.
+ * @param listener Pointer to the xmlListener implementation.
  */
 void xmlStreamingParser::setListener(xmlListener* listener) {
     myListener = listener;
 }
 
 /**
- * @brief Reset
+ * @brief Reinitializes the parser state back to zero to begin a new document.
  */
 void xmlStreamingParser::reset() {
     inAttrQuote=false;
@@ -69,8 +60,8 @@ void xmlStreamingParser::reset() {
 }
 
 /**
- * @brief Parse
- * @param character
+ * @brief Feeds a single byte into the streaming parser's state machine.
+ * @param character Next byte from stream.
  */
 void xmlStreamingParser::parse(const char character) {
     switch (state) {
@@ -181,8 +172,8 @@ void xmlStreamingParser::state_StartTag(const char character) {
 }
 
 /**
- * @brief State_ tag name
- * @param character
+ * @brief Accumulates the tag name and detects self-closing tags or attributes.
+ * @param character Next byte from stream.
  */
 void xmlStreamingParser::state_TagName(const char character) {
 
@@ -238,8 +229,8 @@ void xmlStreamingParser::state_TagName(const char character) {
 }
 
 /**
- * @brief State_ tag contents
- * @param character
+ * @brief Reads the inner text content of an XML node until a new '<' is found.
+ * @param character Next byte from stream.
  */
 void xmlStreamingParser::state_TagContents(const char character) {
     nextState = STATE_NULL;
@@ -283,8 +274,8 @@ void xmlStreamingParser::state_TagContents(const char character) {
 }
 
 /**
- * @brief State_ attribute
- * @param character
+ * @brief Parses attributes defined within a tag.
+ * @param character Next byte from stream.
  */
 void xmlStreamingParser::state_Attribute(const char character) {
 
@@ -356,8 +347,8 @@ void xmlStreamingParser::state_Attribute(const char character) {
 }
 
 /**
- * @brief State_ end tag
- * @param character
+ * @brief Handled the closing of a tag '/>' or '>'.
+ * @param character Next byte from stream.
  */
 void xmlStreamingParser::state_EndTag(const char character) {
 
@@ -394,8 +385,8 @@ void xmlStreamingParser::state_EndTag(const char character) {
 }
 
 /**
- * @brief State_ c d a t a
- * @param character
+ * @brief Processes characters within a CDATA block.
+ * @param character Next byte from stream.
  */
 void xmlStreamingParser::state_CDATA(const char character) {
     static int endMatch = 0;
@@ -426,8 +417,8 @@ void xmlStreamingParser::state_CDATA(const char character) {
 }
 
 /**
- * @brief State_ comment
- * @param character
+ * @brief Processes characters within an XML comment block.
+ * @param character Next byte from stream.
  */
 void xmlStreamingParser::state_Comment(const char character) {
     static int endMatch = 0;
@@ -446,8 +437,8 @@ void xmlStreamingParser::state_Comment(const char character) {
 }
 
 /**
- * @brief context buffer add char
- * @param character
+ * @brief Accumulates characters into the internal tag/text buffer.
+ * @param character The character to add.
  */
 void xmlStreamingParser::ContextBufferAddChar(const char character) {
     if (length < sizeof(buffer)-2) {
@@ -458,8 +449,8 @@ void xmlStreamingParser::ContextBufferAddChar(const char character) {
 }
 
 /**
- * @brief change state
- * @param newState
+ * @brief Transitions the parser's internal state machine to a new state.
+ * @param newState The target state definition.
  */
 void xmlStreamingParser::ChangeState(int newState) {
     state = newState;
