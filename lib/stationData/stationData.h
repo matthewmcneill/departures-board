@@ -7,9 +7,13 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/stationData/stationData.h
- * Description: Auto-generated documentation header.
+ * Description: Common station data structures shared by multiple data clients.
+ *
+ * Exported Functions/Classes:
+ * - struct stnMessages: Stores messages to be displayed.
+ * - struct rdService: Stores details for a single departure vehicle (train, bus, tube).
+ * - struct rdStation: Stores all departure data for a given station.
  */
-// Common station data structures shared by both data clients
 #pragma once
 #include <Arduino.h>
 
@@ -32,11 +36,17 @@
 #define UPD_DATA_ERROR 6
 #define UPD_NO_CHANGE 7
 
+/**
+ * @brief Structure for holding station-wide messages
+ */
 struct stnMessages {
     int numMessages;
     char messages[MAXBOARDMESSAGES][MAXMESSAGESIZE];
 };
 
+/**
+ * @brief Structure for holding details about a single vehicle service
+ */
 struct rdService {
     char sTime[6];
     char destination[MAXLOCATIONSIZE];
@@ -53,6 +63,9 @@ struct rdService {
     int timeToStation;  // Only for TfL
   };
 
+  /**
+   * @brief Structure for holding all information relative to a specific station
+   */
   struct rdStation {
     char location[MAXLOCATIONSIZE];
     bool platformAvailable;
