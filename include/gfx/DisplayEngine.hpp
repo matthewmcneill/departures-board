@@ -641,6 +641,7 @@ void updateMyUrl() {
  * @brief Load keys from apikeys.json
  */
 void loadApiKeys() {
+  LOG_INFO("Loading API keys from /apikeys.json...");
   JsonDocument doc;
 
   if (LittleFS.exists(F("/apikeys.json"))) {
@@ -664,10 +665,14 @@ void loadApiKeys() {
         apiKeys = true;
 
       } else {
-        // JSON deserialization failed - TODO
+        LOG_ERROR(String("Failed to parse /apikeys.json: ") + error.c_str());
       }
       file.close();
+    } else {
+      LOG_ERROR("Failed to open /apikeys.json for reading.");
     }
+  } else {
+    LOG_INFO("/apikeys.json not found on LittleFS.");
   }
 }
 
@@ -683,6 +688,7 @@ void writeDefaultConfig() {
  * @brief Load settings from config.json and populate global variables
  */
 void loadConfig() {
+  LOG_INFO("Loading configuration from /config.json...");
   JsonDocument doc;
 
   // Set defaults
@@ -754,11 +760,16 @@ void loadConfig() {
         if (rssURL != "") rssEnabled = true; else rssEnabled = false;
 
       } else {
-        // JSON deserialization failed - TODO
+        LOG_ERROR(String("Failed to parse /config.json: ") + error.c_str());
       }
       file.close();
+    } else {
+      LOG_ERROR("Failed to open /config.json for reading.");
     }
-  } else if (nrToken[0] || tflAppkey.length()) writeDefaultConfig();
+  } else {
+    LOG_INFO("/config.json not found. Creating default config.");
+    if (nrToken[0] || tflAppkey.length()) writeDefaultConfig();
+  }
 }
 
 /**
@@ -908,6 +919,7 @@ void softResetBoard() {
 
 // WiFiManager callback, entered config mode
 void wmConfigModeCallback (WiFiManager *myWiFiManager) {
+  LOG_INFO("WiFiManager entered AP Configuration Mode. Displaying captive portal instructions.");
   showSetupScreen();
   wifiConfigured = true;
 }
