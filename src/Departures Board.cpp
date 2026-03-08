@@ -345,11 +345,6 @@ void setup(void) {
   
   LOG_INFO("Starting Departures Board...");
   
-  // Test redaction immediately to prove it works
-  LOG_DEBUG("Test Redaction: National Rail Token is: " + String(nrToken));
-  
-  LOG_DEBUG("Test Redaction: National Rail Token is: " + String(nrToken));
-  
   LOG_INFO("Loading configuration settings...");
   loadConfig();                               // Load the configuration settings from config.json
   u8g2.setContrast(brightness);               // Set the panel brightness to the user saved level
