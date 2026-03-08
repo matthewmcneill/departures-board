@@ -196,3 +196,17 @@ The current web interface (`web/index.htm`) acts like a traditional HTML `<form>
 4. **JSON Serialization**: When the user clicks "Save Settings", the web client must serialize all the dynamically generated board cards back into the `boards: []` JSON array and `POST` it to `/savesettings`.
 
 By shifting the Web GUI to a dynamic JavaScript UI, the user can visually build their custom "Carousel" of boards, and the `config.json` accurately reflects the memory slots needed at boot time.
+
+## Future API Extensibility (e.g. National Rail REST)
+
+A major advantage of this architecture is how easily it adapts to changing external APIs. Soon, National Rail will require migrating from the legacy XML SOAP (`raildataXmlClient`) endpoint to a modern REST endpoint.
+
+In the old "Mega Struct" model, changing the engine meant risking breakage across the entire global `rdStation` state and the `Departures Board.cpp` rendering loop because they were tightly coupled.
+
+With the **Carousel Architecture** using pure interfaces (`IStation`, `IService`), adding the new API requires zero modifications to the display logic:
+
+1. **Create a New Implementation**: You build a new `TrainStationRest` class that inherits from `IStation`. It implements `updateData()` using an HTTP JSON parser instead of XML.
+2. **Inherit Rendering logic**: It either implements its own `drawService()` method identically to the SOAP version, or they both inherit from a shared `BaseTrainStation` display mixin.
+3. **Update the Factory**: In `loadConfig()`, when a user selects "National Rail (REST)" in their web configuration, the board instantiates `TrainStationRest(crs)` into the Carousel slot instead of `TrainStationSOAP(crs)`.
+
+Because the main `loop()` exclusively calls `getActiveBoard().updateData()` and `getActiveBoard().drawHeader()`, it never knows (or cares) if the underlying board fetched data via XML SOAP, JSON REST, or even from a local Bluetooth source. The contract is purely visual, making API transitions completely risk-free.
