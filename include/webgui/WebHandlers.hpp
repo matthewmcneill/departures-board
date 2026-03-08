@@ -560,7 +560,7 @@ void handleInfo() {
 
   sprintf(sysUptime,"%d days, %d hrs, %d min", days,hours,minutes);
 
-  String message = "Hostname: " + String(hostname) + F("\nFirmware version: v") + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + " " + getBuildTime() + F("\nSystem uptime: ") + String(sysUptime) + F("\nFree Heap: ") + String(ESP.getFreeHeap()) + F("\nFree LittleFS space: ") + String(LittleFS.totalBytes() - LittleFS.usedBytes());
+  String message = "Hostname: " + String(hostname) + F("\nFirmware version: v") + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + " " + getBuildTime() + F("\nSystem uptime: ") + String(sysUptime) + F("\nFree Heap: ") + String(ESP.getFreeHeap()) + F("\nMax Free Block: ") + String(ESP.getMaxAllocHeap()) + F("\nFree LittleFS space: ") + String(LittleFS.totalBytes() - LittleFS.usedBytes());
   message+="\nCore Plaform: " + String(ESP.getCoreVersion()) + F("\nCPU speed: ") + String(ESP.getCpuFreqMHz()) + F("MHz\nCPU Temperature: ") + String(temperatureRead()) + F("\nWiFi network: ") + String(WiFi.SSID()) + F("\nWiFi signal strength: ") + String(WiFi.RSSI()) + F("dB");
   getLocalTime(&timeinfo);
 

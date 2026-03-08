@@ -1054,6 +1054,8 @@ bool getStationBoard() {
   removeRssMessage();
   lastUpdateResult = raildata->updateDepartures(&station,&messages,crsCode,nrToken,MAXBOARDSERVICES,enableBus,callingCrsCode,cleanPlatformFilter,nrTimeOffset);
   nextDataUpdate = millis()+apiRefreshRate;
+  
+  LOG_INFO(String("NR Fetch Complete. Free Heap: ") + ESP.getFreeHeap() + " Max Block: " + ESP.getMaxAllocHeap());
   if (lastUpdateResult == UPD_SUCCESS || lastUpdateResult == UPD_NO_CHANGE) {
     showUpdateIcon(false);
     lastDataLoadTime=millis();
@@ -1375,6 +1377,8 @@ bool getUndergroundBoard() {
   removeRssMessage();
   lastUpdateResult = tfldata->updateArrivals(&station,&messages,tubeId,tflAppkey,&tflCallback);
   nextDataUpdate = millis()+UGDATAUPDATEINTERVAL; // default update freq
+  
+  LOG_INFO(String("TfL Fetch Complete. Free Heap: ") + ESP.getFreeHeap() + " Max Block: " + ESP.getMaxAllocHeap());
   if (lastUpdateResult == UPD_SUCCESS || lastUpdateResult == UPD_NO_CHANGE) {
     showUpdateIcon(false);
     lastDataLoadTime=millis();
@@ -1485,6 +1489,8 @@ bool getBusDeparturesBoard() {
   if (!firstLoad) showUpdateIcon(true);
   lastUpdateResult = busdata->updateDepartures(&station,busAtco,cleanBusFilter,&tflCallback);
   nextDataUpdate = millis()+BUSDATAUPDATEINTERVAL; // default update freq
+  
+  LOG_INFO(String("Bus Fetch Complete. Free Heap: ") + ESP.getFreeHeap() + " Max Block: " + ESP.getMaxAllocHeap());
   if (lastUpdateResult == UPD_SUCCESS || lastUpdateResult == UPD_NO_CHANGE) {
     showUpdateIcon(false);
     lastDataLoadTime=millis();
