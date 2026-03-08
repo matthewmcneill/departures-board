@@ -8,16 +8,14 @@
  *
  *
  * Module: src/Logger.cpp
- * Description: Exported functions and classes.
+ * Description: Implementation of application logging interface with automatic sensitive data redaction.
  *
  * Exported Functions/Classes:
- * - registerSecret: Register secret
- * - redact: Redact
- * - printRedacted: Print redacted
- * - info: Info
- * - warn: Warn
- * - error: Error
- * - debug: Debug
+ * - Logger::registerSecret: Add a sensitive string to the redaction list.
+ * - Logger::_info: Core info logging function (internal use only, called via macros).
+ * - Logger::_warn: Core warn logging function (internal use only, called via macros).
+ * - Logger::_error: Core error logging function (internal use only, called via macros).
+ * - Logger::_debug: Core debug logging function (internal use only, called via macros).
  */
 #include "Logger.hpp"
 

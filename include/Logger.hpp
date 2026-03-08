@@ -8,17 +8,15 @@
  *
  *
  * Module: include/Logger.hpp
- * Description: Exported functions and classes.
+ * Description: Application logging interface with automatic sensitive data redaction.
  *
  * Exported Functions/Classes:
- * - Logger: Class definition
- * - registerSecret: Register secret
- * - LOG_INFO: Info macro
- * - LOG_WARN: Warn macro
- * - LOG_ERROR: Error macro
- * - LOG_DEBUG: Debug macro
- * - printRedacted: Print redacted
- * - redact: Redact
+ * - class Logger: Static class managing the redaction list and console logging.
+ * - Logger::registerSecret: Add a sensitive string to the redaction list.
+ * - LOG_INFO(msg): Macro to log an informational message.
+ * - LOG_WARN(msg): Macro to log a warning message.
+ * - LOG_ERROR(msg): Macro to log an error message.
+ * - LOG_DEBUG(msg): Macro to log a debug message.
  */
 #pragma once
 
