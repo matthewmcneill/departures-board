@@ -1,0 +1,52 @@
+/*
+ * Departures Board (c) 2025-2026 Gadec Software
+ *
+ * https://github.com/gadec-uk/departures-board
+ *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/timeManager/timeManager.hpp
+ * Description: Responsible for fetching network time from NTP servers
+ *              and maintaining the local system clock timezone mapping.
+ *
+ * Provides:
+ * - TimeManager: The central class handling initialization of the system clock.
+ * - timeManager: Global instantiated object.
+ * - timeinfo: Standard libc `struct tm` updated globally during runs.
+ */
+
+#pragma once
+
+#include <Arduino.h>
+#include <time.h>
+
+class TimeManager {
+private:
+    static const char ntpServer[];
+    String customTimezone;
+
+public:
+    static const char ukTimezone[];
+
+    /**
+     * @brief Define the active timezone rule explicitly.
+     * @param tz Set string rule map.
+     */
+    void setTimezone(const String& tz);
+
+    /**
+     * @brief Fetch the current configured timezone rule string.
+     * @return timezone format string
+     */
+    String getTimezone() const;
+
+    /**
+     * @brief Setup NTP and sync time by polling the europe.pool.ntp.org servers over WiFi.
+     * @return True if sync succeeded, False if it failed after 10 attempts.
+     */
+    bool initialize();
+};
+
+extern TimeManager timeManager;
+extern struct tm timeinfo;

@@ -12,13 +12,6 @@
  * Description: Client to fetch and parse RSS feeds via HTTP/HTTPS.
  *
  * Exported Functions/Classes:
- * - class rssClient: Streaming XML parser and HTTP client to fetch and decode RSS feeds.
- *   - rssClient(): Constructor.
- *   - loadFeed(): Connects to URL, fetches RSS feed, and extracts item titles.
- *   - getLastError(): Retrieves the last error message from RSS fetch operations.
- *   - rssTitle: Attribute array containing the fetched RSS item titles.
- *   - numRssTitles: Attribute storing the number of fetched RSS titles.
- */
 
 #pragma once
 #include <xmlListener.h>
@@ -47,6 +40,13 @@ class rssClient: public xmlListener {
         int tagLevel = 0;
         String currentPath = "";
         char lastErrorMessage[128];
+        
+        bool rssEnabled = false;
+        bool rssAddedtoMsgs = false;
+        unsigned long nextRssUpdate = 0;
+        int lastRssUpdateResult = 0;
+        char rssURL[128] = "";
+        char rssName[48] = "";
 
 /**
  * @brief Trims leading and trailing whitespace from a character array in-place.
@@ -82,6 +82,24 @@ class rssClient: public xmlListener {
 
     public:
 
+        bool getRssEnabled() const { return rssEnabled; }
+        void setRssEnabled(bool val) { rssEnabled = val; }
+
+        bool getRssAddedtoMsgs() const { return rssAddedtoMsgs; }
+        void setRssAddedtoMsgs(bool val) { rssAddedtoMsgs = val; }
+
+        unsigned long getNextRssUpdate() const { return nextRssUpdate; }
+        void setNextRssUpdate(unsigned long val) { nextRssUpdate = val; }
+
+        int getLastRssUpdateResult() const { return lastRssUpdateResult; }
+        void setLastRssUpdateResult(int val) { lastRssUpdateResult = val; }
+
+        const char* getRssURL() const { return rssURL; }
+        void setRssURL(const char* url) { strncpy(rssURL, url, sizeof(rssURL)-1); }
+
+        const char* getRssName() const { return rssName; }
+        void setRssName(const char* name) { strncpy(rssName, name, sizeof(rssName)-1); }
+
         rssClient();
 /**
  * @brief Connects to the provided URL, fetches the RSS feed, and streams the XML to extract item titles.
@@ -97,3 +115,5 @@ class rssClient: public xmlListener {
         char rssTitle[MAX_RSS_TITLES][MAX_RSS_TITLE_SIZE];
         int numRssTitles = 0;
 };
+
+extern rssClient* rss;

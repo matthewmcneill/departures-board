@@ -21,29 +21,35 @@
 #pragma once
 #include <JsonListener.h>
 #include <JsonStreamingParser.h>
-#include <stationData.h>
+#include "../../interfaces/messageData.h"
+
+struct TflStation;
+struct stnMessages;
+
+#define TFL_MAX_LOCATION 45 // Maximum string length for station and destination names
+#define TFL_MAX_SERVICES 9  // Maximum number of services to parse and store in memory
 
 /**
  * @brief Callback function definition to execute periodic updates (e.g. flashing UI cursors) during long API waits.
  */
 typedef void (*tflClientCallback) ();
 
-#define MAXLINESIZE 20
-#define UGMAXREADSERVICES 20
+#define TFL_MAX_LINE 20  // Maximum string length for the London Underground line name
+#define TFL_MAX_FETCH 20 // Maximum number of services to fetch from the TfL API
 
 class TfLdataClient: public JsonListener {
 
     private:
 
         struct ugService {
-            char destinationName[MAXLOCATIONSIZE];
-            char lineName[MAXLINESIZE];
+            char destinationName[TFL_MAX_LOCATION];
+            char lineName[TFL_MAX_LINE];
             int timeToStation;
         };
 
         struct ugStation {
             int numServices;
-            ugService service[UGMAXREADSERVICES];
+            ugService service[TFL_MAX_FETCH];
         };
 
         const char* apiHost = "api.tfl.gov.uk";
@@ -83,14 +89,14 @@ class TfLdataClient: public JsonListener {
         TfLdataClient();
 /**
  * @brief Connects to the TfL API, requests arrival times and disruptions for a StopPoint, and parses the JSON response.
- * @param station Pointer to the global rdStation structure to populate with arrival times.
+ * @param station Pointer to the TflStation structure to populate with arrival times.
  * @param messages Pointer to the global stnMessages structure to populate with service status disruptions.
  * @param locationId The TfL StopPoint Naptan ID.
  * @param apiKey The TfL Unified API token.
  * @param Xcb Function callback to execute UI ticks while blocking and waiting for the API.
  * @return A connection status constant (e.g. UPD_SUCCESS, UPD_TIMEOUT, etc.).
  */
-        int updateArrivals(rdStation *station, stnMessages *messages, const char *locationId, String apiKey, tflClientCallback Xcb);
+        int updateArrivals(TflStation *station, stnMessages *messages, const char *locationId, String apiKey, tflClientCallback Xcb);
 
 /**
  * @brief JSON whitespace handler.

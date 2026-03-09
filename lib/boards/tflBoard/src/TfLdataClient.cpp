@@ -19,10 +19,12 @@
  * - tflClientCallback: Type definition for progress callbacks.
  */
 
-#include <TfLdataClient.h>
+#include "../include/TfLdataClient.hpp"
 #include <WiFiClientSecure.h>
 #include <JsonListener.h>
-#include <stationData.h>
+#include <JsonListener.h>
+#include "../include/tflBoard.hpp"
+#include "../../interfaces/messageData.h"
 #include <Logger.hpp>
 
 TfLdataClient::TfLdataClient() {}
@@ -36,7 +38,7 @@ TfLdataClient::TfLdataClient() {}
  * @param Xcb Function callback to execute UI ticks while blocking and waiting for the API.
  * @return A connection status constant (e.g. UPD_SUCCESS, UPD_TIMEOUT, etc.).
  */
-int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, const char *locationId, String apiKey, tflClientCallback Xcb) {
+int TfLdataClient::updateArrivals(TflStation *station, stnMessages *messages, const char *locationId, String apiKey, tflClientCallback Xcb) {
 
     unsigned long perfTimer=millis();
     long dataReceived = 0;
@@ -114,7 +116,7 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     xStation.numServices = 0;
     xMessages.numMessages = 0;
     for (int i=0;i<MAXBOARDMESSAGES;i++) strcpy(xMessages.messages[i],"");
-    for (int i=0;i<MAXBOARDSERVICES;i++) strcpy(xStation.service[i].destinationName,"Check front of train");
+    for (int i=0;i<TFL_MAX_SERVICES;i++) strcpy(xStation.service[i].destinationName,"Check front of train");
 
     unsigned long dataSendTimeout = millis() + 10000UL;
     while((httpsClient.available() || httpsClient.connected()) && (millis() < dataSendTimeout) && (!maxServicesRead)) {
@@ -214,8 +216,8 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     size_t arraySize = xStation.numServices;
     std::sort(xStation.service, xStation.service+arraySize,compareTimes);
 
-    // Limit results to the nearest UGMAXSERVICES services
-    if (xStation.numServices > MAXBOARDSERVICES) xStation.numServices = MAXBOARDSERVICES;
+    // Limit results to the nearest TFL_MAX_SERVICES services
+    if (xStation.numServices > TFL_MAX_SERVICES) xStation.numServices = TFL_MAX_SERVICES;
 
     // Check if any of the services have changed
     if (xStation.numServices != station->numServices) station->boardChanged=true;
@@ -238,8 +240,15 @@ int TfLdataClient::updateArrivals(rdStation *station, stnMessages *messages, con
     station->numServices = xStation.numServices;
     for (int i=0;i<xStation.numServices;i++) {
         strcpy(station->service[i].destination,xStation.service[i].destinationName);
-        strcpy(station->service[i].via,xStation.service[i].lineName);
+        strcpy(station->service[i].lineName,xStation.service[i].lineName);
         station->service[i].timeToStation = xStation.service[i].timeToStation;
+
+        // Populate the expected time string locally instead of doing it later
+        char minsAway[16];
+        int m = xStation.service[i].timeToStation / 60;
+        if (m==0) strcpy(minsAway, "Due");
+        else sprintf(minsAway, "%d mins", m);
+        strcpy(station->service[i].expectedTime, minsAway);
     }
     messages->numMessages = xMessages.numMessages;
     for (int i=0;i<xMessages.numMessages;i++) strcpy(messages->messages[i],xMessages.messages[i]);
@@ -329,7 +338,7 @@ void TfLdataClient::key(String key) {
     currentKey = key;
     if (currentKey == F("id")) {
         // Next entry
-        if (xStation.numServices<UGMAXREADSERVICES) {
+        if (xStation.numServices<TFL_MAX_FETCH) {
             xStation.numServices++;
             id = xStation.numServices-1;
         } else {
@@ -356,19 +365,19 @@ void TfLdataClient::value(String value) {
     if (currentKey == F("destinationName")) {
         String cleanLocation;
         if (value.endsWith(F(" Underground Station"))) {
-            strncpy(xStation.service[id].destinationName,value.substring(0,value.length()-20).c_str(),MAXLOCATIONSIZE-1);
+            strncpy(xStation.service[id].destinationName,value.substring(0,value.length()-20).c_str(),TFL_MAX_LOCATION-1);
         } else if (value.endsWith(F(" DLR Station"))) {
-            strncpy(xStation.service[id].destinationName,value.substring(0,value.length()-12).c_str(),MAXLOCATIONSIZE-1);
+            strncpy(xStation.service[id].destinationName,value.substring(0,value.length()-12).c_str(),TFL_MAX_LOCATION-1);
         } else if (value.endsWith(F(" (H&C Line)"))) {
-            strncpy(xStation.service[id].destinationName,value.substring(0,value.length()-11).c_str(),MAXLOCATIONSIZE-1);
+            strncpy(xStation.service[id].destinationName,value.substring(0,value.length()-11).c_str(),TFL_MAX_LOCATION-1);
         } else {
-            strncpy(xStation.service[id].destinationName,value.c_str(),MAXLOCATIONSIZE-1);
+            strncpy(xStation.service[id].destinationName,value.c_str(),TFL_MAX_LOCATION-1);
         }
-        xStation.service[id].destinationName[MAXLOCATIONSIZE-1] = '\0';
+        xStation.service[id].destinationName[TFL_MAX_LOCATION-1] = '\0';
     } else if (currentKey == F("timeToStation")) xStation.service[id].timeToStation = value.toInt();
     else if (currentKey == F("lineName")) {
-        strncpy(xStation.service[id].lineName,value.c_str(),MAXLINESIZE-1);
-        xStation.service[id].lineName[MAXLINESIZE-1] = '\0';
+        strncpy(xStation.service[id].lineName,value.c_str(),TFL_MAX_LINE-1);
+        xStation.service[id].lineName[TFL_MAX_LINE-1] = '\0';
     } else if (currentKey == F("description")) {
         // Disruption message
         strncpy(xMessages.messages[id],value.c_str(),MAXMESSAGESIZE-1);

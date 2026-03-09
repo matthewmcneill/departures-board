@@ -21,11 +21,11 @@
  * - rdCallback: Type definition for progress callbacks.
  */
 
-#include <raildataXmlClient.h>
-#include <xmlListener.h>
+#include "../include/raildataXmlClient.hpp"
+#include "../../../xmlListener/xmlListener.h"
 #include <WiFiClientSecure.h>
 #include <Logger.hpp>
-#include <stationData.h>
+#include "../include/nationalRailBoard.hpp"
 
 raildataXmlClient::raildataXmlClient() {
     firstDataLoad=true;
@@ -211,7 +211,7 @@ void raildataXmlClient::pruneFromPhrase(char* input, const char* target) {
 void raildataXmlClient::fixFullStop(char *input) {
     if (input[0]) {
         while (input[0] && (input[strlen(input)-1] == '.' || input[strlen(input)-1] == ' ')) input[strlen(input)-1] = '\0'; // Remove all trailing full stops
-        if (strlen(input) < MAXMESSAGESIZE-1) strcat(input,".");  // Add a single fullstop
+        if (strlen(input) < NR_MAX_MSG_LEN-1) strcat(input,".");  // Add a single fullstop
     }
 }
 
@@ -317,7 +317,7 @@ void raildataXmlClient::cleanFilter(const char* rawFilter, char* cleanedFilter, 
  * @param timeOffset Time offset in minutes.
  * @return Connection status constant.
  */
-int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *messages, const char *crsCode, const char *customToken, int numRows, bool includeBusServices, const char *callingCrsCode, const char *platforms, int timeOffset) {
+int raildataXmlClient::updateDepartures(NationalRailStation *station, stnMessages *messages, const char *crsCode, const char *customToken, int numRows, bool includeBusServices, const char *callingCrsCode, const char *platforms, int timeOffset) {
 
     unsigned long perfTimer=millis();
     bool bChunked = false;
@@ -330,7 +330,7 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
     addedStopLocation = false;
     strcpy(xStation.location,"");
 
-    for (int i=0;i<MAXBOARDSERVICES;i++) {
+    for (int i=0;i<NR_MAX_SERVICES;i++) {
       strcpy(xStation.service[i].sTime,"");
       strcpy(xStation.service[i].destination,"");
       strcpy(xStation.service[i].via,"");
@@ -367,7 +367,7 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
         return UPD_NO_RESPONSE;
     }
 
-    int reqRows = MAXBOARDSERVICES;
+    int reqRows = NR_MAX_SERVICES;
     if (platforms[0]) reqRows = 10;   // Request maximum services if we're filtering platforms
     String data = F("<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap-env:Header><ns0:AccessToken xmlns:ns0=\"http://thalesgroup.com/RTTI/2013-11-28/Token/types\"><ns0:TokenValue>");
     data += String(customToken) + F("</ns0:TokenValue></ns0:AccessToken></soap-env:Header><soap-env:Body><ns0:GetDepBoardWithDetailsRequest xmlns:ns0=\"http://thalesgroup.com/RTTI/2021-11-01/ldb/\"><ns0:numRows>") + String(reqRows) + F("</ns0:numRows><ns0:crs>");
@@ -496,7 +496,7 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
     if (includeBusServices) {
         // Look for any included bus services, and sort if found
         for (int i=0;i<xStation.numServices;i++) {
-            if (xStation.service[i].serviceType == BUS) {
+            if (xStation.service[i].serviceType == NR_SERVICE_BUS) {
                 size_t arraySize = xStation.numServices;
                 std::sort(xStation.service, xStation.service+arraySize,compareTimes);
                 break;
@@ -507,7 +507,7 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
         int i=0;
         while (i<xStation.numServices) {
             // Remove any bus services
-            if (xStation.service[i].serviceType == BUS) deleteService(i);
+            if (xStation.service[i].serviceType == NR_SERVICE_BUS) deleteService(i);
             else i++;
         }
     }
@@ -559,12 +559,10 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
             station->service[i].trainLength = xStation.service[i].trainLength;
             station->service[i].classesAvailable = xStation.service[i].classesAvailable;
             strcpy(station->service[i].opco, xStation.service[i].opco);
+            strcpy(station->service[i].calling, xStation.service[i].calling);
+            strcpy(station->service[i].origin, xStation.service[i].origin);
+            strcpy(station->service[i].serviceMessage, xStation.service[i].serviceMessage);
             station->service[i].serviceType = xStation.service[i].serviceType;
-        }
-        if (xStation.numServices) {
-            strcpy(station->calling,xStation.service[0].calling);
-            strcpy(station->origin,xStation.service[0].origin);
-            strcpy(station->serviceMessage,xStation.service[0].serviceMessage);
         }
     }
 
@@ -724,8 +722,8 @@ void raildataXmlClient::value(const char *value)
         xStation.service[id].origin[sizeof(xStation.service[0].origin)-1] = '\0';
         return;
     } else if (tagLevel == 8 && tagName == F("lt4:serviceType")) {
-        if (strcmp(value,"train")==0) xStation.service[id].serviceType = TRAIN;
-        else if (strcmp(value,"bus")==0) xStation.service[id].serviceType = BUS;
+        if (strcmp(value,"train")==0) xStation.service[id].serviceType = NR_SERVICE_TRAIN;
+        else if (strcmp(value,"bus")==0) xStation.service[id].serviceType = NR_SERVICE_BUS;
         return;
     } else if (tagLevel == 8 && tagName == F("lt4:std")) {
         // Starting a new service
@@ -754,7 +752,7 @@ void raildataXmlClient::value(const char *value)
             if (xStation.service[id].trainLength == 0) xStation.service[id].trainLength = coaches;
         }
         coaches=0;
-        if (id < MAXBOARDSERVICES-1) {
+        if (id < NR_MAX_SERVICES-1) {
             id++;
             xStation.numServices++;
         }

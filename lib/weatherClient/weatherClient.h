@@ -11,12 +11,9 @@
  * Module: lib/weatherClient/weatherClient.h
  * Description: Client to fetch and parse weather data from the OpenWeatherMap REST API.
  *
- * Exported Functions/Classes:
- * - class weatherClient: Streaming JSON parser and HTTP client to fetch weather data.
- *   - weatherClient(): Constructor.
- *   - updateWeather(): Connects to OpenWeatherMap API, retrieves current weather, and parses JSON.
- *   - currentWeather: Attribute containing the formatted current weather description.
- *   - lastErrorMsg: Attribute containing the last error message from API operations.
+ * Provides:
+ * - weatherClient: Streaming JSON parser and HTTP client to fetch weather data.
+ * - currentWeather: Global instance pointer allocated onto the heap.
  */
 #pragma once
 #include <JsonListener.h>
@@ -33,10 +30,28 @@ class weatherClient: public JsonListener {
         String description;
         float temperature;
         float windSpeed;
+        
+        char openWeatherMapApiKey[64] = "";
+        char weatherMsg[46] = "";
+        
+        bool weatherEnabled = false;
+        unsigned long nextWeatherUpdate = 0;
 
     public:
         String currentWeather = "";
         char lastErrorMsg[128];
+
+        const char* getOpenWeatherMapApiKey() const { return openWeatherMapApiKey; }
+        void setOpenWeatherMapApiKey(const char* newKey) { strncpy(openWeatherMapApiKey, newKey, sizeof(openWeatherMapApiKey)-1); }
+
+        bool getWeatherEnabled() const { return weatherEnabled; }
+        void setWeatherEnabled(bool val) { weatherEnabled = val; }
+
+        unsigned long getNextWeatherUpdate() const { return nextWeatherUpdate; }
+        void setNextWeatherUpdate(unsigned long val) { nextWeatherUpdate = val; }
+
+        char* getWeatherMsg() { return weatherMsg; }
+        void setWeatherMsg(const char* newMsg) { strncpy(weatherMsg, newMsg, sizeof(weatherMsg)-1); }
 
         weatherClient();
 
@@ -97,3 +112,5 @@ class weatherClient: public JsonListener {
  */
         virtual void startObject();
 };
+
+extern weatherClient* currentWeather;

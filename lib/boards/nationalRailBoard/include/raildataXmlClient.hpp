@@ -22,9 +22,11 @@
  */
 
 #pragma once
-#include <xmlListener.h>
-#include <xmlStreamingParser.h>
-#include <stationData.h>
+#include "../../../xmlListener/xmlListener.h"
+#include "../../../xmlStreamingParser/xmlStreamingParser.h"
+#include "../../interfaces/messageData.h"
+
+struct NationalRailStation;
 
 /**
  * @brief Callback function definition to report progress during long API initialization or updates.
@@ -33,10 +35,14 @@
  */
 typedef void (*rdCallback) (int state, int id);
 
-#define MAXHOSTSIZE 48
-#define MAXAPIURLSIZE 48
-#define MAXPLATFORMFILTERSIZE 25
+#define NR_MAX_HOST 48            // Maximum string length for the SOAP API host domain
+#define NR_MAX_API_URL 48         // Maximum string length for the SOAP API endpoint URI
+#define NR_MAX_PLATFORM_FILTER 25 // Maximum string length for the user platform filter
 
+#define NR_MAX_LOCATION 45        // Maximum string length for station names (destination, origin, via)
+#define NR_MAX_CALLING 450        // Maximum string length for the concatenated calling points list
+#define NR_MAX_MSG_LEN 400        // Maximum string length for individual service disruption messages
+#define NR_MAX_SERVICES 9         // Maximum number of services to parse and store in memory
 
 class raildataXmlClient: public xmlListener {
 
@@ -44,9 +50,9 @@ class raildataXmlClient: public xmlListener {
 
         struct rdiService {
           char sTime[6];
-          char destination[MAXLOCATIONSIZE];
-          char via[MAXLOCATIONSIZE];
-          char origin[MAXLOCATIONSIZE];
+          char destination[NR_MAX_LOCATION];
+          char via[NR_MAX_LOCATION];
+          char origin[NR_MAX_LOCATION];
           char etd[11];
           char platform[4];
           bool isCancelled;
@@ -54,16 +60,16 @@ class raildataXmlClient: public xmlListener {
           int trainLength;
           byte classesAvailable;
           char opco[50];
-          char calling[MAXCALLINGSIZE];
-          char serviceMessage[MAXMESSAGESIZE];
+          char calling[NR_MAX_CALLING];
+          char serviceMessage[NR_MAX_MSG_LEN];
           int serviceType;
         };
 
         struct rdiStation {
-          char location[MAXLOCATIONSIZE];
+          char location[NR_MAX_LOCATION];
           bool platformAvailable;
           int numServices;
-          rdiService service[MAXBOARDSERVICES];
+          rdiService service[NR_MAX_SERVICES];
         };
 
         String grandParentTagName = "";
@@ -73,8 +79,8 @@ class raildataXmlClient: public xmlListener {
         int tagLevel = 0;
         bool loadingWDSL=false;
         String soapURL = "";
-        char soapHost[MAXHOSTSIZE];
-        char soapAPI[MAXAPIURLSIZE];
+        char soapHost[NR_MAX_HOST];
+        char soapAPI[NR_MAX_API_URL];
 
         String currentPath = "";
         rdiStation xStation;
@@ -88,7 +94,7 @@ class raildataXmlClient: public xmlListener {
         bool firstDataLoad;
         bool endXml;
 
-        char platformFilter[MAXPLATFORMFILTERSIZE];
+        char platformFilter[NR_MAX_PLATFORM_FILTER];
         bool filterPlatforms = false;
         bool keepRoute = false;
 
@@ -210,7 +216,7 @@ class raildataXmlClient: public xmlListener {
  * @param timeOffset Time offset in minutes.
  * @return Connection status constant.
  */
-        int updateDepartures(rdStation *station, stnMessages *messages, const char *crsCode, const char *customToken, int numRows, bool includeBusServices, const char *callingCrsCode, const char *platforms, int timeOffset);
+        int updateDepartures(NationalRailStation *station, stnMessages *messages, const char *crsCode, const char *customToken, int numRows, bool includeBusServices, const char *callingCrsCode, const char *platforms, int timeOffset);
 /**
  * @brief Retrieves the last error message encountered during API operations.
  * @return A string containing the error.

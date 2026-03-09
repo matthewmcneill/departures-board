@@ -24,7 +24,7 @@
 //
 // Custom fonts - replicas of those used on the real display boards
 //
-static const uint8_t NatRailSmall9[1292] U8G2_FONT_SECTION("NatRailSmall9") =
+extern const uint8_t NatRailSmall9[1292] U8G2_FONT_SECTION("NatRailSmall9") =
   "\221\0\3\2\3\4\4\5\5\11\11\0\0\11\0\11\2\1@\2\207\4\363 \5\0\314\24!\7\71\224"
   "\22\203\22\42\7\33\264\24\211%#\16=\224\66\245$\31\224\312\240\224\222\4$\14=\224V\331R\333"
   "\222d\213\0%\14<\224\25\221\42ER\244H\1&\15=\224\66RIJ\22)\211\42%'\6\31"
@@ -67,7 +67,7 @@ static const uint8_t NatRailSmall9[1292] U8G2_FONT_SECTION("NatRailSmall9") =
   "\252\5\0\204\20\253\5\0\204\20\254\5\0\204\20\255\5\0\204\20\256\5\0\204\20\257\5\0\204\20\260\12"
   "$\254\65J$%\12\0\0\0\0";
 
-static uint8_t NatRailTall12[1064] U8G2_FONT_SECTION("NatRailTall12") =
+extern const uint8_t NatRailTall12[1064] U8G2_FONT_SECTION("NatRailTall12") =
   "a\0\3\2\4\4\2\5\5\11\14\0\375\11\375\11\0\1Q\2\235\4\17 \5\0\346\12!\7\221B"
   "\211C\22\42\7#^\212D\11#\21\225B\233R\222\14J)\211\222dPJI\2$\17\225B\253"
   "l)%\331\226DI\262E\0%\12\225B\313i\312:\35\1&\20\225B\33\251\22%Q$%\211"
@@ -103,14 +103,14 @@ static uint8_t NatRailTall12[1064] U8G2_FONT_SECTION("NatRailTall12") =
   "(\1 \16\226\302\213$\314\224(\315\222,\351?\200\24\231B\255AK\223L\222B)\224BMJ"
   "\322l\220\0\0\0\0";
 
-static const uint8_t NatRailClockSmall7[137] U8G2_FONT_SECTION("NatRailClockSmall7") =
+extern const uint8_t NatRailClockSmall7[137] U8G2_FONT_SECTION("NatRailClockSmall7") =
   "\12\0\3\3\3\3\3\1\5\7\7\0\0\7\0\7\0\0\0\0\0\0p\60\12?\343Td\274I*"
   "\0\61\10\274\343HF\272\20\62\13?\343TdRIE*=\63\14?\343TdR\331\230&\251\0"
   "\64\14?\343\315H\22%\311Q*\1\65\13?c\34\244f)MR\1\66\14?\343TdT\213\214"
   "&\251\0\67\11?c\134\205Z\325\0\70\15?\343Td\64IEF\223T\0\71\14?\343Td\64"
   "\211\225&\251\0\0\0\0";
 
-static const uint8_t NatRailClockLarge9[177] U8G2_FONT_SECTION("NatRailClockLarge9") =
+extern const uint8_t NatRailClockLarge9[177] U8G2_FONT_SECTION("NatRailClockLarge9") =
   "\13\0\4\3\4\4\3\2\5\11\11\0\0\11\0\11\0\0\0\0\0\0\230\60\13\231T\307\205\24\277\222"
   "\270\0\61\11\224W\207\304\210\276 \62\16\231T\307\205\224\234\212\13\71u\7\2\63\17\231T\307\205\224"
   "\234\232B\71*\211\13\0\64\23\231T\327\24\221\204\214\210\32\11!\211\3\61\71\11\0\65\20\231T\307"
@@ -118,7 +118,7 @@ static const uint8_t NatRailClockLarge9[177] U8G2_FONT_SECTION("NatRailClockLarg
   "\201\234\252Ur\32\1\70\17\231T\307\205\24+\211\13)V\22\27\0\71\20\231T\307\205\24+\211\203"
   "\70\71*\211\13\0:\7r\235\2\31\1\0\0\0";
 
-static const uint8_t Underground10[1085] U8G2_FONT_SECTION("Underground10") =
+extern const uint8_t Underground10[1085] U8G2_FONT_SECTION("Underground10") =
   "b\0\3\2\3\4\4\5\5\11\12\0\377\11\377\11\0\1^\2\310\4$ \5\0\314\25!\7I\204"
   "\22\207$\42\7\23\274\24\211\22#\21M\204\66\245$\31\224R\22%\311\240\224\222\4$\17M\204V"
   "\331RJ\262-\211\222d\213\0%\12M\204\226\323\224u:\2&\17F\204\67Z\324\246E\211\226D"
@@ -154,7 +154,7 @@ static const uint8_t Underground10[1085] U8G2_FONT_SECTION("Underground10") =
   "I\204\26\17}\13K\204\24YTK\242J\4~\21N\204\67C\62\14\241\70<(\312\60$Q\2"
   " \16N\204\27I\230)Q\232%Y\322 \200\5\0\204\20\201\6\33\237\37\17\0\0\0";
 
-static const uint8_t UndergroundClock8[150] U8G2_FONT_SECTION("UndergroundClock8") =
+extern const uint8_t UndergroundClock8[150] U8G2_FONT_SECTION("UndergroundClock8") =
 "\13\0\3\3\3\4\2\2\5\7\10\0\0\10\0\10\0\0\0\0\0\0}\60\12G\305\251\310\370&\251"
 "\0\61\10\304\305\222\234\364\0\62\15G\305\251\310\244B\331L(;\10\63\15G\305\251\310\244\42\62\215"
 "&\251\0\64\15G\305\24\316H\22%\311Q*\1\65\14G\305\70\310\250f\32MR\1\66\14G\305"

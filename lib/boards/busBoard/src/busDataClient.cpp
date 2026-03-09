@@ -21,9 +21,9 @@
  * - busClientCallback: Type definition for progress callbacks.
  */
 
-#include <busDataClient.h>
 #include <WiFiClientSecure.h>
 #include <JsonListener.h>
+#include "../include/busBoard.hpp"
 #include <Logger.hpp>
 
 busDataClient::busDataClient() {}
@@ -166,7 +166,7 @@ void busDataClient::cleanFilter(const char* rawFilter, char* cleanedFilter, size
  * @param Xcb Function callback to execute UI ticks while blocking and waiting for the API.
  * @return A connection status constant.
  */
-int busDataClient::updateDepartures(rdStation *station, const char *locationId, const char *filter, busClientCallback Xcb) {
+int busDataClient::updateDepartures(BusStop *station, const char *locationId, const char *filter, busClientCallback Xcb) {
 
     unsigned long perfTimer=millis();
     long dataReceived = 0;
@@ -239,7 +239,7 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
     id=0;
     bool maxServicesRead = false;
     xBusStop.numServices = 0;
-    for (int i=0;i<MAXBOARDSERVICES;i++) {
+    for (int i=0;i<BUS_MAX_SERVICES;i++) {
         strcpy(xBusStop.service[i].destinationName,"Check front of bus");
         strcpy(xBusStop.service[i].scheduled,"");
         strcpy(xBusStop.service[i].expected,"");
@@ -284,21 +284,21 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
                             else if (line.substring(0,7)=="<a href" && serviceData) {
                                 // Get the service name from within the hyperlink
                                 serviceId = stripTag(line);
-                                strncpy(xBusStop.service[id].lineName,serviceId.c_str(),MAXBUSLINESIZE-1);
-                                xBusStop.service[id].lineName[MAXBUSLINESIZE-1] = '\0';
+                                strncpy(xBusStop.service[id].lineName,serviceId.c_str(),BUS_MAX_LINE_NAME-1);
+                                xBusStop.service[id].lineName[BUS_MAX_LINE_NAME-1] = '\0';
                             } else {
                                 // must be a service Id without hyperlink
                                 serviceId = line;
-                                strncpy(xBusStop.service[id].lineName,serviceId.c_str(),MAXBUSLINESIZE-1);
-                                xBusStop.service[id].lineName[MAXBUSLINESIZE-1] = '\0';
+                                strncpy(xBusStop.service[id].lineName,serviceId.c_str(),BUS_MAX_LINE_NAME-1);
+                                xBusStop.service[id].lineName[BUS_MAX_LINE_NAME-1] = '\0';
                             }
                             break;
 
                         case PBT_DESTINATION:
                             if (line.indexOf("</td>")>=0) parseStep = PBT_SCHEDULED;
                             else if (line.substring(0,1)!="<") {
-                                strncpy(xBusStop.service[id].destinationName,line.c_str(),MAXLOCATIONSIZE-1);
-                                xBusStop.service[id].destinationName[MAXLOCATIONSIZE-1] = '\0';
+                                strncpy(xBusStop.service[id].destinationName,line.c_str(),BUS_MAX_LOCATION-1);
+                                xBusStop.service[id].destinationName[BUS_MAX_LOCATION-1] = '\0';
                             } else if (line.indexOf("class=\"vehicle\"")>=0) {
                                 // Get the vehicle details
                                 String vehicle = stripTag(line);
@@ -320,7 +320,7 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
                                     strcpy(xBusStop.service[id].expected,"");
                                     parseStep = PBT_HEADER;
                                     if (serviceMatchesFilter(filter,xBusStop.service[id].lineName)) id++;
-                                    if (id>=MAXBOARDSERVICES) maxServicesRead=true;
+                                    if (id>=BUS_MAX_SERVICES) maxServicesRead=true;
                                 }
                             } else if (line.substring(0,1)!="<") {
                                 strncpy(xBusStop.service[id].scheduled,line.c_str(),sizeof(xBusStop.service[id].scheduled));
@@ -332,7 +332,7 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
                             if (line.indexOf("</td>")>=0) {
                                 parseStep = PBT_HEADER;
                                 if (serviceMatchesFilter(filter,xBusStop.service[id].lineName)) id++;
-                                if (id>=MAXBOARDSERVICES) maxServicesRead=true;
+                                if (id>=BUS_MAX_SERVICES) maxServicesRead=true;
                             }
                             else if (line.substring(0,1)!="<") {
                                 strncpy(xBusStop.service[id].expected,line.c_str(),sizeof(xBusStop.service[id].expected));
@@ -366,7 +366,7 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
     else {
         for (int i=0;i<xBusStop.numServices;i++) {
             if (i>1) break; // Only check first two services
-            if (strcmp(xBusStop.service[i].destinationName,station->service[i].destination) || strcmp(xBusStop.service[i].lineName,station->service[i].via)) {
+            if (strcmp(xBusStop.service[i].destinationName,station->service[i].destination) || strcmp(xBusStop.service[i].lineName,station->service[i].routeNumber)) {
                 station->boardChanged=true;
                 break;
             }
@@ -377,9 +377,9 @@ int busDataClient::updateDepartures(rdStation *station, const char *locationId, 
     station->numServices = xBusStop.numServices;
     for (int i=0;i<xBusStop.numServices;i++) {
         strcpy(station->service[i].destination,xBusStop.service[i].destinationName);
-        strcpy(station->service[i].via,xBusStop.service[i].lineName);
+        strcpy(station->service[i].routeNumber,xBusStop.service[i].lineName);
         strcpy(station->service[i].sTime,xBusStop.service[i].scheduled);
-        strcpy(station->service[i].etd,xBusStop.service[i].expected);
+        strcpy(station->service[i].expectedTime,xBusStop.service[i].expected);
     }
 
     if (bChunked) {

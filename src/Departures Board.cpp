@@ -31,435 +31,295 @@
  * The core automatically maps the default Hardware SPI pathways to the correct pins 
  * for that respective board without us having to lift a finger in our codebase!
  *
- * We only have to explicitly declare CS and DC in platformio.ini because those are 
- * "loose" control signals that we get to manually pick and route anywhere we want on 
- * the board, whereas Hardware SPI Clock and Data routes are rigidly defined by the 
- * chip manufacturer.
- *
- * If we did want to use custom pins for Clock and Data (which limits performance since 
- * it forces the chip to "bit-bang" the signal in software instead of using the 
- * dedicated hardware line), we would have to use a SW_SPI object constructor instead, 
- * and then we would indeed supply all 4 pins in the environment configurations. But 
- * for screens, Hardware SPI gives a much smoother frame rate!
- *
  * Module: src/Departures Board.cpp
- * Description: Exported functions and classes.
- *
- * Exported Functions/Classes:
- * - server: Server
- * - u8g2: U8g2
- * - ghUpdate: Gh update
- * - setup: Setup
- * - showSetupCrsHelpScreen: Show setup crs help screen
- * - loop: Loop
+ * Description: Main application entry point for the Departures Board.
  */
 
-// Release version number
-#define VERSION_MAJOR 2
-#define VERSION_MINOR 2
+// -----------------------------------------------------------------------------
+// Libraries and Includes
+// -----------------------------------------------------------------------------
 
+// Core Library Includes
 #include <Arduino.h>
+#include <SPI.h>
+#include <FS.h>
+#include <LittleFS.h>
+#include <time.h>
+
+// Parse libraries
+#include <JsonListener.h>
+#include <JsonStreamingParser.h>
+
+// Networking & Web Libraries
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <WebServer.h>
 #include <HTTPClient.h>
 #include <ESPmDNS.h>
-#include <HTTPUpdateGitHub.h>
-#include <FS.h>
-#include <LittleFS.h>
-#include <ArduinoJson.h>
 #include <WiFiManager.h>
-#include <weatherClient.h>
-#include <stationData.h>
-#include <raildataXmlClient.h>
-#include <TfLdataClient.h>
-#include <busDataClient.h>
-#include <githubClient.h>
-#include <rssClient.h>
+
+// Utilities
+#include <ArduinoJson.h>
+
+// Third-Party Firmware Management
+#include <HTTPUpdateGitHub.h>
+
+// UI, Font, and Display Drivers
+#include <U8g2lib.h>
+#include <gfx/fonts.h>
+#include <gfx/xbmgfx.h>
 #include <webgui/webgraphics.h>
 #include <webgui/index.h>
 #include <webgui/keys.h>
-#include <WiFiConfig.hpp>
 #include <webgui/pages.h>
 #include <webgui/rssfeeds.h>
-#include <gfx/fonts.h>
-#include <gfx/xbmgfx.h>
-#include <time.h>
 
-#include <SPI.h>
-#include <U8g2lib.h>
+// Internal Modules & Managers
+#include <Logger.hpp>
+#include <WiFiConfig.hpp>
+#include <configManager.hpp>
+#include <timeManager.hpp>
+#include <displayManager.hpp>
+#include <otaUpdater.hpp>
+#include <webServer.hpp>
+#include "../lib/boards/systemBoard/include/systemBoard.hpp"
+#include "../lib/boards/interfaces/IStation.hpp"
 
-#define msDay 86400000 // 86400000 milliseconds in a day
-#define msHour 3600000 // 3600000 milliseconds in an hour
-#define msMin 60000 // 60000 milliseconds in a second
-
-/**
- * @brief Server
- * @param 80
- * @return Return value
- */
-WebServer server(80);     // Hosting the Web GUI
-File fsUploadFile;        // File uploads
-
-// Shorthand for response formats
-static const char contentTypeJson[] PROGMEM = "application/json";
-static const char contentTypeText[] PROGMEM = "text/plain";
-static const char contentTypeHtml[] PROGMEM = "text/html";
-
-// Using NTP to set and maintain the clock
-static const char ntpServer[] PROGMEM = "europe.pool.ntp.org";
-static struct tm timeinfo;
-static const char ukTimezone[] = "GMT0BST,M3.5.0/1,M10.5.0";
-
-// Default hostname
-static const char defaultHostname[] = "DeparturesBoard";
+// API Service Clients
+#include <weatherClient.h>
+#include <githubClient.h>
+#include <rssClient.h>
 
 
-#define SCREEN_WIDTH 256 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define DIMMED_BRIGHTNESS 1 // OLED display brightness level when in sleep/screensaver mode
+// -----------------------------------------------------------------------------
+// Definitions & Macros
+// -----------------------------------------------------------------------------
 
-// Initialise the display using the variables provided by the platformio.ini build_flags environment
-U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ DISPLAY_CS_PIN, /* dc=*/ DISPLAY_DC_PIN, /* reset=*/ U8X8_PIN_NONE);
+// Timers
+#define msDay 86400000                 // 86400000 milliseconds in a day
+#define msHour 3600000                 // 3600000 milliseconds in an hour
+#define msMin 60000                    // 60000 milliseconds in a minute
 
-// Vertical line positions on the OLED display (National Rail)
+#define SCREENSAVERINTERVAL 10000      // How often the screen is changed in sleep mode (ms)
+#define DATAUPDATEINTERVAL 150000      // Default fetch interval from National Rail (ms)
+#define FASTDATAUPDATEINTERVAL 45000   // Fast fetch interval from National Rail (ms)
+#define UGDATAUPDATEINTERVAL 30000     // Fetch interval from TfL (ms)
+#define BUSDATAUPDATEINTERVAL 45000    // Fetch interval from bustimes.org (ms)
+
+// API Endpoint Constraints
+#define MAXHOSTSIZE 48                 // Maximum size of the wsdl Host
+#define MAXAPIURLSIZE 48               // Maximum size of the wsdl url
+
+// OLED Display Matrix Row Offsets (National Rail)
 #define LINE0 0
 #define LINE1 13
 #define LINE2 28
 #define LINE3 41
 #define LINE4 55
 
-// Vertical line positions on the OLED display (Underground)
+// OLED Display Matrix Row Offsets (Underground)
 #define ULINE0 0
 #define ULINE1 15
 #define ULINE2 28
 #define ULINE3 41
 #define ULINE4 56
 
-// Service attribution texts
-const char nrAttributionn[] = "Powered by National Rail Enquiries";
-const char tflAttribution[] = "Powered by TfL Open Data";
-const char btAttribution[] = "Powered by bustimes.org";
+// -----------------------------------------------------------------------------
+// Global Object Instantiations
+// -----------------------------------------------------------------------------
 
-//
-// GitHub Client for firmware updates
-//  - Pass a GitHub token if updates are to be loaded from a private repository
-//
-github ghUpdate("","");
+// Display Instance using Hardware SPI
+U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ DISPLAY_CS_PIN, /* dc=*/ DISPLAY_DC_PIN, /* reset=*/ U8X8_PIN_NONE);
 
-#define SCREENSAVERINTERVAL 10000     // How often the screen is changed in sleep mode (ms - 10 seconds)
-#define DATAUPDATEINTERVAL 150000     // How often we fetch data from National Rail (ms - 2.5 mins) - "default" option
-#define FASTDATAUPDATEINTERVAL 45000  // How often we fetch data from National Rail (ms - 45 secs) - "fast" option
-#define UGDATAUPDATEINTERVAL 30000    // How often we fetch data from TfL (ms - 30 secs)
-#define BUSDATAUPDATEINTERVAL 45000   // How often we fetch data from bustimes.org (ms - 45 secs)
+// GitHub OTA Client
+github ghUpdate("", "");
 
-// Bit and bobs
-unsigned long timer = 0;
-bool isSleeping = false;            // Is the screen sleeping (showing the "screensaver")
-bool sleepEnabled = false;          // Is overnight sleep enabled?
-bool forcedSleep = false;           // Is the system in manual sleep mode?
-bool sleepClock = true;             // Showing the clock in sleep mode?
-bool dateEnabled = false;           // Showing the date on screen?
-bool weatherEnabled = false;        // Showing weather at station location. Requires an OpenWeatherMap API key.
-bool enableBus = false;             // Include Bus services on the board?
-bool firmwareUpdates = false;       // Check for and install firmware updates automatically at boot? DEFAULT OFF FOR FORK
-bool dailyUpdateCheck = false;      // Check for and install firmware updates at midnight?
-byte sleepStarts = 0;               // Hour at which the overnight sleep (screensaver) begins
-byte sleepEnds = 6;                 // Hour at which the overnight sleep (screensaver) ends
-int brightness = 50;                // Initial brightness level of the OLED screen
-unsigned long lastWiFiReconnect=0;  // Last WiFi reconnection time (millis)
-bool firstLoad = true;              // Are we loading for the first time (no station config)?
-int prevProgressBarPosition=0;      // Used for progress bar smooth animation
-int startupProgressPercent;         // Initialisation progress
-bool wifiConnected = false;         // Connected to WiFi?
-unsigned long nextDataUpdate = 0;   // Next National Rail update time (millis)
-int dataLoadSuccess = 0;            // Count of successful data downloads
-int dataLoadFailure = 0;            // Count of failed data downloads
-unsigned long lastLoadFailure = 0;  // When the last failure occurred
-int dateWidth;                      // Width of the displayed date in pixels
-int dateDay;                        // Day of the month of displayed date
-bool altStationEnabled = false;     // Switch between stations based on time of day
-bool altStationActive = false;      // Is the alternate station currently shown
-byte altStarts = 12;                // Hour at which to switch to the alternate station
-byte altEnds = 23;                  // Hour at which to switch back to the default station
-bool noScrolling = false;           // Suppress all horizontal scrolling
-bool flipScreen = false;            // Rotate screen 180deg
-String timezone = "";               // custom (non UK) timezone for the clock
-bool hidePlatform = false;          // Hide platform numbers on Rail board?
-int nrTimeOffset = 0;               // Offset minutes for Rail departures display
-int prevUpdateCheckDay;             // Day of the month the last daily firmware update check was made
-unsigned long fwUpdateCheckTimer=0; // Next time to check if the day has rolled over for firmware update check
-bool apiKeys = false;               // Does apikeys.json exist?
+// Weather API Client
+weatherClient* currentWeather = new weatherClient();
 
-char hostname[33];                  // Network hostname (mDNS)
-char myUrl[24];                     // Stores the board's own url
+// RSS Feeds Client
+rssClient* rss = new rssClient();
 
-// WiFi Manager status
-bool wifiConfigured = false;        // Is WiFi configured successfully?
-
-// Station Board Data
-char nrToken[37] = "";              // National Rail Darwin Lite Tokens are in the format nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn, where each 'n' represents a hexadecimal character (0-9 or a-f).
-char crsCode[4] = "";               // Station code (3 character)
-float stationLat=0;                 // Selected station Latitude/Longitude (used to get weather for the location)
-float stationLon=0;
-char callingCrsCode[4] = "";        // Station code to filter routes on
-char callingStation[45] = "";       // Calling filter station friendly name
-char platformFilter[MAXPLATFORMFILTERSIZE]; // CSV list of platforms to filter on
-char cleanPlatformFilter[MAXPLATFORMFILTERSIZE]; // Cleaned up platform filter (for performance)
-char altCrsCode[4] = "";            // Station code of alternate station
-float altLat=0;                     // Alternate station Latitude/Longitude (used to get weather for the location)
-float altLon=0;
-char altCallingCrsCode[4];          // Station code to filter routes on (when alternate station active)
-char altCallingStation[45] = "";    // Calling filter station friendly name (when alternate station active)
-char altPlatformFilter[MAXPLATFORMFILTERSIZE]; // CSV list of platforms to filter on
-String tflAppkey = "";              // TfL API Key
-char tubeId[13] = "";               // Underground station naptan id
-String tubeName="";                 // Underground Station Name
-char busAtco[13]="";                // Bus Stop ATCO location
-String busName="";                  // Bus Stop long name
-int busDestX;                       // Variable margin for bus destination
-char busFilter[MAXBUSFILTERSIZE]=""; // CSV list of services to filter on
-char cleanBusFilter[MAXBUSFILTERSIZE]; // Cleaned up bus filter (for performance)
-float busLat=0;                     // Bus stop Latitude/Longitude (used to get weather for the location)
-float busLon=0;
-
-// board has three possible modes.
-enum boardModes {
-  MODE_RAIL = 0,
-  MODE_TUBE = 1,
-  MODE_BUS = 2
-};
-boardModes boardMode = MODE_RAIL;
-
-// Coach class availability
-static const char firstClassSeating[] PROGMEM = " First class seating only.";
-static const char standardClassSeating[] PROGMEM = " Standard class seating only.";
-static const char dualClassSeating[] PROGMEM = " First and Standard class seating available.";
-
-// Animation vars
-int numMessages=0;
-int scrollStopsXpos = 0;
-int scrollStopsYpos = 0;
-int scrollStopsLength = 0;
-bool isScrollingStops = false;
-int currentMessage = 0;
-int prevMessage = 0;
-int prevScrollStopsLength = 0;
-char line2[4+MAXBOARDMESSAGES][MAXCALLINGSIZE+12];
-
-// Line 3 (additional services)
-int line3Service = 0;
-int scrollServiceYpos = 0;
-bool isScrollingService = false;
-int prevService = 0;
-bool isShowingVia=false;
-unsigned long serviceTimer=0;
-unsigned long viaTimer=0;
-bool showingMessage = false;
-// TfL/bus specific animation
-int scrollPrimaryYpos = 0;
-bool isScrollingPrimary = false;
-bool attributionScrolled = false;
-
-char displayedTime[29] = "";        // The currently displayed time
-unsigned long nextClockUpdate = 0;  // Next time we need to check/update the clock display
-int fpsDelay=25;                    // Total ms between text movement (for smooth animation)
-unsigned long refreshTimer = 0;
-
-// Weather Stuff
-char weatherMsg[46];                            // Current weather at station location
-unsigned long nextWeatherUpdate = 0;            // When the next weather update is due
-String openWeatherMapApiKey = "";               // The API key to use
-weatherClient currentWeather;                   // Create a weather client
-
-// RSS Client
-rssClient rss;                                  // Create a RSS client
-bool rssEnabled = false;                        // Add RSS feed to the messages
-unsigned long nextRssUpdate = 0;                // When the next RSS update is due
-bool rssAddedtoMsgs = false;
-int lastRssUpdateResult = 0;
-String rssURL;                                  // RSS URL to use
-String rssName;                                 // Name of feed for atrribution
-
-bool noDataLoaded = true;                       // True if no data received for the station
-int lastUpdateResult = 0;                       // Result of last data refresh
-unsigned long lastDataLoadTime = 0;             // Timestamp of last data load
-long apiRefreshRate = DATAUPDATEINTERVAL;       // User selected refresh rate for National Rail API
-
-#define MAXHOSTSIZE 48                          // Maximum size of the wsdl Host
-#define MAXAPIURLSIZE 48                        // Maximum size of the wsdl url
-
-char wsdlHost[MAXHOSTSIZE];                     // wsdl Host name
-char wsdlAPI[MAXAPIURLSIZE];                    // wsdl API url
-
-// RailData XML Client
-raildataXmlClient* raildata = nullptr;
-// TfL Client
-TfLdataClient* tfldata = nullptr;
-// Bus Client
-busDataClient* busdata = nullptr;
-// Station Data (shared)
-rdStation station;
-// Station Messages (shared)
+// Shared Message Pool for board displays
 stnMessages messages;
 
-#include <Logger.hpp>
+// API Service Boards
+NationalRailBoard nationalRailBoard;
+TfLBoard* tflBoard = new TfLBoard();
+BusBoard* busBoard = new BusBoard();
 
-#include "gfx/DisplayEngine.hpp"
-#include "webgui/WebHandlers.hpp"
 
-//
+// -----------------------------------------------------------------------------
+// Environment Variables & State Management 
+// -----------------------------------------------------------------------------
+
+// Versioning
+int VERSION_MAJOR = 2;
+int VERSION_MINOR = 2;
+
+// Operating Mode (Rail/Tube/Bus)
+boardModes boardMode = MODE_RAIL;
+
+// API Credits and Attribution Text
+extern const char nrAttributionn[] = "Powered by National Rail Enquiries";
+extern const char tflAttribution[] = "Powered by TfL Open Data";
+extern const char btAttribution[] = "Powered by bustimes.org";
+
+// Hardware Display Configuration
+bool hidePlatform = false;          // Hide platform numbers?
+bool noScrolling = false;           // Mute horizontal scrolling messages
+
+// Display Sleep Configurations
+// Display Sleep Configurations
+// Managed entirely by displayManager internally
+
+// Display State
+int dateWidth;                      // Pixel width of the rendered date text
+int dateDay;                        // Integer day of month
+bool dateEnabled = false;           // Enable date rendering
+bool clockEnabled = true;           // Enable main clock rendering
+char displayedTime[29] = "";        // Clock string buffer
+unsigned long nextClockUpdate = 0;  // Millis until next clock check
+int fpsDelay = 25;                  // Millis between matrix rendering steps
+
+// Networking State
+const char defaultHostname[] = "DeparturesBoard";
+char hostname[33];                  // Explicit system hostname (e.g. mDNS)
+char myUrl[24];                     // Formatted string URL for local IP
+
+// API State Flags
+bool apiKeys = false;               // Determines if external APIs are loaded
+char wsdlHost[MAXHOSTSIZE];         // Cached endpoint host string
+char wsdlAPI[MAXAPIURLSIZE];        // Cached endpoint URI string
+
+// Polling and Refresh Management
+unsigned long refreshTimer = 0;           // Timer cache
+unsigned long nextDataUpdate = 0;         // Calculated time to hit main data endpoints again
+long apiRefreshRate = DATAUPDATEINTERVAL; // Dynamically calculated endpoint polling wait time
+bool noDataLoaded = true;                 // Trigger if payload array counts are zero
+int dataLoadSuccess = 0;                  // Incremental tracker of valid JSON parses
+int dataLoadFailure = 0;                  // Incremental tracker of connection breaks
+unsigned long lastLoadFailure = 0;        // Last exception time
+unsigned long lastDataLoadTime = 0;       // Timestamp of last data load
+int lastUpdateResult = 0;                 // HTTP return codes
+
+// Tube & Bus API Stores
+// Extracted to TfLBoard and BusBoard
+
+
+
+// -----------------------------------------------------------------------------
+// Boot Setup
+// -----------------------------------------------------------------------------
+
+/**
+ * @brief setup
+ * Main execution boot block. Wakes the OLED, formats filesystem partitions, starts the 
+ * networking and webserver background threads, initializes API credentials, provisions
+ * the active Display Board, checks for firmware updates, hooks the NTP clock offset, 
+ * pre-fetches any addons, and prepares the main memory cache strings.
+ */
 void setup(void) {
-  // These are the default wsdl XML SOAP entry points. They can be overridden in the config.json file if necessary
-  strncpy(wsdlHost,"lite.realtime.nationalrail.co.uk",sizeof(wsdlHost));
-  strncpy(wsdlAPI,"/OpenLDBWS/wsdl.aspx?ver=2021-11-01",sizeof(wsdlAPI));
-  u8g2.begin();                       // Start the OLED panel
-  u8g2.setContrast(brightness);       // Initial brightness
-  u8g2.setDrawColor(1);               // Only a monochrome display, so set the colour to "on"
-  u8g2.setFontMode(1);                // Transparent fonts
-  u8g2.setFontRefHeightAll();         // Count entire font height
-  u8g2.setFontPosTop();               // Reference from top
+  // Default WSDL endpoints
+  strncpy(wsdlHost, "lite.realtime.nationalrail.co.uk", sizeof(wsdlHost));
+  strncpy(wsdlAPI, "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", sizeof(wsdlAPI));
+
+  // Initialize Matrix Display Output
+  u8g2.begin();
+  u8g2.setContrast(displayManager.getBrightness());
+  u8g2.setDrawColor(1);
+  u8g2.setFontMode(1);
+  u8g2.setFontRefHeightAll();
+  u8g2.setFontPosTop();
   u8g2.setFont(NatRailTall12);
+
   String buildDate = String(__DATE__);
   String notice = "\x80 " + buildDate.substring(buildDate.length()-4) + F(" Gadec Software (github.com/gadec-uk)");
 
+  // Initialize Data Partition
   LOG_INFO("Mounting LittleFS...");
-  bool isFSMounted = LittleFS.begin(true);    // Start the File System, format if necessary
+  bool isFSMounted = LittleFS.begin(true);
   if (!isFSMounted) LOG_WARN("LittleFS failed to mount. Format may be required.");
   else LOG_INFO("LittleFS mounted successfully.");
-  
-  strcpy(station.location,"");                // No default location
-  strcpy(weatherMsg,"");                      // No weather message
-  strcpy(nrToken,"");                         // No default National Rail token
-  tflAppkey="";                               // No default TfL AppKey
-  loadApiKeys();                              // Load the API keys from the apiKeys.json
+
+  // Inject active board struct
+  if (boardMode == MODE_RAIL) {
+      displayManager.setBoardType(0, BoardType::NR_BOARD);
+  } else if (boardMode == MODE_TUBE) {
+      displayManager.setBoardType(0, BoardType::TFL_BOARD);
+  } else if (boardMode == MODE_BUS) {
+      displayManager.setBoardType(0, BoardType::BUS_BOARD);
+  }
+
+  // Inject API Configuration Data
+  currentWeather->setWeatherMsg("");
+  nationalRailBoard.setNrToken("");
+  tflBoard->setTflAppkey("");
+  loadApiKeys();
   
 #ifdef ENABLE_DEBUG_LOG
   Serial.begin(115200);
   delay(2000); // Give the serial monitor time to connect after a flash/reset
 #endif
   
-  Logger::registerSecret(String(nrToken));
-  Logger::registerSecret(tflAppkey);
-  // Optional: add openweather map key here as well if needed in future
-  
+  Logger::registerSecret(String(nationalRailBoard.getNrToken()));
+  Logger::registerSecret(String(tflBoard->getTflAppkey()));
+
   LOG_INFO("Starting Departures Board...");
   
   LOG_INFO("Loading configuration settings...");
-  loadConfig();                               // Load the configuration settings from config.json
-  u8g2.setContrast(brightness);               // Set the panel brightness to the user saved level
-  if (flipScreen) u8g2.setFlipMode(1);
+  loadConfig();
+  u8g2.setContrast(displayManager.getBrightness());
+  if (displayManager.getFlipScreen()) u8g2.setFlipMode(1);
+
+  // Initial Boot Splash Render
   u8g2.clearBuffer();
-  u8g2.drawXBM(81,0,gadeclogo_width,gadeclogo_height,gadeclogo_bits);
-  centreText(notice.c_str(),48);
+  u8g2.drawXBM(81, 0, gadeclogo_width, gadeclogo_height, gadeclogo_bits);
+  centreText(notice.c_str(), 48);
   u8g2.sendBuffer();
   delay(5000);
 
   u8g2.clearBuffer();
   drawStartupHeading();
   u8g2.sendBuffer();
-  progressBar(F("Connecting to Wi-Fi"),20);
+  progressBar(F("Connecting to Wi-Fi"), 20);
 
-  // Hand off Wi-Fi initialization, NVS migration, and captive portal fallback to the WiFiConfig module
+  // Network Provisioning Phase
   setupWiFi(hostname, wmConfigModeCallback);
-
-  // Get our IP address and store
   updateMyUrl();
+  
   if (MDNS.begin(hostname)) {
-    MDNS.addService("http","tcp",80);
+    MDNS.addService("http", "tcp", 80);
     LOG_INFO(String("mDNS responder started: ") + hostname + ".local");
   }
 
   LOG_INFO("WiFi Connected successfully.");
-  wifiConnected=true;
+  setWifiConnected(true);
   WiFi.setAutoReconnect(true);
-  u8g2.clearBuffer();                                             // Clear the display
-  drawStartupHeading();                                           // Draw the startup heading
+
+  u8g2.clearBuffer();
+  drawStartupHeading();
   char ipBuff[17];
-  WiFi.localIP().toString().toCharArray(ipBuff,sizeof(ipBuff));   // Get the IP address of the ESP32
-  centreText(ipBuff,53);                                          // Display the IP address
-  progressBar(F("Wi-Fi Connected"),30);
-  u8g2.sendBuffer();                                              // Send to OLED panel
+  WiFi.localIP().toString().toCharArray(ipBuff, sizeof(ipBuff));
+  centreText(ipBuff, 53);
+  progressBar(F("Wi-Fi Connected"), 30);
+  u8g2.sendBuffer();
 
-  // Configure the local webserver paths
-  server.on(F("/"),handleRoot);
-  server.on(F("/erasewifi"),handleEraseWiFi);
-  server.on(F("/factoryreset"),handleFactoryReset);
-  server.on(F("/info"),handleInfo);
-  server.on(F("/formatffs"),handleFormatFFS);
-  server.on(F("/dir"),handleFileList);
-  server.onNotFound(handleNotFound);
-  server.on(F("/cat"),handleCat);
-  server.on(F("/del"),handleDelete);
-  server.on(F("/reboot"),handleReboot);
-  server.on(F("/stationpicker"),handleStationPicker);           // Used by the Web GUI to lookup station codes interactively
-  server.on(F("/firmware"),handleFirmwareInfo);                 // Used by the Web GUI to display the running firmware version
-  server.on(F("/savesettings"),HTTP_POST,handleSaveSettings);   // Used by the Web GUI to save updated configuration settings
-  server.on(F("/savekeys"),HTTP_POST,handleSaveKeys);           // Used by the Web GUI to verify/save API keys
-  server.on(F("/brightness"),handleBrightness);                 // Used by the Web GUI to interactively set the panel brightness
-  server.on(F("/ota"),handleOtaUpdate);                         // Used by the Web GUI to initiate a manual firmware/WebApp update
-  server.on(F("/control"),handleControl);                       // Endpoint for automation
-  
-  LOG_INFO("Local webserver endpoints configured.");
-
-  server.on(F("/update"), HTTP_GET, []() {
-    server.sendHeader("Connection", "close");
-    server.send(200, contentTypeHtml, updatePage);
-  });
-  /*handling uploading firmware file */
-  server.on(F("/update"), HTTP_POST, []() {
-    server.sendHeader("Connection", "close");
-    sendResponse(200,(Update.hasError()) ? "FAIL" : "OK");
-    ESP.restart();
-  }, []() {
-    HTTPUpload& upload = server.upload();
-    if (upload.status == UPLOAD_FILE_START) {
-      if (!Update.begin(UPDATE_SIZE_UNKNOWN)) { //start with max available size
-        //Update.printError(Serial);
-      }
-    } else if (upload.status == UPLOAD_FILE_WRITE) {
-      /* flashing firmware to ESP*/
-      if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-        //Update.printError(Serial);
-      }
-    } else if (upload.status == UPLOAD_FILE_END) {
-      if (Update.end(true)) { //true to set the size to the current progress
-      } else {
-        //Update.printError(Serial);
-      }
-    }
-  });
-
-  server.on(F("/upload"), HTTP_GET, []() {
-      server.send(200, contentTypeHtml, uploadPage);
-  });
-  server.on(F("/upload"), HTTP_POST, []() {
-  }, handleFileUpload);
-
-  server.on(F("/success"), HTTP_GET, []() {
-    server.send(200, contentTypeHtml, successPage);
-  });
-
-  server.on(F("/success"), HTTP_GET, []() {
-    server.send(200, contentTypeHtml, successPage);
-  });
-
-  server.begin();     // Start the local web server
-  LOG_INFO("Local webserver started on port 80.");
-
-  // Check for Firmware updates?
-  if (firmwareUpdates) {
+  // Load Administrative Background Threads
+  webServer.init();
+  // Check if OTA Updates Should Happen On Boot
+  if (ota.getFirmwareUpdatesEnabled()) {
     LOG_INFO("Checking for firmware updates on GitHub...");
-    progressBar(F("Checking for firmware updates"),40);
+    progressBar(F("Checking for firmware updates"), 40);
     if (ghUpdate.getLatestRelease()) {
       LOG_INFO("Firmware updates found. Attempting update...");
-      checkForFirmwareUpdate();
+      ota.checkForFirmwareUpdate();
     } else {
       char errLog[128];
       snprintf(errLog, sizeof(errLog), "Firmware update check failed: %s", ghUpdate.getLastError());
       LOG_WARN(errLog);
-      for (int i=15;i>=0;i--) {
-        showUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError(),"",i,false);
+      for (int i=15; i>=0; i--) {
+        showFirmwareUpdateCompleteScreen("Firmware Update Check Failed", "Unable to retrieve latest release information.", ghUpdate.getLastError(), "", i, false);
         delay(1000);
       }
       u8g2.clearDisplay();
@@ -469,159 +329,132 @@ void setup(void) {
   }
   checkPostWebUpgrade();
 
-  // First time configuration?
-  if ((!crsCode[0] && !tubeId[0] && !busAtco[0]) || (!nrToken[0] && boardMode==MODE_RAIL)) {
+  // Manual Handshake Web Check
+  if ((!nationalRailBoard.getCrsCode()[0] && !tflBoard->getTubeId()[0] && !busBoard->getBusAtco()[0]) || (!nationalRailBoard.getNrToken()[0] && boardMode == MODE_RAIL)) {
     if (!apiKeys) showSetupKeysHelpScreen();
     else showSetupCrsHelpScreen();
-    // First time setup mode will exit with a reboot, so just loop here forever servicing web requests
+    // Yield hardware to Web GUI Setup if there's no stored Config
     while (true) {
       yield();
-      server.handleClient();
+      webServer.handleClient();
     }
   }
 
-  configTime(0,0, ntpServer);   // Configure NTP server for setting the clock
-  setenv("TZ",ukTimezone,1);    // Configure UK TimeZone (default and fallback if custom is invalid)
-  tzset();                      // Set the TimeZone
-  LOG_INFO("Time zone configured as UK default.");
-  if (timezone!="") {
-    setenv("TZ",timezone.c_str(),1);
-    tzset();
-    LOG_INFO(String("Custom Timezone configured: ") + timezone);
-  }
-
-  // Check the clock has been set successfully before continuing
-  int p=50;
-  int ntpAttempts=0;
-  bool ntpResult=true;
-  progressBar(F("Setting the system clock..."),50);
-  if(!getLocalTime(&timeinfo)) {              // attempt to set the clock from NTP
-    do {
-      delay(500);                             // If no NTP response, wait 500ms and retry
-      ntpResult = getLocalTime(&timeinfo);
-      ntpAttempts++;
-      p+=5;
-      progressBar(F("Setting the system clock..."),p);
-      if (p>80) p=45;
-    } while ((!ntpResult) && (ntpAttempts<10));
-  }
-  if (!ntpResult) {
-    // Sometimes NTP/UDP fails. A reboot usually fixes it.
-    progressBar(F("Failed to set the clock. Rebooting in 5 sec."),0);
+  // System Time Initialization
+  if (!timeManager.initialize()) {
+    progressBar(F("Failed to set the clock. Rebooting in 5 sec."), 0);
     delay(5000);
     ESP.restart();
   }
-  prevUpdateCheckDay = timeinfo.tm_mday;
 
-  station.numServices=0;
-  if (rssEnabled && boardMode!=MODE_BUS) {
-    progressBar(F("Loading RSS headlines feed"),60);
+  // Addon Loading
+  if (rss->getRssEnabled() && boardMode != MODE_BUS) {
+    progressBar(F("Loading RSS headlines feed"), 60);
     updateRssFeed();
   }
 
-  if (weatherEnabled && boardMode!=MODE_TUBE) {
-    progressBar(F("Getting weather conditions"),64);
-    updateCurrentWeather(stationLat,stationLon);
+  if (currentWeather->getWeatherEnabled() && boardMode != MODE_TUBE) {
+    progressBar(F("Getting weather conditions"), 64);
+    updateCurrentWeather(nationalRailBoard.getStationLat(), nationalRailBoard.getStationLon());
   }
 
+  // Launching
   if (boardMode == MODE_RAIL) {
       LOG_INFO("Initialising National Rail Interface (board mode)...");
-      progressBar(F("Initialising National Rail interface"),67);
-      altStationActive = setAlternateStation();  // Check & set the alternate station if appropriate
-      raildata = new raildataXmlClient();
-      int res = raildata->init(wsdlHost, wsdlAPI, &raildataCallback);
-      if (res != UPD_SUCCESS) {
-        LOG_ERROR(String("National Rail init failed with result code: ") + String(res));
-        showWsdlFailureScreen();
-        while (true) { server.handleClient(); yield();}
-      }
-      progressBar(F("Initialising National Rail interface"),70);
-      raildata->cleanFilter(platformFilter,cleanPlatformFilter,sizeof(platformFilter));
+      progressBar(F("Initialising National Rail interface"), 70);
+      nationalRailBoard.setAltStationActive(setAlternateStation());
   } else if (boardMode == MODE_TUBE) {
       LOG_INFO("Initialising TfL Interface (board mode)...");
-      progressBar(F("Initialising TfL interface"),70);
-      tfldata = new TfLdataClient();
-      startupProgressPercent=70;
+      progressBar(F("Initialising TfL interface"), 70);
+      setStartupProgressPercent(70);
   } else if (boardMode == MODE_BUS) {
       LOG_INFO("Initialising BusTimes Interface (board mode)...");
-      progressBar(F("Initialising BusTimes interface"),70);
-      busdata = new busDataClient();
-      // Create a cleaned filter
-      busdata->cleanFilter(busFilter,cleanBusFilter,sizeof(busFilter));
-      startupProgressPercent=70;
+      progressBar(F("Initialising BusTimes interface"), 70);
+      setStartupProgressPercent(70);
   }
 }
 
+// -----------------------------------------------------------------------------
+// Core Execution Loop
+// -----------------------------------------------------------------------------
 
 /**
- * @brief Loop
+ * @brief loop
+ * Endlessly loops polling API caches asynchronously according to specified limits.
+ * Triggers hardware renders by calling down the abstract display manager. Checks
+ * OTA thread hooks and WebServer client requests continuously.
  */
 void loop(void) {
+  // Firmware Background Checks
+  ota.tick();
 
-  // Check for firmware updates daily if enabled
-  if (dailyUpdateCheck && millis()>fwUpdateCheckTimer) {
-    fwUpdateCheckTimer = millis() + 3300000 + random(600000); // check again in 55 to 65 mins
-    if (getLocalTime(&timeinfo)) {
-      if (timeinfo.tm_mday != prevUpdateCheckDay) {
-        if (ghUpdate.getLatestRelease()) {
-          checkForFirmwareUpdate();
-          prevUpdateCheckDay = timeinfo.tm_mday;
-        }
-      }
-    }
-  }
+  // Matrix Draw Dispatcher
+  displayManager.tick(millis());
 
-  bool wasSleeping = isSleeping;
-  isSleeping = isSnoozing();
-
-  if (isSleeping && millis()>timer) {       // If the "screensaver" is active, change the screen every 8 seconds
-    drawSleepingScreen();
-    timer=millis()+8000;
-  } else if (wasSleeping && !isSleeping) {
-    // Exit sleep mode cleanly
-    firstLoad=true;
-    nextDataUpdate=0;
-    isScrollingStops=false;
-    isScrollingService=false;
-    isScrollingPrimary=false;
-    prevProgressBarPosition=70;
-    u8g2.clearDisplay();
-  }
-
-  // WiFi Status icon
-  if (WiFi.status() != WL_CONNECTED && wifiConnected) {
-    wifiConnected=false;
+  // Connection Management Graphics
+  if (WiFi.status() != WL_CONNECTED && getWifiConnected()) {
+    setWifiConnected(false);
     u8g2.setFont(NatRailSmall9);
-    u8g2.drawStr(0,56,"\x7F");  // No Wifi Icon
-    u8g2.updateDisplayArea(0,7,1,1);
-  } else if (WiFi.status() == WL_CONNECTED && !wifiConnected) {
-    wifiConnected=true;
-    blankArea(0,57,5,7);
-    u8g2.updateDisplayArea(0,7,1,1);
-    updateMyUrl();  // in case our IP changed
+    u8g2.drawStr(0, 56, "\x7F");
+    u8g2.updateDisplayArea(0, 7, 1, 1);
+  } else if (WiFi.status() == WL_CONNECTED && !getWifiConnected()) {
+    setWifiConnected(true);
+    blankArea(0, 57, 5, 7);
+    u8g2.updateDisplayArea(0, 7, 1, 1);
+    updateMyUrl();  // Refresh dynamic IP layout
   }
 
-  // Force a manual reset if we've been disconnected for more than 10 secs
-  if (WiFi.status() != WL_CONNECTED && millis() > lastWiFiReconnect+10000) {
+  if (WiFi.status() != WL_CONNECTED && millis() > getLastWiFiReconnect() + 10000) {
     WiFi.disconnect();
     delay(100);
     WiFi.reconnect();
-    lastWiFiReconnect=millis();
+    setLastWiFiReconnect(millis());
   }
 
-  switch (boardMode) {
-    case MODE_RAIL:
-      departureBoardLoop();
-      break;
+  // Active Screen Loop Polling
+  if (!displayManager.getIsSleeping()) {
+    if (millis() > nextDataUpdate && getWifiConnected()) {
+      showFirmwareUpdateIcon(true);
+      lastUpdateResult = displayManager.getActiveBoard()->updateData();
+      
+      // Select next update interval
+      if (boardMode == MODE_RAIL) nextDataUpdate = millis() + apiRefreshRate;
+      else if (boardMode == MODE_TUBE) nextDataUpdate = millis() + UGDATAUPDATEINTERVAL;
+      else nextDataUpdate = millis() + BUSDATAUPDATEINTERVAL;
 
-    case MODE_TUBE:
-      undergroundArrivalsLoop();
-      break;
+      // Handle Result Codes
+      if (lastUpdateResult == UPD_SUCCESS || lastUpdateResult == UPD_NO_CHANGE) {
+        showFirmwareUpdateIcon(false);
+        lastDataLoadTime = millis();
+        noDataLoaded = false;
+        dataLoadSuccess++;
+        
+        // Asynchronously update weather and RSS where able
+      if (currentWeather->getWeatherEnabled() && boardMode != MODE_TUBE && millis() > currentWeather->getNextWeatherUpdate()) updateCurrentWeather(nationalRailBoard.getStationLat(), nationalRailBoard.getStationLon());
+      if (rss->getRssEnabled() && boardMode != MODE_BUS && millis() > rss->getNextRssUpdate()) updateRssFeed();
+        
+        // Final Screen Flush
+        u8g2.clearBuffer();
+        displayManager.getActiveBoard()->render(u8g2);
+      } else if (lastUpdateResult == UPD_UNAUTHORISED) {
+        showTokenErrorScreen();
+      } else {
+        lastLoadFailure = millis();
+        dataLoadFailure++;
+        nextDataUpdate = millis() + 30000;
+        showFirmwareUpdateIcon(false);
+        if (noDataLoaded) showNoDataScreen();
+      }
+    }
 
-    case MODE_BUS:
-      busDeparturesLoop();
-      break;
+    // Ignore time delays for Initial Fetch
+    if (getFirstLoad()) {
+        setFirstLoad(false);
+        u8g2.clearBuffer();
+        displayManager.getActiveBoard()->render(u8g2);
+    }
   }
 
-  server.handleClient();
+  // Thread Yield for Local HTTP Server Client Listeners
+  webServer.handleClient();
 }

@@ -9,6 +9,8 @@
  * Module: include/gfx/xbmgfx.h
  * Description: Auto-generated documentation header.
  */
+#pragma once
+
 #include <Arduino.h>
 
 #define gadeclogo_width 94

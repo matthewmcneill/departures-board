@@ -250,7 +250,7 @@ void handleSaveKeys() {
         owmToken = settings[F("owmToken")].as<String>();
         if (owmToken.length()) {
           // Check if this is a valid token...
-          if (!currentWeather.updateWeather(owmToken, "51.52", "-0.13")) {
+          if (!currentWeather->updateWeather(owmToken, "51.52", "-0.13")) {
             msg = F("The OpenWeather Map API key is not valid. Please check you have copied your key correctly. It may take up to 30 minutes for a newly created key to become active.\n\nNo changes have been saved.");
             result = false;
           }
@@ -275,7 +275,7 @@ void handleSaveKeys() {
       // Load/Update the API Keys in memory
       loadApiKeys();
       // If all location codes are blank we're in the setup process. If not, the keys have been changed so just reboot.
-      if (!crsCode[0] && !tubeId[0] && !busAtco[0]) {
+      if (!nationalRailBoard.getCrsCode()[0] && !tflBoard->getTubeId()[0] && !busBoard->getBusAtco()[0]) {
         sendResponse(200,msg);
         writeDefaultConfig();
         showSetupCrsHelpScreen();
@@ -304,7 +304,7 @@ void handleSaveSettings() {
     newJSON = server.arg("plain");
     saveFile(F("/config.json"),newJSON);
     LOG_INFO("Settings saved to /config.json successfully.");
-    if ((!crsCode[0] && !tubeId[0]) || server.hasArg("reboot")) {
+    if ((!nationalRailBoard.getCrsCode()[0] && !tflBoard->getTubeId()[0]) || server.hasArg("reboot")) {
       // First time setup or base config change, we need a full reboot
       sendResponse(200,F("Configuration saved. The system will now restart."));
       delay(1000);
@@ -592,9 +592,9 @@ void handleInfo() {
   server.sendContent(F("\nSystem clock: "));
   server.sendContent(String(sysUptime));
   server.sendContent(F("\nCRS station code: "));
-  server.sendContent(String(crsCode));
+  server.sendContent(String(nationalRailBoard.getCrsCode()));
   server.sendContent(F("\nNaptan station code: "));
-  server.sendContent(String(tubeId));
+  server.sendContent(String(tflBoard->getTubeId()));
   server.sendContent(F("\nSuccessful: "));
   server.sendContent(String(dataLoadSuccess));
   server.sendContent(F("\nFailures: "));
@@ -610,45 +610,39 @@ void handleInfo() {
   }
   
   server.sendContent(F("\nLast Result: "));
-  switch (boardMode) {
-    case MODE_RAIL:
-      server.sendContent(raildata->getLastError());
-      break;
-
-    case MODE_TUBE:
-      server.sendContent(tfldata->lastErrorMsg);
-      break;
-
-    case MODE_BUS:
-      server.sendContent(busdata->lastErrorMsg);
-      break;
+  if (lastUpdateResult==UPD_SUCCESS || lastUpdateResult==UPD_NO_CHANGE) server.sendContent(F("Ok"));
+  else if (lastUpdateResult==UPD_UNAUTHORISED) server.sendContent(F("Unauthorised"));
+  else if (lastUpdateResult==UPD_TIMEOUT) server.sendContent(F("Timeout"));
+  else {
+    // Use standard abstraction rather than hardcoded client pointers
+    server.sendContent(displayManager.getActiveBoard()->getLastErrorMsg());
   }
   
   server.sendContent(F("\nUpdate result code: "));
   server.sendContent(getResultCodeText(lastUpdateResult));
-  server.sendContent("\nServices: " + String(station.numServices) + F("\nMessages: "));
+  server.sendContent(F("\nServices: Managed by board plugin\nMessages: "));
   
   int nMsgs = messages.numMessages;
-  if (rssEnabled && rssAddedtoMsgs) nMsgs--;
+  if (rss->getRssEnabled() && rss->getRssAddedtoMsgs()) nMsgs--;
   if (boardMode == MODE_TUBE) nMsgs--;
   
   server.sendContent(String(nMsgs) + F("\n\n"));
 
-  if (rssEnabled) {
+  if (rss->getRssEnabled()) {
     server.sendContent(F("Last RSS result: "));
-    server.sendContent(rss.getLastError());
+    server.sendContent(rss->getLastError());
     server.sendContent(F("\nResult code: "));
-    server.sendContent(getResultCodeText(lastRssUpdateResult));
+    server.sendContent(getResultCodeText(rss->getLastRssUpdateResult()));
     server.sendContent(F("\nNext RSS update: "));
-    server.sendContent(String((unsigned long)(nextRssUpdate-millis())));
+    server.sendContent(String((unsigned long)(rss->getNextRssUpdate()-millis())));
     server.sendContent(F("ms\n\n"));
   }
 
-  if (weatherEnabled) {
+  if (currentWeather->getWeatherEnabled()) {
     server.sendContent(F("Last weather result: "));
-    server.sendContent(currentWeather.lastErrorMsg);
+    server.sendContent(currentWeather->lastErrorMsg);
     server.sendContent(F("\nNext weather update: "));
-    server.sendContent(String((unsigned long)(nextWeatherUpdate-millis())));
+    server.sendContent(String((unsigned long)(currentWeather->getNextWeatherUpdate()-millis())));
     server.sendContent(F("ms\n"));
   }
 
@@ -717,8 +711,7 @@ void handleBrightness() {
   if (server.hasArg(F("b"))) {
     int level = server.arg(F("b")).toInt();
     if (level>0 && level<256) {
-      u8g2.setContrast(level);
-      brightness = level;
+      displayManager.setBrightness(level);
       sendResponse(200,F("OK"));
       return;
     }
@@ -738,10 +731,10 @@ void handleOtaUpdate() {
   u8g2.sendBuffer();
 
   if (ghUpdate.getLatestRelease()) {
-    checkForFirmwareUpdate();
+    ota.checkForFirmwareUpdate();
   } else {
     for (int i=15;i>=0;i--) {
-      showUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError(),"",i,false);
+      showFirmwareUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError(),"",i,false);
       delay(1000);
     }
     log_e("FW Update failed: %s\n",ghUpdate.getLastError());
@@ -756,14 +749,14 @@ void handleOtaUpdate() {
 void handleControl() {
   String resp = "{\"sleeping\":";
   if (server.hasArg(F("sleep"))) {
-    if (server.arg(F("sleep")) == "1") forcedSleep=true; else forcedSleep=false;
+    if (server.arg(F("sleep")) == "1") displayManager.setForcedSleep(true); else displayManager.setForcedSleep(false);
   }
   if (server.hasArg(F("clock"))) {
-    if (server.arg(F("clock")) == "1") sleepClock=true; else sleepClock=false;
+    if (server.arg(F("clock")) == "1") displayManager.setSleepClock(true); else displayManager.setSleepClock(false);
   }
-  resp += (isSleeping || forcedSleep) ? "true":"false";
+  resp += (displayManager.isSnoozing()) ? "true":"false";
   resp += F(",\"display\":");
-  resp += (sleepClock || (!isSleeping && !forcedSleep)) ? "true":"false";
+  resp += (displayManager.getSleepClock() || (!displayManager.isSnoozing())) ? "true":"false";
   resp += "}";
   server.send(200, contentTypeJson, resp);
 }
@@ -881,16 +874,16 @@ void handleStationPicker() {
  * @param longitude Station/Bus stop longitude
  */
 void updateCurrentWeather(float latitude, float longitude) {
-  nextWeatherUpdate = millis() + 1200000; // update every 20 mins
+  currentWeather->setNextWeatherUpdate(millis() + 1200000); // update every 20 mins
   if (!latitude || !longitude) return; // No location co-ordinates
-  strcpy(weatherMsg,"");
-  bool currentWeatherValid = currentWeather.updateWeather(openWeatherMapApiKey, String(latitude), String(longitude));
+  currentWeather->setWeatherMsg("");
+  bool currentWeatherValid = currentWeather->updateWeather(currentWeather->getOpenWeatherMapApiKey(), String(latitude), String(longitude));
   if (currentWeatherValid) {
-    currentWeather.currentWeather.toCharArray(weatherMsg,sizeof(weatherMsg));
-    weatherMsg[0] = toUpperCase(weatherMsg[0]);
-    weatherMsg[sizeof(weatherMsg)-1] = '\0';
+    currentWeather->currentWeather.toCharArray(currentWeather->getWeatherMsg(), 46);
+    currentWeather->getWeatherMsg()[0] = toUpperCase(currentWeather->getWeatherMsg()[0]);
+    currentWeather->getWeatherMsg()[45] = '\0';
   } else {
-    nextWeatherUpdate = millis() + 30000; // Try again in 30s
+    currentWeather->setNextWeatherUpdate(millis() + 30000); // Try again in 30s
   }
 }
 
@@ -901,401 +894,17 @@ void updateCurrentWeather(float latitude, float longitude) {
 //
 // The main processing cycle for the National Rail Departures Board
 //
-void departureBoardLoop() {
 
-  if (altStationEnabled && !isSleeping && altStationActive != isAltActive()) softResetBoard(); // Switch between station views
-
-  if ((millis() > nextDataUpdate) && (!isScrollingStops) && (!isScrollingService) && (lastUpdateResult != UPD_UNAUTHORISED) && (!isSleeping) && (wifiConnected)) {
-    timer = millis() + 2000;
-    if (getStationBoard()) {
-      if ((lastUpdateResult == UPD_SUCCESS) || (lastUpdateResult == UPD_NO_CHANGE && firstLoad)) {
-        drawStationBoard(); // Something changed so redraw the board.
-        dumpBoardToSerial(); 
-      }
-    } else if (lastUpdateResult == UPD_UNAUTHORISED) showTokenErrorScreen();
-	  else if (lastUpdateResult == UPD_DATA_ERROR) {
-	    if (noDataLoaded) showNoDataScreen();
-/**
- * @brief Draw station board
- * @return Return value
- */
-	    else drawStationBoard();
-	  } else if (noDataLoaded) showNoDataScreen();
-  } else if (weatherEnabled && (millis()>nextWeatherUpdate) && (!noDataLoaded) && (!isScrollingStops) && (!isScrollingService) && (!isSleeping) && (wifiConnected)) {
-    updateCurrentWeather(stationLat,stationLon);
-  } else if (rssEnabled && (millis()>nextRssUpdate) && (!noDataLoaded) && (!isScrollingStops) && (!isScrollingService) && (!isSleeping) && (wifiConnected)) {
-    updateRssFeed();
-  }
-
-  if (millis()>timer && numMessages && !isScrollingStops && !isSleeping && lastUpdateResult!=UPD_UNAUTHORISED && lastUpdateResult!=UPD_DATA_ERROR && !noScrolling) {
-    // Need to start a new scrolling line 2
-    prevMessage = currentMessage;
-    prevScrollStopsLength = scrollStopsLength;
-    currentMessage++;
-    if (currentMessage>=numMessages) currentMessage=0;
-    scrollStopsXpos=0;
-    scrollStopsYpos=10;
-    scrollStopsLength = getStringWidth(line2[currentMessage]);
-    isScrollingStops=true;
-  }
-
-  // Check if there's a via destination
-  if (millis()>viaTimer) {
-    if (station.numServices && station.service[0].via[0] && !isSleeping && lastUpdateResult!=UPD_UNAUTHORISED && lastUpdateResult!=UPD_DATA_ERROR) {
-      isShowingVia = !isShowingVia;
-      drawPrimaryService(isShowingVia);
-      u8g2.updateDisplayArea(0,1,32,3);
-      if (isShowingVia) viaTimer = millis()+3000; else viaTimer = millis()+4000;
-    }
-  }
-
-  if (millis()>serviceTimer && !isScrollingService && !isSleeping && lastUpdateResult!=UPD_UNAUTHORISED && lastUpdateResult!=UPD_DATA_ERROR) {
-    // Need to change to the next service if there is one
-    if (station.numServices <= 1 && !weatherMsg[0]) {
-      // There's no other services and no weather so just so static attribution.
-      drawServiceLine(1,LINE3); //TODO?
-      serviceTimer = millis() + 30000;
-      isScrollingService = false;
-    } else {
-      prevService = line3Service;
-      line3Service++;
-      if (station.numServices) {
-        if ((line3Service>station.numServices && !weatherMsg[0]) || (line3Service>station.numServices+1 && weatherMsg[0])) line3Service=(noScrolling && station.numServices>1) ? 2:1;  // First 'other' service
-      } else {
-        if (weatherMsg[0] && line3Service>1) line3Service=0;
-      }
-      scrollServiceYpos=10;
-      isScrollingService = true;
-    }
-  }
-
-  if (isScrollingStops && millis()>timer && !isSleeping && !noScrolling) {
-    blankArea(0,LINE2,256,9);
-    if (scrollStopsYpos) {
-      // we're scrolling up the message initially
-      u8g2.setClipWindow(0,LINE2,256,LINE2+9);
-      // if the previous message didn't scroll then we need to scroll it up off the screen
-      if (prevScrollStopsLength && prevScrollStopsLength<256 && strncmp("Calling",line2[prevMessage],7)) centreText(line2[prevMessage],scrollStopsYpos+LINE2-12);
-      if (scrollStopsLength<256 && strncmp("Calling",line2[currentMessage],7)) centreText(line2[currentMessage],scrollStopsYpos+LINE2-2); // Centre text if it fits
-      else u8g2.drawStr(0,scrollStopsYpos+LINE2-2,line2[currentMessage]);
-      u8g2.setMaxClipWindow();
-      scrollStopsYpos--;
-      if (scrollStopsYpos==0) timer=millis()+1500;
-    } else {
-      // we're scrolling left
-      if (scrollStopsLength<256 && strncmp("Calling",line2[currentMessage],7)) centreText(line2[currentMessage],LINE2-1); // Centre text if it fits
-      else u8g2.drawStr(scrollStopsXpos,LINE2-1,line2[currentMessage]);
-      if (scrollStopsLength < 256) {
-        // we don't need to scroll this message, it fits so just set a longer timer
-        timer=millis()+6000;
-        isScrollingStops=false;
-      } else {
-        scrollStopsXpos--;
-        if (scrollStopsXpos < -scrollStopsLength) {
-          isScrollingStops=false;
-          timer=millis()+500;  // pause before next message
-        }
-      }
-    }
-  }
-
-  if (isScrollingService && millis()>serviceTimer && !isSleeping) {
-    blankArea(0,LINE3,256,9);
-    if (scrollServiceYpos) {
-      // we're scrolling the service into view
-      u8g2.setClipWindow(0,LINE3,256,LINE3+9);
-      // if the prev service is showing, we need to scroll it up off
-      if (prevService>0) drawServiceLine(prevService,scrollServiceYpos+LINE3-12);
-      drawServiceLine(line3Service,scrollServiceYpos+LINE3-1);
-      u8g2.setMaxClipWindow();
-      scrollServiceYpos--;
-      if (scrollServiceYpos==0) {
-        serviceTimer=millis()+5000;
-        isScrollingService=false;
-      }
-    }
-  }
-
-  if (!isSleeping) {
-    // Check if the clock should be updated
-    doClockCheck();
-
-    // To ensure a consistent refresh rate (for smooth text scrolling), we update the screen every 25ms (around 40fps)
-    // so we need to wait any additional ms not used by processing so far before sending the frame to the display controller
-    long delayMs = fpsDelay - (millis()-refreshTimer);
-    if (delayMs>0) delay(delayMs);
-    u8g2.updateDisplayArea(0,3,32,4);
-    refreshTimer=millis();
-  }
-}
 
 //
 // Processing loop for London Underground Arrivals board
 //
-void undergroundArrivalsLoop() {
-  char serviceData[8+MAXLINESIZE+MAXLOCATIONSIZE];
-  bool fullRefresh = false;
 
-  if (millis()>nextDataUpdate && !isScrollingService && !isScrollingPrimary && !isSleeping && wifiConnected) {
-    if (getUndergroundBoard()) {
-      if ((lastUpdateResult == UPD_SUCCESS) || (lastUpdateResult == UPD_NO_CHANGE && firstLoad)) {
-         drawUndergroundBoard();
-         dumpBoardToSerial();
-      }
-    } else if (lastUpdateResult == UPD_UNAUTHORISED) showTokenErrorScreen();
-	  else if (lastUpdateResult == UPD_DATA_ERROR) {
-	    if (noDataLoaded) showNoDataScreen();
-/**
- * @brief Draw underground board
- * @return Return value
- */
-	    else drawUndergroundBoard();
-	  } else if (noDataLoaded) showNoDataScreen();
-  }
-
-    // Scrolling the additional services
-  if (millis()>serviceTimer && !isScrollingService && !isSleeping && !noDataLoaded && lastUpdateResult!=UPD_UNAUTHORISED && lastUpdateResult!=UPD_DATA_ERROR) {
-    if (station.numServices<=2 && messages.numMessages==1 && attributionScrolled) {
-      // There are no additional services to scroll in so static attribution.
-      serviceTimer = millis() + 30000;
-    } else {
-      // Need to change to the next service or message if there is one
-      attributionScrolled = true;
-      prevService = line3Service;
-      line3Service++;
-      scrollServiceYpos=11;
-      scrollStopsXpos=0;
-      isScrollingService = true;
-      if (line3Service>=station.numServices) {
-        // Showing the messages
-        prevMessage = currentMessage;
-        prevScrollStopsLength = scrollStopsLength;  // Save the length of the previous message
-        currentMessage++;
-        if (currentMessage>=messages.numMessages) {
-          if (station.numServices>2) {
-            line3Service=2;
-            currentMessage=-1; // Rollover back to services
-          } else {
-            line3Service = station.numServices;
-            currentMessage=0;
-          }
-        }
-        scrollStopsLength = getStringWidth(line2[currentMessage]);
-      } else {
-        scrollStopsLength=SCREEN_WIDTH;
-      }
-    }
-  }
-
-  if (isScrollingService && millis()>serviceTimer && !isSleeping) {
-    blankArea(0,ULINE3,256,10);
-    if (scrollServiceYpos) {
-      // we're scrolling up the message initially
-      u8g2.setClipWindow(0,ULINE3,256,ULINE3+10);
-      // Was the previous display a service?
-      if (prevService<station.numServices) {
-        drawUndergroundService(prevService,scrollServiceYpos+ULINE3-13);
-      } else {
-        // if the previous message didn't scroll then we need to scroll it up off the screen
-        if (prevScrollStopsLength && prevScrollStopsLength<256) centreText(line2[prevMessage],scrollServiceYpos+ULINE3-13);
-      }
-      // Is this entry a service?
-      if (line3Service<station.numServices) {
-        drawUndergroundService(line3Service,scrollServiceYpos+ULINE3-1);
-      } else {
-        if (scrollStopsLength<256) centreText(line2[currentMessage],scrollServiceYpos+ULINE3-2); // Centre text if it fits
-        else u8g2.drawStr(0,scrollServiceYpos+ULINE3-2,line2[currentMessage]);
-      }
-      u8g2.setMaxClipWindow();
-      scrollServiceYpos--;
-      if (scrollServiceYpos==0) {
-        if (line3Service<station.numServices) {
-          serviceTimer=millis()+3500;
-          isScrollingService=false;
-        } else {
-          serviceTimer=millis()+500;
-        }
-      }
-    } else {
-      // we're scrolling left
-      if (scrollStopsLength<256) centreText(line2[currentMessage],ULINE3-1); // Centre text if it fits
-      else u8g2.drawStr(scrollStopsXpos,ULINE3-1,line2[currentMessage]);
-      if (scrollStopsLength < 256) {
-        // we don't need to scroll this message, it fits so just set a longer timer
-        serviceTimer=millis()+3000;
-        isScrollingService=false;
-      } else {
-        scrollStopsXpos--;
-        if (scrollStopsXpos < -scrollStopsLength) {
-          isScrollingService=false;
-          serviceTimer=millis()+500;  // pause before next message
-        }
-      }
-    }
-  }
-
-  if (isScrollingPrimary && !isSleeping) {
-    blankArea(0,ULINE1,256,ULINE3-ULINE1);
-    fullRefresh = true;
-    // we're scrolling the primary service(s) into view
-    u8g2.setClipWindow(0,ULINE1,256,ULINE1+10);
-    if (station.numServices) drawUndergroundService(0,scrollPrimaryYpos+ULINE1-1);
-    else centreText(F("There are no scheduled arrivals at this station."),scrollPrimaryYpos+ULINE1-1);
-    if (station.numServices>1) {
-      u8g2.setClipWindow(0,ULINE2,256,ULINE2+10);
-      drawUndergroundService(1,scrollPrimaryYpos+ULINE2-1);
-    }
-    u8g2.setMaxClipWindow();
-    scrollPrimaryYpos--;
-    if (scrollPrimaryYpos==0) {
-      isScrollingPrimary=false;
-    }
-  }
-
-  if (!isSleeping) {
-    // Check if the clock should be updated
-    if (millis()>nextClockUpdate) {
-      nextClockUpdate = millis()+250;
-      drawCurrentTimeUG(true);
-    }
-
-    long delayMs = 18 - (millis()-refreshTimer);
-    if (delayMs>0) delay(delayMs);
-    if (fullRefresh) u8g2.updateDisplayArea(0,1,32,6); else u8g2.updateDisplayArea(0,5,32,2);
-    refreshTimer=millis();
-  }
-}
 
 //
 // Processing loop for Bus Departures board
 //
-void busDeparturesLoop() {
-  char serviceData[8+MAXLINESIZE+MAXLOCATIONSIZE];
-  bool fullRefresh = false;
 
-  if (millis()>nextDataUpdate && !isScrollingService && !isScrollingPrimary && !isSleeping && wifiConnected) {
-    if (getBusDeparturesBoard()) {
-      if ((lastUpdateResult == UPD_SUCCESS) || (lastUpdateResult == UPD_NO_CHANGE && firstLoad)) {
-          drawBusDeparturesBoard(); // Something changed so redraw the board.
-          dumpBoardToSerial();
-      }
-    } else if (lastUpdateResult == UPD_UNAUTHORISED) showTokenErrorScreen();
-	  else if (lastUpdateResult == UPD_DATA_ERROR) {
-	    if (noDataLoaded) showNoDataScreen();
-/**
- * @brief Draw bus departures board
- * @return Return value
- */
-	    else drawBusDeparturesBoard();
-	  } else if (noDataLoaded) showNoDataScreen();
-  } else if (weatherEnabled && millis()>nextWeatherUpdate && !noDataLoaded && !isScrollingService && !isScrollingPrimary && !isSleeping && wifiConnected) {
-    updateCurrentWeather(busLat,busLon);
-    // Update the weather text immediately
-    if (weatherMsg[0]) {
-      strcpy(line2[1],btAttribution);
-      strcpy(line2[0],weatherMsg);
-      messages.numMessages=2;
-    }
-  }
-
-  // Scrolling the additional services
-  if (millis()>serviceTimer && !isScrollingPrimary && !isScrollingService && !isSleeping && !noDataLoaded && lastUpdateResult!=UPD_UNAUTHORISED && lastUpdateResult!=UPD_DATA_ERROR) {
-    // Need to change to the next service if there is one
-    if (station.numServices<=2 && messages.numMessages==1) {
-      // There are no additional services or weather to scroll in so static attribution.
-      serviceTimer = millis() + 10000;
-      line3Service=station.numServices;
-    } else {
-      // Need to change to the next service or message
-      prevService = line3Service;
-      line3Service++;
-      scrollServiceYpos=11;
-      isScrollingService = true;
-      if (line3Service>=station.numServices) {
-        // Showing the messages
-        prevMessage = currentMessage;
-        currentMessage++;
-        if (currentMessage>=messages.numMessages) {
-          if (station.numServices>2) {
-            line3Service = 2;
-            currentMessage=-1; // Rollover back to services
-          } else {
-            line3Service = station.numServices;
-            currentMessage=0;
-          }
-        }
-      }
-    }
-  }
-
-  if (isScrollingService && millis()>serviceTimer && !isSleeping) {
-    if (scrollServiceYpos) {
-      blankArea(0,ULINE3,256,10);
-      // we're scrolling up the message
-      u8g2.setClipWindow(0,ULINE3,256,ULINE3+10);
-      // Was the previous display a service?
-      if (prevService<station.numServices) {
-        drawBusService(prevService,scrollServiceYpos+ULINE3-13,busDestX);
-      } else {
-        // Scrolling up the previous message
-        centreText(line2[prevMessage],scrollServiceYpos+ULINE3-13);
-      }
-      // Is this entry a service?
-      if (line3Service<station.numServices) {
-        drawBusService(line3Service,scrollServiceYpos+ULINE3-1,busDestX);
-      } else {
-        centreText(line2[currentMessage],scrollServiceYpos+ULINE3-2);
-      }
-      u8g2.setMaxClipWindow();
-      scrollServiceYpos--;
-      if (scrollServiceYpos==0) {
-        serviceTimer = millis()+2800;
-        if (station.numServices<=2) serviceTimer+=3000;
-      }
-    } else isScrollingService=false;
-  }
-
-  if (isScrollingPrimary && !isSleeping) {
-    blankArea(0,ULINE1,256,ULINE3-ULINE1+10);
-    fullRefresh = true;
-    // we're scrolling the primary service(s) into view
-    u8g2.setClipWindow(0,ULINE1,256,ULINE1+10);
-    if (station.numServices) drawBusService(0,scrollPrimaryYpos+ULINE1-1,busDestX);
-    else centreText(F("There are no scheduled services at this stop."),scrollPrimaryYpos+ULINE1-1);
-    if (station.numServices>1) {
-      u8g2.setClipWindow(0,ULINE2,256,ULINE2+10);
-      drawBusService(1,scrollPrimaryYpos+ULINE2-1,busDestX);
-    }
-    if (station.numServices>2) {
-      u8g2.setClipWindow(0,ULINE3,256,ULINE3+10);
-      drawBusService(2,scrollPrimaryYpos+ULINE3-1,busDestX);
-    } else if (station.numServices<3 && messages.numMessages==1) {
-      // scroll up the attribution once...
-      u8g2.setClipWindow(0,ULINE3,256,ULINE3+10);
-      centreText(btAttribution,scrollPrimaryYpos+ULINE3-1);
-    }
-    u8g2.setMaxClipWindow();
-    scrollPrimaryYpos--;
-    if (scrollPrimaryYpos==0) {
-      isScrollingPrimary=false;
-      serviceTimer = millis()+2800;
-    }
-  }
-
-  if (!isSleeping) {
-    // Check if the clock should be updated
-    if (millis()>nextClockUpdate) {
-      nextClockUpdate = millis()+250;
-      drawCurrentTimeUG(true);    // just use the Tube clock for bus mode
-      u8g2.setFont(NatRailSmall9);
-    }
-
-    long delayMs = 40 - (millis()-refreshTimer);
-    if (delayMs>0) delay(delayMs);
-    if (fullRefresh) u8g2.updateDisplayArea(0,1,32,6); else u8g2.updateDisplayArea(0,5,32,2);
-    refreshTimer=millis();
-  }
-}
 
 //
 // Setup code
