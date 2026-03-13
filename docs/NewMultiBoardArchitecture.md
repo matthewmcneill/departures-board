@@ -35,7 +35,7 @@ struct rdService {
 ## 2. Evaluation of the Historical Abstraction
 
 ### 2.1 The Good: Memory Predictability
-Based on the `docs/memory_management.md` document, this design choice was very intentional. By ensuring `rdStation` and `rdService` are fixed-size structs with statically sized `char` arrays, the application guarantees **zero dynamic heap allocation** during API parsing. 
+Based on the `docs/MemoryManagement.md` document, this design choice was very intentional. By ensuring `rdStation` and `rdService` are fixed-size structs with statically sized `char` arrays, the application guarantees **zero dynamic heap allocation** during API parsing. 
 
 When you instantiate a `rdStation` statically (as done in `Departures Board.cpp` line 302: `rdStation station;`), you allocate exactly the maximum memory it could ever need once at boot. This completely eliminates heap fragmentation, which is critical for long-running stability on the ESP32.
 
@@ -69,26 +69,11 @@ We start by defining pure virtual classes.
 Crucially, **the display logic should sit here.** The main `.cpp` file shouldn't "pull" data and guess how to format it; instead, it should "ask" the active board to draw itself onto the canvas.
 
 ```cpp
-class IService {
+class iDisplayBoard {
 public:
-    virtual const char* getScheduledTime() const = 0;
-    virtual const char* getDestination() const = 0;
-    virtual const char* getExpectedTime() const = 0;
-};
-
-class IStation {
-public:
-    virtual const char* getLocationName() const = 0;
-    virtual int getNumServices() const = 0;
-    virtual const IService* getService(int index) const = 0;
-    
-    // Abstracted Core Loop Responsibilities
-    virtual void updateData() = 0; // Trigger API fetch
-    
-    // The Station knows how to draw its own unique layout!
-    virtual void drawHeader(U8G2& display) const = 0;
-    virtual void drawService(U8G2& display, int serviceIndex, int yPos) const = 0;
-    virtual void animateTick() = 0; // Handle any mode-specific scrolling
+    virtual void tick(uint32_t currentMillis) = 0;
+    virtual void render(U8G2& display) = 0;
+    virtual int updateData() = 0;
 };
 ```
 
@@ -148,7 +133,7 @@ Furthermore, the rendering layout logic (e.g., drawing `timeToStation` vs `isDel
 
 #### The Architectural Impact
 By executing Stage 3:
-* **`IStation` Interface** discards `getStationData()`. It simplifies from generic column math to pure lifecycle hooks: `virtual void tick(uint32_t currentMillis) = 0;` and `virtual void render(U8G2& display) = 0;`.
+* **`iDisplayBoard` Interface** discards legacy monolithic structures. It simplifies from generic column math to pure lifecycle hooks: `virtual void tick(uint32_t currentMillis) = 0;` and `virtual void render(U8G2& display) = 0;`.
 * **Memory footprint** becomes 100% efficient. A Bus board no longer provisions empty arrays for Train carriages.
 * **`loop()` simplifies to:**
   ```cpp
@@ -240,17 +225,17 @@ A major advantage of this architecture is how easily it adapts to changing exter
 
 In the old "Mega Struct" model, changing the engine meant risking breakage across the entire global `rdStation` state and the `Departures Board.cpp` rendering loop because they were tightly coupled.
 
-With the **Carousel Architecture** using pure interfaces (`IStation`, `IService`), adding the new API requires zero modifications to the display logic:
+With the **Carousel Architecture** using pure interfaces (`iDisplayBoard`), adding the new API requires zero modifications to the display logic:
 
-1. **Create a New Implementation**: You build a new `TrainStationRest` class that inherits from `IStation`. It implements `updateData()` using an HTTP JSON parser instead of XML.
-2. **Inherit Rendering logic**: It either implements its own `drawService()` method identically to the SOAP version, or they both inherit from a shared `BaseTrainStation` display mixin.
-3. **Update the Factory**: In `loadConfig()`, when a user selects "National Rail (REST)" in their web configuration, the board instantiates `TrainStationRest(crs)` into the Carousel slot instead of `TrainStationSOAP(crs)`.
+1. **Create a New Implementation**: You build a new `TrainStationRest` class that inherits from `iDisplayBoard`. It implements `updateData()` using an HTTP JSON parser instead of XML.
+2. **Inherit Rendering logic**: It either implements its own `render()` method independently, or they share common components.
+3. **Update the Factory**: In `loadConfig()`, when a user selects "National Rail (REST)" in their web configuration, the board instantiates `TrainStationRest(crs)` into the Carousel slot instead of the SOAP version.
 
-Because the main `loop()` exclusively calls `getActiveBoard().updateData()` and `getActiveBoard().drawHeader()`, it never knows (or cares) if the underlying board fetched data via XML SOAP, JSON REST, or even from a local Bluetooth source. The contract is purely visual, making API transitions completely risk-free.
+Because the main `loop()` exclusively calls `getActiveBoard().updateData()` and `getActiveBoard().render()`, it never knows (or cares) if the underlying board fetched data via XML SOAP, JSON REST, or even from a local Bluetooth source. The contract is purely visual, making API transitions completely risk-free.
 
 ### 5.2 UI Extensibility: Mode-Specific Rendering
 
-A critical benefit of moving the UI drawing routines directly into the `IStation` subclasses (e.g., `render()`) is the elimination of massive `switch(boardMode)` blocks from the main rendering loop.
+A critical benefit of moving the UI drawing routines directly into the `iDisplayBoard` subclasses (e.g., `render()`) is the elimination of massive `switch(boardMode)` blocks from the main rendering loop.
 
 **1. Reclaiming Pixel Space:**
 The 256x64 OLED screen is severely constrained. In the legacy "mega struct" design, drawing logic was heavily reused. This meant that `MODE_BUS` had to navigate a physical screen layout designed for trains. 
