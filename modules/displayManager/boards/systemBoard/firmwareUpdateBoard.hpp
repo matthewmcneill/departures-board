@@ -17,6 +17,8 @@
 #ifndef FIRMWARE_UPDATE_BOARD_HPP
 #define FIRMWARE_UPDATE_BOARD_HPP
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
 #include <string.h>
@@ -40,6 +42,7 @@ enum class FwUpdateState {
  */
 class FirmwareUpdateBoard : public iDisplayBoard {
 private:
+    appContext* context;
     MessageBoard msgBoard;
     LoadingBoard loadBoard;
 
@@ -85,9 +88,12 @@ public:
      */
     void setErrorMessage(const char* error);
 
+    void init(appContext* contextPtr);
+
     // iDisplayBoard Implementation
     void onActivate() override;
     void onDeactivate() override;
+    void configure(const struct BoardConfig& config) override { (void)config; }
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     int updateData() override { return 0; }

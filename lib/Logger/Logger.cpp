@@ -1,25 +1,35 @@
-/*
- * Departures Board (c) 2025-2026 Gadec Software
- *
- * https://github.com/gadec-uk/departures-board
- *
- * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
- * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
- *
- *
- * Module: src/Logger.cpp
- * Description: Implementation of application logging interface with automatic sensitive data redaction.
- *
- * Exported Functions/Classes:
- * - Logger::registerSecret: Add a sensitive string to the redaction list.
- * - Logger::_info: Core info logging function (internal use only, called via macros).
- * - Logger::_warn: Core warn logging function (internal use only, called via macros).
- * - Logger::_error: Core error logging function (internal use only, called via macros).
- * - Logger::_debug: Core debug logging function (internal use only, called via macros).
- */
 #include <Logger.hpp>
 
 std::vector<String> Logger::secrets;
+
+/**
+ * @brief Initializes the Serial port and waits for it to stabilize.
+ * @param baud The baud rate for the Serial connection.
+ */
+void Logger::begin(unsigned long baud) {
+  Serial.begin(baud);
+  delay(1000);
+}
+
+/**
+ * @brief Logs a framed splash message to the Serial console.
+ * @param message The text to be framed.
+ */
+void Logger::logSplashMessage(const char* message) {
+#ifdef ENABLE_DEBUG_LOG
+  if (message == nullptr) return;
+  size_t len = strlen(message);
+  
+  Serial.println("");
+  for (size_t i = 0; i < len + 8; i++) Serial.print("#");
+  Serial.println("");
+  Serial.print("### ");
+  Serial.print(message);
+  Serial.println(" ###");
+  for (size_t i = 0; i < len + 8; i++) Serial.print("#");
+  Serial.println("\n");
+#endif
+}
 
 /**
  * @brief Registers a sensitive string (e.g., API key) to be redacted from all future log output.
@@ -49,45 +59,82 @@ String Logger::redact(const String& message) {
 }
 
 /**
- * @brief Internal function that formats, redacts, and outputs the final log message to Serial.
- * @param level A string representing the severity level (e.g. "INFO", "ERROR").
+ * @brief Internal function that formats, redacts, and outputs the final log message to Serial (String version).
+ * @param icon An emoji icon representing the severity.
+ * @param category The subsystem or tag.
  * @param message The raw message to be logged.
  */
-void Logger::printRedacted(const String& level, const String& message) {
+void Logger::printRedacted(const String& icon, const char* category, const String& message) {
 #ifdef ENABLE_DEBUG_LOG
-  String output = "[" + level + "] " + redact(message);
-  Serial.println(output);
+  Serial.print(icon);
+  Serial.print(" [");
+  Serial.print(category);
+  Serial.print("] ");
+  Serial.println(redact(message));
+#endif
+}
+
+/**
+ * @brief Internal function that formats and outputs the final log message to Serial (Literal version).
+ * Bypasses String allocation and redaction if no secrets are registered for maximum efficiency.
+ * @param icon An emoji icon representing the severity.
+ * @param category The subsystem or tag.
+ * @param message The raw literal string to be logged.
+ */
+void Logger::printRedacted(const String& icon, const char* category, const char* message) {
+#ifdef ENABLE_DEBUG_LOG
+  Serial.print(icon);
+  Serial.print(" [");
+  Serial.print(category);
+  Serial.print("] ");
+  if (secrets.empty()) {
+    Serial.println(message);
+  } else {
+    Serial.println(redact(String(message)));
+  }
 #endif
 }
 
 /**
  * @brief Logs an informational message. Called internally by the LOG_INFO macro.
- * @param message The information to log.
  */
-void Logger::_info(const String& message) {
-  printRedacted("INFO", message);
+void Logger::_info(const char* category, const String& message) {
+  printRedacted("🔘", category, message);
+}
+
+void Logger::_info(const char* category, const char* message) {
+  printRedacted("🔘", category, message);
 }
 
 /**
  * @brief Logs a warning message. Called internally by the LOG_WARN macro.
- * @param message The warning to log.
  */
-void Logger::_warn(const String& message) {
-  printRedacted("WARN", message);
+void Logger::_warn(const char* category, const String& message) {
+  printRedacted("🟡", category, message);
+}
+
+void Logger::_warn(const char* category, const char* message) {
+  printRedacted("🟡", category, message);
 }
 
 /**
  * @brief Logs an error message. Called internally by the LOG_ERROR macro.
- * @param message The error to log.
  */
-void Logger::_error(const String& message) {
-  printRedacted("ERROR", message);
+void Logger::_error(const char* category, const String& message) {
+  printRedacted("🔴", category, message);
+}
+
+void Logger::_error(const char* category, const char* message) {
+  printRedacted("🔴", category, message);
 }
 
 /**
  * @brief Logs a debug message. Called internally by the LOG_DEBUG macro.
- * @param message The debug information to log.
  */
-void Logger::_debug(const String& message) {
-  printRedacted("DEBUG", message);
+void Logger::_debug(const char* category, const String& message) {
+  printRedacted("🔵", category, message);
+}
+
+void Logger::_debug(const char* category, const char* message) {
+  printRedacted("🔵", category, message);
 }

@@ -1,0 +1,78 @@
+/*
+ * Departures Board (c) 2025-2026 Gadec Software
+ *
+ * https://github.com/gadec-uk/departures-board
+ *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: modules/systemManager/appContext.hpp
+ * Description: Central context orchestrator that owns core managers and services.
+ *              Serves as the primary dependency injection point for the system.
+ *
+ * Exported Functions/Classes:
+ * - appContext: Lifecycle owner for Config, Display, Network, and OTA managers.
+ */
+
+#pragma once
+
+#include <configManager.hpp>
+#include <displayManager.hpp>
+#include <otaUpdater.hpp>
+#include <webServer.hpp>
+#include <weatherClient.h>
+#include <rssClient.h>
+#include "systemManager.hpp"
+#include <messaging/messagePool.hpp>
+
+/**
+ * @brief Orchestrator for all core system services and shared state.
+ * 
+ * DESIGN RATIONALE:
+ * This class serves as the central "System Hub" for several critical technical reasons:
+ * 1. Dependency Injection: It allows modules to receive a pointer to the context 
+ *    rather than being "hard-pinned" to global variables in the main file.
+ * 2. Deterministic Boot: It ensures a predictable initialization sequence across 
+ *    different translation units, avoiding the C++ "Static Initialization Order Fiasco".
+ * 3. Service Discovery: It provides a clean, header-based entry point for modules 
+ *    to find and interact with other system services (Config, Display, Network).
+ * 
+ * For a deep dive into this architecture, see doc/ArchitectureAndEncapsulation.md.
+ */
+class appContext {
+private:
+    ConfigManager configManager;    ///< Persistence and settings management
+    DisplayManager displayManager;  ///< Rendering and board lifecycle
+    otaUpdater otaAssetUpdater;     ///< Firmware update lifecycle
+    WebServerManager webServer;     ///< Local GUI and API service
+    systemManager sysManager;       ///< Global application and network state
+    weatherClient weather;          ///< External weather conditions client
+    rssClient rss;                  ///< News feed scroller client
+    MessagePool globalMessagePool;  ///< Shared pool for scrolling status messages
+
+public:
+    /**
+     * @brief Construct the application context.
+     */
+    appContext();
+
+    /**
+     * @brief Initialize all sub-managers in the correct dependency order.
+     */
+    void begin();
+
+    /**
+     * @brief Main administrative tick to dispatch lifecycle events to all managers.
+     */
+    void tick();
+
+    // --- Service Accessors (DI Points) ---
+    ConfigManager& getConfigManager() { return configManager; }
+    DisplayManager& getDisplayManager() { return displayManager; }
+    otaUpdater& getOtaUpdater() { return otaAssetUpdater; }
+    WebServerManager& getWebServer() { return webServer; }
+    systemManager& getsystemManager() { return sysManager; }
+    weatherClient& getWeather() { return weather; }
+    rssClient& getRss() { return rss; }
+    MessagePool& getGlobalMessagePool() { return globalMessagePool; }
+};

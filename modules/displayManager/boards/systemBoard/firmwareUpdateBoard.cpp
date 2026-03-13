@@ -11,13 +11,19 @@
  */
 
 #include "firmwareUpdateBoard.hpp"
-#include "systemBoard.hpp"
 #include <U8g2lib.h>
+#include <appContext.hpp>
 
 FirmwareUpdateBoard::FirmwareUpdateBoard() 
     : currentState(FwUpdateState::WARNING), countdownSeconds(0), downloadPercent(0) {
     releaseVersion[0] = '\0';
     errorMessage[0] = '\0';
+}
+
+void FirmwareUpdateBoard::init(appContext* contextPtr) {
+    context = contextPtr;
+    msgBoard.init(contextPtr);
+    loadBoard.init(contextPtr);
 }
 
 void FirmwareUpdateBoard::setUpdateState(FwUpdateState state) {
@@ -88,7 +94,9 @@ void FirmwareUpdateBoard::render(U8G2& display) {
 
         case FwUpdateState::DOWNLOADING:
             loadBoard.setHeading("Departures Board");
-            loadBoard.setBuildTime(getBuildTime().c_str());
+            if (context) {
+                loadBoard.setBuildTime(context->getsystemManager().getBuildTime().c_str());
+            }
             loadBoard.setProgress("Downloading Firmware", downloadPercent);
             loadBoard.render(display);
             break;

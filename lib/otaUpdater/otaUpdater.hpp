@@ -12,7 +12,7 @@
  *
  * Exported Functions/Classes:
  * - isFirmwareUpdateAvailable: Logic to compare local version with remote tags.
- * - OtaUpdater: Class wrapping daily maintenance and manual update hooks.
+ * - otaUpdater: Class wrapping daily maintenance and manual update hooks.
  * - ota: Global orchestration instance.
  */
 
@@ -20,7 +20,6 @@
 
 #include <Arduino.h>
 #include <widgets/drawingPrimitives.hpp>
-#include <boards/systemBoard/systemBoard.hpp>
 #include <WiFiClientSecure.h>
 #include <githubClient.h>
 #include "iConfigurable.hpp"
@@ -39,8 +38,11 @@ extern github ghUpdate;
  */
 bool isFirmwareUpdateAvailable();
 
-class OtaUpdater : public iConfigurable {
+class appContext;
+
+class otaUpdater : public iConfigurable {
 private:
+    appContext* context;               // Pointer to parent context for DI
     int prevUpdateCheckDay;            // Day of month for last successful daily check
     unsigned long fwUpdateCheckTimer;  // Millis timer for debouncing interval checks
     bool updatesEnabled;               // Cached flag from config
@@ -48,9 +50,21 @@ private:
 
 public:
     /**
+     * @brief Initialize with the current application context.
+     * @param contextPtr Pointer to the parent context.
+     */
+    void init(appContext* contextPtr) { context = contextPtr; }
+
+    /**
+     * @brief Access the parent application context.
+     * @return appContext* Pointer to context.
+     */
+    appContext* getContext() const { return context; }
+
+    /**
      * @brief Default constructor.
      */
-    OtaUpdater();
+    otaUpdater();
 
     /**
      * @brief Main lifecycle maintenance tick. Triggers daily update checks 
@@ -77,4 +91,4 @@ public:
     void reapplyConfig(const Config& config) override;
 };
 
-extern OtaUpdater ota;
+extern otaUpdater ota;

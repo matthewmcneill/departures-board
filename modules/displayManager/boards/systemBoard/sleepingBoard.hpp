@@ -16,6 +16,8 @@
 
 #pragma once
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include <U8g2lib.h>
 #include <Arduino.h>
@@ -25,6 +27,7 @@
  */
 class SleepingBoard : public iDisplayBoard {
 private:
+    appContext* context;
     bool showClock;           ///< Whether to render the time and date
     int dimmedBrightness;     ///< Contrast level to apply when active
     
@@ -44,6 +47,7 @@ public:
      */
     void onActivate() override;
     void onDeactivate() override;
+    void configure(const struct BoardConfig& config) override { (void)config; }
     void tick(uint32_t ms) override;
 
     /**
@@ -58,6 +62,8 @@ public:
 
     void setDimmedBrightness(int level) { dimmedBrightness = level; }
     int getDimmedBrightness() const { return dimmedBrightness; }
+
+    void init(appContext* contextPtr) { context = contextPtr; }
 
     // Minimal interface implementations
     int updateData() override { return 0; }

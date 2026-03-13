@@ -59,7 +59,7 @@ bool github::getLatestRelease() {
     }
     if (retryCounter>=10) {
         strcpy(lastErrorMsg, "Connection timeout");
-        LOG_WARN(lastErrorMsg);
+        LOG_WARN("SYSTEM", lastErrorMsg);
         return false;
     }
 
@@ -76,7 +76,7 @@ bool github::getLatestRelease() {
             // no response within 5 seconds so quit
             httpsClient.stop();
             strcpy(lastErrorMsg, "Response timeout");
-            LOG_WARN(lastErrorMsg);
+            LOG_WARN("SYSTEM", lastErrorMsg);
             return false;
         }
     }
@@ -90,11 +90,11 @@ bool github::getLatestRelease() {
             if (statusLine.indexOf(F("404")) > 0) {
                 strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg) - 1);
                 lastErrorMsg[sizeof(lastErrorMsg) - 1] = '\0';
-                LOG_ERROR(lastErrorMsg);
+                LOG_ERROR("SYSTEM", lastErrorMsg);
             } else {
                 strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg) - 1);
                 lastErrorMsg[sizeof(lastErrorMsg) - 1] = '\0';
-                LOG_WARN(lastErrorMsg);
+                LOG_WARN("SYSTEM", lastErrorMsg);
             }
             return false;
         }
@@ -125,7 +125,7 @@ bool github::getLatestRelease() {
     httpsClient.stop();
     if (millis() >= dataSendTimeout) {
         snprintf(lastErrorMsg, sizeof(lastErrorMsg), "Data timeout (%d bytes)", dataReceived);
-        LOG_WARN(lastErrorMsg);
+        LOG_WARN("SYSTEM", lastErrorMsg);
         return false;
     }
 

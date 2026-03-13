@@ -27,6 +27,7 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <Logger.hpp>
+#include <memory>
 
 #include "../interfaces/iDataSource.hpp"
 
@@ -42,7 +43,8 @@
  * @brief Constructs a new busDataSource object.
  */
 busDataSource::busDataSource() : callback(nullptr) {
-    memset(&stationData, 0, sizeof(BusStop));
+    stationData = std::unique_ptr<BusStop>(new (std::nothrow) BusStop());
+    if (stationData) memset(stationData.get(), 0, sizeof(BusStop));
     lastErrorMsg[0] = '\0';
     busAtco[0] = '\0';
     busFilter[0] = '\0';
@@ -73,44 +75,49 @@ int busDataSource::updateData() {
     bool bChunked = false;
     lastErrorMsg[0] = '\0';
 
-    WiFiClientSecure httpsClient;
-    httpsClient.setInsecure(); // No cert validation for simplicity on ESP32
-    httpsClient.setTimeout(5000);
-    httpsClient.setConnectionTimeout(5000);
-    stationData.boardChanged = false;
+    std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
+    if (!httpsClient) {
+        LOG_ERROR("DATA", "Bus Board: Memory allocation failed for client!");
+        return UPD_DATA_ERROR;
+    }
+
+    httpsClient->setInsecure(); // No cert validation for simplicity on ESP32
+    httpsClient->setTimeout(5000);
+    httpsClient->setConnectionTimeout(5000);
+    if (stationData) stationData->boardChanged = false;
 
     int retryCounter = 0;
-    while (!httpsClient.connect(apiHost, 443) && (retryCounter++ < 10)) {
+    while (!httpsClient->connect(apiHost, 443) && (retryCounter++ < 10)) {
         delay(200);
     }
     if (retryCounter >= 10) {
         strcpy(lastErrorMsg, "Connection timeout");
-        LOG_WARN(lastErrorMsg);
+        LOG_WARN("DATA", lastErrorMsg);
         return UPD_NO_RESPONSE;
     }
 
     // --- Step 2: Send HTTP Request ---
     String request = "GET /stops/" + String(busAtco) + F("/departures HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
-    httpsClient.print(request);
+    httpsClient->print(request);
     if (callback) callback();
     
     unsigned long ticker = millis() + 800;
     retryCounter = 0;
-    while(!httpsClient.available() && retryCounter++ < 40) {
+    while(!httpsClient->available() && retryCounter++ < 40) {
         delay(200);
     }
 
-    if (!httpsClient.available()) {
-        httpsClient.stop();
+    if (!httpsClient->available()) {
+        httpsClient->stop();
         strcpy(lastErrorMsg, "Response timeout");
-        LOG_WARN(lastErrorMsg);
+        LOG_WARN("DATA", lastErrorMsg);
         return UPD_TIMEOUT;
     }
 
     // --- Step 3: Parse HTTP Headers ---
-    String statusLine = httpsClient.readStringUntil('\n');
+    String statusLine = httpsClient->readStringUntil('\n');
     if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
-        httpsClient.stop();
+        httpsClient->stop();
         if (statusLine.indexOf(F("401")) > 0 || statusLine.indexOf(F("429")) > 0) {
             strcpy(lastErrorMsg, "Not Authorized");
             return UPD_UNAUTHORISED;
@@ -120,8 +127,8 @@ int busDataSource::updateData() {
         }
     }
 
-    while (httpsClient.connected() || httpsClient.available()) {
-        String line = httpsClient.readStringUntil('\n');
+    while (httpsClient->connected() || httpsClient->available()) {
+        String line = httpsClient->readStringUntil('\n');
         if (line == F("\r")) break;
         if (line.startsWith(F("Transfer-Encoding:")) && line.indexOf(F("chunked")) >= 0) bChunked = true;
     }
@@ -132,12 +139,17 @@ int busDataSource::updateData() {
     maxServicesRead = false;
     
     // Create a local copy to compare changes
-    BusStop xBusStop;
-    xBusStop.numServices = 0;
+    std::unique_ptr<BusStop> xBusStop(new (std::nothrow) BusStop());
+    if (!xBusStop) {
+        LOG_ERROR("DATA", "Bus Board: Memory allocation failed for xBusStop!");
+        return UPD_DATA_ERROR;
+    }
+
+    xBusStop->numServices = 0;
     for (int i=0; i<BUS_MAX_SERVICES; i++) {
-        strcpy(xBusStop.service[i].destination, "Check front of bus");
-        strcpy(xBusStop.service[i].sTime, "");
-        strcpy(xBusStop.service[i].expectedTime, "");
+        strcpy(xBusStop->service[i].destination, "Check front of bus");
+        strcpy(xBusStop->service[i].sTime, "");
+        strcpy(xBusStop->service[i].expectedTime, "");
     }
 
     int parseStep = PBT_START;
@@ -145,9 +157,9 @@ int busDataSource::updateData() {
     bool serviceData = false;
     String serviceId;
 
-    while((httpsClient.available() || httpsClient.connected()) && (millis() < dataSendTimeout) && (!maxServicesRead)) {
-        while(httpsClient.available() && !maxServicesRead) {
-            String line = httpsClient.readStringUntil('\n');
+    while((httpsClient->available() || httpsClient->connected()) && (millis() < dataSendTimeout) && (!maxServicesRead)) {
+        while(httpsClient->available() && !maxServicesRead) {
+            String line = httpsClient->readStringUntil('\n');
             dataReceived += line.length() + 1;
             line.trim();
             if (line.length()) {
@@ -175,16 +187,16 @@ int busDataSource::updateData() {
                             else if (line.substring(0,3) == "<td") serviceData = true;
                             else if (line.substring(0,7) == "<a href" && serviceData) {
                                 serviceId = stripTag(line);
-                                strncpy(xBusStop.service[id].routeNumber, serviceId.c_str(), BUS_MAX_LINE_NAME-1);
+                                strncpy(xBusStop->service[id].routeNumber, serviceId.c_str(), BUS_MAX_LINE_NAME-1);
                             } else {
                                 serviceId = line;
-                                strncpy(xBusStop.service[id].routeNumber, serviceId.c_str(), BUS_MAX_LINE_NAME-1);
+                                strncpy(xBusStop->service[id].routeNumber, serviceId.c_str(), BUS_MAX_LINE_NAME-1);
                             }
                             break;
                         case PBT_DESTINATION:
                             if (line.indexOf("</td>") >= 0) parseStep = PBT_SCHEDULED;
                             else if (line.substring(0,1) != "<") {
-                                strncpy(xBusStop.service[id].destination, line.c_str(), BUS_MAX_LOCATION-1);
+                                strncpy(xBusStop->service[id].destination, line.c_str(), BUS_MAX_LOCATION-1);
                             } else if (line.indexOf("class=\"vehicle\"") >= 0) {
                                 String vehicle = stripTag(line);
                                 // The vehicle tag contains " - [NAME]", we only want the name
@@ -193,31 +205,31 @@ int busDataSource::updateData() {
                                     vehicle = vehicle.substring(tikregsep+3);
                                     vehicle.trim();
                                 }
-                                if ((strlen(xBusStop.service[id].destination) + vehicle.length() + 3) < BUS_MAX_LOCATION) {
-                                    sprintf(xBusStop.service[id].destination, "%s (%s)", xBusStop.service[id].destination, vehicle.c_str());
+                                if ((strlen(xBusStop->service[id].destination) + vehicle.length() + 3) < BUS_MAX_LOCATION) {
+                                    sprintf(xBusStop->service[id].destination, "%s (%s)", xBusStop->service[id].destination, vehicle.c_str());
                                 }
                             }
                             break;
                         case PBT_SCHEDULED:
                             if (line.indexOf("</td>") >= 0) {
                                 if (dataColumns == 4) parseStep = PBT_EXPECTED; else {
-                                    strcpy(xBusStop.service[id].expectedTime, "");
+                                    strcpy(xBusStop->service[id].expectedTime, "");
                                     parseStep = PBT_HEADER;
-                                    if (serviceMatchesFilter(cleanBusFilter, xBusStop.service[id].routeNumber)) id++;
+                                    if (serviceMatchesFilter(cleanBusFilter, xBusStop->service[id].routeNumber)) id++;
                                     if (id >= BUS_MAX_SERVICES) maxServicesRead = true;
                                 }
                             } else if (line.substring(0,1) != "<") {
-                                strncpy(xBusStop.service[id].sTime, line.c_str(), 5);
+                                strncpy(xBusStop->service[id].sTime, line.c_str(), 5);
                             }
                             break;
                         case PBT_EXPECTED:
                             if (line.indexOf("</td>") >= 1) {
                                 parseStep = PBT_HEADER;
-                                if (serviceMatchesFilter(cleanBusFilter, xBusStop.service[id].routeNumber)) id++;
+                                if (serviceMatchesFilter(cleanBusFilter, xBusStop->service[id].routeNumber)) id++;
                                 if (id >= BUS_MAX_SERVICES) maxServicesRead = true;
                             }
                             else if (line.substring(0,1) != "<") {
-                                strncpy(xBusStop.service[id].expectedTime, line.c_str(), 10);
+                                strncpy(xBusStop->service[id].expectedTime, line.c_str(), 10);
                             }
                             break;
                     }
@@ -231,28 +243,43 @@ int busDataSource::updateData() {
     }
 
     // --- Step 5: Finalize and compare results ---
-    httpsClient.stop();
-    xBusStop.numServices = id;
-    for (int i=0; i<xBusStop.numServices; i++) replaceWord(xBusStop.service[i].destination, "&amp;", "&");
+    httpsClient->stop();
+    xBusStop->numServices = id;
+    for (int i=0; i<xBusStop->numServices; i++) replaceWord(xBusStop->service[i].destination, "&amp;", "&");
 
     // Check for changes (boardChanged flag)
-    if (xBusStop.numServices != stationData.numServices) stationData.boardChanged = true;
-    else {
-        for (int i=0; i < (xBusStop.numServices < 2 ? xBusStop.numServices : 2); i++) {
-            if (strcmp(xBusStop.service[i].destination, stationData.service[i].destination) || 
-                strcmp(xBusStop.service[i].routeNumber, stationData.service[i].routeNumber)) {
-                stationData.boardChanged = true;
-                break;
+    if (stationData) {
+        if (xBusStop->numServices != stationData->numServices) stationData->boardChanged = true;
+        else {
+            for (int i=0; i < (xBusStop->numServices < 2 ? xBusStop->numServices : 2); i++) {
+                if (strcmp(xBusStop->service[i].destination, stationData->service[i].destination) || 
+                    strcmp(xBusStop->service[i].routeNumber, stationData->service[i].routeNumber)) {
+                    stationData->boardChanged = true;
+                    break;
+                }
             }
         }
+
+        // Apply new data
+        stationData->numServices = xBusStop->numServices;
+        memcpy(stationData->service, xBusStop->service, sizeof(BusService) * BUS_MAX_SERVICES);
+
+        snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS %ums [%ld]", (uint32_t)(millis() - perfTimer), dataReceived);
+        LOG_INFO("DATA", "Bus (ATCO: " + String(busAtco) + "): Found " + String(stationData->numServices) + " services.");
+#ifdef ENABLE_DEBUG_LOG
+        LOG_DEBUG("DATA", "--- Bus Data ---");
+        for (int i = 0; i < stationData->numServices; i++) {
+            char debugMsg[256];
+            snprintf(debugMsg, sizeof(debugMsg), "Service %d: [%s] to %s (Sch: %s, Exp: %s)", 
+                     i, stationData->service[i].routeNumber, stationData->service[i].destination, 
+                     stationData->service[i].sTime, stationData->service[i].expectedTime);
+            LOG_DEBUG("DATA", debugMsg);
+        }
+        LOG_DEBUG("DATA", "----------------");
+#endif
+        return stationData->boardChanged ? UPD_SUCCESS : UPD_NO_CHANGE;
     }
-
-    // Apply new data
-    stationData.numServices = xBusStop.numServices;
-    memcpy(stationData.service, xBusStop.service, sizeof(BusService) * BUS_MAX_SERVICES);
-
-    snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS %ums [%ld]", (uint32_t)(millis() - perfTimer), dataReceived);
-    return stationData.boardChanged ? UPD_SUCCESS : UPD_NO_CHANGE;
+    return UPD_DATA_ERROR;
 }
 
 /**
@@ -376,18 +403,23 @@ void busDataSource::startObject() {}
  * @return int Update status code.
  */
 int busDataSource::getStopLongName(const char *locationId, char *locationName) {
-    JsonStreamingParser parser;
-    parser.setListener(this);
-    WiFiClientSecure httpsClient;
-    httpsClient.setInsecure();
-    if (!httpsClient.connect(apiHost, 443)) return UPD_NO_RESPONSE;
+    std::unique_ptr<JsonStreamingParser> parser(new (std::nothrow) JsonStreamingParser());
+    std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
+    if (!parser || !httpsClient) {
+        LOG_ERROR("DATA", "Bus Board: Memory allocation failed for getStopLongName!");
+        return UPD_DATA_ERROR;
+    }
+
+    parser->setListener(this);
+    httpsClient->setInsecure();
+    if (!httpsClient->connect(apiHost, 443)) return UPD_NO_RESPONSE;
     String request = "GET /api/stops/" + String(locationId) + " HTTP/1.0\r\nHost: " + String(apiHost) + "\r\nConnection: close\r\n\r\n";
-    httpsClient.print(request);
-    while (httpsClient.connected() || httpsClient.available()) {
-        if (httpsClient.available()) parser.parse(httpsClient.read());
+    httpsClient->print(request);
+    while (httpsClient->connected() || httpsClient->available()) {
+        if (httpsClient->available()) parser->parse(httpsClient->read());
         else delay(10);
     }
-    httpsClient.stop();
+    httpsClient->stop();
     strncpy(locationName, longName.c_str(), 79);
     return UPD_SUCCESS;
 }

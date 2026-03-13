@@ -17,6 +17,8 @@
 #ifndef MESSAGE_BOARD_HPP
 #define MESSAGE_BOARD_HPP
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
 #include <string.h>
@@ -26,6 +28,7 @@
  */
 class MessageBoard : public iDisplayBoard {
 private:
+    appContext* context;
     char hdr[32];
     char title[32];
     char msg1[48];
@@ -51,14 +54,17 @@ public:
      * @param m4 Body line 4
      */
     void setContent(const char* h, const char* t, 
-                    const char* m1 = "", const char* m2 = "", 
+                    const char* m1 = "", const char* m2 = "",
                     const char* m3 = "", const char* m4 = "");
 
     void setWarningIcon(bool show);
 
+    void init(appContext* contextPtr) { context = contextPtr; }
+
     // iDisplayBoard Implementation
     void onActivate() override;
     void onDeactivate() override;
+    void configure(const struct BoardConfig& config) override { (void)config; }
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     int updateData() override { return 0; }

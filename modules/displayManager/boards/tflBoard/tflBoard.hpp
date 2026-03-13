@@ -13,34 +13,37 @@
 #ifndef TFL_BOARD_HPP
 #define TFL_BOARD_HPP
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include "tflDataSource.hpp"
 #include "../../widgets/headerWidget.hpp"
 #include "../../widgets/clockWidget.hpp"
 #include "../../widgets/serviceListWidget.hpp"
-#include "../../widgets/scrollingMessageWidget.hpp"
+#include "../../widgets/scrollingMessagePoolWidget.hpp"
 
 class TfLBoard : public iDisplayBoard {
 private:
+    appContext* context;
     tflDataSource dataSource;
     
     // UI Widgets
     headerWidget headWidget;
     serviceListWidget servicesWidget;
-    scrollingMessageWidget msgWidget;
+    scrollingMessagePoolWidget msgWidget;
 
     // Configuration
     char tflAppkey[50];
     char tubeId[13];
     char tubeName[80];
+    
+    // Centralized Configuration
+    BoardConfig config;
 
     uint32_t lastUpdate;
 
-protected:
-    TfLBoard();
-    friend class DisplayManager;
-
 public:
+    TfLBoard(appContext* contextPtr = nullptr);
     virtual ~TfLBoard() = default;
 
     // iDisplayBoard implementation
@@ -49,6 +52,7 @@ public:
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
+    void configure(const struct BoardConfig& config) override;
 
     // Configuration Getters/Setters
     void setTflAppkey(const char* key) { strlcpy(tflAppkey, key, sizeof(tflAppkey)); }
@@ -59,7 +63,7 @@ public:
     const char* getTubeId() const { return tubeId; }
     const char* getTubeName() const { return tubeName; }
 
-    int updateData() override { return dataSource.updateData(); }
+    int updateData() override;
     const char* getLastErrorMsg() override { return dataSource.getLastErrorMsg(); }
 };
 

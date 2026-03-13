@@ -22,13 +22,22 @@
 #include <time.h>
 #include "iConfigurable.hpp"
 
+class appContext;
+
 class TimeManager : public iConfigurable {
 private:
+    appContext* context;
     static const char ntpServer[];
     String customTimezone;
 
 public:
     static const char ukTimezone[];
+
+    /**
+     * @brief Initialize with the current application context.
+     * @param contextPtr Pointer to the parent context.
+     */
+    void init(appContext* contextPtr) { context = contextPtr; }
 
     /**
      * @brief Define the active timezone rule explicitly.

@@ -137,7 +137,7 @@
 
      while (redirectCount < maxRedirects) {
 
-        LOG_DEBUG("URL: " + url);
+        LOG_DEBUG("OTA", "URL: " + url);
         if(!http.begin(client, url))
         {
             return HTTP_UPDATE_FAILED;
@@ -162,7 +162,7 @@
 
         int code = http.GET();
         int len = http.getSize();
-        LOG_DEBUG("HTTP GET result " + String(code));
+        LOG_DEBUG("OTA", "HTTP GET result " + String(code));
 
         if (code == HTTP_CODE_MOVED_PERMANENTLY ||
             code == HTTP_CODE_FOUND ||
@@ -170,10 +170,10 @@
             code == HTTP_CODE_PERMANENT_REDIRECT) {
             // Handle redirect
             String newUrl = http.getLocation();
-            LOG_DEBUG("[HTTP] Redirected to: " + newUrl);
+            LOG_DEBUG("OTA", "[HTTP] Redirected to: " + newUrl);
             http.end();  // End current request before retrying
             if (newUrl.length() == 0) {
-                LOG_ERROR("[HTTP] Redirect without Location header!");
+                LOG_ERROR("OTA", "[HTTP] Redirect without Location header!");
                 return HTTP_UPDATE_FAILED;
             }
             url = newUrl;
@@ -181,26 +181,26 @@
         } else {
             if(code <= 0) {
                 _lastError = code;
-                LOG_ERROR("HTTP error: " + http.errorToString(code));
+                LOG_ERROR("OTA", "HTTP error: " + http.errorToString(code));
                 http.end();
                 return HTTP_UPDATE_FAILED;
             }
 
-            LOG_DEBUG("Header read fin.");
-            LOG_DEBUG("Server header:");
-            LOG_DEBUG(" - code: " + String(code));
-            LOG_DEBUG(" - len: " + String(len));
+            LOG_DEBUG("OTA", "Header read fin.");
+            LOG_DEBUG("OTA", "Server header:");
+            LOG_DEBUG("OTA", " - code: " + String(code));
+            LOG_DEBUG("OTA", " - len: " + String(len));
 
             if(http.hasHeader("x-ms-blob-content-md5")) {
-                LOG_DEBUG(" - MD5: " + http.header("x-ms-blob-content-md5"));
+                LOG_DEBUG("OTA", " - MD5: " + http.header("x-ms-blob-content-md5"));
                 // Convert the base64 encoded MD5 back to a hex string
                 md5Hex = md5.base64ToHex(String(http.header("x-ms-blob-content-md5")));
-                LOG_DEBUG(" - MD5 Hex: " + md5Hex);
+                LOG_DEBUG("OTA", " - MD5 Hex: " + md5Hex);
             }
 
-            LOG_DEBUG("ESP32 info:");
-            LOG_DEBUG(" - free Space: " + String(ESP.getFreeSketchSpace()));
-            LOG_DEBUG(" - current Sketch Size: " + String(ESP.getSketchSize()));
+            LOG_DEBUG("OTA", "ESP32 info:");
+            LOG_DEBUG("OTA", " - free Space: " + String(ESP.getFreeSketchSpace()));
+            LOG_DEBUG("OTA", " - current Sketch Size: " + String(ESP.getSketchSize()));
 
             switch(code) {
             case HTTP_CODE_OK:  ///< OK (Start Update)
@@ -213,7 +213,7 @@
                     }
 
                     if(len > sketchFreeSpace) {
-                        LOG_ERROR("FreeSketchSpace to low (" + String(sketchFreeSpace) + ") needed: " + String(len));
+                        LOG_ERROR("OTA", "FreeSketchSpace to low (" + String(sketchFreeSpace) + ") needed: " + String(len));
                         startUpdate = false;
                     }
 
@@ -231,11 +231,11 @@
 
                         int command;
                         command = U_FLASH;
-                        LOG_DEBUG("runUpdate flash...");
+                        LOG_DEBUG("OTA", "runUpdate flash...");
 
                         // check for valid first magic byte
                         if(tcp->peek() != 0xE9) {
-                            LOG_ERROR("Magic header does not start with 0xE9, starts with " + String(tcp->peek()));
+                            LOG_ERROR("OTA", "Magic header does not start with 0xE9, starts with " + String(tcp->peek()));
                             _lastError = HTTP_UE_BIN_VERIFY_HEADER_FAILED;
                             http.end();
                             return HTTP_UPDATE_FAILED;
@@ -243,7 +243,7 @@
 
                         if(runUpdate(*tcp, len, md5Hex, command)) {
                             ret = HTTP_UPDATE_OK;
-                            LOG_DEBUG("Update ok");
+                            LOG_DEBUG("OTA", "Update ok");
                             http.end();
                             // Warn main app we're all done
                             if (_cbEnd) {
@@ -256,13 +256,13 @@
 
                         } else {
                             ret = HTTP_UPDATE_FAILED;
-                            LOG_ERROR("Update failed");
+                            LOG_ERROR("OTA", "Update failed");
                         }
                     }
                 } else {
                     _lastError = HTTP_UE_SERVER_NOT_REPORT_SIZE;
                     ret = HTTP_UPDATE_FAILED;
-                    LOG_ERROR("Content-Length was 0 or wasn't set by Server?!");
+                    LOG_ERROR("OTA", "Content-Length was 0 or wasn't set by Server?!");
                 }
                 break;
             case HTTP_CODE_NOT_MODIFIED:
@@ -280,7 +280,7 @@
             default:
                 _lastError = HTTP_UE_SERVER_WRONG_HTTP_CODE;
                 ret = HTTP_UPDATE_FAILED;
-                LOG_ERROR("HTTP Code is (" + String(code) + ")");
+                LOG_ERROR("OTA", "HTTP Code is (" + String(code) + ")");
                 break;
             }
 
@@ -288,7 +288,7 @@
             return ret;
         }
     }
-    LOG_ERROR("Too many redirects!");
+    LOG_ERROR("OTA", "Too many redirects!");
     return HTTP_UPDATE_FAILED;
 }
 
@@ -312,7 +312,7 @@
          _lastError = Update.getError();
          Update.printError(error);
          error.trim(); // remove line ending
-         LOG_ERROR("Update.begin failed! (" + error + ")");
+         LOG_ERROR("OTA", "Update.begin failed! (" + error + ")");
          return false;
      }
 
@@ -323,7 +323,7 @@
      if(md5.length()) {
          if(!Update.setMD5(md5.c_str())) {
              _lastError = HTTP_UE_SERVER_FAULTY_MD5;
-             LOG_ERROR("Update.setMD5 failed! (" + md5 + ")");
+             LOG_ERROR("OTA", "Update.setMD5 failed! (" + md5 + ")");
              return false;
          }
      }
@@ -332,7 +332,7 @@
          _lastError = Update.getError();
          Update.printError(error);
          error.trim(); // remove line ending
-         LOG_ERROR("Update.writeStream failed! (" + error + ")");
+         LOG_ERROR("OTA", "Update.writeStream failed! (" + error + ")");
          return false;
      }
 
@@ -344,7 +344,7 @@
          _lastError = Update.getError();
          Update.printError(error);
          error.trim(); // remove line ending
-         LOG_ERROR("Update.end failed! (" + error + ")");
+         LOG_ERROR("OTA", "Update.end failed! (" + error + ")");
          return false;
      }
 

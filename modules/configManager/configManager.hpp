@@ -24,20 +24,40 @@
 #include <LittleFS.h>
 #include <WiFi.h>
 
-#ifndef DATAUPDATEINTERVAL
-#define DATAUPDATEINTERVAL 150000 // Default data refresh interval in milliseconds
-#endif
-#ifndef FASTDATAUPDATEINTERVAL
-#define FASTDATAUPDATEINTERVAL 45000 // Accelerated data refresh interval
-#endif
+#include <buildOptions.h>
 
 /**
- * @brief Supported operational modes for the departures board.
+ * @brief Supported operational modes for the display boards.
  */
 enum BoardModes {
-  MODE_RAIL = 0, // National Rail LDBWS mode
-  MODE_TUBE = 1, // London Underground TfL mode
-  MODE_BUS = 2   // Bus Times mode
+    MODE_RAIL = 0,
+    MODE_TUBE = 1,
+    MODE_BUS = 2
+};
+
+/**
+ * @brief Configuration for a single display board instance.
+ */
+struct BoardConfig {
+    BoardModes mode = MODE_RAIL; // Type of board (Rail, Tube, Bus)
+    char name[80] = "";          // Human-readable name for the station/stop
+    char id[13] = "";            // ID (CRS for Rail, Naptan for Tube, Atco for Bus)
+    
+    // --- Location Settings ---
+    float lat = 0.0f;            // Latitude for weather/local info
+    float lon = 0.0f;            // Longitude for weather/local info
+    
+    // --- Filters & Filters ---
+    char filter[54] = "";        // Platform filter or Bus route whitelist
+    char secondaryId[13] = "";   // Calling station CRS or secondary filter
+    char secondaryName[45] = ""; // Human name for calling filter
+    
+    // --- Timing ---
+    int timeOffset = 0;          // Local board time adjustment (NR specific)
+
+    // --- Runtime Readiness (Computed by ConfigManager) ---
+    bool complete = false;       // True if all mandatory fields are present
+    int errorType = 0;           // 0: OK, 1: Missing API Keys, 2: Missing Station ID
 };
 
 /**
@@ -55,6 +75,7 @@ struct Config {
     char wsdlHost[48] = "lite.realtime.nationalrail.co.uk"; // WSDL service host
     char wsdlAPI[48] = "/OpenLDBWS/wsdl.aspx?ver=2021-11-01"; // WSDL path
     char timezone[64] = "Europe/London"; // POSIX timezone string
+    float configVersion = 1.0f; // Configuration format version number
     
     // --- Display Preferences ---
     bool dateEnabled = false; // Show date in header
@@ -74,42 +95,42 @@ struct Config {
     bool firmwareUpdatesEnabled = false; // Enable background OTA checks
     bool dailyUpdateCheckEnabled = false; // Check for firmware updates at midnight
 
-    // --- Operating Mode ---
-    BoardModes boardMode = MODE_RAIL; // Current platform mode
+    // --- Dynamic Board List ---
+    BoardConfig boards[MAX_BOARDS]; // Array of configured display boards
+    int boardCount = 0;             // Number of active boards in the carousel
+    int defaultBoardIndex = 0;      // Index of the board to show on startup
 
-    // --- National Rail Station (Main) ---
-    char crsCode[4] = ""; // 3-letter station CRS
-    float stationLat = 0.0f; // Latitude for local weather
-    float stationLon = 0.0f; // Longitude for local weather
-    int nrTimeOffset = 0; // Local board time adjustment
-    char callingCrsCode[4] = ""; // CRS for calling station filter
-    char callingStation[45] = ""; // Human name for calling filter
-    char platformFilter[54] = ""; // Specific platform filter
+    // --- Legacy Stubs (Compatibility with Web UI) ---
+    // These fields are synchronized with the boards array for backward compatibility
+    BoardModes boardMode = MODE_RAIL; // Legacy: Maps to boards[0].mode
+    char crsCode[4] = "";            // Legacy: Maps to boards[0].id
+    float stationLat = 0.0f;         // Legacy: Maps to boards[0].lat
+    float stationLon = 0.0f;         // Legacy: Maps to boards[0].lon
+    char callingCrsCode[4] = "";     // Legacy: Maps to boards[0].secondaryId
+    char callingStation[45] = "";    // Legacy: Maps to boards[0].secondaryName
+    char platformFilter[54] = "";    // Legacy: Maps to boards[0].filter
+    int nrTimeOffset = 0;            // Legacy: Maps to boards[0].timeOffset
 
-    // --- National Rail Station (Alternative) ---
-    bool altStationEnabled = false; // Enable timed station switching
-    char altCrsCode[4] = ""; // Alt station CRS
-    float altLat = 0.0f; // Alt station latitude
-    float altLon = 0.0f; // Alt station longitude
-    int altStarts = 0; // Hour to switch to Alt
-    int altEnds = 0; // Hour to switch to Main
-    char altCallingCrsCode[4] = ""; // Alt calling CRS filter
-    char altCallingStation[45] = ""; // Alt calling human name
-    char altPlatformFilter[54] = ""; // Alt platform filter
+    bool altStationEnabled = false;  // Legacy: Managed via array presence
+    char altCrsCode[4] = "";         // Legacy: Maps to an additional NR board
+    float altLat = 0.0f;             // Legacy
+    float altLon = 0.0f;             // Legacy
+    char altCallingCrsCode[4] = "";  // Legacy
+    char altCallingStation[45] = ""; // Legacy
+    char altPlatformFilter[54] = ""; // Legacy
+    int altStarts = 0;               // Legacy: Unsupported in new format (yet)
+    int altEnds = 0;                 // Legacy: Unsupported in new format (yet)
 
-    // --- TfL / Tube Settings ---
-    char tubeId[13] = ""; // Naptan ID for tube stop
-    char tubeName[80] = ""; // Human name for tube stop
+    char tubeId[13] = "";            // Legacy: Maps to a TFL board in array
+    char tubeName[80] = "";          // Legacy: Maps to a TFL board in array
 
-    // --- Bus Settings ---
-    bool showBus = false; // Enable bus departures panel
-    char busId[13] = ""; // ATCO code for bus stop
-    char busName[80] = ""; // Human name for bus stop
-    float busLat = 0.0f; // Bus stop latitude
-    float busLon = 0.0f; // Bus stop longitude
-    char busFilter[54] = ""; // Bus route whitelist
+    bool showBus = false;            // Legacy: Managed via array presence
+    char busId[13] = "";             // Legacy: Maps to a BUS board in array
+    char busName[80] = "";           // Legacy: Maps to a BUS board in array
+    float busLat = 0.0f;             // Legacy
+    float busLon = 0.0f;             // Legacy
+    char busFilter[54] = "";         // Legacy
 
-    // --- RSS Settings ---
     char rssUrl[128] = ""; // XML feed URL
     char rssName[48] = ""; // Label for news source
     bool rssEnabled = false; // Enable headlines scroller
@@ -136,9 +157,20 @@ public:
     void loadApiKeys();
 
     /**
+     * @brief Validates all configured boards and updates their 'complete' and 'errorType' properties.
+     */
+    void validate();
+
+    /**
      * @brief Writes a skeleton `/config.json` configuration onto LittleFS.
      */
     void writeDefaultConfig();
+
+    /**
+     * @brief Writes the current in-memory configuration to `/config.json` in the modern multi-board format.
+     * @return True if save succeeded.
+     */
+    bool save();
 
     /**
      * @brief Save textual data string to a file in LittleFS.
@@ -179,7 +211,7 @@ public:
     void notifyConsumersToReapplyConfig();
 
 private:
-    static const int MAX_CONSUMERS = 10; // Maximum number of configurable modules
+    static const int MAX_CONSUMERS = MAX_CONFIG_CONSUMERS; // Maximum number of configurable modules
     class iConfigurable* consumers[MAX_CONSUMERS]; // Array of registered consumer pointers
     int consumerCount = 0; // Current number of registered consumers
 };

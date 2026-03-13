@@ -154,5 +154,15 @@ To set a custom time zone for the departure board clock, you will need to enter 
 <a href="https://buymeacoffee.com/gadec.uk"><img src="https://github.com/user-attachments/assets/e5960046-051a-45af-8730-e23d4725ab53" align="left" width="160" style="margin-right: 15px;" /></a>
 This software is completely free for non-commercial use without obligation. If you would like to support me and encourage ongoing updates, you can [buy me a coffee!](https://buymeacoffee.com/gadec.uk)
 
+
+### Agent Collaboration (Antigravity Workflows)
+This project uses **Antigravity Workflows** for managing multiple agent sessions in parallel. To prevent hardware and build conflicts, use the following commands:
+- `/queue-plan`: Queue the current implementation plan for execution.
+- `/queue-list`: List the current state of the execution queue.
+- `/queue-do-next`: Release the current lock and hand over to the next session.
+- `/queue-do-this`: Claim the lock for this session and start work.
+- `/queue-pick`: Pick a specific task from the queue to work on next.
+- `/queue-release`: Force release the current hardware lock.
+
 ### Licence
 This work is licensed under **Creative Commons Attribution-NonCommercial-ShareAlike 4.0**. To view a copy of this licence, visit [https://creativecommons.org/licenses/by-nc-sa/4.0/](https://creativecommons.org/licenses/by-nc-sa/4.0/). Note: the terms of the licence prohibit commericial use of this work, this includes *any* reselling of the work in kit or assembled form for commercial gain.

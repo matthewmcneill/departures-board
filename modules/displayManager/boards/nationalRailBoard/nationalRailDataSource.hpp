@@ -15,7 +15,8 @@
 
 #include "../interfaces/iDataSource.hpp"
 #include "../xmlListener/xmlListener.h"
-#include "../interfaces/messageData.h"
+#include "../../messaging/messagePool.hpp"
+#include <memory>
 
 #include <Arduino.h>
 
@@ -65,8 +66,8 @@ typedef void (*nrDataSourceCallback) (int state, int id);
 
 class nationalRailDataSource : public iDataSource, public xmlListener {
 private:
-    NationalRailStation stationData;
-    stnMessages messagesData;
+    std::unique_ptr<NationalRailStation> stationData;
+    MessagePool messagesData;
     char lastErrorMessage[128];
 
     // Darwin API / SOAP details
@@ -119,8 +120,8 @@ public:
     int init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb);
     void configure(const char* token, const char* crs, const char* filter = "", const char* callingCrs = "", int offset = 0);
     
-    NationalRailStation* getStationData() { return &stationData; }
-    stnMessages* getMessagesData() { return &messagesData; }
+    NationalRailStation* getStationData() { return stationData.get(); }
+    MessagePool* getMessagesData() { return &messagesData; }
     void cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen);
 
     // xmlListener Implementation

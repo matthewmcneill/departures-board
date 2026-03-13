@@ -23,6 +23,7 @@
 #include <JsonListener.h>
 #include <WiFiClient.h>
 #include <Logger.hpp>
+#include <memory>
 
 /**
  * @brief Implements the iConfigurable interface.
@@ -45,57 +46,63 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
     unsigned long perfTimer = millis();
     strcpy(lastErrorMsg, "");
 
-    JsonStreamingParser parser;
-    parser.setListener(this);
-    WiFiClient httpClient;
+    std::unique_ptr<JsonStreamingParser> parser(new (std::nothrow) JsonStreamingParser());
+    std::unique_ptr<WiFiClient> httpClient(new (std::nothrow) WiFiClient());
+
+    if (!parser || !httpClient) {
+        LOG_ERROR("DATA", "Weather Client: Memory allocation failed!");
+        return false;
+    }
+
+    parser->setListener(this);
 
     int retryCounter=0;
-    while (!httpClient.connect(apiHost, 80) && (retryCounter++ < 15)){
+    while (!httpClient->connect(apiHost, 80) && (retryCounter++ < 15)){
         delay(200);
     }
     if (retryCounter>=15) {
         strcpy(lastErrorMsg, "Connection timeout");
-        LOG_WARN(lastErrorMsg);
+        LOG_WARN("DATA", lastErrorMsg);
         return false;
     }
 
     String request = "GET /data/2.5/weather?units=metric&lang=en&lat=" + lat + F("&lon=") + lon + F("&appid=") + apiKey + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
-    httpClient.print(request);
+    httpClient->print(request);
     retryCounter=0;
-    while(!httpClient.available() && retryCounter++ < 40) {
+    while(!httpClient->available() && retryCounter++ < 40) {
         delay(200);
     }
 
-    if (!httpClient.available()) {
+    if (!httpClient->available()) {
         // no response within 8 seconds so exit
-        httpClient.stop();
+        httpClient->stop();
         strcpy(lastErrorMsg, "Response timeout (GET)");
-        LOG_WARN(lastErrorMsg);
+        LOG_WARN("DATA", lastErrorMsg);
         return false;
     }
 
     // Parse status code
-    String statusLine = httpClient.readStringUntil('\n');
+    String statusLine = httpClient->readStringUntil('\n');
     if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
-        httpClient.stop();
+        httpClient->stop();
 
         if (statusLine.indexOf(F("401")) > 0) {
             strcpy(lastErrorMsg, "Not Authorized");
-            LOG_ERROR(lastErrorMsg);
+            LOG_ERROR("DATA", lastErrorMsg);
         } else if (statusLine.indexOf(F("500")) > 0) {
             strcpy(lastErrorMsg, "Server Error");
-            LOG_WARN(lastErrorMsg);
+            LOG_WARN("DATA", lastErrorMsg);
         } else {
             strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg)-1);
             lastErrorMsg[sizeof(lastErrorMsg)-1] = '\0';
-            LOG_WARN(lastErrorMsg);
+            LOG_WARN("DATA", lastErrorMsg);
         }
         return false;
     }
 
     // Skip the remaining headers
-    while (httpClient.connected() || httpClient.available()) {
-        String line = httpClient.readStringUntil('\n');
+    while (httpClient->connected() || httpClient->available()) {
+        String line = httpClient->readStringUntil('\n');
         if (line == "\r") break;
     }
 
@@ -104,24 +111,34 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
     weatherItem=0;
 
     unsigned long dataSendTimeout = millis() + 10000UL;
-    while((httpClient.available() || httpClient.connected()) && (millis() < dataSendTimeout)) {
-        while(httpClient.available()) {
-            c = httpClient.read();
+    while((httpClient->available() || httpClient->connected()) && (millis() < dataSendTimeout)) {
+        while(httpClient->available()) {
+            c = httpClient->read();
             if (c == '{' || c == '[') isBody = true;
-            if (isBody) parser.parse(c);
+            if (isBody) parser->parse(c);
         }
         delay(5);
     }
-    httpClient.stop();
+    httpClient->stop();
     if (millis() >= dataSendTimeout) {
         strcpy(lastErrorMsg, "Data timeout");
-        LOG_WARN(lastErrorMsg);
+        LOG_WARN("DATA", lastErrorMsg);
         return false;
     }
 
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "Success - took %lums", static_cast<unsigned long>(millis()-perfTimer));
 
     currentWeather = description + " " + String((int)round(temperature)) + F("\xB0 Wind: ") + String((int)round(windSpeed)) + F("mph");
+
+#ifdef ENABLE_DEBUG_LOG
+    char debugMsg[128];
+    LOG_DEBUG("DATA", "--- Weather Data ---");
+    LOG_DEBUG("DATA", description.c_str());
+    snprintf(debugMsg, sizeof(debugMsg), "Temp: %.1f C, Wind: %.1f mph", temperature, windSpeed);
+    LOG_DEBUG("DATA", debugMsg);
+    LOG_DEBUG("DATA", "--------------------");
+#endif
+
     return true;
 }
 

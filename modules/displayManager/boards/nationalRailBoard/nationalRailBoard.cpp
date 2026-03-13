@@ -1,3 +1,4 @@
+#include <appContext.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  *
@@ -17,10 +18,11 @@ extern const char nrAttributionn[];
 extern const uint8_t NatRailTall12[];
 extern const uint8_t NatRailSmall9[];
 
-NationalRailBoard::NationalRailBoard() 
-    : headWidget(0, 0, 256, 14), 
+NationalRailBoard::NationalRailBoard(appContext* contextPtr) 
+    : context(contextPtr),
+      headWidget(0, 0, 256, 14), 
       servicesWidget(0, 28, 256, 26), // Secondary services start lower
-      msgWidget(0, 28, 256, 9),      // Line 2 scroller
+      msgWidget(0, 28, 256, 9, NatRailSmall9),      // Line 2 scroller
       lastUpdate(0), 
       viaToggle(false),
       nextViaToggle(0) {
@@ -54,54 +56,45 @@ NationalRailBoard::NationalRailBoard()
 }
 
 void NationalRailBoard::onActivate() {
-    dataSource.init("online.gadec.uk", "/darwin/wsdl.xml", nullptr); // Simplified init
+    LOG_INFO("DISPLAY", "NR Board: onActivate() called.");
+    int status = dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr); // Official public Darwin API
+    if (status != 0) {
+        LOG_WARN("DISPLAY", "NR Board: dataSource.init() failed with status: " + String(status));
+    } else {
+        LOG_INFO("DISPLAY", "NR Board: dataSource.init() succeeded.");
+    }
+    
+    // Use the stored configuration
     dataSource.configure(nrToken, crsCode, platformFilter, callingCrsCode, nrTimeOffset);
+    
+    // Configure message pools
+    if (context) {
+        msgWidget.addMessagePool(&context->getGlobalMessagePool());
+    }
+    msgWidget.addMessagePool(dataSource.getMessagesData());
+    
+    // Set initial text (fallback)
+    msgWidget.setText(nrAttributionn);
     lastUpdate = 0;
 }
 
 void NationalRailBoard::onDeactivate() {}
 
-void NationalRailBoard::tick(uint32_t ms) {
-    if (ms - lastUpdate > 60000 || lastUpdate == 0) {
-        int status = dataSource.updateData();
-        lastUpdate = ms;
-        
-        if (status == 0) { // UPD_SUCCESS
-            // Update header once we have the station name
-            NationalRailStation* data = dataSource.getStationData();
-            if (data->location[0]) {
-                headWidget.setTitle(data->location);
-                headWidget.setCallingPoint(callingStation);
-                headWidget.setPlatform(platformFilter);
-                headWidget.setTimeOffset(nrTimeOffset);
-                headWidget.setShowDate(true);
-            }
-
-            // Setup message scroller with calling points or service messages
-            if (data->numServices > 0) {
-                msgWidget.setMessage(data->service[0].calling); // Simple version for now
-            } else {
-                msgWidget.setMessage(nrAttributionn);
-            }
-            
-            // Populate services list for drawing later
-            servicesWidget.clearRows();
-            if (data->numServices > 1) {
-                for (int i = 1; i < data->numServices; i++) {
-                    if (i - 1 >= 16) break;
-                    sprintf(cachedOrdinals[i-1], "%d%s", i+1, (i==1?"nd":(i==2?"rd":"th")));
-                    const char* rowData[4] = {
-                        cachedOrdinals[i-1],
-                        data->service[i].sTime,
-                        data->service[i].platform,
-                        data->service[i].destination
-                    };
-                    servicesWidget.addRow(rowData);
-                }
-            }
-        }
+void NationalRailBoard::configure(const BoardConfig& config) {
+    this->config = config;
+    if (context) {
+        setNrToken(context->getConfigManager().getConfig().nrToken);
     }
+    setCrsCode(config.id);
+    setPlatformFilter(config.filter);
+    setCallingCrsCode(config.secondaryId);
+    setCallingStation(config.secondaryName);
+    setNrTimeOffset(config.timeOffset);
+    setStationLat(config.lat);
+    setStationLon(config.lon);
+}
 
+void NationalRailBoard::tick(uint32_t ms) {
     if (ms > nextViaToggle) {
         viaToggle = !viaToggle;
         nextViaToggle = ms + 4000;
@@ -112,7 +105,65 @@ void NationalRailBoard::tick(uint32_t ms) {
     servicesWidget.tick(ms);
 }
 
+int NationalRailBoard::updateData() {
+    if (!config.complete) {
+        LOG_WARN("DISPLAY", "NR Board: Skipping updateData() - Configuration incomplete.");
+        return 7; // Use a dedicated "Unconfigured" code if defined, or just return an error
+    }
+    LOG_INFO("DISPLAY", "NR Board: Starting data update...");
+    int status = dataSource.updateData();
+    if (status != 0) {
+        LOG_WARN("DISPLAY", "NR Board: Data update failed with status: " + String(status));
+    } else {
+        LOG_INFO("DISPLAY", "NR Board: Data update finished successfully.");
+    }
+    
+    if (status == 0) { // UPD_SUCCESS
+        // Update header once we have the station name
+        NationalRailStation* data = dataSource.getStationData();
+        if (data->location[0]) {
+            headWidget.setTitle(data->location);
+            headWidget.setCallingPoint(callingStation);
+            headWidget.setPlatform(platformFilter);
+            headWidget.setTimeOffset(nrTimeOffset);
+            headWidget.setShowDate(true);
+        }
+
+        // Trigger scrolling of calling points if they changed
+        if (data->numServices > 0 && data->service[0].calling[0]) {
+            msgWidget.setText(data->service[0].calling);
+        }
+        
+        // Populate services list for drawing later
+        servicesWidget.clearRows();
+        if (data->numServices > 1) {
+            for (int i = 1; i < data->numServices; i++) {
+                if (i - 1 >= 16) break;
+                sprintf(cachedOrdinals[i-1], "%d%s", i+1, (i==1?"nd":(i==2?"rd":"th")));
+                const char* rowData[4] = {
+                    cachedOrdinals[i-1],
+                    data->service[i].sTime,
+                    data->service[i].platform,
+                    data->service[i].destination
+                };
+                servicesWidget.addRow(rowData);
+            }
+        }
+    }
+    return status;
+}
+
 void NationalRailBoard::render(U8G2& display) {
+    if (!config.complete) {
+        // Delegate to system help boards
+        SystemBoardId helpId = (config.errorType == 1) ? SystemBoardId::SYS_HELP_KEYS : SystemBoardId::SYS_HELP_CRS;
+        if (context) {
+            iDisplayBoard* help = context->getDisplayManager().getSystemBoard(helpId);
+            if (help) help->render(display);
+        }
+        return;
+    }
+
     headWidget.render(display);
     
     NationalRailStation* data = dataSource.getStationData();
@@ -138,6 +189,7 @@ void NationalRailBoard::render(U8G2& display) {
 }
 
 void NationalRailBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
+    if (!config.complete) return;
     headWidget.renderAnimationUpdate(display, currentMillis);
     msgWidget.renderAnimationUpdate(display, currentMillis);
     servicesWidget.renderAnimationUpdate(display, currentMillis);

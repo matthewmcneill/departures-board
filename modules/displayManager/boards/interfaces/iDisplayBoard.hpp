@@ -61,6 +61,12 @@ public:
     virtual const char* getLastErrorMsg() = 0;
 
     /**
+     * @brief Apply a specific configuration to this board.
+     * @param config The BoardConfig struct containing settings for this instance.
+     */
+    virtual void configure(const struct BoardConfig& config) = 0;
+
+    /**
      * @brief Emergency non-blocking hardware-accelerated propagation pipeline.
      *        ONLY fire this during long blocking operations (e.g. HTTP fetches).
      *        Implementations must propagate this call to widgets requiring 

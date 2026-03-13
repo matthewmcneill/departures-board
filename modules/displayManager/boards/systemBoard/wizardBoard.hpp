@@ -16,6 +16,8 @@
 #ifndef WIZARD_BOARD_HPP
 #define WIZARD_BOARD_HPP
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
 #include <WiFi.h>
@@ -25,6 +27,7 @@
  */
 class WizardBoard : public iDisplayBoard {
 private:
+    appContext* context;
     IPAddress currentIp;
     uint32_t lastStageSwitch;
     int currentStage; ///< 0=Wizard, 1=Keys Help, 2=CRS Help
@@ -41,9 +44,12 @@ public:
      */
     void setWizardIp(IPAddress ip);
 
+    void init(appContext* contextPtr) { context = contextPtr; }
+
     // iDisplayBoard Implementation
     void onActivate() override;
     void onDeactivate() override;
+    void configure(const struct BoardConfig& config) override { (void)config; }
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override { (void)display; (void)currentMillis; }

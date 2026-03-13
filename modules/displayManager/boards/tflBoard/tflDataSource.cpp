@@ -14,13 +14,14 @@
 #include <WiFiClientSecure.h>
 #include <Logger.hpp>
 #include <algorithm>
+#include <memory>
 
 // Status codes mapping
 #include "../interfaces/iDataSource.hpp"
 
-tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr) {
-    memset(&stationData, 0, sizeof(TflStation));
-    memset(&messagesData, 0, sizeof(stnMessages));
+tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4) {
+    stationData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
+    if (stationData) memset(stationData.get(), 0, sizeof(TflStation));
     lastErrorMsg[0] = '\0';
     tflAppkey[0] = '\0';
     tubeId[0] = '\0';
@@ -38,72 +39,82 @@ int tflDataSource::updateData() {
     bool bChunked = false;
     lastErrorMsg[0] = '\0';
 
-    TflStation xStation;
-    stnMessages xMessages;
-    memset(&xStation, 0, sizeof(TflStation));
-    memset(&xMessages, 0, sizeof(stnMessages));
+    // Offload TflStation and Clients to heap to save stack
+    std::unique_ptr<TflStation> xStation(new (std::nothrow) TflStation());
+    std::unique_ptr<JsonStreamingParser> parser(new (std::nothrow) JsonStreamingParser());
+    std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
 
-    JsonStreamingParser parser;
-    parser.setListener(this);
-    WiFiClientSecure httpsClient;
-    httpsClient.setInsecure();
-    httpsClient.setTimeout(5000);
-    httpsClient.setConnectionTimeout(5000);
+    if (!xStation || !parser || !httpsClient) {
+        LOG_ERROR("DATA", "TfL Board: Memory allocation failed!");
+        return UPD_DATA_ERROR;
+    }
 
-    if (!httpsClient.connect(apiHost, 443)) return UPD_NO_RESPONSE;
+    memset(xStation.get(), 0, sizeof(TflStation));
+    parser->setListener(this);
+    httpsClient->setInsecure();
+    httpsClient->setTimeout(5000);
+    httpsClient->setConnectionTimeout(5000);
+
+    if (!httpsClient->connect(apiHost, 443)) return UPD_NO_RESPONSE;
 
     String request = "GET /StopPoint/" + String(tubeId) + F("/Arrivals?app_key=") + String(tflAppkey) + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
-    httpsClient.print(request);
+    httpsClient->print(request);
     if (callback) callback();
 
     unsigned long ticker = millis() + 800;
     int retry = 0;
-    while(!httpsClient.available() && retry < 40) { delay(200); retry++; }
+    while(!httpsClient->available() && retry < 40) { delay(200); retry++; }
     if (retry >= 40) return UPD_TIMEOUT;
 
-    String statusLine = httpsClient.readStringUntil('\n');
+    String statusLine = httpsClient->readStringUntil('\n');
     if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
-        httpsClient.stop();
+        httpsClient->stop();
         return UPD_HTTP_ERROR;
     }
 
-    while (httpsClient.connected() || httpsClient.available()) {
-        String line = httpsClient.readStringUntil('\n');
+    while (httpsClient->connected() || httpsClient->available()) {
+        String line = httpsClient->readStringUntil('\n');
         if (line == F("\r")) break;
         if (line.startsWith(F("Transfer-Encoding:")) && line.indexOf(F("chunked")) >= 0) bChunked = true;
     }
 
-    // Temporarily point to locals for parsing
-    TflStation oldStation = stationData;
-    stnMessages oldMessages = messagesData;
-    stationData = xStation;
-    messagesData = xMessages;
+    // Save current station data to compare later
+    std::unique_ptr<TflStation> oldStation(new (std::nothrow) TflStation());
+    if (oldStation && stationData) {
+        memcpy(oldStation.get(), stationData.get(), sizeof(TflStation));
+    }
+
+    // Temporarily point to local xStation for parsing
+    if (stationData) memcpy(stationData.get(), xStation.get(), sizeof(TflStation));
+    
+    // Clear message pool before parsing new ones
+    messagesData.clear();
     
     id = 0; maxServicesRead = false;
-    while((httpsClient.available() || httpsClient.connected()) && !maxServicesRead) {
-        while(httpsClient.available() && !maxServicesRead) {
-            parser.parse(httpsClient.read());
+    while((httpsClient->available() || httpsClient->connected()) && !maxServicesRead) {
+        while(httpsClient->available() && !maxServicesRead) {
+            parser->parse(httpsClient->read());
             dataReceived++;
             if (millis() > ticker) { if (callback) callback(); ticker = millis() + 800; }
         }
         delay(10);
     }
-    httpsClient.stop();
+    httpsClient->stop();
 
     // Fetch Disruption Msgs
-    if (httpsClient.connect(apiHost, 443)) {
+    if (httpsClient->connect(apiHost, 443)) {
         request = "GET /StopPoint/" + String(tubeId) + F("/Disruption?getFamily=true&flattenResponse=true&app_key=") + String(tflAppkey) + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
-        httpsClient.print(request);
+        httpsClient->print(request);
         retry = 0;
-        while(!httpsClient.available() && retry < 40) { delay(200); retry++; }
-        if (httpsClient.available()) {
-            statusLine = httpsClient.readStringUntil('\n');
+        while(!httpsClient->available() && retry < 40) { delay(200); retry++; }
+        if (httpsClient->available()) {
+            statusLine = httpsClient->readStringUntil('\n');
             if (statusLine.indexOf(F("200 OK")) != -1) {
-                while (httpsClient.connected() || httpsClient.available()) { if (httpsClient.readStringUntil('\n') == F("\r")) break; }
-                parser.reset(); id = 0; maxServicesRead = false;
-                while((httpsClient.available() || httpsClient.connected()) && !maxServicesRead) {
-                    while(httpsClient.available() && !maxServicesRead) {
-                        parser.parse(httpsClient.read());
+                while (httpsClient->connected() || httpsClient->available()) { if (httpsClient->readStringUntil('\n') == F("\r")) break; }
+                parser->reset(); id = 0; maxServicesRead = false;
+                while((httpsClient->available() || httpsClient->connected()) && !maxServicesRead) {
+                    while(httpsClient->available() && !maxServicesRead) {
+                        parser->parse(httpsClient->read());
                         dataReceived++;
                     }
                     delay(10);
@@ -111,28 +122,47 @@ int tflDataSource::updateData() {
             }
         }
     }
-    httpsClient.stop();
+    httpsClient->stop();
 
     // Sort and Sanitize
-    std::sort(stationData.service, stationData.service + stationData.numServices, compareTimes);
-    if (stationData.numServices > TFL_MAX_SERVICES) stationData.numServices = TFL_MAX_SERVICES;
+    if (stationData) {
+        std::sort(stationData->service, stationData->service + stationData->numServices, compareTimes);
+        if (stationData->numServices > TFL_MAX_SERVICES) stationData->numServices = TFL_MAX_SERVICES;
 
-    for (int i=0; i<messagesData.numMessages; i++) replaceWord(messagesData.messages[i], "\\n", "");
-
-    // Populate expectedTime strings
-    for (int i=0; i<stationData.numServices; i++) {
-        int m = stationData.service[i].timeToStation / 60;
-        if (m == 0) strcpy(stationData.service[i].expectedTime, "Due");
-        else sprintf(stationData.service[i].expectedTime, "%d mins", m);
+        // Populate expectedTime strings
+        for (int i=0; i<stationData->numServices; i++) {
+            int m = stationData->service[i].timeToStation / 60;
+            if (m == 0) strcpy(stationData->service[i].expectedTime, "Due");
+            else sprintf(stationData->service[i].expectedTime, "%d mins", m);
+        }
     }
 
-    bool changed = (memcmp(&stationData, &oldStation, sizeof(TflStation)) != 0) || 
-                   (memcmp(&messagesData, &oldMessages, sizeof(stnMessages)) != 0);
+    bool changed = true;
+    if (oldStation && stationData) {
+        changed = (memcmp(stationData.get(), oldStation.get(), sizeof(TflStation)) != 0);
+    }
 
-    if (changed) stationData.boardChanged = true;
-    else { stationData = oldStation; messagesData = oldMessages; }
+    if (changed && stationData) {
+        stationData->boardChanged = true;
+    } else if (oldStation && stationData) {
+        memcpy(stationData.get(), oldStation.get(), sizeof(TflStation));
+    }
 
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS %lums [%ld]", (unsigned long)(millis()-perfTimer), dataReceived);
+    if (stationData) {
+        LOG_INFO("DATA", "TfL (ID: " + String(tubeId) + "): Found " + String(stationData->numServices) + " services.");
+#ifdef ENABLE_DEBUG_LOG
+        LOG_DEBUG("DATA", "--- TfL Data ---");
+        for (int i = 0; i < stationData->numServices; i++) {
+            char debugMsg[256];
+            snprintf(debugMsg, sizeof(debugMsg), "Service %d: %s - %s (Exp: %s, %d s)", 
+                     i, stationData->service[i].lineName, stationData->service[i].destination, 
+                     stationData->service[i].expectedTime, stationData->service[i].timeToStation);
+            LOG_DEBUG("DATA", debugMsg);
+        }
+        LOG_DEBUG("DATA", "----------------");
+#endif
+    }
     return changed ? UPD_SUCCESS : UPD_NO_CHANGE;
 }
 
@@ -161,22 +191,27 @@ void tflDataSource::whitespace(char c) {}
 void tflDataSource::startDocument() {}
 void tflDataSource::key(String key) {
     currentKey = key;
-    if (currentKey == "id") {
-        if (stationData.numServices < TFL_MAX_FETCH) id = stationData.numServices++;
+    if (currentKey == "id" && stationData) {
+        if (stationData->numServices < TFL_MAX_FETCH) id = stationData->numServices++;
         else maxServicesRead = true;
     } else if (currentKey == "description") {
-        if (messagesData.numMessages < MAXBOARDMESSAGES) id = messagesData.numMessages++;
-        else maxServicesRead = true;
+        // No manual index needed for MessagePool addition in value()
     }
 }
 void tflDataSource::value(String val) {
+    if (!stationData) return;
     if (currentKey == "destinationName") {
         if (val.endsWith(" Underground Station")) val = val.substring(0, val.length()-20);
         else if (val.endsWith(" DLR Station")) val = val.substring(0, val.length()-12);
-        strncpy(stationData.service[id].destination, val.c_str(), TFL_MAX_LOCATION-1);
-    } else if (currentKey == "timeToStation") stationData.service[id].timeToStation = val.toInt();
-    else if (currentKey == "lineName") strncpy(stationData.service[id].lineName, val.c_str(), TFL_MAX_LINE-1);
-    else if (currentKey == "description") strncpy(messagesData.messages[id], val.c_str(), MAXMESSAGESIZE-1);
+        strncpy(stationData->service[id].destination, val.c_str(), TFL_MAX_LOCATION-1);
+    } else if (currentKey == "timeToStation") stationData->service[id].timeToStation = val.toInt();
+    else if (currentKey == "lineName") strncpy(stationData->service[id].lineName, val.c_str(), TFL_MAX_LINE-1);
+    else if (currentKey == "description") {
+        // Clean and add message
+        String cleanVal = val;
+        cleanVal.replace("\\n", "");
+        messagesData.addMessage(cleanVal.c_str());
+    }
 }
 void tflDataSource::endArray() {}
 void tflDataSource::endObject() {}

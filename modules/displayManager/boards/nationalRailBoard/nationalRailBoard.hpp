@@ -13,21 +13,24 @@
 #ifndef NATIONAL_RAIL_BOARD_HPP
 #define NATIONAL_RAIL_BOARD_HPP
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include "nationalRailDataSource.hpp"
 #include "../../widgets/headerWidget.hpp"
 #include "../../widgets/clockWidget.hpp"
 #include "../../widgets/serviceListWidget.hpp"
-#include "../../widgets/scrollingMessageWidget.hpp"
+#include "../../widgets/scrollingMessagePoolWidget.hpp"
 
 class NationalRailBoard : public iDisplayBoard {
 private:
+    appContext* context;
     nationalRailDataSource dataSource;
     
     // UI Widgets
     headerWidget headWidget;
     serviceListWidget servicesWidget; // For secondary services
-    scrollingMessageWidget msgWidget;
+    scrollingMessagePoolWidget msgWidget;
 
     // Configuration
     char nrToken[37];
@@ -37,6 +40,9 @@ private:
     char callingCrsCode[4];
     char callingStation[45];
     char platformFilter[54];
+
+    // Centralized Configuration
+    BoardConfig config;
 
     // Alt station support 
     bool altStationEnabled;
@@ -54,11 +60,8 @@ private:
     
     char cachedOrdinals[16][8];
 
-protected:
-    NationalRailBoard();
-    friend class DisplayManager;
-
 public:
+    NationalRailBoard(appContext* contextPtr = nullptr);
     virtual ~NationalRailBoard() = default;
 
     // iDisplayBoard implementation
@@ -67,6 +70,7 @@ public:
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
+    void configure(const struct BoardConfig& config) override;
 
     // Configuration Getters/Setters
     void setNrToken(const char* token) { strlcpy(nrToken, token, sizeof(nrToken)); }
@@ -107,7 +111,7 @@ public:
     const char* getAltPlatformFilter() const { return altPlatformFilter; }
     bool getAltStationActive() const { return altStationActive; }
 
-    int updateData() override { return dataSource.updateData(); }
+    int updateData() override;
     const char* getLastErrorMsg() override { return dataSource.getLastErrorMsg(); }
 };
 

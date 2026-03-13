@@ -30,24 +30,24 @@ WiFiManagerModule::WiFiManagerModule() {
  * @brief Load Wi-Fi credentials from wifi.json on LittleFS.
  */
 void WiFiManagerModule::loadWiFiConfig() {
-  LOG_INFO("Loading WiFi credentials from wifi.json...");
+  LOG_INFO("WIFI", "Loading WiFi credentials from wifi.json...");
   if (LittleFS.exists("/wifi.json")) {
     File f = LittleFS.open("/wifi.json", "r");
     if (!f) {
-      LOG_ERROR("Failed to open wifi.json for reading");
+      LOG_ERROR("WIFI", "Failed to open wifi.json for reading");
       return;
     }
 
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, f);
     if (error) {
-      LOG_ERROR(String("Failed to read wifi.json: ") + error.c_str());
+      LOG_ERROR("WIFI", String("Failed to read wifi.json: ") + error.c_str());
     } else {
       strlcpy(wifiSsid, doc["ssid"] | "", sizeof(wifiSsid));
       strlcpy(wifiPass, doc["pass"] | "", sizeof(wifiPass));
       
       if (strlen(wifiSsid) > 0) {
-        LOG_INFO(String("Found saved WiFi credentials for SSID: ") + wifiSsid);
+        LOG_INFO("WIFI", String("Found saved WiFi credentials for SSID: ") + wifiSsid);
       }
     }
     f.close();
@@ -58,14 +58,14 @@ void WiFiManagerModule::loadWiFiConfig() {
  * @brief Save Wi-Fi credentials to wifi.json on LittleFS.
  */
 void WiFiManagerModule::saveWiFiConfig() {
-  LOG_INFO("Saving WiFi credentials to wifi.json...");
+  LOG_INFO("WIFI", "Saving WiFi credentials to wifi.json...");
   JsonDocument doc;
   doc["ssid"] = wifiSsid;
   doc["pass"] = wifiPass;
 
   File f = LittleFS.open("/wifi.json", "w");
   if (!f) {
-    LOG_ERROR("Failed to open wifi.json for writing.");
+    LOG_ERROR("WIFI", "Failed to open wifi.json for writing.");
     return;
   }
   
@@ -81,7 +81,7 @@ void wifiManagerPortalSaveCallback() {
 }
 
 void WiFiManagerModule::processPortalSave() {
-  LOG_INFO("WiFiManager connected. Saving entered credentials to LittleFS...");
+  LOG_INFO("WIFI", "WiFiManager connected. Saving entered credentials to LittleFS...");
   strlcpy(wifiSsid, WiFi.SSID().c_str(), sizeof(wifiSsid));
   strlcpy(wifiPass, WiFi.psk().c_str(), sizeof(wifiPass));
   saveWiFiConfig();
@@ -97,7 +97,7 @@ void WiFiManagerModule::begin(const char* hostname, void (*apCallback)(WiFiManag
 
   // Legacy Migration Check
   if (strlen(wifiSsid) == 0) {
-    LOG_INFO("No wifi.json found. Checking if legacy NVS credentials exist...");
+    LOG_INFO("WIFI", "No wifi.json found. Checking if legacy NVS credentials exist...");
     WiFi.begin(); 
     int retries = 0;
     while (WiFi.status() != WL_CONNECTED && retries < 15) {
@@ -106,7 +106,7 @@ void WiFiManagerModule::begin(const char* hostname, void (*apCallback)(WiFiManag
     }
     
     if (WiFi.status() == WL_CONNECTED) {
-      LOG_INFO("Legacy NVS WiFi connection successful! Migrating to LittleFS...");
+      LOG_INFO("WIFI", "Legacy NVS WiFi connection successful! Migrating to LittleFS...");
       strlcpy(wifiSsid, WiFi.SSID().c_str(), sizeof(wifiSsid));
       strlcpy(wifiPass, WiFi.psk().c_str(), sizeof(wifiPass));
       saveWiFiConfig();
@@ -126,7 +126,7 @@ void WiFiManagerModule::begin(const char* hostname, void (*apCallback)(WiFiManag
 
   // Attempt connection
   if (strlen(wifiSsid) > 0) {
-    LOG_INFO(String("Connecting to ") + wifiSsid + "...");
+    LOG_INFO("WIFI", String("Connecting to ") + wifiSsid + "...");
     WiFi.begin(wifiSsid, wifiPass);
     int retries = 0;
     while (WiFi.status() != WL_CONNECTED && retries < 20) {
@@ -144,7 +144,7 @@ void WiFiManagerModule::begin(const char* hostname, void (*apCallback)(WiFiManag
 
     const char* portalName = (strlen(currentHostname) > 0) ? currentHostname : "Departures Board";
     if (!wm.autoConnect(portalName)) {
-        LOG_ERROR("Portal timeout. Restarting.");
+        LOG_ERROR("WIFI", "Portal timeout. Restarting.");
         ESP.restart();
     }
   }
@@ -159,7 +159,7 @@ void WiFiManagerModule::begin(const char* hostname, void (*apCallback)(WiFiManag
  */
 void WiFiManagerModule::reapplyConfig(const Config& config) {
     if (strcmp(currentHostname, config.hostname) != 0) {
-        LOG_INFO(String("Updating hostname to: ") + config.hostname);
+        LOG_INFO("WIFI", String("Updating hostname to: ") + config.hostname);
         strlcpy(currentHostname, config.hostname, sizeof(currentHostname));
         WiFi.setHostname(currentHostname);
         MDNS.setInstanceName(currentHostname);

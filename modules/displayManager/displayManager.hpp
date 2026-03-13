@@ -22,6 +22,8 @@
 
 #pragma once
 
+class appContext;
+
 #include <U8g2lib.h>
 #include <variant>
 #include "iConfigurable.hpp"
@@ -36,15 +38,10 @@
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>
 #include <boards/systemBoard/sleepingBoard.hpp>
 #include <widgets/wifiStatusWidget.hpp>
+#include <messaging/messagePool.hpp>
 
-// Forward declaration of the globally configured MAX_BOARDS
-// defined in platformio.ini (Default to 3 if missing)
-#ifndef MAX_BOARDS
-#define MAX_BOARDS 3
-#endif
+#include <buildOptions.h>
 
-// How often the screen is changed in sleep mode (ms)
-#define SCREENSAVERINTERVAL 10000 // Interval in ms for cycling "snooze" screens
 
 /**
  * @brief Identifiers for specific board implementation classes.
@@ -97,6 +94,8 @@ private:
     wifiStatusWidget wifiWarning;
     bool otaUpdateAvailable;
 
+    appContext* context; ///< Reference to parent context for DI
+
     // Display configuration set by ConfigManager
     int brightness;                ///< Display brightness level (0-255)
     bool flipScreen;               ///< True if display is inverted 180 degrees
@@ -139,7 +138,7 @@ public:
      * @brief Get the currently active rendering target.
      * @return Pointer to active iDisplayBoard.
      */
-    iDisplayBoard* getCurrentBoard() { return currentBoard; }
+    iDisplayBoard* getCurrentBoard();
 
     /**
      * @brief Retrieve a functional system board singleton from the registry.
@@ -210,9 +209,16 @@ public:
     DisplayManager();
 
     /**
-     * @brief Initialize the hardware display and apply global settings.
+     * @brief Access the system-wide global message pool.
+     * @return MessagePool* Pointer to the global pool.
      */
-    void begin();
+    MessagePool* getGlobalMessagePool();
+
+    /**
+     * @brief Initialize the hardware display and apply global settings.
+     * @param contextPtr Pointer to the parent application context.
+     */
+    void begin(appContext* contextPtr);
 
 
 
@@ -243,10 +249,9 @@ public:
      */
     BoardVariant* getSlot(int slotIndex);
 
-    /**
-     * @brief Retrieve a pointer to a board in the carousel pool.
-     */
     iDisplayBoard* getDisplayBoard(int slotIndex);
+
+
 
     /**
      * @brief Clear all carousel slots.

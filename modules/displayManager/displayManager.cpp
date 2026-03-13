@@ -28,12 +28,23 @@
 #include <otaUpdater.hpp>
 #include <boards/systemBoard/sleepingBoard.hpp>
 #include "configManager.hpp"
+#include <appContext.hpp>
 
-extern weatherClient* currentWeather;
-extern rssClient* rss;
+// DisplayManager singleton will be owned by appContext
+
+bool DisplayManager::getFlipScreen() const { return flipScreen; }
+bool DisplayManager::getSleepEnabled() const { return sleepEnabled; }
+void DisplayManager::setSleepEnabled(bool enabled) { sleepEnabled = enabled; }
+byte DisplayManager::getSleepStarts() const { return sleepStarts; }
+void DisplayManager::setSleepStarts(byte starts) { sleepStarts = starts; }
+byte DisplayManager::getSleepEnds() const { return sleepEnds; }
+void DisplayManager::setSleepEnds(byte ends) { sleepEnds = ends; }
+bool DisplayManager::getForcedSleep() const { return forcedSleep; }
+void DisplayManager::setForcedSleep(bool active) { forcedSleep = active; }
 
 // --- Singleton Instance ---
-DisplayManager displayManager; // Global system display orchestrator
+// This will be removed in favor of appContext ownership.
+// DisplayManager displayManager; // Global system display orchestrator
 
 // --- Lifecycle Methods ---
 
@@ -50,8 +61,20 @@ DisplayManager::DisplayManager()
 
 /**
  * @brief Initialize the hardware display and apply initial buffer settings.
+ * @param contextPtr Pointer to the parent application context.
  */
-void DisplayManager::begin() {
+void DisplayManager::begin(appContext* contextPtr) {
+    context = contextPtr;
+    
+    // Initialize system boards with context
+    splashBoard.init(context);
+    loadingBoard.init(context);
+    wizardBoard.init(context);
+    helpBoard.init(context);
+    messageBoard.init(context);
+    firmwareUpdateBoard.init(context);
+    sleepingBoard.init(context);
+
     u8g2.begin();
     u8g2.setDrawColor(1);
     u8g2.setFontMode(1);
@@ -114,13 +137,26 @@ void DisplayManager::render() {
     u8g2.sendBuffer();
 }
 
+iDisplayBoard* DisplayManager::getCurrentBoard() { return currentBoard; }
+
 /**
  * @brief Switch to a new board and optionally block for an animation duration.
  * @param board Pointer to the board implementation to render.
  * @param durationMs Optional duration in ms to block and animate.
  */
 void DisplayManager::showBoard(iDisplayBoard* board, uint32_t durationMs) {
+    if (currentBoard == board) return;
+
+    if (currentBoard != nullptr) {
+        currentBoard->onDeactivate();
+    }
+
     currentBoard = board;
+    
+    if (currentBoard != nullptr) {
+        currentBoard->onActivate();
+        LOG_INFO("DISPLAY", "Board activated.");
+    }
     
     // Initial full render
     render();
@@ -206,23 +242,21 @@ void DisplayManager::setFlipScreen(bool flip) {
     u8g2.setFlipMode(flipScreen ? 1 : 0);
 }
 
-bool DisplayManager::getFlipScreen() const { return flipScreen; }
-bool DisplayManager::getSleepEnabled() const { return sleepEnabled; }
-void DisplayManager::setSleepEnabled(bool enabled) { sleepEnabled = enabled; }
-byte DisplayManager::getSleepStarts() const { return sleepStarts; }
-void DisplayManager::setSleepStarts(byte starts) { sleepStarts = starts; }
-byte DisplayManager::getSleepEnds() const { return sleepEnds; }
-void DisplayManager::setSleepEnds(byte ends) { sleepEnds = ends; }
 
-bool DisplayManager::getForcedSleep() const { return forcedSleep; }
-void DisplayManager::setForcedSleep(bool active) { forcedSleep = active; }
+/**
+ * @brief Access the system-wide global message pool.
+ * @return MessagePool* Pointer to the global pool.
+ */
+MessagePool* DisplayManager::getGlobalMessagePool() { 
+    return (context != nullptr) ? &context->getGlobalMessagePool() : nullptr;
+}
 
 /**
  * @brief Checks if the system is currently in a sleep state.
  * @return True if the current board is the sleep clock.
  */
 bool DisplayManager::getIsSleeping() const { 
-    return (currentBoard == displayManager.getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK)); 
+    return (currentBoard != nullptr && currentBoard == const_cast<DisplayManager*>(this)->getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK)); 
 }
 
 /**
@@ -281,9 +315,9 @@ BoardType DisplayManager::getActiveBoardType() {
 void DisplayManager::setBoardType(int slotIndex, BoardType type) {
     if (slotIndex < 0 || slotIndex >= MAX_BOARDS) return;
     switch (type) {
-        case BoardType::NR_BOARD: slots[slotIndex] = NationalRailBoard(); break;
-        case BoardType::TFL_BOARD: slots[slotIndex] = TfLBoard(); break;
-        case BoardType::BUS_BOARD: slots[slotIndex] = BusBoard(); break;
+        case BoardType::NR_BOARD: slots[slotIndex].emplace<NationalRailBoard>(context); break;
+        case BoardType::TFL_BOARD: slots[slotIndex].emplace<TfLBoard>(context); break;
+        case BoardType::BUS_BOARD: slots[slotIndex].emplace<BusBoard>(context); break;
     }
 }
 
@@ -367,7 +401,7 @@ void DisplayManager::yieldAnimationUpdate() {
  * @param config Reference to the source configuration struct.
  */
 void DisplayManager::applyConfig(const Config& config) {
-    LOG_INFO("Applying configuration to DisplayManager...");
+    LOG_INFO("DISPLAY", "Applying configuration to DisplayManager...");
     
     // --- Step 1: Apply Global Hardware and Power settings ---
     setBrightness(config.brightness);
@@ -383,80 +417,77 @@ void DisplayManager::applyConfig(const Config& config) {
     // --- Step 2: Clear and Re-provision Carousel Slots ---
     clearSlots();
 
-    if (config.boardMode == MODE_RAIL) {
-        // --- Provisioning National Rail Layer (Slot 0) ---
-        setBoardType(0, BoardType::NR_BOARD);
-        NationalRailBoard* rb = (NationalRailBoard*)getDisplayBoard(0);
-        if (rb) {
-            rb->setNrToken(config.nrToken);
-            rb->setCrsCode(config.crsCode);
-            rb->setStationLat(config.stationLat);
-            rb->setStationLon(config.stationLon);
-            rb->setCallingCrsCode(config.callingCrsCode);
-            rb->setCallingStation(config.callingStation);
-            rb->setPlatformFilter(config.platformFilter);
-            rb->setNrTimeOffset(config.nrTimeOffset);
-        }
+    for (int i = 0; i < config.boardCount; i++) {
+        const BoardConfig& bc = config.boards[i];
+        LOG_INFO("DISPLAY", String("Provisioning Board ") + i + " (Type: " + (int)bc.mode + ")");
 
-        // Add secondary rail board (Slot 3) if timed switching is active
-        if (config.altStationEnabled) {
-            setBoardType(3, BoardType::NR_BOARD);
-            NationalRailBoard* arb = (NationalRailBoard*)getDisplayBoard(3);
-            if (arb) {
-                arb->setNrToken(config.nrToken);
-                arb->setCrsCode(config.altCrsCode);
-                arb->setStationLat(config.altLat);
-                arb->setStationLon(config.altLon);
-                arb->setCallingCrsCode(config.altCallingCrsCode);
-                arb->setCallingStation(config.altCallingStation);
-                arb->setPlatformFilter(config.altPlatformFilter);
+        switch (bc.mode) {
+            case MODE_RAIL: {
+                setBoardType(i, BoardType::NR_BOARD);
+                NationalRailBoard* rb = (NationalRailBoard*)getDisplayBoard(i);
+                if (rb) {
+                    rb->setNrToken(config.nrToken);
+                    rb->setCrsCode(bc.id);
+                    rb->setStationLat(bc.lat);
+                    rb->setStationLon(bc.lon);
+                    rb->setCallingCrsCode(bc.secondaryId);
+                    rb->setCallingStation(bc.secondaryName);
+                    rb->setPlatformFilter(bc.filter);
+                    rb->setNrTimeOffset(bc.timeOffset);
+                }
+                break;
+            }
+            case MODE_TUBE: {
+                setBoardType(i, BoardType::TFL_BOARD);
+                TfLBoard* tb = (TfLBoard*)getDisplayBoard(i);
+                if (tb) {
+                    tb->setTflAppkey(config.tflAppkey);
+                    tb->setTubeId(bc.id);
+                    tb->setTubeName(bc.name);
+                }
+                break;
+            }
+            case MODE_BUS: {
+                setBoardType(i, BoardType::BUS_BOARD);
+                BusBoard* bb = (BusBoard*)getDisplayBoard(i);
+                if (bb) {
+                    bb->setBusAtco(bc.id);
+                    bb->setBusName(bc.name);
+                    bb->setBusLat(bc.lat);
+                    bb->setBusLon(bc.lon);
+                    bb->setBusFilter(bc.filter);
+                }
+                break;
             }
         }
-    } else if (config.boardMode == MODE_TUBE) {
-        // --- Provisioning TfL Tube Layer (Slot 1) ---
-        setBoardType(1, BoardType::TFL_BOARD);
-        TfLBoard* tb = (TfLBoard*)getDisplayBoard(1);
-        if (tb) {
-            tb->setTflAppkey(config.tflAppkey);
-            tb->setTubeId(config.tubeId);
-            tb->setTubeName(config.tubeName);
-        }
-    } else if (config.boardMode == MODE_BUS) {
-        // --- Provisioning Bus Layer Standalone (Slot 2) ---
-        setBoardType(2, BoardType::BUS_BOARD);
-        BusBoard* bb = (BusBoard*)getDisplayBoard(2);
-        if (bb) {
-            bb->setBusAtco(config.busId);
-            bb->setBusName(config.busName);
-            bb->setBusLat(config.busLat);
-            bb->setBusLon(config.busLon);
-            bb->setBusFilter(config.busFilter);
-        }
+
+        iDisplayBoard* dispBoard = getDisplayBoard(i);
+        if (dispBoard) dispBoard->configure(bc);
     }
 
-    // --- Step 3: Global Feature Overlays (Bus Panel on Main - Slot 2) ---
-    if (config.showBus && config.boardMode != MODE_BUS) {
-         setBoardType(2, BoardType::BUS_BOARD);
-         BusBoard* bb = (BusBoard*)getDisplayBoard(2);
-         if (bb) {
-            bb->setBusAtco(config.busId);
-            bb->setBusName(config.busName);
-            bb->setBusLat(config.busLat);
-            bb->setBusLon(config.busLon);
-            bb->setBusFilter(config.busFilter);
-         }
-    }
-
-    // --- Step 4: Finalize Initial View ---
+    // --- Step 3: Finalize Initial View ---
     if (currentBoard != getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK)) {
-        activeSlotIndex = -1;
-        for(int i=0; i<MAX_BOARDS; i++) {
-           if(getDisplayBoard(i) != nullptr) {
-              activeSlotIndex = i;
-              break;
+        // Use defaultBoardIndex if valid, otherwise fallback to first available board
+        int targetSlot = -1;
+        
+        if (config.defaultBoardIndex >= 0 && config.defaultBoardIndex < MAX_BOARDS) {
+           if (getDisplayBoard(config.defaultBoardIndex) != nullptr) {
+               targetSlot = config.defaultBoardIndex;
            }
         }
-        if (activeSlotIndex != -1) {
+
+        // If default invalid or not found, find first available
+        if (targetSlot == -1) {
+            for(int i=0; i<MAX_BOARDS; i++) {
+               if(getDisplayBoard(i) != nullptr) {
+                  targetSlot = i;
+                  break;
+               }
+            }
+        }
+
+        if (targetSlot != -1) {
+           activeSlotIndex = targetSlot;
            showBoard(getDisplayBoard(activeSlotIndex));
         } else {
            activeSlotIndex = 0; // fallback if no boards were populated

@@ -16,6 +16,8 @@
 #ifndef SPLASH_BOARD_HPP
 #define SPLASH_BOARD_HPP
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include "../../widgets/imageWidget.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
@@ -27,6 +29,7 @@
  */
 class SplashBoard : public iDisplayBoard {
 private:
+    appContext* context;
     char noticeMessage[64];
     imageWidget* splashLogo;
 
@@ -43,9 +46,12 @@ public:
      */
     void setNotice(const char* message);
 
+    void init(appContext* contextPtr) { context = contextPtr; }
+
     // iDisplayBoard Implementation
     void onActivate() override;
     void onDeactivate() override;
+    void configure(const struct BoardConfig& config) override { (void)config; }
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     int updateData() override { return 0; }

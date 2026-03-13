@@ -24,40 +24,50 @@
 #include <vector>
 
 #ifdef ENABLE_DEBUG_LOG
-  #define LOG_INFO(msg)  Logger::_info(msg)
-  #define LOG_WARN(msg)  Logger::_warn(msg)
-  #define LOG_ERROR(msg) Logger::_error(msg)
-  #define LOG_DEBUG(msg) Logger::_debug(msg)
+  #define LOG_INFO(sub, msg)  Logger::_info(sub, msg)
+  #define LOG_WARN(sub, msg)  Logger::_warn(sub, msg)
+  #define LOG_ERROR(sub, msg) Logger::_error(sub, msg)
+  #define LOG_DEBUG(sub, msg) Logger::_debug(sub, msg)
+  #define LOG_SPLASH(msg)     Logger::logSplashMessage(msg)
 #else
-  #define LOG_INFO(msg)
-  #define LOG_WARN(msg)
-  #define LOG_ERROR(msg)
-  #define LOG_DEBUG(msg)
+  #define LOG_INFO(sub, msg)
+  #define LOG_WARN(sub, msg)
+  #define LOG_ERROR(sub, msg)
+  #define LOG_DEBUG(sub, msg)
+  #define LOG_SPLASH(msg)
 #endif
 
 class Logger {
 public:
+  // Initialize Serial
+  static void begin(unsigned long baud = 115200);
+
+  // Log framed splash message (only active if ENABLE_DEBUG_LOG)
+  static void logSplashMessage(const char* message);
+
   // Add a sensitive string to the redaction list
   static void registerSecret(const String& secret);
 
   // Core logging functions (internal use only, use macros instead)
-  static void _info(const String& message);
-  static void _warn(const String& message);
-  static void _error(const String& message);
-/**
- * @brief Debug
- * @param message
- */
-  static void _debug(const String& message);
+  static void _info(const char* category, const String& message);
+  static void _info(const char* category, const char* message);
+  static void _warn(const char* category, const String& message);
+  static void _warn(const char* category, const char* message);
+  static void _error(const char* category, const String& message);
+  static void _error(const char* category, const char* message);
+  static void _debug(const char* category, const String& message);
+  static void _debug(const char* category, const char* message);
 
 private:
   static std::vector<String> secrets;
 /**
  * @brief Print redacted
- * @param level
+ * @param icon
+ * @param category
  * @param message
  */
-  static void printRedacted(const String& level, const String& message);
+  static void printRedacted(const String& icon, const char* category, const String& message);
+  static void printRedacted(const String& icon, const char* category, const char* message);
 /**
  * @brief Redact
  * @param message

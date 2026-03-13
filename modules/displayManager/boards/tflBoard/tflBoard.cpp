@@ -1,3 +1,4 @@
+#include <appContext.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  *
@@ -16,10 +17,11 @@
 extern const char tflAttribution[];
 extern const uint8_t Underground10[];
 
-TfLBoard::TfLBoard() 
-    : headWidget(0, 0, 256, 14), 
+TfLBoard::TfLBoard(appContext* contextPtr) 
+    : context(contextPtr),
+      headWidget(0, 0, 256, 14), 
       servicesWidget(0, 15, 256, 26), 
-      msgWidget(0, 56, 256, 8),
+      msgWidget(0, 56, 256, 8, NatRailSmall9),
       lastUpdate(0) {
     headWidget.getClock().setFont(Underground10);
     headWidget.getClock().setBlink(false);
@@ -39,48 +41,71 @@ TfLBoard::TfLBoard()
 void TfLBoard::onActivate() {
     dataSource.configure(tubeId, tflAppkey);
     headWidget.setTitle(tubeName);
-    msgWidget.setMessage(tflAttribution);
+    
+    // Configure message pools
+    if (context) {
+        msgWidget.addMessagePool(&context->getGlobalMessagePool());
+    }
+    msgWidget.addMessagePool(dataSource.getMessagesData());
+    
+    // Set initial text (fallback)
+    msgWidget.setText(tflAttribution);
     lastUpdate = 0;
 }
 
 void TfLBoard::onDeactivate() {}
 
-void TfLBoard::tick(uint32_t ms) {
-    if (ms - lastUpdate > 30000 || lastUpdate == 0) {
-        int status = dataSource.updateData();
-        lastUpdate = ms;
-
-        if (status == 0) { // UPD_SUCCESS
-            // In a real app, we'd cycle through disruption messages in the msgWidget
-            stnMessages* msgs = dataSource.getMessagesData();
-            if (msgs->numMessages > 0) {
-                msgWidget.setMessage(msgs->messages[0]);
-            } else {
-                msgWidget.setMessage(tflAttribution);
-            }
-            
-            // Populate widget data only when data actually changes
-            TflStation* data = dataSource.getStationData();
-            servicesWidget.clearRows();
-            if (data->numServices > 0) {
-                for (int i = 0; i < data->numServices; i++) {
-                    const char* rowData[3] = {
-                        data->service[i].lineName,
-                        data->service[i].destination,
-                        data->service[i].expectedTime
-                    };
-                    servicesWidget.addRow(rowData);
-                }
-            }
-        }
+void TfLBoard::configure(const BoardConfig& config) {
+    this->config = config;
+    if (context) {
+        setTflAppkey(context->getConfigManager().getConfig().tflAppkey);
     }
+    setTubeId(config.id);
+    setTubeName(config.name);
+}
 
+void TfLBoard::tick(uint32_t ms) {
     headWidget.tick(ms);
     msgWidget.tick(ms);
     servicesWidget.tick(ms);
 }
 
+int TfLBoard::updateData() {
+    if (!config.complete) {
+        LOG_WARN("DISPLAY", "TfL Board: Skipping updateData() - Configuration incomplete.");
+        return 7;
+    }
+    int status = dataSource.updateData();
+
+    if (status == 0) { // UPD_SUCCESS
+        // Populate widget data only when data actually changes
+        TflStation* data = dataSource.getStationData();
+        servicesWidget.clearRows();
+        if (data->numServices > 0) {
+            for (int i = 0; i < data->numServices; i++) {
+                const char* rowData[3] = {
+                    data->service[i].lineName,
+                    data->service[i].destination,
+                    data->service[i].expectedTime
+                };
+                servicesWidget.addRow(rowData);
+            }
+        }
+    }
+    return status;
+}
+
 void TfLBoard::render(U8G2& display) {
+    if (!config.complete) {
+        // Delegate to system help boards
+        SystemBoardId helpId = (config.errorType == 1) ? SystemBoardId::SYS_HELP_KEYS : SystemBoardId::SYS_HELP_CRS;
+        if (context) {
+            iDisplayBoard* help = context->getDisplayManager().getSystemBoard(helpId);
+            if (help) help->render(display);
+        }
+        return;
+    }
+
     headWidget.render(display);
     
     TflStation* data = dataSource.getStationData();
@@ -96,6 +121,7 @@ void TfLBoard::render(U8G2& display) {
 }
 
 void TfLBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
+    if (!config.complete) return;
     headWidget.renderAnimationUpdate(display, currentMillis);
     msgWidget.renderAnimationUpdate(display, currentMillis);
     servicesWidget.renderAnimationUpdate(display, currentMillis);

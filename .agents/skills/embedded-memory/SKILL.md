@@ -22,8 +22,9 @@ Whenever you are tasked with producing an implementation plan, you MUST include 
 
 ### 3. Stack Usage
 - **Local Buffers**: Are there any large local arrays (e.g., `char buf[1024]`) that could risk a stack overflow?
+- **Network Clients**: Identify "stack killers" like `WiFiClientSecure`, `WiFiClient`, or `HTTPClient`. These should NEVER be on the stack in deep nested calls.
+- **OO Call Depth**: Note that using complex managers (like `appContext`) deepens the call stack, reducing the effective headroom for local variables.
 - **Recursion**: Does the change introduce deep or unbounded recursion?
-- **Task Stacks**: If creating a new FreeRTOS task, estimate the required stack size based on local variable usage.
 
 ### 4. Heap Usage & Fragmentation
 - **Allocation Pattern**: Does the change use `new`, `malloc`, or dynamic containers (`std::vector`, `std::string`)?
@@ -35,8 +36,26 @@ Whenever you are tasked with producing an implementation plan, you MUST include 
 - **Leaks**: Is every allocation matched with a corresponding deletion in all possible execution paths (including exceptions/error returns)?
 - **Low Watermark**: How will this change affect the minimum free heap observed during stress tests?
 
-## Recommended Methodology
+## Recommended Methodology & Patterns
 
+### 1. The "Lighten the Stack" Pattern (ESP32)
+When performing operations with a deep call stack (e.g., inside a board update loop), offload large objects to the heap using **Smart Pointers** for zero-leak safety.
+
+**Example Pattern:**
+```cpp
+#include <memory>
+// ...
+// Use (std::nothrow) and unique_ptr to move heavy objects off the 8KB stack
+std::unique_ptr<WiFiClientSecure> client(new (std::nothrow) WiFiClientSecure());
+if (!client) {
+    LOG_ERROR("DATA", "Heap allocation failed!");
+    return UPD_DATA_ERROR;
+}
+client->setInsecure();
+// ... memory is automatically freed when the function returns
+```
+
+### 2. General Steps
 1. **Analyze Code Path**: Map out the allocation and deallocation lifecycle of the new feature.
 2. **Quantify**: Provide numeric estimates where possible (e.g., "Expected heap usage: ~2KB peak").
 3. **Identify Risks**: Explicitly call out "High fragmentation risk" if using dynamic strings in a loop.

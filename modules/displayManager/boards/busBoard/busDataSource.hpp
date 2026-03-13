@@ -26,8 +26,10 @@
 #define BUS_DATA_SOURCE_HPP
 
 #include "../interfaces/iDataSource.hpp"
+#include "../../messaging/messagePool.hpp"
 #include <JsonListener.h>
 #include <JsonStreamingParser.h>
+#include <memory>
 
 #define BUS_MAX_LOCATION 45   // Maximum length of a location string
 #define BUS_MAX_LINE_NAME 9   // Maximum length of a bus line name
@@ -64,7 +66,8 @@ typedef void (*busDataSourceCallback) ();
  */
 class busDataSource : public iDataSource, public JsonListener {
 private:
-    BusStop stationData;               // Current stop data
+    std::unique_ptr<BusStop> stationData; // Current stop data
+    MessagePool messagesData;          // Local message pool
     char lastErrorMsg[128];            // Most recent error message
     
     // Internal parser state (migrated from busDataClient)
@@ -158,7 +161,8 @@ public:
      * @brief Returns the current station data.
      * @return BusStop* Pointer to the station data structure.
      */
-    BusStop* getStationData() { return &stationData; }
+    BusStop* getStationData() { return stationData.get(); }
+    MessagePool* getMessagesData() { return &messagesData; }
 
     /**
      * @brief Retrieves the long name of a bus stop.

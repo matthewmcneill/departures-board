@@ -16,12 +16,14 @@
 #ifndef BUS_BOARD_HPP
 #define BUS_BOARD_HPP
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include "busDataSource.hpp"
 #include "../../widgets/headerWidget.hpp"
 #include "../../widgets/clockWidget.hpp"
 #include "../../widgets/serviceListWidget.hpp"
-#include "../../widgets/scrollingMessageWidget.hpp"
+#include "../../widgets/scrollingMessagePoolWidget.hpp"
 
 /**
  * @brief Represents the physical or logical screen for displaying bus departures.
@@ -31,12 +33,13 @@
  */
 class BusBoard : public iDisplayBoard {
 private:
+    appContext* context;
     busDataSource dataSource; ///< The data source responsible for fetching bus stop data
     
     // UI Widgets
     headerWidget headWidget;             ///< Widget displaying the board title and clock
     serviceListWidget servicesWidget;    ///< Widget displaying the list of upcoming services
-    scrollingMessageWidget msgWidget;    ///< Widget displaying scrolling status or system messages
+    scrollingMessagePoolWidget msgWidget;    ///< Widget displaying scrolling status or system messages
 
     // Configuration
     char busAtco[13];     ///< ATCO code of the bus stop
@@ -45,17 +48,17 @@ private:
     float busLat, busLon; ///< Coordinates of the bus stop
     bool enableBus;       ///< Flag indicating if the board is enabled
 
+    // Centralized Configuration
+    BoardConfig config;
+
     uint32_t lastUpdate;  ///< Timestamp of the last successful data update
     bool needsRefresh;    ///< Flag indicating if the display requires a complete refresh
 
-protected:
+public:
     /**
      * @brief Constructs a new BusBoard instance.
      */
-    BusBoard();
-    friend class DisplayManager;
-
-public:
+    BusBoard(appContext* contextPtr = nullptr);
     /**
      * @brief Destroys the BusBoard instance.
      */
@@ -91,6 +94,7 @@ public:
      * @param currentMillis Current system uptime in milliseconds.
      */
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
+    void configure(const struct BoardConfig& config) override;
 
     // Configuration Getters/Setters
 
@@ -141,7 +145,7 @@ public:
      * @brief Triggers an immediate update from the internal data source.
      * @return 0 on success, non-zero on error.
      */
-    int updateData() override { return dataSource.updateData(); }
+    int updateData() override;
 
     /**
      * @brief Retrieves the last error message from the components.

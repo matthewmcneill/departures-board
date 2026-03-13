@@ -63,7 +63,7 @@ public:
 *   **`headerWidget`**: Renders the top bar, handles scrolling text if the location name is too long, and draws the destination text block. Embeds a `clockWidget` instance for time rendering.
 *   **`clockWidget`**: Handles fetching the time and rendering the blinking colon and time string at the top right. Implements `animationTick` to safely execute partial hardware-accelerated screen updates independent of the main `render()` loop.
 *   **`serviceListWidget`**: Renders a list of departures. It will be designed to support a configurable number of columns and alignments (e.g., passing in an array of column widths/alignments, so it can handle a 2-column layout for bus routes and expected times, or a 3-column layout for train platform, destination, and due time). 
-*   **`scrollingMessageWidget`**: Handles horizontal marquee scrolling logic for service messages or calling points. Implements `animationTick` to maintain scroll fluidity during background network loads.
+*   **`scrollingMessagePoolWidget`**: Handles horizontal marquee scrolling logic for service messages or calling points. It can cycle through multiple `MessagePool` instances (e.g. system-wide RSS/weather and board-specific disruption messages). Implements `animationTick` to maintain scroll fluidity during background network loads.
 *   **`systemMessageWidget`**: A widget to standardize the rendering of full-screen alerts (e.g., Wi-Fi setup instructions, token errors, CRS warnings), ensuring visual consistency. It will support a title and multiple lines of formatted text, replacing the redundant layout logic currently scattered throughout `systemBoard.cpp`.
 
 ## 3. Example Structure of a Specific Board
@@ -79,7 +79,7 @@ private:
     headerWidget header;
     clockWidget clock;
     serviceListWidget serviceList;
-    scrollingMessageWidget statusTicker;
+    scrollingMessagePoolWidget statusTicker;
 
 public:
     // Initialize the widgets with their screen bounding boxes
@@ -109,7 +109,7 @@ public:
         
         // Pass the subset of data to the relevant widgets
         serviceList.render(display, stationData.service, stationData.numServices);
-        statusTicker.render(display, getLastErrorMsg());
+        statusTicker.render(display);
     }
 };
 ```
@@ -135,16 +135,16 @@ public:
 A board (like `busBoard`) will be constructed by passing it a reference to its specific `iDataSource` (e.g., `busDataClient`). The board handles the UI lifecycle, calling `updateData()` when necessary, and distributing the resulting parsed struct/vars locally to the `iGfxWidget`s for rendering. 
 
 ### Data Structures & Messages
-We will **not** enforce generic shared types (like `stnMessages` or generic `serviceData` structs) across all boards. Instead, each individual board will define and manage the data structures it needs for its specific data sources. 
+We will **not** enforce generic shared types (like the old `stnMessages` struct) across all boards. Instead, each individual board will define and manage the data structures it needs for its specific data sources. 
 
-The `iDataSource` interface only guarantees that data can be updated. The `iDisplayBoard` holds a pointer to its specific client, asks it for its parsed custom struct, and feeds standard types (e.g., `const char*`) into agnostic `iGfxWidget` classes (like `scrollingMessageWidget`).
+The `iDataSource` interface only guarantees that data can be updated. The `iDisplayBoard` holds a pointer to its specific client, asks it for its parsed custom struct, and feeds standard types (e.g., `const char*`) into agnostic `iGfxWidget` classes (like `scrollingMessagePoolWidget`). Large message sets are managed via `MessagePool` objects.
 
 ## 5. Non-Blocking Display Updates (Yield Callbacks)
 A significant challenge when running on a single core (e.g., using `xmlListener`) is that large payload parsing blocks the main `loop()` for several seconds. To keep the UI responsive (e.g., the clock blinking, text scrolling), we implement a pipeline based on **Yield Callbacks**:
 
 1. **Parser Yield**: The data source parsers are configured to fire a callback periodically during execution.
 2. **Display Manager `yieldAnimationUpdate()`**: This method intercepts the callback. It maintains an internal frame-rate limiter (capping execution to ~60fps / 16ms intervals). If the threshold is met, it calls `renderAnimationUpdate()` on the active `iDisplayBoard`.
-3. **Widget Delegation**: The board propagates `renderAnimationUpdate()` to any configured widgets. Valid widgets (like `clockWidget` or `scrollingMessageWidget`) calculate their *internal* deltas. If a visual change is needed, they execute a highly localized, hardware-accelerated **partial update** directly to the SPI bus (`display.updateDisplayArea()`), completely independent of the bulky screen-wide `render()` method.
+3. **Widget Delegation**: The board propagates `renderAnimationUpdate()` to any configured widgets. Valid widgets (like `clockWidget` or `scrollingMessagePoolWidget`) calculate their *internal* deltas. If a visual change is needed, they execute a highly localized, hardware-accelerated **partial update** directly to the SPI bus (`display.updateDisplayArea()`), completely independent of the bulky screen-wide `render()` method.
 
 ### Guidelines: `tick()` vs `renderAnimationUpdate()`
 When building widgets, it is crucial to understand the separation of these two methods to prevent screen tearing and SPI contention:

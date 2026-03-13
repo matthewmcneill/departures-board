@@ -14,6 +14,8 @@ Enforce a specific set of documentation standards for C++ header and source file
 3.  **Variable/Constant Documentation**: Module-level scoped items must have same-line comments.
 4.  **Functional Flow**: Longer functions must have block comments describing the "why" and "how" of the process.
 5.  **Arcane Logic**: Complex or non-obvious code lines must be explained.
+6.  **Naming Conventions**: File names and library names must use `camelCase`.
+7.  **Implementation Plans**: All implementation plans must be reviewed for house style (Goal, Review Required, Proposed Changes, Verification).
 
 ---
 
@@ -101,9 +103,33 @@ Identify lines of code that are not self-explanatory (bit manipulation, complex 
 uint8_t flags = (data >> 4) & 0x0F; // Extract 4-bit status nibble from high byte
 ```
 
+## 6. Naming Conventions
+
+All file names and library names MUST follow the `camelCase` naming convention. This ensures consistency across the codebase.
+
+### Requirements:
+- **File Names**: Use `camelCase.cpp` or `camelCase.hpp` (e.g., `displayManager.cpp`, `wifiConfig.hpp`).
+- **Library Names**: External libraries or internal modules should be referred to using `camelCase` in documentation and configuration.
+
+---
+
+## 7. Implementation Plans
+
+Whenever an implementation plan is produced, it MUST be reviewed and updated to adhere to the project's house style.
+
+### Structure:
+- **Goal Description**: Clear, concise explanation of the objective.
+- **User Review Required**: Highlight critical decisions or breaking changes using GitHub alerts.
+- **Proposed Changes**: Grouped by component, using `[MODIFY]`, `[NEW]`, and `[DELETE]` tags with absolute file links.
+- **Verification Plan**: Practical steps for automated and manual verification.
+
+---
+
 ## Workflow
 
-1.  Read the target file.
-2.  Identity missing or substandard documentation based on the rules above.
-3.  Regenerate the file content with the improved documentation.
-4.  Ensure existing logic is PRESERVED exactly; only comments should change.
+1.  Read the target file OR implementation plan.
+2.  Identity missing or substandard documentation/content based on the rules above.
+3.  Ensure the file name and module naming follow the `camelCase` requirement.
+4.  For implementation plans, ensure all standard sections are present and correctly formatted.
+5.  Regenerate the content with the improved house style.
+6.  Ensure existing logic or plan details are PRESERVED exactly; only formatting and clarity should change.

@@ -16,6 +16,8 @@
 #ifndef HELP_BOARD_HPP
 #define HELP_BOARD_HPP
 
+class appContext;
+
 #include "../interfaces/iDisplayBoard.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
 
@@ -24,6 +26,7 @@
  */
 class HelpBoard : public iDisplayBoard {
 private:
+    appContext* context;
     char title[32];
     const char* lines[5];
     int lineCount;
@@ -42,9 +45,12 @@ public:
      */
     void setHelpContent(const char* h, const char* textArr[], int count);
 
+    void init(appContext* contextPtr) { context = contextPtr; }
+
     // iDisplayBoard Implementation
     void onActivate() override;
     void onDeactivate() override;
+    void configure(const struct BoardConfig& config) override { (void)config; }
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     int updateData() override { return 0; }

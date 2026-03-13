@@ -16,7 +16,8 @@
 #include "../interfaces/iDataSource.hpp"
 #include "JsonListener.h"
 #include "JsonStreamingParser.h"
-#include "../interfaces/messageData.h"
+#include "../../messaging/messagePool.hpp"
+#include <memory>
 
 #include <Arduino.h>
 
@@ -42,15 +43,15 @@ struct TflStation {
     char location[TFL_MAX_LOCATION];
     int numServices;
     bool boardChanged;
-    TflService service[TFL_MAX_SERVICES];
+    TflService service[TFL_MAX_FETCH];
 };
 
 typedef void (*tflDataSourceCallback) ();
 
 class tflDataSource : public iDataSource, public JsonListener {
 private:
-    TflStation stationData;
-    stnMessages messagesData;
+    std::unique_ptr<TflStation> stationData;
+    MessagePool messagesData;
     char lastErrorMsg[128];
 
     // API Details
@@ -80,8 +81,8 @@ public:
 
     // Configuration & Data Access
     void configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb = nullptr);
-    TflStation* getStationData() { return &stationData; }
-    stnMessages* getMessagesData() { return &messagesData; }
+    TflStation* getStationData() { return stationData.get(); }
+    MessagePool* getMessagesData() { return &messagesData; }
 
     // JsonListener Implementation
     void whitespace(char c) override;

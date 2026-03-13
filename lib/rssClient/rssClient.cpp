@@ -26,6 +26,7 @@
 #include <HTTPClient.h>
 #include <WiFiClient.h>
 #include <Logger.hpp>
+#include <memory>
 
 /**
  * @brief Implements the iConfigurable interface.
@@ -34,6 +35,7 @@ void rssClient::reapplyConfig(const Config& config) {
     setRssURL(config.rssUrl);
     setRssName(config.rssName);
     setRssEnabled(config.rssEnabled);
+    LOG_INFO("CONFIG", "RSS Config: Enabled=" + String(config.rssEnabled ? "true" : "false") + ", URL=" + String(config.rssUrl));
 }
 
 rssClient::rssClient() {}
@@ -63,28 +65,38 @@ void rssClient::trim(char* str) {
  * @return Connection status constant.
  */
 int rssClient::loadFeed(String url) {
-    HTTPClient http;
-    WiFiClient client;
-    WiFiClientSecure clientSecure;
+    std::unique_ptr<HTTPClient> http(new (std::nothrow) HTTPClient());
+    std::unique_ptr<WiFiClient> client(new (std::nothrow) WiFiClient());
+    std::unique_ptr<WiFiClientSecure> clientSecure(new (std::nothrow) WiFiClientSecure());
+
+    if (!http || !client || !clientSecure) {
+        LOG_ERROR("DATA", "RSS Client: Memory allocation failed for clients!");
+        return UPD_DATA_ERROR;
+    }
 
     unsigned long perfTimer = millis();
     int redirectCount = 0;
     const int maxRedirects = 5;
 
     strcpy(lastErrorMessage, "Success");
-    clientSecure.setInsecure();
-    http.setReuse(false);
+    clientSecure->setInsecure();
+    http->setReuse(false);
     numRssTitles = 0;
+    LOG_INFO("DATA", "RSS Client: Loading feed from " + url);
 
     while (redirectCount < maxRedirects) {
-        if (url.startsWith(F("https"))) http.begin(clientSecure,url);
-        else http.begin(client, url);
-        int httpCode = http.GET();
+        if (url.startsWith(F("https"))) http->begin(*clientSecure, url);
+        else http->begin(*client, url);
+        int httpCode = http->GET();
         if (httpCode == HTTP_CODE_OK) {
-            WiFiClient *stream = http.getStreamPtr();
-            xmlStreamingParser parser;
-            parser.setListener(this);
-            parser.reset();
+            WiFiClient *stream = http->getStreamPtr();
+            std::unique_ptr<xmlStreamingParser> parser(new (std::nothrow) xmlStreamingParser());
+            if (!parser) {
+                LOG_ERROR("DATA", "RSS Client: Memory allocation failed for parser!");
+                return UPD_DATA_ERROR;
+            }
+            parser->setListener(this);
+            parser->reset();
             grandParentTagName = "";
             parentTagName = "";
             tagName = "";
@@ -93,22 +105,23 @@ int rssClient::loadFeed(String url) {
             char c;
             unsigned long dataSendTimeout = millis() + 3000UL;
 
-            while((stream->available() || http.connected()) && millis() < dataSendTimeout && numRssTitles < MAX_RSS_TITLES) {
+            while((stream->available() || http->connected()) && millis() < dataSendTimeout && numRssTitles < MAX_RSS_TITLES) {
                 while (stream->available() && numRssTitles < MAX_RSS_TITLES) {
                     c = stream->read();
-                    parser.parse(c);
+                    parser->parse(c);
                     dataReceived++;
                 }
                 delay(1);
             }
 
-            http.end();
+            http->end();
             if (millis() >= dataSendTimeout) {
                 snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Timed out during data receive operation - %ld bytes received", dataReceived);
-                LOG_WARN(lastErrorMessage);
+                LOG_WARN("DATA", lastErrorMessage);
                 return UPD_TIMEOUT;
             }
             snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Success: %ld bytes took %lums with %d redirects", dataReceived, static_cast<unsigned long>(millis()-perfTimer), redirectCount);
+            LOG_INFO("DATA", "RSS Feed: Successfully fetched " + String(dataReceived) + " bytes. Found " + String(numRssTitles) + " titles.");
             return UPD_SUCCESS;
             break;
         } else if (httpCode == HTTP_CODE_MOVED_PERMANENTLY ||
@@ -116,20 +129,20 @@ int rssClient::loadFeed(String url) {
                    httpCode == HTTP_CODE_TEMPORARY_REDIRECT ||
                    httpCode == HTTP_CODE_PERMANENT_REDIRECT) {
             // Handle redirect
-            String newUrl = http.getLocation();
-            http.end();  // End current request before retrying
+            String newUrl = http->getLocation();
+            http->end();  // End current request before retrying
             if (newUrl.length() == 0) {
                 strcpy(lastErrorMessage, "HTTP Redirect without Location header!");
-                LOG_WARN(lastErrorMessage);
+                LOG_WARN("DATA", lastErrorMessage);
                 return UPD_HTTP_ERROR;
                 break;
             }
             url = newUrl;
             redirectCount++;
         } else {
-            snprintf(lastErrorMessage, sizeof(lastErrorMessage), "GET failed, error: %d %s", httpCode, http.errorToString(httpCode).c_str());
-            LOG_WARN(lastErrorMessage);
-            http.end();
+            snprintf(lastErrorMessage, sizeof(lastErrorMessage), "GET failed, error: %d %s", httpCode, http->errorToString(httpCode).c_str());
+            LOG_WARN("DATA", lastErrorMessage);
+            http->end();
             return UPD_HTTP_ERROR;
             break;
         }
@@ -189,6 +202,7 @@ void rssClient::value(const char *value)
         strncpy(rssTitle[numRssTitles],value,MAX_RSS_TITLE_SIZE-1);
         rssTitle[numRssTitles][MAX_RSS_TITLE_SIZE-1] = '\0';
         trim(rssTitle[numRssTitles]);
+        LOG_DEBUG("DATA", "RSS Item: " + String(rssTitle[numRssTitles]));
         numRssTitles++;
     }
 }

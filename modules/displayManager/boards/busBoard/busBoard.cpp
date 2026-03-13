@@ -1,3 +1,4 @@
+#include <appContext.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  *
@@ -23,14 +24,16 @@
 
 extern const char btAttribution[]; ///< Global attribution text
 extern const uint8_t Underground10[]; ///< Built-in font
+extern const uint8_t NatRailSmall9[]; ///< Small font for scrolling messages
 
 /**
  * @brief Constructs the BusBoard and configures widget positions.
  */
-BusBoard::BusBoard() 
-    : headWidget(0, 0, 256, 14), 
+BusBoard::BusBoard(appContext* contextPtr) 
+    : context(contextPtr),
+      headWidget(0, 0, 256, 14), 
       servicesWidget(0, 15, 256, 39),
-      msgWidget(0, 56, 256, 8),
+      msgWidget(0, 56, 256, 8, NatRailSmall9),
       lastUpdate(0), 
       needsRefresh(true) {
     headWidget.getClock().setFont(Underground10);
@@ -56,7 +59,15 @@ BusBoard::BusBoard()
 void BusBoard::onActivate() {
     dataSource.configure(busAtco, busFilter);
     headWidget.setTitle(busName);
-    msgWidget.setMessage(btAttribution);
+    
+    // Configure message pools
+    if (context) {
+        msgWidget.addMessagePool(&context->getGlobalMessagePool());
+    }
+    msgWidget.addMessagePool(dataSource.getMessagesData());
+    
+    // Set initial text (fallback)
+    msgWidget.setText(btAttribution);
     lastUpdate = 0; // Trigger immediate update
 }
 
@@ -67,43 +78,48 @@ void BusBoard::onDeactivate() {
     // Cleanup if needed
 }
 
+void BusBoard::configure(const BoardConfig& config) {
+    this->config = config;
+    setBusAtco(config.id);
+    setBusName(config.name);
+    setBusLat(config.lat);
+    setBusLon(config.lon);
+    setBusFilter(config.filter);
+}
+
 /**
  * @brief Updates internal logic and periodically fetches new data.
  * @param ms Current system epoch in milliseconds.
  */
 void BusBoard::tick(uint32_t ms) {
-    // --- Step 1: Check update constraints ---
-    // Attempt an update every 30000 ms natively, or if no update occurred
-    if (ms - lastUpdate > 30000 || lastUpdate == 0) {
-        int status = dataSource.updateData();
-        lastUpdate = ms;
-        needsRefresh = true;
-        
-        // --- Step 2: Handle incoming data ---
-        // Populate widget data only when data updates and has actually changed
-        if (status == 0) { // UPD_SUCCESS
-            BusStop* data = dataSource.getStationData();
-            servicesWidget.clearRows();
-            if (data->numServices > 0) {
-                for (int i = 0; i < data->numServices; i++) {
-                    const char* rowData[3] = {
-                        data->service[i].routeNumber,
-                        data->service[i].destination,
-                        data->service[i].expectedTime
-                    };
-                    servicesWidget.addRow(rowData);
-                }
-            }
-        }
-    }
-
-    // --- Step 3: Propagate tick to nested widgets ---
     headWidget.tick(ms);
     msgWidget.tick(ms);
     servicesWidget.tick(ms);
+}
+
+int BusBoard::updateData() {
+    if (!config.complete) {
+        LOG_WARN("DISPLAY", "Bus Board: Skipping updateData() - Configuration incomplete.");
+        return 7;
+    }
+    int status = dataSource.updateData();
+    needsRefresh = true;
     
-    // In a real implementation, we'd also handle the rotation of services/messages here
-    // for the 3rd line, but for this first pass we'll keep it simple.
+    if (status == 0) { // UPD_SUCCESS
+        BusStop* data = dataSource.getStationData();
+        servicesWidget.clearRows();
+        if (data->numServices > 0) {
+            for (int i = 0; i < data->numServices; i++) {
+                const char* rowData[3] = {
+                    data->service[i].routeNumber,
+                    data->service[i].destination,
+                    data->service[i].expectedTime
+                };
+                servicesWidget.addRow(rowData);
+            }
+        }
+    }
+    return status;
 }
 
 /**
@@ -111,6 +127,17 @@ void BusBoard::tick(uint32_t ms) {
  * @param display Primary graphics context.
  */
 void BusBoard::render(U8G2& display) {
+    if (!config.complete) {
+        // Delegate to system help boards
+        // Bus boards only have "missing ID" state in current logic, as they don't have a unique key.
+        SystemBoardId helpId = SystemBoardId::SYS_HELP_CRS; // Reuse CRS help for generic ID help
+        if (context) {
+            iDisplayBoard* help = context->getDisplayManager().getSystemBoard(helpId);
+            if (help) help->render(display);
+        }
+        return;
+    }
+
     headWidget.render(display);
     
     // Render the departures
@@ -132,6 +159,7 @@ void BusBoard::render(U8G2& display) {
  * @param currentMillis Current time offset.
  */
 void BusBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
+    if (!config.complete) return;
     headWidget.renderAnimationUpdate(display, currentMillis);
     msgWidget.renderAnimationUpdate(display, currentMillis);
     servicesWidget.renderAnimationUpdate(display, currentMillis);

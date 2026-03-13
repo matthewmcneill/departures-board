@@ -14,9 +14,8 @@
 #include "drawingPrimitives.hpp"
 #include <time.h>
 
-#include <configManager.hpp>
-
-extern ConfigManager configManager;
+#include <appContext.hpp>
+extern class appContext appContext;
 extern const char* weekdays[];
 
 headerWidget::headerWidget(int _x, int _y, int _w, int _h) 
@@ -179,7 +178,7 @@ void headerWidget::render(U8G2& display) {
         int w = display.getStrWidth(tOffset);
         rightBound -= (w + 4);
         display.drawStr(rightBound, y + renderH - 4, tOffset);
-    } else if (showDate && configManager.getConfig().dateEnabled) {
+    } else if (showDate && appContext.getConfigManager().getConfig().dateEnabled) {
         char date[30];
         struct tm timeinfo;
         if(getLocalTime(&timeinfo)) {

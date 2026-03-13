@@ -1,3 +1,15 @@
+#pragma once
+
+extern class appContext appContext;
+extern WebServer server;
+
+static const char* contentTypeText = "text/plain";
+static const char* contentTypeHtml = "text/html";
+static const char* contentTypeJson = "application/json";
+
+static const unsigned long msMin = 60000;
+static const unsigned long msHour = 3600000;
+static const unsigned long msDay = 86400000;
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  *
@@ -46,7 +58,7 @@
 #include <boards/systemBoard/messageBoard.hpp>
 #include <configManager.hpp>
 
-extern ConfigManager configManager;
+
 
 /**
  * @brief Send a simple text response to the client (Flash String)
@@ -165,7 +177,7 @@ void handleStreamFlashFile(String filename, const uint8_t *filedata, size_t cont
  *        Validates OpenWeatherMap key if provided.
  */
 void handleSaveKeys() {
-  LOG_INFO("API configuration request received (handleSaveKeys).");
+  LOG_INFO("WEB", "API configuration request received (handleSaveKeys).");
   String newJSON, owmToken, nrToken;
   JsonDocument doc;
   bool result = true;
@@ -181,36 +193,36 @@ void handleSaveKeys() {
         owmToken = settings[F("owmToken")].as<String>();
         if (owmToken.length()) {
           // Check if this is a valid token...
-          if (!currentWeather->updateWeather(owmToken, "51.52", "-0.13")) {
+          if (!appContext.getWeather().updateWeather(owmToken, "51.52", "-0.13")) {
             msg = F("The OpenWeather Map API key is not valid. Please check you have copied your key correctly. It may take up to 30 minutes for a newly created key to become active.\n\nNo changes have been saved.");
             result = false;
           }
         }
       }
       if (result) {
-        if (!configManager.saveFile(F("/apikeys.json"),newJSON)) {
+        if (!appContext.getConfigManager().saveFile(F("/apikeys.json"),newJSON)) {
           msg = F("Failed to save the API keys to the file system (file system corrupt or full?)");
           result = false;
         } else {
           nrToken = settings[F("nrToken")].as<String>();
           if (!nrToken.length()) msg+=F("\n\nNote: Only Tube and Bus Departures will be available without a National Rail token.");
-          LOG_INFO("API keys successfully validated and saved.");
+          LOG_INFO("WEB", "API keys successfully validated and saved.");
         }
       }
     } else {
       msg = F("Invalid JSON format. No changes have been saved.");
-      LOG_ERROR("API keys update failed: Invalid JSON format received.");
+      LOG_ERROR("WEB", "API keys update failed: Invalid JSON format received.");
       result = false;
     }
     if (result) {
       // Load/Update the API Keys in memory
-      configManager.loadApiKeys();
-      const Config& config = configManager.getConfig();
+      appContext.getConfigManager().loadApiKeys();
+      const Config& config = appContext.getConfigManager().getConfig();
       // If all location codes are blank we're in the setup process. If not, the keys have been changed so just reboot.
       if (!config.crsCode[0] && !config.tubeId[0] && !config.busId[0]) {
         sendResponse(200,msg);
-        configManager.writeDefaultConfig();
-        displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_HELP_CRS));
+        appContext.getConfigManager().writeDefaultConfig();
+        appContext.getDisplayManager().showBoard(appContext.getDisplayManager().getSystemBoard(SystemBoardId::SYS_HELP_CRS));
       } else {
         msg += F("\n\nThe system will now restart.");
         sendResponse(200,msg);
@@ -226,31 +238,177 @@ void handleSaveKeys() {
 }
 
 /**
- * @brief Endpoint to save configuration settings POSTed from index.htm
+ * @brief Endpoint to serve the current configuration settings as JSON to the browser.
+ *        Constructs a flat JSON object compatible with the current legacy Web GUI.
+ */
+void handleGetConfigSettings() {
+  LOG_INFO("WEB", "Configuration settings requested (handleGetConfigSettings).");
+  const Config& config = appContext.getConfigManager().getConfig();
+  JsonDocument doc;
+
+  // System Settings
+  doc[F("hostname")] = config.hostname;
+  doc[F("TZ")] = config.timezone;
+  doc[F("brightness")] = config.brightness;
+  doc[F("mode")] = config.defaultBoardIndex;
+  doc[F("sleep")] = config.sleepEnabled;
+  doc[F("sleepStarts")] = config.sleepStarts;
+  doc[F("sleepEnds")] = config.sleepEnds;
+  doc[F("showDate")] = config.dateEnabled;
+  doc[F("clock")] = config.showClockInSleep;
+  doc[F("update")] = config.firmwareUpdatesEnabled;
+  doc[F("updateDaily")] = config.dailyUpdateCheckEnabled;
+  doc[F("noScroll")] = config.noScrolling;
+  doc[F("flip")] = config.flipScreen;
+  doc[F("fastRefresh")] = (config.apiRefreshRate == FASTDATAUPDATEINTERVAL);
+  doc[F("rssUrl")] = config.rssUrl;
+  doc[F("rssName")] = config.rssName;
+
+  // Map from internal board array to legacy flat fields for GUI compatibility
+  // Rail (Slot 0)
+  for (int i = 0; i < config.boardCount; i++) {
+    const BoardConfig& bc = config.boards[i];
+    if (bc.mode == MODE_RAIL && i == 0) {
+      doc[F("crs")] = bc.id;
+      doc[F("lat")] = bc.lat;
+      doc[F("lon")] = bc.lon;
+      doc[F("callingCrs")] = bc.secondaryId;
+      doc[F("callingStation")] = bc.secondaryName;
+      doc[F("platformFilter")] = bc.filter;
+      doc[F("nrTimeOffset")] = bc.timeOffset;
+    } else if (bc.mode == MODE_TUBE) {
+      doc[F("tubeId")] = bc.id;
+      doc[F("tubeName")] = bc.name;
+    } else if (bc.mode == MODE_BUS) {
+      doc[F("busId")] = bc.id;
+      doc[F("busName")] = bc.name;
+      doc[F("busLat")] = bc.lat;
+      doc[F("busLon")] = bc.lon;
+      doc[F("busFilter")] = bc.filter;
+    } else if (bc.mode == MODE_RAIL && i > 0) {
+      // Alt Rail logic
+      doc[F("altCrs")] = bc.id;
+      doc[F("altLat")] = bc.lat;
+      doc[F("altLon")] = bc.lon;
+      doc[F("altCallingCrs")] = bc.secondaryId;
+      doc[F("altCallingStation")] = bc.secondaryName;
+      doc[F("altPlatformFilter")] = bc.filter;
+      // Note: altStarts/altEnds aren't in current BoardConfig, using legacy mapping if needed
+    }
+  }
+
+  // Weather is tied to Global context currently
+  doc[F("weather")] = appContext.getWeather().getWeatherEnabled();
+  doc[F("showBus")] = config.altStationEnabled; // Legacy flag for 'Include bus replacement' in NRE
+
+  String output;
+  serializeJson(doc, output);
+  server.send(200, contentTypeJson, output);
+}
+
+/**
+ * @brief Endpoint to save configuration settings POSTed from index.htm.
+ *        Updates the in-memory Config struct and then calls save() to persist.
  */
 void handleSaveSettings() {
-  LOG_INFO("Configuration settings update requested (handleSaveSettings).");
-  String newJSON;
-
+  LOG_INFO("WEB", "Configuration settings update requested (handleSaveSettings).");
+  
   if ((server.method() == HTTP_POST) && (server.hasArg("plain"))) {
-    newJSON = server.arg("plain");
-    configManager.saveFile(F("/config.json"),newJSON);
-    LOG_INFO("Settings saved to /config.json successfully.");
-    const Config& config = configManager.getConfig();
-    if ((!config.crsCode[0] && !config.tubeId[0] && !config.busId[0]) || server.hasArg("reboot")) {
-      // First time setup or base config change, we need a full reboot
-      sendResponse(200,F("Configuration saved. The system will now restart."));
+    String newJSON = server.arg("plain");
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, newJSON);
+    
+    if (error) {
+      LOG_ERROR("WEB", String("Failed to parse settings JSON: ") + error.c_str());
+      sendResponse(400, F("Invalid settings format."));
+      return;
+    }
+
+    Config& config = appContext.getConfigManager().getConfig();
+    JsonObject settings = doc.as<JsonObject>();
+
+    // Update System Settings
+    if (settings[F("hostname")].is<const char*>()) strlcpy(config.hostname, settings[F("hostname")], sizeof(config.hostname));
+    if (settings[F("TZ")].is<const char*>()) strlcpy(config.timezone, settings[F("TZ")], sizeof(config.timezone));
+    if (settings[F("brightness")].is<int>()) config.brightness = settings[F("brightness")];
+    if (settings[F("mode")].is<int>()) config.defaultBoardIndex = settings[F("mode")];
+    if (settings[F("sleep")].is<bool>()) config.sleepEnabled = settings[F("sleep")];
+    if (settings[F("sleepStarts")].is<int>()) config.sleepStarts = settings[F("sleepStarts")];
+    if (settings[F("sleepEnds")].is<int>()) config.sleepEnds = settings[F("sleepEnds")];
+    if (settings[F("showDate")].is<bool>()) config.dateEnabled = settings[F("showDate")];
+    if (settings[F("clock")].is<bool>()) config.showClockInSleep = settings[F("clock")];
+    if (settings[F("update")].is<bool>()) config.firmwareUpdatesEnabled = settings[F("update")];
+    if (settings[F("updateDaily")].is<bool>()) config.dailyUpdateCheckEnabled = settings[F("updateDaily")];
+    if (settings[F("noScroll")].is<bool>()) config.noScrolling = settings[F("noScroll")];
+    if (settings[F("flip")].is<bool>()) config.flipScreen = settings[F("flip")];
+    if (settings[F("fastRefresh")].is<bool>()) config.apiRefreshRate = settings[F("fastRefresh")] ? FASTDATAUPDATEINTERVAL : DATAUPDATEINTERVAL;
+    if (settings[F("rssUrl")].is<const char*>()) strlcpy(config.rssUrl, settings[F("rssUrl")], sizeof(config.rssUrl));
+    if (settings[F("rssName")].is<const char*>()) strlcpy(config.rssName, settings[F("rssName")], sizeof(config.rssName));
+
+    // Map legacy flat fields back to the boards array
+    // This maintains compatibility while the Web GUI is still flat.
+    // In the future, the GUI should send a "boards" array directly.
+    
+    // Board 0: Main Rail (by convention)
+    BoardConfig& br = config.boards[0];
+    br.mode = MODE_RAIL;
+    if (settings[F("crs")].is<const char*>()) strlcpy(br.id, settings[F("crs")], sizeof(br.id));
+    if (settings[F("lat")].is<float>()) br.lat = settings[F("lat")];
+    if (settings[F("lon")].is<float>()) br.lon = settings[F("lon")];
+    if (settings[F("callingCrs")].is<const char*>()) strlcpy(br.secondaryId, settings[F("callingCrs")], sizeof(br.secondaryId));
+    if (settings[F("callingStation")].is<const char*>()) strlcpy(br.secondaryName, settings[F("callingStation")], sizeof(br.secondaryName));
+    if (settings[F("platformFilter")].is<const char*>()) strlcpy(br.filter, settings[F("platformFilter")], sizeof(br.filter));
+    if (settings[F("nrTimeOffset")].is<int>()) br.timeOffset = settings[F("nrTimeOffset")];
+    br.complete = (strlen(br.id) > 0);
+
+    // Board 1: Tube
+    BoardConfig& bt = config.boards[1];
+    bt.mode = MODE_TUBE;
+    if (settings[F("tubeId")].is<const char*>()) strlcpy(bt.id, settings[F("tubeId")], sizeof(bt.id));
+    if (settings[F("tubeName")].is<const char*>()) strlcpy(bt.name, settings[F("tubeName")], sizeof(bt.name));
+    bt.complete = (strlen(bt.id) > 0);
+
+    // Board 2: Bus
+    BoardConfig& bb = config.boards[2];
+    bb.mode = MODE_BUS;
+    if (settings[F("busId")].is<const char*>()) strlcpy(bb.id, settings[F("busId")], sizeof(bb.id));
+    if (settings[F("busName")].is<const char*>()) strlcpy(bb.name, settings[F("busName")], sizeof(bb.name));
+    if (settings[F("busLat")].is<float>()) bb.lat = settings[F("busLat")];
+    if (settings[F("busLon")].is<float>()) bb.lon = settings[F("busLon")];
+    if (settings[F("busFilter")].is<const char*>()) strlcpy(bb.filter, settings[F("busFilter")], sizeof(bb.filter));
+    bb.complete = (strlen(bb.id) > 0);
+
+    // Board 3: Alt Rail
+    if (settings[F("altCrs")].is<const char*>() && strlen(settings[F("altCrs")]) > 0) {
+        BoardConfig& ba = config.boards[3];
+        ba.mode = MODE_RAIL;
+        strlcpy(ba.id, settings[F("altCrs")], sizeof(ba.id));
+        if (settings[F("altLat")].is<float>()) ba.lat = settings[F("altLat")];
+        if (settings[F("altLon")].is<float>()) ba.lon = settings[F("altLon")];
+        if (settings[F("altCallingCrs")].is<const char*>()) strlcpy(ba.secondaryId, settings[F("altCallingCrs")], sizeof(ba.secondaryId));
+        if (settings[F("altCallingStation")].is<const char*>()) strlcpy(ba.secondaryName, settings[F("altCallingStation")], sizeof(ba.secondaryName));
+        if (settings[F("altPlatformFilter")].is<const char*>()) strlcpy(ba.filter, settings[F("altPlatformFilter")], sizeof(ba.filter));
+        ba.complete = true;
+        config.boardCount = 4;
+    } else {
+        config.boardCount = 3;
+    }
+
+    // Persist to flash
+    appContext.getConfigManager().save();
+    
+    LOG_INFO("WEB", "Settings updated in memory and saved to disk.");
+    
+    if (server.hasArg("reboot")) {
+      sendResponse(200, F("Configuration saved. The system will now restart."));
       delay(1000);
       ESP.restart();
     } else {
-      sendResponse(200,F("Configuration updated. The system will update shortly."));
-      softResetBoard();
+      sendResponse(200, F("Configuration updated. The system will update shortly."));
+      appContext.getsystemManager().softResetBoard();
     }
   } else {
-    // Something went wrong saving the config file
-    sendResponse(400,F("The configuration could not be updated. The system will restart."));
-    delay(1000);
-    ESP.restart();
+    sendResponse(400, F("Invalid request. No settings provided."));
   }
 }
 
@@ -381,6 +539,7 @@ void handleFileUpload() {
  */
 
 void handleNotFound() {
+  LOG_INFO("WEB", "Request: " + server.uri() + " from " + server.client().remoteIP().toString());
   if ((LittleFS.exists(server.uri())) && (server.method() == HTTP_GET)) handleStreamFile(server.uri());
   else if (server.uri() == F("/keys.htm")) handleStreamFlashFile(server.uri(), keyshtm, sizeof(keyshtm));
   else if (server.uri() == F("/index.htm")) handleStreamFlashFile(server.uri(), indexhtm, sizeof(indexhtm));
@@ -447,8 +606,8 @@ void handleInfo() {
 
   sprintf(sysUptime,"%d days, %d hrs, %d min", days,hours,minutes);
 
-  const Config& config = configManager.getConfig();
-  server.sendContent("Hostname: " + String(config.hostname) + F("\nFirmware version: v") + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + " " + getBuildTime());
+  const Config& config = appContext.getConfigManager().getConfig();
+  server.sendContent("Hostname: " + String(config.hostname) + F("\nFirmware version: v") + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + " " + appContext.getsystemManager().getBuildTime());
   server.sendContent(F("\nSystem uptime: "));
   server.sendContent(String(sysUptime));
   server.sendContent(F("\nFree Heap: "));
@@ -466,6 +625,7 @@ void handleInfo() {
   server.sendContent(String(WiFi.RSSI()));
   server.sendContent(F("dB"));
   
+  struct tm timeinfo;
   getLocalTime(&timeinfo);
   sprintf(sysUptime,"%02d:%02d:%02d %02d/%02d/%04d",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon+1,timeinfo.tm_year+1900);
   
@@ -476,53 +636,53 @@ void handleInfo() {
   server.sendContent(F("\nNaptan station code: "));
   server.sendContent(String(config.tubeId));
   server.sendContent(F("\nSuccessful: "));
-  server.sendContent(String(dataLoadSuccess));
+  server.sendContent(String(appContext.getsystemManager().getDataLoadSuccess()));
   server.sendContent(F("\nFailures: "));
-  server.sendContent(String(dataLoadFailure));
+  server.sendContent(String(appContext.getsystemManager().getDataLoadFailure()));
   server.sendContent(F("\nTime since last data load: "));
-  server.sendContent(String((int)((millis()-lastDataLoadTime)/1000)));
+  server.sendContent(String((int)((millis()-appContext.getsystemManager().getLastDataLoadTime())/1000)));
   server.sendContent(F(" seconds"));
   
-  if (dataLoadFailure) {
+  if (appContext.getsystemManager().getDataLoadFailure()) {
     server.sendContent(F("\nTime since last failure: "));
-    server.sendContent(String((int)((millis()-lastLoadFailure)/1000)));
+    server.sendContent(String((int)((millis()-appContext.getsystemManager().getLastLoadFailure())/1000)));
     server.sendContent(F(" seconds"));
   }
   
   server.sendContent(F("\nLast Result: "));
-  if (lastUpdateResult==UPD_SUCCESS || lastUpdateResult==UPD_NO_CHANGE) server.sendContent(F("Ok"));
-  else if (lastUpdateResult==UPD_UNAUTHORISED) server.sendContent(F("Unauthorised"));
-  else if (lastUpdateResult==UPD_TIMEOUT) server.sendContent(F("Timeout"));
+  if (appContext.getsystemManager().getLastUpdateResult()==UPD_SUCCESS || appContext.getsystemManager().getLastUpdateResult()==UPD_NO_CHANGE) server.sendContent(F("Ok"));
+  else if (appContext.getsystemManager().getLastUpdateResult()==UPD_UNAUTHORISED) server.sendContent(F("Unauthorised"));
+  else if (appContext.getsystemManager().getLastUpdateResult()==UPD_TIMEOUT) server.sendContent(F("Timeout"));
   else {
     // Use standard abstraction rather than hardcoded client pointers
-    server.sendContent(displayManager.getCurrentBoard()->getLastErrorMsg());
+    server.sendContent(appContext.getDisplayManager().getCurrentBoard()->getLastErrorMsg());
   }
   
   server.sendContent(F("\nUpdate result code: "));
-  server.sendContent(getResultCodeText(lastUpdateResult));
+  server.sendContent(getResultCodeText(appContext.getsystemManager().getLastUpdateResult()));
   server.sendContent(F("\nServices: Managed by board plugin\nMessages: "));
   
-  int nMsgs = messages.numMessages;
-  if (config.rssEnabled && rss->getRssAddedtoMsgs()) nMsgs--;
-  if (config.boardMode == MODE_TUBE) nMsgs--;
+  int nMsgs = appContext.getGlobalMessagePool().getCount();
+  if (appContext.getConfigManager().getConfig().rssEnabled && appContext.getRss().getRssAddedtoMsgs()) nMsgs--;
+  if (appContext.getConfigManager().getConfig().boardMode == MODE_TUBE) nMsgs--;
   
   server.sendContent(String(nMsgs) + F("\n\n"));
 
-  if (rss->getRssEnabled()) {
+  if (appContext.getRss().getRssEnabled()) {
     server.sendContent(F("Last RSS result: "));
-    server.sendContent(rss->getLastError());
+    server.sendContent(appContext.getRss().getLastError());
     server.sendContent(F("\nResult code: "));
-    server.sendContent(getResultCodeText(rss->getLastRssUpdateResult()));
+    server.sendContent(getResultCodeText(appContext.getRss().getLastRssUpdateResult()));
     server.sendContent(F("\nNext RSS update: "));
-    server.sendContent(String((unsigned long)(rss->getNextRssUpdate()-millis())));
+    server.sendContent(String((unsigned long)(appContext.getRss().getNextRssUpdate()-millis())));
     server.sendContent(F("ms\n\n"));
   }
 
-  if (currentWeather->getWeatherEnabled()) {
+  if (appContext.getWeather().getWeatherEnabled()) {
     server.sendContent(F("Last weather result: "));
-    server.sendContent(currentWeather->lastErrorMsg);
+    server.sendContent(appContext.getWeather().lastErrorMsg);
     server.sendContent(F("\nNext weather update: "));
-    server.sendContent(String((unsigned long)(currentWeather->getNextWeatherUpdate()-millis())));
+    server.sendContent(String((unsigned long)(appContext.getWeather().getNextWeatherUpdate()-millis())));
     server.sendContent(F("ms\n"));
   }
 
@@ -533,7 +693,8 @@ void handleInfo() {
  * @brief Endpoint to stream the index.htm page or setup guide
  */
 void handleRoot() {
-  const Config& config = configManager.getConfig();
+  LOG_INFO("WEB", "Request: / from " + server.client().remoteIP().toString());
+  const Config& config = appContext.getConfigManager().getConfig();
   if (!config.apiKeysLoaded) {
     if (LittleFS.exists(F("/keys.htm"))) handleStreamFile(F("/keys.htm")); else handleStreamFlashFile(F("/keys.htm"),keyshtm,sizeof(keyshtm));
   } else {
@@ -545,7 +706,7 @@ void handleRoot() {
  * @brief Endpoint to send the firmware version to the client
  */
 void handleFirmwareInfo() {
-  String response = "{\"firmware\":\"B" + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + "-W" + String(WEBAPPVER_MAJOR) + "." + String(WEBAPPVER_MINOR) + F(" Build:") + getBuildTime() + F("\"}");
+  String response = "{\"firmware\":\"B" + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + "-W" + String(WEBAPPVER_MAJOR) + "." + String(WEBAPPVER_MINOR) + F(" Build:") + appContext.getsystemManager().getBuildTime() + F("\"}");
   server.send(200,contentTypeJson,response);
 }
 
@@ -574,7 +735,7 @@ void handleEraseWiFi() {
  * @brief Endpoint to factory reset the app (delete WiFi, format FS and reboot)
  */
 void handleFactoryReset() {
-  LOG_WARN("Factory reset initiated. Wiping WiFi credentials and formatting LittleFS.");
+  LOG_WARN("WEB", "Factory reset initiated. Wiping WiFi credentials and formatting LittleFS.");
   sendResponse(200,F("Factory reseting the Departures Board..."));
   delay(1000);
   WiFiManager wm;
@@ -592,7 +753,7 @@ void handleBrightness() {
   if (server.hasArg(F("b"))) {
     int level = server.arg(F("b")).toInt();
     if (level>0 && level<256) {
-      displayManager.setBrightness(level);
+      appContext.getDisplayManager().setBrightness(level);
       sendResponse(200,F("OK"));
       return;
     }
@@ -609,21 +770,21 @@ void handleOtaUpdate() {
   sendResponse(200,F("Update initiated - check Departure Board display for progress"));
   delay(500);
 
-  MessageBoard* msgBoard = (MessageBoard*)displayManager.getSystemBoard(SystemBoardId::SYS_ERROR_NO_DATA);
+  MessageBoard* msgBoard = (MessageBoard*)appContext.getDisplayManager().getSystemBoard(SystemBoardId::SYS_ERROR_NO_DATA);
   msgBoard->setContent("** OTA UPDATE **", "CHECKING GITHUB", "GETTING LATEST FIRMWARE", "DETAILS...");
-  displayManager.showBoard(msgBoard);
+  appContext.getDisplayManager().showBoard(msgBoard);
 
   if (ghUpdate.getLatestRelease()) {
-    ota.checkForFirmwareUpdate();
+    appContext.getOtaUpdater().checkForFirmwareUpdate();
   } else {
-    FirmwareUpdateBoard* fwBoard = (FirmwareUpdateBoard*)displayManager.getSystemBoard(SystemBoardId::SYS_FIRMWARE_UPDATE);
+    FirmwareUpdateBoard* fwBoard = (FirmwareUpdateBoard*)appContext.getDisplayManager().getSystemBoard(SystemBoardId::SYS_FIRMWARE_UPDATE);
     for (int i=15;i>=0;i--) {
       fwBoard->setUpdateState(FwUpdateState::FAILED);
       fwBoard->setErrorMessage("Unable to retrieve latest release information.");
-      displayManager.showBoard(fwBoard);
+      appContext.getDisplayManager().showBoard(fwBoard);
       delay(1000);
     }
-    log_e("FW Update failed: %s\n",ghUpdate.getLastError());
+    log_e("FW Update failed: %s\n",appContext.getOtaUpdater().ghUpdate.getLastError());
   }
   // Always restart
   ESP.restart();
@@ -634,17 +795,17 @@ void handleOtaUpdate() {
  */
 void handleControl() {
   String resp = "{\"sleeping\":";
-  SleepingBoard* sleepingBoard = (SleepingBoard*)displayManager.getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
+  SleepingBoard* sleepingBoard = (SleepingBoard*)appContext.getDisplayManager().getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
 
   if (server.hasArg(F("sleep"))) {
-    if (server.arg(F("sleep")) == "1") displayManager.setForcedSleep(true); else displayManager.setForcedSleep(false);
+    if (server.arg(F("sleep")) == "1") appContext.getDisplayManager().setForcedSleep(true); else appContext.getDisplayManager().setForcedSleep(false);
   }
   if (server.hasArg(F("clock"))) {
     if (server.arg(F("clock")) == "1") sleepingBoard->setShowClock(true); else sleepingBoard->setShowClock(false);
   }
-  resp += (displayManager.isSnoozing()) ? "true":"false";
+  resp += (appContext.getDisplayManager().isSnoozing()) ? "true":"false";
   resp += F(",\"display\":");
-  resp += (sleepingBoard->getShowClock() || (!displayManager.isSnoozing())) ? "true":"false";
+  resp += (sleepingBoard->getShowClock() || (!appContext.getDisplayManager().isSnoozing())) ? "true":"false";
   resp += "}";
   server.send(200, contentTypeJson, resp);
 }
@@ -668,7 +829,8 @@ void handleStationPicker() {
     return;
   }
 
-  const char* host = "stationpicker.nationalrail.co.uk";
+  // Previous endpoint (failed March 2026): stationpicker.nationalrail.co.uk /stationPicker/ 
+  const char* host = "ojp.nationalrail.co.uk";
   WiFiClientSecure httpsClient;
   httpsClient.setInsecure();
   httpsClient.setTimeout(10000);
@@ -683,10 +845,8 @@ void handleStationPicker() {
     return;
   }
 
-  httpsClient.print(String("GET /stationPicker/") + query + F(" HTTP/1.0\r\n") +
-                    F("Host: stationpicker.nationalrail.co.uk\r\n") +
-                    F("Referer: https://www.nationalrail.co.uk\r\n") +
-                    F("Origin: https://www.nationalrail.co.uk\r\n") +
+  httpsClient.print(String("GET /find/stationsDLRLU/") + query + F(" HTTP/1.0\r\n") +
+                    F("Host: ojp.nationalrail.co.uk\r\n") +
                     F("Connection: close\r\n\r\n"));
 
   // Wait for response header
@@ -702,10 +862,14 @@ void handleStationPicker() {
   }
 
   // Parse status code
+  // Parse status code
   String statusLine = httpsClient.readStringUntil('\n');
-  if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
-    httpsClient.stop();
+  statusLine.trim();
+  Serial.printf("🔘 [WEB] NR Station Picker status: %s\n", statusLine.c_str());
 
+  if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200")) == -1) {
+    httpsClient.stop();
+    Serial.printf("🔘 [WEB] NR Station Picker failed with status: %s\n", statusLine.c_str());
     if (statusLine.indexOf(F("401")) > 0) {
       sendResponse(401, F("Not Authorized"));
     } else if (statusLine.indexOf(F("500")) > 0) {
@@ -719,41 +883,40 @@ void handleStationPicker() {
   // Skip the remaining headers
   while (httpsClient.connected() || httpsClient.available()) {
     String line = httpsClient.readStringUntil('\n');
-    if (line == "\r") break;
+    if (line == "\r" || line == "") break;
   }
 
-  // Start sending response
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, contentTypeJson, "");
+  // Start of data parsing
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, httpsClient);
+  httpsClient.stop();
 
-  uint8_t buffer[512];
-  size_t bufLen = 0;
-  unsigned long timeout = millis() + 5000UL;
-  WiFiClient client = server.client();
+  if (error) {
+    Serial.printf("🔘 [WEB] NR JSON parse failed: %s\n", error.c_str());
+    sendResponse(500, F("JSON Parse Error"));
+    return;
+  }
 
-  while ((httpsClient.connected() || httpsClient.available()) && millis() < timeout) {
-    while (httpsClient.available()) {
-      char c = httpsClient.read();
-      if (c <= 128) { // Only printable/standard ASCII
-        buffer[bufLen++] = c;
-      }
-      
-      if (bufLen >= sizeof(buffer)) {
-        client.write(buffer, bufLen);
-        bufLen = 0;
-        yield();
+  JsonDocument outDoc;
+  JsonArray stationsArr = outDoc["payload"]["stations"].to<JsonArray>();
+
+  if (doc.is<JsonArray>()) {
+    for (JsonVariant item : doc.as<JsonArray>()) {
+      if (item.is<JsonArray>()) {
+        JsonArray stationData = item.as<JsonArray>();
+        JsonObject stationObj = stationsArr.add<JsonObject>();
+        stationObj["crsCode"] = stationData[0];
+        stationObj["name"] = stationData[1];
+        stationObj["latitude"] = stationData[7] | 0.0;
+        stationObj["longitude"] = stationData[8] | 0.0;
+        stationObj["kbState"] = 1; // Mark as selectable
       }
     }
   }
 
-  // Flush remaining buffer
-  if (bufLen > 0) {
-    client.write(buffer, bufLen);
-  }
-
-  httpsClient.stop();
-  server.sendContent(""); // empty chunk to terminate
-  client.stop();
+  String output;
+  serializeJson(outDoc, output);
+  server.send(200, contentTypeJson, output);
 }
 
 /**
@@ -762,16 +925,16 @@ void handleStationPicker() {
  * @param longitude Station/Bus stop longitude
  */
 void updateCurrentWeather(float latitude, float longitude) {
-  currentWeather->setNextWeatherUpdate(millis() + 1200000); // update every 20 mins
+  appContext.getWeather().setNextWeatherUpdate(millis() + 1200000); // update every 20 mins
   if (!latitude || !longitude) return; // No location co-ordinates
-  currentWeather->setWeatherMsg("");
-  bool currentWeatherValid = currentWeather->updateWeather(currentWeather->getOpenWeatherMapApiKey(), String(latitude), String(longitude));
+  appContext.getWeather().setWeatherMsg("");
+  bool currentWeatherValid = appContext.getWeather().updateWeather(appContext.getWeather().getOpenWeatherMapApiKey(), String(latitude), String(longitude));
   if (currentWeatherValid) {
-    currentWeather->currentWeather.toCharArray(currentWeather->getWeatherMsg(), 46);
-    currentWeather->getWeatherMsg()[0] = toUpperCase(currentWeather->getWeatherMsg()[0]);
-    currentWeather->getWeatherMsg()[45] = '\0';
+    appContext.getWeather().currentWeather.toCharArray(appContext.getWeather().getWeatherMsg(), 46);
+    appContext.getWeather().getWeatherMsg()[0] = toUpperCase(appContext.getWeather().getWeatherMsg()[0]);
+    appContext.getWeather().getWeatherMsg()[45] = '\0';
   } else {
-    currentWeather->setNextWeatherUpdate(millis() + 30000); // Try again in 30s
+    appContext.getWeather().setNextWeatherUpdate(millis() + 30000); // Try again in 30s
   }
 }
 
