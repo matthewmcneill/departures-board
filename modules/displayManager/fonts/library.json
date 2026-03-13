@@ -1,0 +1,8 @@
+{
+  "name": "fonts",
+  "version": "1.0.0",
+  "description": "Custom binary font arrays used by the OLED display.",
+  "dependencies": {
+    "U8g2": ">=2.36.5"
+  }
+}

@@ -1,0 +1,7 @@
+{
+    "name": "nationalRailBoard",
+    "version": "1.0.0",
+    "dependencies": {
+        "olikraus/U8g2": "^2.36.5"
+    }
+}

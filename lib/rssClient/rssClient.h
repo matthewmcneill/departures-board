@@ -12,24 +12,20 @@
  * Description: Client to fetch and parse RSS feeds via HTTP/HTTPS.
  *
  * Exported Functions/Classes:
+ * - class rssClient
+ */
 
 #pragma once
 #include <xmlListener.h>
 #include <xmlStreamingParser.h>
+#include "iConfigurable.hpp"
 
-#define UPD_SUCCESS 0
-#define UPD_INCOMPLETE 1
-#define UPD_UNAUTHORISED 2
-#define UPD_HTTP_ERROR 3
-#define UPD_TIMEOUT 4
-#define UPD_NO_RESPONSE 5
-#define UPD_DATA_ERROR 6
-#define UPD_NO_CHANGE 7
+#include <boards/interfaces/iDataSource.hpp>
 
 #define MAX_RSS_TITLES 5
 #define MAX_RSS_TITLE_SIZE 140
 
-class rssClient: public xmlListener {
+class rssClient: public xmlListener, public iConfigurable {
 
     private:
 
@@ -114,6 +110,11 @@ class rssClient: public xmlListener {
         const char* getLastError();
         char rssTitle[MAX_RSS_TITLES][MAX_RSS_TITLE_SIZE];
         int numRssTitles = 0;
+
+        /**
+         * @brief Implements the iConfigurable interface.
+         */
+        virtual void reapplyConfig(const Config& config) override;
 };
 
 extern rssClient* rss;

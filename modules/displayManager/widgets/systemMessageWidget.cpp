@@ -1,0 +1,55 @@
+/*
+ * Departures Board (c) 2025-2026 Gadec Software
+ *
+ * https://github.com/gadec-uk/departures-board
+ *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/gfxUtilities/src/systemMessageWidget.cpp
+ * Description: Implementation of systemMessageWidget for consistent alert layouts.
+ */
+
+#include "systemMessageWidget.hpp"
+#include "drawingPrimitives.hpp"
+
+systemMessageWidget::systemMessageWidget(int _x, int _y, int _w, int _h) 
+    : iGfxWidget(_x, _y, _w, _h), numLines(0) {
+    title[0] = '\0';
+    lines[0][0] = '\0';
+    lines[1][0] = '\0';
+    lines[2][0] = '\0';
+}
+
+void systemMessageWidget::setMessage(const char* newTitle, const char* l1, const char* l2, const char* l3) {
+    if (newTitle) strncpy(title, newTitle, sizeof(title)-1);
+    else title[0] = '\0';
+    
+    numLines = 0;
+    if (l1) { strncpy(lines[0], l1, sizeof(lines[0])-1); numLines = 1; }
+    if (l2) { strncpy(lines[1], l2, sizeof(lines[1])-1); numLines = 2; }
+    if (l3) { strncpy(lines[2], l3, sizeof(lines[2])-1); numLines = 3; }
+}
+
+void systemMessageWidget::render(U8G2& display) {
+    if (!isVisible) return;
+
+    int renderW = (width > 0) ? width : SCREEN_WIDTH;
+    int renderH = (height > 0) ? height : 14;
+
+    blankArea(display, x, y, renderW, renderH);
+
+    // Title
+    display.setFont(Underground10);
+    int titleW = display.getStrWidth(title);
+    display.drawStr(x + (renderW - titleW)/2, y + 12, title);
+
+    // Lines
+    display.setFont(NatRailSmall9);
+    int yOffset = y + 28;
+    for (int i = 0; i < numLines; i++) {
+        int lineW = display.getStrWidth(lines[i]);
+        display.drawStr(x + (renderW - lineW)/2, yOffset, lines[i]);
+        yOffset += 12;
+    }
+}

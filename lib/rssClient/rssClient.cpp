@@ -27,6 +27,15 @@
 #include <WiFiClient.h>
 #include <Logger.hpp>
 
+/**
+ * @brief Implements the iConfigurable interface.
+ */
+void rssClient::reapplyConfig(const Config& config) {
+    setRssURL(config.rssUrl);
+    setRssName(config.rssName);
+    setRssEnabled(config.rssEnabled);
+}
+
 rssClient::rssClient() {}
 
 /**

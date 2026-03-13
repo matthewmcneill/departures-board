@@ -6,45 +6,51 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- *
- * Module: include/WiFiConfig.hpp
+ * Module: lib/WiFiConfig/WiFiConfig.hpp
  * Description: Wi-Fi credentials management and architecture-independent NVS migration logic.
- *
- * Exported Functions/Classes:
- * - setupWiFi: Initialize WiFi using LittleFS credentials, handling NVS migration and captive portal fallback.
- * - loadWiFiConfig: Load Wi-Fi credentials from wifi.json on LittleFS.
- * - saveWiFiConfig: Save Wi-Fi credentials to wifi.json on LittleFS.
- * - saveCustomWiFiCallback: Callback function to intercept saved credentials and manually store them.
  */
+
 #ifndef WIFI_CONFIG_HPP
 #define WIFI_CONFIG_HPP
 
 #include <Arduino.h>
 #include <WiFiManager.h>
-
-extern char wifiSsid[33];
-extern char wifiPass[65];
+#include "iConfigurable.hpp"
 
 /**
- * @brief Initialize WiFi using LittleFS credentials, handling NVS migration and captive portal fallback.
- * @param hostname The hostname to use for the AP and mDNS
- * @param apCallback Optional WiFiManager callback when the portal is started
+ * @brief Class managing WiFi connectivity and configuration.
+ *        Implements iConfigurable to react to hostname changes.
  */
-void setupWiFi(const char* hostname, void (*apCallback)(WiFiManager*));
+class WiFiManagerModule : public iConfigurable {
+private:
+    char wifiSsid[33];
+    char wifiPass[65];
+    char currentHostname[33];
 
-/**
- * @brief Load Wi-Fi credentials from wifi.json on LittleFS.
- */
-void loadWiFiConfig();
+    void loadWiFiConfig();
+    void saveWiFiConfig();
 
-/**
- * @brief Save Wi-Fi credentials to wifi.json on LittleFS.
- */
-void saveWiFiConfig();
+public:
+    WiFiManagerModule();
 
-/**
- * @brief Callback function to be passed to WiFiManager to intercept saved credentials and manually store them.
- */
-void saveCustomWiFiCallback();
+    /**
+     * @brief Initialize WiFi using LittleFS credentials, handling NVS migration and captive portal fallback.
+     * @param hostname The hostname to use for the AP and mDNS
+     * @param apCallback Optional WiFiManager callback when the portal is started
+     */
+    void begin(const char* hostname, void (*apCallback)(WiFiManager*));
+
+    /**
+     * @brief Implements the iConfigurable interface.
+     */
+    void reapplyConfig(const Config& config) override;
+
+    /**
+     * @brief Internal callback for WiFiManager saving.
+     */
+    void processPortalSave();
+};
+
+extern WiFiManagerModule wifiManager;
 
 #endif

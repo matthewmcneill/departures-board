@@ -1,0 +1,8 @@
+{
+    "name": "busBoard",
+    "version": "1.0.0",
+    "dependencies": {
+        "olikraus/U8g2": "^2.36.5",
+        "squix78/JsonStreamingParser": "^1.0.5"
+    }
+}

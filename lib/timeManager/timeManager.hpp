@@ -20,8 +20,9 @@
 
 #include <Arduino.h>
 #include <time.h>
+#include "iConfigurable.hpp"
 
-class TimeManager {
+class TimeManager : public iConfigurable {
 private:
     static const char ntpServer[];
     String customTimezone;
@@ -46,6 +47,11 @@ public:
      * @return True if sync succeeded, False if it failed after 10 attempts.
      */
     bool initialize();
+
+    /**
+     * @brief Implements the iConfigurable interface.
+     */
+    void reapplyConfig(const Config& config) override;
 };
 
 extern TimeManager timeManager;

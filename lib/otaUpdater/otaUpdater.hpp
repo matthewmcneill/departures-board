@@ -10,59 +10,71 @@
  * Description: Encapsulates firmware lifecycle targeting GitHub releases
  *              and manages over-the-air updates from the Web UI.
  *
- * Provides:
- * - OtaUpdater: Class wrapping the update cycles, daily interval checks, and network requests.
+ * Exported Functions/Classes:
+ * - isFirmwareUpdateAvailable: Logic to compare local version with remote tags.
+ * - OtaUpdater: Class wrapping daily maintenance and manual update hooks.
  * - ota: Global orchestration instance.
- * - isFirmwareUpdateAvailable(): Checks runtime build version against GitHub tags.
  */
 
 #pragma once
 
 #include <Arduino.h>
-#include <drawingPrimitives.hpp>
-#include "../boards/systemBoard/include/systemBoard.hpp"
+#include <widgets/drawingPrimitives.hpp>
+#include <boards/systemBoard/systemBoard.hpp>
 #include <WiFiClientSecure.h>
 #include <githubClient.h>
+#include "iConfigurable.hpp"
+#include <LittleFS.h>
+#include <boards/systemBoard/loadingBoard.hpp>
 
 extern int VERSION_MAJOR;
 extern int VERSION_MINOR;
+extern char myUrl[24];
 extern github ghUpdate;
 
 /**
- * @brief Check GitHub if a newer firmware than our VERSION_MAJOR and VERSION_MINOR exists
+ * @brief Checks the remote GitHub repository for a firmware version greater than
+ *        the current VERSION_MAJOR and VERSION_MINOR.
+ * @return True if a newer release exists.
  */
 bool isFirmwareUpdateAvailable();
 
-class OtaUpdater {
+class OtaUpdater : public iConfigurable {
 private:
-    bool firmwareUpdatesEnabled;
-    bool dailyUpdateCheckEnabled;
-    int prevUpdateCheckDay;
-    unsigned long fwUpdateCheckTimer;
+    int prevUpdateCheckDay;            // Day of month for last successful daily check
+    unsigned long fwUpdateCheckTimer;  // Millis timer for debouncing interval checks
+    bool updatesEnabled;               // Cached flag from config
+    bool dailyCheckEnabled;            // Cached flag from config
 
 public:
+    /**
+     * @brief Default constructor.
+     */
     OtaUpdater();
 
     /**
-     * @brief Configure OTA update settings
-     */
-    void configure(bool firmwareUpdates, bool dailyUpdateCheck);
-
-    bool getFirmwareUpdatesEnabled() const;
-    void setFirmwareUpdatesEnabled(bool enabled);
-
-    bool getDailyUpdateCheckEnabled() const;
-    void setDailyUpdateCheckEnabled(bool enabled);
-
-    /**
-     * @brief Main lifecycle tick to check for daily scheduled updates
+     * @brief Main lifecycle maintenance tick. Triggers daily update checks 
+     *        if enabled in configuration.
      */
     void tick();
 
     /**
-     * @brief Attempts to install newer firmware if available and reboots
+     * @brief Forces an immediate check for newer firmware on GitHub. 
+     *        Executes the update and reboots if valid firmware is found.
+     * @return True if update sequence was successfully initiated.
      */
     bool checkForFirmwareUpdate();
+
+    /**
+     * @brief Checks for a version mismatch between the running firmware's expected
+     *        Web UI and what is currently on disk. Performs cleanup if upgraded.
+     */
+    void checkPostWebUpgrade();
+
+    /**
+     * @brief Implements the iConfigurable interface.
+     */
+    void reapplyConfig(const Config& config) override;
 };
 
 extern OtaUpdater ota;

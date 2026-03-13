@@ -1,0 +1,66 @@
+/*
+ * Departures Board (c) 2025-2026 Gadec Software
+ *
+ * https://github.com/gadec-uk/departures-board
+ *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/boards/tflBoard/tflBoard.hpp
+ * Description: Implementation of iDisplayBoard for TfL Underground boards.
+ */
+
+#ifndef TFL_BOARD_HPP
+#define TFL_BOARD_HPP
+
+#include "../interfaces/iDisplayBoard.hpp"
+#include "tflDataSource.hpp"
+#include "../../widgets/headerWidget.hpp"
+#include "../../widgets/clockWidget.hpp"
+#include "../../widgets/serviceListWidget.hpp"
+#include "../../widgets/scrollingMessageWidget.hpp"
+
+class TfLBoard : public iDisplayBoard {
+private:
+    tflDataSource dataSource;
+    
+    // UI Widgets
+    headerWidget headWidget;
+    serviceListWidget servicesWidget;
+    scrollingMessageWidget msgWidget;
+
+    // Configuration
+    char tflAppkey[50];
+    char tubeId[13];
+    char tubeName[80];
+
+    uint32_t lastUpdate;
+
+protected:
+    TfLBoard();
+    friend class DisplayManager;
+
+public:
+    virtual ~TfLBoard() = default;
+
+    // iDisplayBoard implementation
+    void onActivate() override;
+    void onDeactivate() override;
+    void tick(uint32_t ms) override;
+    void render(U8G2& display) override;
+    void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
+
+    // Configuration Getters/Setters
+    void setTflAppkey(const char* key) { strlcpy(tflAppkey, key, sizeof(tflAppkey)); }
+    void setTubeId(const char* id) { strlcpy(tubeId, id, sizeof(tubeId)); }
+    void setTubeName(const char* name) { strlcpy(tubeName, name, sizeof(tubeName)); }
+
+    const char* getTflAppkey() const { return tflAppkey; }
+    const char* getTubeId() const { return tubeId; }
+    const char* getTubeName() const { return tubeName; }
+
+    int updateData() override { return dataSource.updateData(); }
+    const char* getLastErrorMsg() override { return dataSource.getLastErrorMsg(); }
+};
+
+#endif // TFL_BOARD_HPP

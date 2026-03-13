@@ -37,6 +37,17 @@
  * - updateCurrentWeather: Fetch weather for lat/lon.
  */
 
+#include <boards/interfaces/iDataSource.hpp>
+#include <boards/nationalRailBoard/nationalRailBoard.hpp>
+#include <boards/tflBoard/tflBoard.hpp>
+#include <boards/busBoard/busBoard.hpp>
+#include <boards/systemBoard/sleepingBoard.hpp>
+#include <boards/systemBoard/firmwareUpdateBoard.hpp>
+#include <boards/systemBoard/messageBoard.hpp>
+#include <configManager.hpp>
+
+extern ConfigManager configManager;
+
 /**
  * @brief Send a simple text response to the client (Flash String)
  * @param code HTTP status code
@@ -64,116 +75,36 @@ String getContentType(String filename) {
   if (server.hasArg(F("download"))) {
     return F("application/octet-stream");
   } else if (filename.endsWith(F(".htm"))) {
-/**
- * @brief f
- * @param "text/html"
- * @return Return value
- */
     return F("text/html");
   } else if (filename.endsWith(F(".html"))) {
-/**
- * @brief f
- * @param "text/html"
- * @return Return value
- */
     return F("text/html");
   } else if (filename.endsWith(F(".css"))) {
-/**
- * @brief f
- * @param "text/css"
- * @return Return value
- */
     return F("text/css");
   } else if (filename.endsWith(F(".js"))) {
-/**
- * @brief f
- * @param "application/javascript"
- * @return Return value
- */
     return F("application/javascript");
   } else if (filename.endsWith(F(".png"))) {
-/**
- * @brief f
- * @param "image/png"
- * @return Return value
- */
     return F("image/png");
   } else if (filename.endsWith(F(".gif"))) {
-/**
- * @brief f
- * @param "image/gif"
- * @return Return value
- */
     return F("image/gif");
   } else if (filename.endsWith(F(".jpg"))) {
-/**
- * @brief f
- * @param "image/jpeg"
- * @return Return value
- */
     return F("image/jpeg");
   } else if (filename.endsWith(F(".ico"))) {
-/**
- * @brief f
- * @param "image/x-icon"
- * @return Return value
- */
     return F("image/x-icon");
   } else if (filename.endsWith(F(".xml"))) {
-/**
- * @brief f
- * @param "text/xml"
- * @return Return value
- */
     return F("text/xml");
   } else if (filename.endsWith(F(".pdf"))) {
-/**
- * @brief f
- * @param "application/x-pdf"
- * @return Return value
- */
     return F("application/x-pdf");
   } else if (filename.endsWith(F(".zip"))) {
-/**
- * @brief f
- * @param "application/x-zip"
- * @return Return value
- */
     return F("application/x-zip");
   } else if (filename.endsWith(F(".json"))) {
-/**
- * @brief f
- * @param "application/json"
- * @return Return value
- */
     return F("application/json");
   } else if (filename.endsWith(F(".gz"))) {
-/**
- * @brief f
- * @param "application/x-gzip"
- * @return Return value
- */
     return F("application/x-gzip");
   } else if (filename.endsWith(F(".svg"))) {
-/**
- * @brief f
- * @param "image/svg+xml"
- * @return Return value
- */
     return F("image/svg+xml");
   } else if (filename.endsWith(F(".webp"))) {
-/**
- * @brief f
- * @param "image/webp"
- * @return Return value
- */
     return F("image/webp");
   }
-/**
- * @brief f
- * @param "text/plain"
- * @return Return value
- */
   return F("text/plain");
 }
 
@@ -257,7 +188,7 @@ void handleSaveKeys() {
         }
       }
       if (result) {
-        if (!saveFile(F("/apikeys.json"),newJSON)) {
+        if (!configManager.saveFile(F("/apikeys.json"),newJSON)) {
           msg = F("Failed to save the API keys to the file system (file system corrupt or full?)");
           result = false;
         } else {
@@ -273,12 +204,13 @@ void handleSaveKeys() {
     }
     if (result) {
       // Load/Update the API Keys in memory
-      loadApiKeys();
+      configManager.loadApiKeys();
+      const Config& config = configManager.getConfig();
       // If all location codes are blank we're in the setup process. If not, the keys have been changed so just reboot.
-      if (!nationalRailBoard.getCrsCode()[0] && !tflBoard->getTubeId()[0] && !busBoard->getBusAtco()[0]) {
+      if (!config.crsCode[0] && !config.tubeId[0] && !config.busId[0]) {
         sendResponse(200,msg);
-        writeDefaultConfig();
-        showSetupCrsHelpScreen();
+        configManager.writeDefaultConfig();
+        displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_HELP_CRS));
       } else {
         msg += F("\n\nThe system will now restart.");
         sendResponse(200,msg);
@@ -302,9 +234,10 @@ void handleSaveSettings() {
 
   if ((server.method() == HTTP_POST) && (server.hasArg("plain"))) {
     newJSON = server.arg("plain");
-    saveFile(F("/config.json"),newJSON);
+    configManager.saveFile(F("/config.json"),newJSON);
     LOG_INFO("Settings saved to /config.json successfully.");
-    if ((!nationalRailBoard.getCrsCode()[0] && !tflBoard->getTubeId()[0]) || server.hasArg("reboot")) {
+    const Config& config = configManager.getConfig();
+    if ((!config.crsCode[0] && !config.tubeId[0] && !config.busId[0]) || server.hasArg("reboot")) {
       // First time setup or base config change, we need a full reboot
       sendResponse(200,F("Configuration saved. The system will now restart."));
       delay(1000);
@@ -447,9 +380,6 @@ void handleFileUpload() {
  * Web GUI handlers
  */
 
-/**
- * @brief Fallback function for browser requests handling 404s and proxying static assets
- */
 void handleNotFound() {
   if ((LittleFS.exists(server.uri())) && (server.method() == HTTP_GET)) handleStreamFile(server.uri());
   else if (server.uri() == F("/keys.htm")) handleStreamFlashFile(server.uri(), keyshtm, sizeof(keyshtm));
@@ -461,12 +391,6 @@ void handleNotFound() {
   else if (server.uri() == F("/nr.webp")) handleStreamFlashFile(server.uri(), nricon, sizeof(nricon));
   else if (server.uri() == F("/favicon.png")) handleStreamFlashFile(server.uri(), faviconpng, sizeof(faviconpng));
   else if (server.uri() == F("/rss.json")) handleStreamFlashFile(server.uri(), rssjson, sizeof(rssjson));
-/**
- * @brief Send response
- * @param 404
- * @param Found")
- * @return Return value
- */
   else sendResponse(404,F("Not Found"));
 }
 
@@ -478,75 +402,30 @@ void handleNotFound() {
 String getResultCodeText(int resultCode) {
   switch (resultCode) {
     case UPD_SUCCESS:
-/**
- * @brief f
- * @param "SUCCESS"
- * @return Return value
- */
       return F("SUCCESS");
       break;
     case UPD_NO_CHANGE:
-/**
- * @brief f
- * @param CHANGES)"
- * @return Return value
- */
       return F("SUCCESS (NO CHANGES)");
       break;
     case UPD_DATA_ERROR:
-/**
- * @brief f
- * @param ERROR"
- * @return Return value
- */
       return F("DATA ERROR");
       break;
     case UPD_UNAUTHORISED:
-/**
- * @brief f
- * @param "UNAUTHORISED"
- * @return Return value
- */
       return F("UNAUTHORISED");
       break;
     case UPD_HTTP_ERROR:
-/**
- * @brief f
- * @param ERROR"
- * @return Return value
- */
       return F("HTTP ERROR");
       break;
     case UPD_INCOMPLETE:
-/**
- * @brief f
- * @param RECEIVED"
- * @return Return value
- */
       return F("INCOMPLETE DATA RECEIVED");
       break;
     case UPD_NO_RESPONSE:
-/**
- * @brief f
- * @param SERVER"
- * @return Return value
- */
       return F("NO RESPONSE FROM SERVER");
       break;
     case UPD_TIMEOUT:
-/**
- * @brief f
- * @param SERVER"
- * @return Return value
- */
       return F("TIMEOUT WAITING FOR SERVER");
       break;
     default:
-/**
- * @brief f
- * @param ERROR"
- * @return Return value
- */
       return F("OTHER ERROR");
       break;
   }
@@ -568,7 +447,8 @@ void handleInfo() {
 
   sprintf(sysUptime,"%d days, %d hrs, %d min", days,hours,minutes);
 
-  server.sendContent("Hostname: " + String(hostname) + F("\nFirmware version: v") + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + " " + getBuildTime());
+  const Config& config = configManager.getConfig();
+  server.sendContent("Hostname: " + String(config.hostname) + F("\nFirmware version: v") + String(VERSION_MAJOR) + "." + String(VERSION_MINOR) + " " + getBuildTime());
   server.sendContent(F("\nSystem uptime: "));
   server.sendContent(String(sysUptime));
   server.sendContent(F("\nFree Heap: "));
@@ -592,9 +472,9 @@ void handleInfo() {
   server.sendContent(F("\nSystem clock: "));
   server.sendContent(String(sysUptime));
   server.sendContent(F("\nCRS station code: "));
-  server.sendContent(String(nationalRailBoard.getCrsCode()));
+  server.sendContent(String(config.crsCode));
   server.sendContent(F("\nNaptan station code: "));
-  server.sendContent(String(tflBoard->getTubeId()));
+  server.sendContent(String(config.tubeId));
   server.sendContent(F("\nSuccessful: "));
   server.sendContent(String(dataLoadSuccess));
   server.sendContent(F("\nFailures: "));
@@ -615,7 +495,7 @@ void handleInfo() {
   else if (lastUpdateResult==UPD_TIMEOUT) server.sendContent(F("Timeout"));
   else {
     // Use standard abstraction rather than hardcoded client pointers
-    server.sendContent(displayManager.getActiveBoard()->getLastErrorMsg());
+    server.sendContent(displayManager.getCurrentBoard()->getLastErrorMsg());
   }
   
   server.sendContent(F("\nUpdate result code: "));
@@ -623,8 +503,8 @@ void handleInfo() {
   server.sendContent(F("\nServices: Managed by board plugin\nMessages: "));
   
   int nMsgs = messages.numMessages;
-  if (rss->getRssEnabled() && rss->getRssAddedtoMsgs()) nMsgs--;
-  if (boardMode == MODE_TUBE) nMsgs--;
+  if (config.rssEnabled && rss->getRssAddedtoMsgs()) nMsgs--;
+  if (config.boardMode == MODE_TUBE) nMsgs--;
   
   server.sendContent(String(nMsgs) + F("\n\n"));
 
@@ -653,7 +533,8 @@ void handleInfo() {
  * @brief Endpoint to stream the index.htm page or setup guide
  */
 void handleRoot() {
-  if (!apiKeys) {
+  const Config& config = configManager.getConfig();
+  if (!config.apiKeysLoaded) {
     if (LittleFS.exists(F("/keys.htm"))) handleStreamFile(F("/keys.htm")); else handleStreamFlashFile(F("/keys.htm"),keyshtm,sizeof(keyshtm));
   } else {
     if (LittleFS.exists(F("/index_d.htm"))) handleStreamFile(F("/index_d.htm")); else handleStreamFlashFile(F("/index.htm"),indexhtm,sizeof(indexhtm));
@@ -719,22 +600,27 @@ void handleBrightness() {
   sendResponse(200,F("invalid request"));
 }
 
+#include <WiFiManager.h>
+
 /**
  * @brief Endpoint where the Web GUI has requested an OTA GitHub update to be installed
  */
 void handleOtaUpdate() {
   sendResponse(200,F("Update initiated - check Departure Board display for progress"));
   delay(500);
-  u8g2.clearBuffer();
-  u8g2.setFont(NatRailTall12);
-  centreText(F("Getting latest firmware details from GitHub..."),26);
-  u8g2.sendBuffer();
+
+  MessageBoard* msgBoard = (MessageBoard*)displayManager.getSystemBoard(SystemBoardId::SYS_ERROR_NO_DATA);
+  msgBoard->setContent("** OTA UPDATE **", "CHECKING GITHUB", "GETTING LATEST FIRMWARE", "DETAILS...");
+  displayManager.showBoard(msgBoard);
 
   if (ghUpdate.getLatestRelease()) {
     ota.checkForFirmwareUpdate();
   } else {
+    FirmwareUpdateBoard* fwBoard = (FirmwareUpdateBoard*)displayManager.getSystemBoard(SystemBoardId::SYS_FIRMWARE_UPDATE);
     for (int i=15;i>=0;i--) {
-      showFirmwareUpdateCompleteScreen("Firmware Update Check Failed","Unable to retrieve latest release information.",ghUpdate.getLastError(),"",i,false);
+      fwBoard->setUpdateState(FwUpdateState::FAILED);
+      fwBoard->setErrorMessage("Unable to retrieve latest release information.");
+      displayManager.showBoard(fwBoard);
       delay(1000);
     }
     log_e("FW Update failed: %s\n",ghUpdate.getLastError());
@@ -748,15 +634,17 @@ void handleOtaUpdate() {
  */
 void handleControl() {
   String resp = "{\"sleeping\":";
+  SleepingBoard* sleepingBoard = (SleepingBoard*)displayManager.getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
+
   if (server.hasArg(F("sleep"))) {
     if (server.arg(F("sleep")) == "1") displayManager.setForcedSleep(true); else displayManager.setForcedSleep(false);
   }
   if (server.hasArg(F("clock"))) {
-    if (server.arg(F("clock")) == "1") displayManager.setSleepClock(true); else displayManager.setSleepClock(false);
+    if (server.arg(F("clock")) == "1") sleepingBoard->setShowClock(true); else sleepingBoard->setShowClock(false);
   }
   resp += (displayManager.isSnoozing()) ? "true":"false";
   resp += F(",\"display\":");
-  resp += (displayManager.getSleepClock() || (!displayManager.isSnoozing())) ? "true":"false";
+  resp += (sleepingBoard->getShowClock() || (!displayManager.isSnoozing())) ? "true":"false";
   resp += "}";
   server.send(200, contentTypeJson, resp);
 }
