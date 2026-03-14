@@ -8,16 +8,18 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/weatherClient/weatherClient.h
+ * Module: modules/weatherClient/weatherClient.h
  * Description: Client to fetch and parse weather data from the OpenWeatherMap REST API.
+ *              Stateless implementation that updates provided WeatherStatus objects.
  *
- * Provides:
- * - weatherClient: Streaming JSON parser and HTTP client to fetch weather data.
- * - currentWeather: Global instance pointer allocated onto the heap.
+ * Exported Functions/Classes:
+ * - weatherClient: Main service class for OpenWeatherMap integration.
  */
 #pragma once
 #include <JsonStreamingParser.h>
 #include "iConfigurable.hpp"
+#include "weatherStatus.hpp"
+#include "configManager.hpp"
 
 class weatherClient: public JsonListener, public iConfigurable {
 
@@ -27,9 +29,7 @@ class weatherClient: public JsonListener, public iConfigurable {
         String currentObject = "";
         int weatherItem = 0;
 
-        String description;
-        float temperature;
-        float windSpeed;
+        WeatherStatus* activeStatus = nullptr; // Pointer to the status object being updated by the parser
         
         char openWeatherMapApiKey[64] = "";
         char weatherMsg[46] = "";
@@ -57,12 +57,10 @@ class weatherClient: public JsonListener, public iConfigurable {
 
 /**
  * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
- * @param apiKey The user's OpenWeatherMap API key.
- * @param lat The latitude of the location.
- * @param lon The longitude of the location.
+ * @param status Reference to the WeatherStatus object to update.
  * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
-        bool updateWeather(String apiKey, String lat, String lon);
+        bool updateWeather(WeatherStatus& status);
 
 /**
  * @brief JSON whitespace handler.

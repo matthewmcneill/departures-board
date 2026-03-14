@@ -15,6 +15,7 @@
 
 #include <U8g2lib.h>
 #include <stdint.h>
+#include <weatherStatus.hpp>
 
 /**
  * @brief Pure virtual interface representing a displayable screen.
@@ -76,6 +77,12 @@ public:
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {}
+
+    /**
+     * @brief Access the weather status associated with this board.
+     * @return Reference to the WeatherStatus object.
+     */
+    virtual class WeatherStatus& getWeatherStatus() = 0;
 };
 
 #endif // I_DISPLAY_BOARD_HPP

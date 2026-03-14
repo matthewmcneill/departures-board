@@ -104,7 +104,7 @@ void ConfigManager::writeDefaultConfig() {
     JsonDocument doc;
     
     doc[F("hostname")] = "DeparturesBoard";
-    doc[F("version")] = 2.0; // Current config format version
+    doc[F("version")] = 2.1; // Current config format version
     doc[F("brightness")] = 20;
     doc[F("sleep")] = false;
     doc[F("clock")] = true;
@@ -164,7 +164,7 @@ bool ConfigManager::save() {
     LOG_INFO("CONFIG", "Saving configuration to /config.json...");
     JsonDocument doc;
     
-    doc[F("version")] = 2.0;
+    doc[F("version")] = 2.1;
     doc[F("hostname")] = config.hostname;
     doc[F("noScroll")] = config.noScrolling;
     doc[F("flip")] = config.flipScreen;
@@ -186,7 +186,7 @@ bool ConfigManager::save() {
     for (int i = 0; i < config.boardCount; i++) {
         const BoardConfig& bc = config.boards[i];
         JsonObject b = boards.add<JsonObject>();
-        b[F("type")] = (int)bc.mode;
+        b[F("type")] = (int)bc.type;
         b[F("id")] = bc.id;
         b[F("name")] = bc.name;
         b[F("lat")] = bc.lat;
@@ -213,7 +213,7 @@ void ConfigManager::loadConfig() {
   // --- Step 1: Set Core Defaults ---
   strlcpy(config.hostname, "DeparturesBoard", sizeof(config.hostname));
   strlcpy(config.timezone, TimeManager::ukTimezone, sizeof(config.timezone));
-  config.configVersion = 1.0f; // Default for legacy detection
+  float loadedVersion = 1.0f; // Default for legacy detection if no version field
   config.boardCount = 0;
 
   if (LittleFS.exists(F("/config.json"))) {
@@ -230,7 +230,8 @@ void ConfigManager::loadConfig() {
         }
 
         // System settings
-        if (settings[F("version")].is<float>())          config.configVersion = settings[F("version")];
+        if (settings[F("version")].is<float>())          loadedVersion = settings[F("version")];
+        config.configVersion = loadedVersion; // Store what we found (or the default)
         if (settings[F("hostname")].is<const char*>()) strlcpy(config.hostname, settings[F("hostname")], sizeof(config.hostname));
         if (settings[F("noScroll")].is<bool>())          config.noScrolling = settings[F("noScroll")];
         if (settings[F("flip")].is<bool>())              config.flipScreen = settings[F("flip")];
@@ -259,7 +260,14 @@ void ConfigManager::loadConfig() {
             for (JsonObject b : boards) {
                 if (config.boardCount >= MAX_BOARDS) break;
                 BoardConfig& bc = config.boards[config.boardCount++];
-                bc.mode = (BoardModes)(b[F("type")] | 0);
+                
+                // v2.1 Migration: "mode" renamed to "type"
+                if (loadedVersion < 2.1f && b[F("mode")].is<int>()) {
+                    bc.type = (BoardTypes)b[F("mode")].as<int>();
+                } else {
+                    bc.type = (BoardTypes)(b[F("type")] | 0);
+                }
+
                 strlcpy(bc.id, b[F("id")] | "", sizeof(bc.id));
                 strlcpy(bc.name, b[F("name")] | "", sizeof(bc.name));
                 bc.lat = b[F("lat")] | 0.0f;
@@ -268,7 +276,7 @@ void ConfigManager::loadConfig() {
                 strlcpy(bc.secondaryId, b[F("secId")] | "", sizeof(bc.secondaryId));
                 strlcpy(bc.secondaryName, b[F("secName")] | "", sizeof(bc.secondaryName));
                 bc.timeOffset = b[F("offset")] | 0;
-                LOG_INFO("SYSTEM", "Loaded Config: Board " + String(config.boardCount-1) + " Type=" + String((int)bc.mode) + " ID=" + String(bc.id));
+                LOG_INFO("SYSTEM", "Loaded Config: Board " + String(config.boardCount-1) + " Type=" + String((int)bc.type) + " ID=" + String(bc.id));
             }
             LOG_INFO("CONFIG", "Loaded " + String(config.boardCount) + " boards from modern config format.");
         } else {
@@ -277,7 +285,7 @@ void ConfigManager::loadConfig() {
             // Slot 0: Main Rail
             if (config.boardCount < MAX_BOARDS) {
                 BoardConfig& br = config.boards[config.boardCount++];
-                br.mode = MODE_RAIL;
+                br.type = MODE_RAIL;
                 strlcpy(br.id, settings[F("crs")] | "", sizeof(br.id));
                 br.lat = settings[F("lat")] | 0.0f;
                 br.lon = settings[F("lon")] | 0.0f;
@@ -290,7 +298,7 @@ void ConfigManager::loadConfig() {
             // Slot 1: Tube
             if (config.boardCount < MAX_BOARDS) {
                 BoardConfig& bt = config.boards[config.boardCount++];
-                bt.mode = MODE_TUBE;
+                bt.type = MODE_TUBE;
                 strlcpy(bt.id, settings[F("tubeId")] | "", sizeof(bt.id));
                 strlcpy(bt.name, settings[F("tubeName")] | "", sizeof(bt.name));
             }
@@ -298,7 +306,7 @@ void ConfigManager::loadConfig() {
             // Slot 2: Bus
             if (config.boardCount < MAX_BOARDS) {
                 BoardConfig& bb = config.boards[config.boardCount++];
-                bb.mode = MODE_BUS;
+                bb.type = MODE_BUS;
                 strlcpy(bb.id, settings[F("busId")] | "", sizeof(bb.id));
                 strlcpy(bb.name, settings[F("busName")] | "", sizeof(bb.name));
                 bb.lat = settings[F("busLat")] | 0.0f;
@@ -309,7 +317,7 @@ void ConfigManager::loadConfig() {
             // Slot 3: Alt Rail
             if (settings[F("altCrs")].is<const char*>() && config.boardCount < MAX_BOARDS) {
                 BoardConfig& ba = config.boards[config.boardCount++];
-                ba.mode = MODE_RAIL;
+                ba.type = MODE_RAIL;
                 strlcpy(ba.id, settings[F("altCrs")], sizeof(ba.id));
                 ba.lat = settings[F("altLat")] | 0.0f;
                 ba.lon = settings[F("altLon")] | 0.0f;
@@ -333,7 +341,7 @@ void ConfigManager::loadConfig() {
         // existing code (e.g. status pages, web UI) still sees data.
         if (config.boardCount > 0) {
             const BoardConfig& b0 = config.boards[0];
-            config.boardMode = b0.mode;
+            config.boardType = b0.type;
             strlcpy(config.crsCode, b0.id, sizeof(config.crsCode));
             config.stationLat = b0.lat;
             config.stationLon = b0.lon;
@@ -346,7 +354,7 @@ void ConfigManager::loadConfig() {
         // Logic for identifying if one of the boards is the legacy "Alt Station"
         config.altStationEnabled = false;
         for (int i = 1; i < config.boardCount; i++) {
-            if (config.boards[i].mode == MODE_RAIL) {
+            if (config.boards[i].type == MODE_RAIL) {
                 config.altStationEnabled = true;
                 strlcpy(config.altCrsCode, config.boards[i].id, sizeof(config.altCrsCode));
                 config.altLat = config.boards[i].lat;
@@ -375,6 +383,13 @@ void ConfigManager::loadConfig() {
 
         timeManager.setTimezone(String(config.timezone));
         LOG_INFO("CONFIG", "Configuration loaded. Board count: " + String(config.boardCount) + " Default board: " + String(config.defaultBoardIndex));
+        
+        // v2.1 Migration: Auto-save if version was upgraded
+        if (loadedVersion < 2.1f) {
+            LOG_INFO("CONFIG", "Auto-saving updated configuration (v2.1)...");
+            save();
+        }
+
         validate(); // Recalculate board readiness
       } else {
         LOG_ERROR("CONFIG", String("Failed to parse /config.json: ") + error.c_str());
@@ -395,7 +410,7 @@ void ConfigManager::validate() {
         bc.complete = false;
         bc.errorType = 0;
 
-        switch (bc.mode) {
+        switch (bc.type) {
             case MODE_RAIL:
                 if (strlen(config.nrToken) == 0) {
                     bc.errorType = 1; // Missing Key

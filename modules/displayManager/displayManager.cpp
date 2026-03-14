@@ -419,9 +419,9 @@ void DisplayManager::applyConfig(const Config& config) {
 
     for (int i = 0; i < config.boardCount; i++) {
         const BoardConfig& bc = config.boards[i];
-        LOG_INFO("DISPLAY", String("Provisioning Board ") + i + " (Type: " + (int)bc.mode + ")");
+        LOG_INFO("DISPLAY", String("Provisioning Board ") + i + " (Type: " + (int)bc.type + ")");
 
-        switch (bc.mode) {
+        switch (bc.type) {
             case MODE_RAIL: {
                 setBoardType(i, BoardType::NR_BOARD);
                 NationalRailBoard* rb = (NationalRailBoard*)getDisplayBoard(i);

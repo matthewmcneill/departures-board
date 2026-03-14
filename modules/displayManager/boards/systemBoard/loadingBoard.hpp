@@ -34,6 +34,7 @@ private:
     char heading[32];
     char buildTime[32];
     progressBarWidget pBar;
+    WeatherStatus weatherStatus;
     
 protected:
     LoadingBoard();
@@ -59,6 +60,7 @@ public:
     int updateData() override { return 0; }
     const char* getLastErrorMsg() override { return ""; }
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // LOADING_BOARD_HPP

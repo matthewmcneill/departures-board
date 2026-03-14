@@ -3,9 +3,9 @@
 This file tracks active and pending agent sessions to prevent hardware and build conflicts.
 
 ## Lock Status
-- **Locked By**: NONE
-- **Reason**: N/A
-- **Since**: N/A
+- **Locked By**: cd253c52-5bcc-44c5-bf78-64593f457fd7
+- **Reason**: Weather Refactor & Config Standardization (v2.1)
+- **Since**: 2026-03-14T08:44:17Z
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |

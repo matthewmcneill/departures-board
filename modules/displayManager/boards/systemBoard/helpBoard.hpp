@@ -30,6 +30,7 @@ private:
     char title[32];
     const char* lines[5];
     int lineCount;
+    WeatherStatus weatherStatus;
 
 protected:
     HelpBoard();
@@ -55,6 +56,7 @@ public:
     void render(U8G2& display) override;
     int updateData() override { return 0; }
     const char* getLastErrorMsg() override { return ""; }
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // HELP_BOARD_HPP

@@ -32,6 +32,7 @@ private:
     appContext* context;
     char noticeMessage[64];
     imageWidget* splashLogo;
+    WeatherStatus weatherStatus;
 
 protected:
     SplashBoard();
@@ -56,6 +57,7 @@ public:
     void render(U8G2& display) override;
     int updateData() override { return 0; }
     const char* getLastErrorMsg() override { return ""; }
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // SPLASH_BOARD_HPP

@@ -53,6 +53,7 @@ private:
 
     uint32_t lastUpdate;  ///< Timestamp of the last successful data update
     bool needsRefresh;    ///< Flag indicating if the display requires a complete refresh
+    WeatherStatus weatherStatus;
 
 public:
     /**
@@ -152,6 +153,7 @@ public:
      * @return C-string representing the specific error description.
      */
     const char* getLastErrorMsg() override { return dataSource.getLastErrorMsg(); }
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // BUS_BOARD_HPP

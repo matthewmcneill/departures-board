@@ -36,6 +36,7 @@ private:
     char msg3[48];
     char msg4[48];
     bool showWarningIcon;
+    WeatherStatus weatherStatus;
 
 protected:
     MessageBoard();
@@ -69,6 +70,7 @@ public:
     void render(U8G2& display) override;
     int updateData() override { return 0; }
     const char* getLastErrorMsg() override { return ""; }
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // MESSAGE_BOARD_HPP

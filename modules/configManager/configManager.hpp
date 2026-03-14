@@ -27,9 +27,9 @@
 #include <buildOptions.h>
 
 /**
- * @brief Supported operational modes for the display boards.
+ * @brief Supported operational types for the display boards.
  */
-enum BoardModes {
+enum BoardTypes {
     MODE_RAIL = 0,
     MODE_TUBE = 1,
     MODE_BUS = 2
@@ -39,7 +39,7 @@ enum BoardModes {
  * @brief Configuration for a single display board instance.
  */
 struct BoardConfig {
-    BoardModes mode = MODE_RAIL; // Type of board (Rail, Tube, Bus)
+    BoardTypes type = MODE_RAIL; // Type of board (Rail, Tube, Bus)
     char name[80] = "";          // Human-readable name for the station/stop
     char id[13] = "";            // ID (CRS for Rail, Naptan for Tube, Atco for Bus)
     
@@ -75,7 +75,7 @@ struct Config {
     char wsdlHost[48] = "lite.realtime.nationalrail.co.uk"; // WSDL service host
     char wsdlAPI[48] = "/OpenLDBWS/wsdl.aspx?ver=2021-11-01"; // WSDL path
     char timezone[64] = "Europe/London"; // POSIX timezone string
-    float configVersion = 1.0f; // Configuration format version number
+    float configVersion = 2.1f; // Configuration format version number (v2.1 includes type/lat/lon standardization)
     
     // --- Display Preferences ---
     bool dateEnabled = false; // Show date in header
@@ -102,7 +102,7 @@ struct Config {
 
     // --- Legacy Stubs (Compatibility with Web UI) ---
     // These fields are synchronized with the boards array for backward compatibility
-    BoardModes boardMode = MODE_RAIL; // Legacy: Maps to boards[0].mode
+    BoardTypes boardType = MODE_RAIL; // Legacy: Maps to boards[0].type
     char crsCode[4] = "";            // Legacy: Maps to boards[0].id
     float stationLat = 0.0f;         // Legacy: Maps to boards[0].lat
     float stationLon = 0.0f;         // Legacy: Maps to boards[0].lon

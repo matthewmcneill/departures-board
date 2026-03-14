@@ -34,6 +34,7 @@ private:
     int bounceX;              ///< Internal horizontal offset for burn-in protection
     int bounceY;              ///< Internal vertical offset for burn-in protection
     unsigned long lastBounce; ///< Timestamp of the last position shift
+    WeatherStatus weatherStatus;
 
 protected:
     SleepingBoard();
@@ -69,4 +70,5 @@ public:
     int updateData() override { return 0; }
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {}
     const char* getLastErrorMsg() override { return ""; }
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };

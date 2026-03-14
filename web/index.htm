@@ -314,7 +314,7 @@
       busIdOK: false,
       busFilter: "",
       busFilterOK: true,
-      boardMode: 0, //0=Rail, 1=Tube, 2=Bus
+      boardType: 0, //0=Rail, 1=Tube, 2=Bus
       appKey: "",
       stationLatitude: 0,
       stationLongitude: 0,
@@ -779,7 +779,7 @@
     });
 
     $("input[name=boardmode]").on("change", function(){
-        appState.boardMode = parseInt(this.value);
+        appState.boardType = parseInt(this.value);
         applyBoardMode();
     });
 
@@ -819,7 +819,7 @@
         appState.appKey = data.appKey || "";
         if (!data.nrToken || data.nrToken.length!=36) {
           appState.validNatRailToken = false;
-          if (appState.boardMode == 0) appState.boardMode = 1;
+          if (appState.boardType == 0) appState.boardType = 1;
           applyBoardMode();
         }
       } catch (err) {
@@ -895,7 +895,7 @@
     }
 
     function applyBoardMode() {
-        const mode = appState.boardMode;
+        const mode = appState.boardType;
 
         const rail = (mode === 0 && appState.validNatRailToken);
         const tube = (mode === 1);
@@ -981,7 +981,7 @@
       appState.busLon = s.busLon || 0;
       appState.busIdOK = appState.busId.length > 0 && appState.busName.length > 0;
       appState.busFilter = s.busFilter || "";
-      appState.boardMode = s.mode ?? (s.tube != undefined ? (s.tube ? 1 : 0) : 0);  //handle legacy
+      appState.boardType = s.type !== undefined ? s.type : (s.mode !== undefined ? s.mode : (s.tube != undefined ? (s.tube ? 1 : 0) : 0));
       delete s.tube;
       highlightModeButtons(appState.boardMode);
       applyBoardMode();
@@ -1172,7 +1172,7 @@
       s.platformFilter = appState.platformFilter;
       s.tubeId = appState.tubeId;
       s.tubeName = appState.tubeName;
-      s.mode = appState.boardMode;
+      s.type = appState.boardType;
       s.brightness = elements.brightness.value;
       s.sleep = isChecked("enableSleep");
       s.showDate = isChecked("showDate");

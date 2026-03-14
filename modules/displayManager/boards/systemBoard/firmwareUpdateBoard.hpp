@@ -51,6 +51,7 @@ private:
     int downloadPercent;
     char releaseVersion[64];
     char errorMessage[64];
+    WeatherStatus weatherStatus;
 
 protected:
     FirmwareUpdateBoard();
@@ -99,6 +100,7 @@ public:
     int updateData() override { return 0; }
     const char* getLastErrorMsg() override { return ""; }
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // FIRMWARE_UPDATE_BOARD_HPP

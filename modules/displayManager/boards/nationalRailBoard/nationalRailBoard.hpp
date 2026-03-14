@@ -59,6 +59,7 @@ private:
     uint32_t nextViaToggle;
     
     char cachedOrdinals[16][8];
+    WeatherStatus weatherStatus;
 
 public:
     NationalRailBoard(appContext* contextPtr = nullptr);
@@ -113,6 +114,7 @@ public:
 
     int updateData() override;
     const char* getLastErrorMsg() override { return dataSource.getLastErrorMsg(); }
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // NATIONAL_RAIL_BOARD_HPP

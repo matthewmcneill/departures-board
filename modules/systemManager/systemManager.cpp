@@ -78,9 +78,9 @@ void systemManager::tick() {
             }
 
             // Select next update interval
-            if (config.boardMode == 0)      nextDataUpdate = millis() + config.apiRefreshRate; // MODE_RAIL
-            else if (config.boardMode == 1) nextDataUpdate = millis() + 30000; // MODE_TUBE (UGDATAUPDATEINTERVAL)
-            else if (config.boardMode == 2) nextDataUpdate = millis() + 45000; // MODE_BUS (BUSDATAUPDATEINTERVAL)
+            if (config.boardType == MODE_RAIL)      nextDataUpdate = millis() + config.apiRefreshRate; // MODE_RAIL
+            else if (config.boardType == MODE_TUBE) nextDataUpdate = millis() + 30000; // MODE_TUBE (UGDATAUPDATEINTERVAL)
+            else if (config.boardType == MODE_BUS)  nextDataUpdate = millis() + 45000; // MODE_BUS (BUSDATAUPDATEINTERVAL)
 
             // Handle Result Codes
             if (lastUpdateResult == 0 || lastUpdateResult == 1) { // UPD_SUCCESS, UPD_NO_CHANGE
@@ -93,12 +93,16 @@ void systemManager::tick() {
                 weatherClient& weather = context->getWeather();
                 rssClient& rss = context->getRss();
                 
-                if (weather.getWeatherEnabled() && config.boardMode != 1 && millis() > weather.getNextWeatherUpdate()) {
-                    float lat = (config.boardMode == 0) ? config.stationLat : config.busLat;
-                    float lon = (config.boardMode == 0) ? config.stationLon : config.busLon;
-                    this->updateCurrentWeather(lat, lon);
+                if (weather.getWeatherEnabled() && config.boardType != MODE_TUBE && millis() > weather.getNextWeatherUpdate()) {
+                    iDisplayBoard* active = displayMgr.getDisplayBoard(displayMgr.getActiveSlotIndex());
+                    if (active) {
+                        WeatherStatus& ws = active->getWeatherStatus();
+                        ws.lat = (config.boardType == MODE_RAIL) ? config.stationLat : config.busLat;
+                        ws.lon = (config.boardType == MODE_RAIL) ? config.stationLon : config.busLon;
+                        weather.updateWeather(ws);
+                    }
                 }
-                if (rss.getRssEnabled() && config.boardMode != 2 && millis() > rss.getNextRssUpdate()) {
+                if (rss.getRssEnabled() && config.boardType != MODE_BUS && millis() > rss.getNextRssUpdate()) {
                     updateRssFeed();
                 }
                 
@@ -194,7 +198,7 @@ void systemManager::softResetBoard() {
     rss.setRssAddedtoMsgs(false);
     if (rss.getRssEnabled() && prevRssUrl != rss.getRssURL()) {
         rss.numRssTitles = 0;
-        if (config.boardMode == MODE_RAIL || config.boardMode == MODE_TUBE) {
+        if (config.boardType == MODE_RAIL || config.boardType == MODE_TUBE) {
             prevProgressBarPosition = 50;
             LoadingBoard* load = (LoadingBoard*)displayMgr.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING);
             load->setProgress("Updating RSS headlines feed", 50);
@@ -203,7 +207,7 @@ void systemManager::softResetBoard() {
         }
     }
  
-    if (config.boardMode == MODE_RAIL) {
+    if (config.boardType == MODE_RAIL) {
         NationalRailBoard* nrb = (NationalRailBoard*)displayMgr.getDisplayBoard(0);
         if (nrb) nrb->setAltStationActive(setAlternateStation());
     }
@@ -241,7 +245,7 @@ bool systemManager::isAltActive() {
  */
 bool systemManager::setAlternateStation() {
     const Config& config = context->getConfigManager().getConfig();
-    if (config.boardMode == MODE_RAIL && config.altStationEnabled && isAltActive()) {
+    if (config.boardType == MODE_RAIL && config.altStationEnabled && isAltActive()) {
         NationalRailBoard* nrb = (NationalRailBoard*)context->getDisplayManager().getDisplayBoard(0);
         if (!nrb) return false;
         nrb->setCrsCode(config.altCrsCode);
@@ -265,7 +269,7 @@ void systemManager::tflCallback() {
             startupProgressPercent += 5;
             LoadingBoard* load = (LoadingBoard*)context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_BOOT_LOADING);
             if (load) {
-                if (config.boardMode == MODE_TUBE) load->setProgress("Initialising TfL interface", startupProgressPercent);
+                if (config.boardType == MODE_TUBE) load->setProgress("Initialising TfL interface", startupProgressPercent);
                 else load->setProgress("Initialising BusTimes interface", startupProgressPercent);
                 context->getDisplayManager().showBoard(load);
                 context->getDisplayManager().resetState();
@@ -293,13 +297,21 @@ void systemManager::raildataCallback(int stage, int nServices) {
 /**
  * @brief Proxy to correctly format and trigger a weather update via the weatherClient.
  */
+/**
+ * @brief Proxy to correctly format and trigger a weather update via the weatherClient.
+ *        Note: This legacy proxy is now partially deprecated by the direct board injection above, 
+ *              but kept for manual triggers if needed.
+ */
 void systemManager::updateCurrentWeather(float lat, float lon) {
     weatherClient& weather = context->getWeather();
     if (weather.getWeatherEnabled()) {
-        char latStr[16], lonStr[16];
-        dtostrf(lat, 4, 4, latStr);
-        dtostrf(lon, 4, 4, lonStr);
-        weather.updateWeather(weather.getOpenWeatherMapApiKey(), latStr, lonStr);
+        iDisplayBoard* active = context->getDisplayManager().getDisplayBoard(context->getDisplayManager().getActiveSlotIndex());
+        if (active) {
+            WeatherStatus& ws = active->getWeatherStatus();
+            ws.lat = lat;
+            ws.lon = lon;
+            weather.updateWeather(ws);
+        }
     }
 }
 
@@ -316,7 +328,7 @@ void systemManager::addRssMessage() {
         
         for (int i = 1; i < rss.numRssTitles; i++) {
             if (rssCombined.length() + strlen(rss.rssTitle[i]) + 2 < 400) {
-                rssCombined += (config.boardMode == MODE_TUBE) ? "\x81" : "\x90";
+                rssCombined += (config.boardType == MODE_TUBE) ? "\x81" : "\x90";
                 rssCombined += rss.rssTitle[i];
             } else {
                 break;

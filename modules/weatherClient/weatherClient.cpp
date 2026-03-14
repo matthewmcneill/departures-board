@@ -8,7 +8,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/weatherClient/weatherClient.cpp
+ * Module: modules/weatherClient/weatherClient.cpp
  * Description: Implementation of the OpenWeatherMap JSON client.
  *
  * Exported Functions/Classes:
@@ -41,7 +41,16 @@ weatherClient::weatherClient() {}
  * @param lon The longitude of the location.
  * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
-bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
+bool weatherClient::updateWeather(WeatherStatus& status) {
+    activeStatus = &status;
+    activeStatus->status = WeatherUpdateStatus::DATA_ERROR; // Assume error until success
+
+    String apiKey = String(openWeatherMapApiKey);
+    char latBuf[16], lonBuf[16];
+    dtostrf(status.lat, 4, 4, latBuf);
+    dtostrf(status.lon, 4, 4, lonBuf);
+    String lat = String(latBuf);
+    String lon = String(lonBuf);
 
     unsigned long perfTimer = millis();
     strcpy(lastErrorMsg, "");
@@ -127,17 +136,7 @@ bool weatherClient::updateWeather(String apiKey, String lat, String lon) {
     }
 
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "Success - took %lums", static_cast<unsigned long>(millis()-perfTimer));
-
-    currentWeather = description + " " + String((int)round(temperature)) + F("\xB0 Wind: ") + String((int)round(windSpeed)) + F("mph");
-
-#ifdef ENABLE_DEBUG_LOG
-    char debugMsg[128];
-    LOG_DEBUG("DATA", "--- Weather Data ---");
-    LOG_DEBUG("DATA", description.c_str());
-    snprintf(debugMsg, sizeof(debugMsg), "Temp: %.1f C, Wind: %.1f mph", temperature, windSpeed);
-    LOG_DEBUG("DATA", debugMsg);
-    LOG_DEBUG("DATA", "--------------------");
-#endif
+    activeStatus->status = WeatherUpdateStatus::READY;
 
     return true;
 }
@@ -166,13 +165,22 @@ void weatherClient::key(String key) {
  * @param value The scalar string value.
  */
 void weatherClient::value(String value) {
+    if (!activeStatus) return;
+
     if (currentObject == F("weather") && weatherItem==0) {
         // Only read the first weather entry in the array
-        if (currentKey == F("description")) description = value;
+        if (currentKey == F("description")) strlcpy(activeStatus->description, value.c_str(), sizeof(activeStatus->description));
+        else if (currentKey == F("id")) activeStatus->conditionId = value.toInt();
+        else if (currentKey == F("icon")) {
+            // OWM icon codes like "01d" or "01n". If ends with 'n', it's night.
+            if (value.length() >= 3) {
+                activeStatus->isNight = (value.charAt(2) == 'n');
+            }
+        }
     }
-    else if (currentKey == F("temp")) temperature = value.toFloat();
-    // Windspeed reported in mps, converting to mph
-    else if (currentKey == F("speed")) windSpeed = value.toFloat() * 2.23694;
+    else if (currentKey == F("temp")) activeStatus->temp = value.toFloat();
+    // Windspeed reported in mps, converting to knots (1 m/s ≈ 1.94384 knots)
+    else if (currentKey == F("speed")) activeStatus->windSpeed = value.toFloat() * 1.94384;
 }
 
 /**

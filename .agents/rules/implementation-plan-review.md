@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Implementation Plan Review Rule
 
 Every `implementation_plan.md` created for this project MUST be reviewed and updated to adhere to the project's house style, architectural standards, and memory impact assessment.
@@ -20,3 +24,11 @@ Whenever you are drafting or finalizing an implementation plan:
 
 ## Enforcement
 The implementation plan MUST reflect that these reviews have taken place before it is presented to the user for final approval. Use GitHub alerts (IMPORTANT/WARNING) to highlight any compromises or critical decisions found during these reviews.
+
+## Audit
+A checklist should be placed at the top of every implementation plan by each skill to say that the files have been audited by each of them.
+
+e.g.
+[x] Reviewed by xxxx - passed
+[x] Reviewed by yyyy - changes recommended to ensure documentation is at standard
+[x] Reviewed by zzzz - user review required to select option for memory optimisation

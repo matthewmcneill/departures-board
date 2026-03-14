@@ -41,6 +41,7 @@ private:
     BoardConfig config;
 
     uint32_t lastUpdate;
+    WeatherStatus weatherStatus;
 
 public:
     TfLBoard(appContext* contextPtr = nullptr);
@@ -65,6 +66,7 @@ public:
 
     int updateData() override;
     const char* getLastErrorMsg() override { return dataSource.getLastErrorMsg(); }
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // TFL_BOARD_HPP

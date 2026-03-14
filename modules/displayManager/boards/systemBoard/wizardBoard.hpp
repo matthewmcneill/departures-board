@@ -31,6 +31,7 @@ private:
     IPAddress currentIp;
     uint32_t lastStageSwitch;
     int currentStage; ///< 0=Wizard, 1=Keys Help, 2=CRS Help
+    WeatherStatus weatherStatus;
 
 protected:
     WizardBoard();
@@ -55,6 +56,7 @@ public:
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override { (void)display; (void)currentMillis; }
     int updateData() override { return 0; }
     const char* getLastErrorMsg() override { return ""; }
+    WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };
 
 #endif // WIZARD_BOARD_HPP

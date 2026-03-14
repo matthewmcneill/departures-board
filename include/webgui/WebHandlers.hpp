@@ -191,25 +191,30 @@ void handleSaveKeys() {
       JsonObject settings = doc.as<JsonObject>();
       if (settings[F("owmToken")].is<const char*>()) {
         owmToken = settings[F("owmToken")].as<String>();
-        if (owmToken.length()) {
           // Check if this is a valid token...
-          if (!appContext.getWeather().updateWeather(owmToken, "51.52", "-0.13")) {
+          WeatherStatus tempStatus;
+          tempStatus.lat = 51.52;
+          tempStatus.lon = -0.13;
+          // Temporarily swap key for validation
+          String oldKey = appContext.getWeather().getOpenWeatherMapApiKey();
+          appContext.getWeather().setOpenWeatherMapApiKey(owmToken.c_str());
+          if (!appContext.getWeather().updateWeather(tempStatus)) {
             msg = F("The OpenWeather Map API key is not valid. Please check you have copied your key correctly. It may take up to 30 minutes for a newly created key to become active.\n\nNo changes have been saved.");
             result = false;
           }
+          appContext.getWeather().setOpenWeatherMapApiKey(oldKey.c_str());
         }
-      }
-      if (result) {
-        if (!appContext.getConfigManager().saveFile(F("/apikeys.json"),newJSON)) {
-          msg = F("Failed to save the API keys to the file system (file system corrupt or full?)");
-          result = false;
-        } else {
-          nrToken = settings[F("nrToken")].as<String>();
-          if (!nrToken.length()) msg+=F("\n\nNote: Only Tube and Bus Departures will be available without a National Rail token.");
-          LOG_INFO("WEB", "API keys successfully validated and saved.");
+        if (result) {
+          if (!appContext.getConfigManager().saveFile(F("/apikeys.json"),newJSON)) {
+            msg = F("Failed to save the API keys to the file system (file system corrupt or full?)");
+            result = false;
+          } else {
+            nrToken = settings[F("nrToken")].as<String>();
+            if (!nrToken.length()) msg+=F("\n\nNote: Only Tube and Bus Departures will be available without a National Rail token.");
+            LOG_INFO("WEB", "API keys successfully validated and saved.");
+          }
         }
-      }
-    } else {
+      } else {
       msg = F("Invalid JSON format. No changes have been saved.");
       LOG_ERROR("WEB", "API keys update failed: Invalid JSON format received.");
       result = false;
@@ -268,7 +273,7 @@ void handleGetConfigSettings() {
   // Rail (Slot 0)
   for (int i = 0; i < config.boardCount; i++) {
     const BoardConfig& bc = config.boards[i];
-    if (bc.mode == MODE_RAIL && i == 0) {
+    if (bc.type == MODE_RAIL && i == 0) {
       doc[F("crs")] = bc.id;
       doc[F("lat")] = bc.lat;
       doc[F("lon")] = bc.lon;
@@ -276,16 +281,16 @@ void handleGetConfigSettings() {
       doc[F("callingStation")] = bc.secondaryName;
       doc[F("platformFilter")] = bc.filter;
       doc[F("nrTimeOffset")] = bc.timeOffset;
-    } else if (bc.mode == MODE_TUBE) {
+    } else if (bc.type == MODE_TUBE) {
       doc[F("tubeId")] = bc.id;
       doc[F("tubeName")] = bc.name;
-    } else if (bc.mode == MODE_BUS) {
+    } else if (bc.type == MODE_BUS) {
       doc[F("busId")] = bc.id;
       doc[F("busName")] = bc.name;
       doc[F("busLat")] = bc.lat;
       doc[F("busLon")] = bc.lon;
       doc[F("busFilter")] = bc.filter;
-    } else if (bc.mode == MODE_RAIL && i > 0) {
+    } else if (bc.type == MODE_RAIL && i > 0) {
       // Alt Rail logic
       doc[F("altCrs")] = bc.id;
       doc[F("altLat")] = bc.lat;
@@ -351,7 +356,7 @@ void handleSaveSettings() {
     
     // Board 0: Main Rail (by convention)
     BoardConfig& br = config.boards[0];
-    br.mode = MODE_RAIL;
+    br.type = MODE_RAIL;
     if (settings[F("crs")].is<const char*>()) strlcpy(br.id, settings[F("crs")], sizeof(br.id));
     if (settings[F("lat")].is<float>()) br.lat = settings[F("lat")];
     if (settings[F("lon")].is<float>()) br.lon = settings[F("lon")];
@@ -363,14 +368,14 @@ void handleSaveSettings() {
 
     // Board 1: Tube
     BoardConfig& bt = config.boards[1];
-    bt.mode = MODE_TUBE;
+    bt.type = MODE_TUBE;
     if (settings[F("tubeId")].is<const char*>()) strlcpy(bt.id, settings[F("tubeId")], sizeof(bt.id));
     if (settings[F("tubeName")].is<const char*>()) strlcpy(bt.name, settings[F("tubeName")], sizeof(bt.name));
     bt.complete = (strlen(bt.id) > 0);
 
     // Board 2: Bus
     BoardConfig& bb = config.boards[2];
-    bb.mode = MODE_BUS;
+    bb.type = MODE_BUS;
     if (settings[F("busId")].is<const char*>()) strlcpy(bb.id, settings[F("busId")], sizeof(bb.id));
     if (settings[F("busName")].is<const char*>()) strlcpy(bb.name, settings[F("busName")], sizeof(bb.name));
     if (settings[F("busLat")].is<float>()) bb.lat = settings[F("busLat")];
@@ -381,7 +386,7 @@ void handleSaveSettings() {
     // Board 3: Alt Rail
     if (settings[F("altCrs")].is<const char*>() && strlen(settings[F("altCrs")]) > 0) {
         BoardConfig& ba = config.boards[3];
-        ba.mode = MODE_RAIL;
+        ba.type = MODE_RAIL;
         strlcpy(ba.id, settings[F("altCrs")], sizeof(ba.id));
         if (settings[F("altLat")].is<float>()) ba.lat = settings[F("altLat")];
         if (settings[F("altLon")].is<float>()) ba.lon = settings[F("altLon")];
@@ -664,7 +669,7 @@ void handleInfo() {
   
   int nMsgs = appContext.getGlobalMessagePool().getCount();
   if (appContext.getConfigManager().getConfig().rssEnabled && appContext.getRss().getRssAddedtoMsgs()) nMsgs--;
-  if (appContext.getConfigManager().getConfig().boardMode == MODE_TUBE) nMsgs--;
+  if (appContext.getConfigManager().getConfig().boardType == MODE_TUBE) nMsgs--;
   
   server.sendContent(String(nMsgs) + F("\n\n"));
 
@@ -928,11 +933,12 @@ void updateCurrentWeather(float latitude, float longitude) {
   appContext.getWeather().setNextWeatherUpdate(millis() + 1200000); // update every 20 mins
   if (!latitude || !longitude) return; // No location co-ordinates
   appContext.getWeather().setWeatherMsg("");
-  bool currentWeatherValid = appContext.getWeather().updateWeather(appContext.getWeather().getOpenWeatherMapApiKey(), String(latitude), String(longitude));
+  WeatherStatus tempStatus;
+  tempStatus.lat = latitude;
+  tempStatus.lon = longitude;
+  bool currentWeatherValid = appContext.getWeather().updateWeather(tempStatus);
   if (currentWeatherValid) {
-    appContext.getWeather().currentWeather.toCharArray(appContext.getWeather().getWeatherMsg(), 46);
-    appContext.getWeather().getWeatherMsg()[0] = toUpperCase(appContext.getWeather().getWeatherMsg()[0]);
-    appContext.getWeather().getWeatherMsg()[45] = '\0';
+    appContext.getWeather().setWeatherMsg(tempStatus.description);
   } else {
     appContext.getWeather().setNextWeatherUpdate(millis() + 30000); // Try again in 30s
   }
