@@ -12,7 +12,10 @@
  * Description: Client to fetch and parse RSS feeds via HTTP/HTTPS.
  *
  * Exported Functions/Classes:
- * - class rssClient
+ * - rssClient: Main service class for RSS feed integration.
+ * - rssClient::loadFeed: Fetches and parses an RSS feed from a URL.
+ * - rssClient::setYieldCallback: Registers a callback for non-blocking I/O.
+ * - rssClient::reapplyConfig: Updates RSS settings from central configuration.
  */
 
 #pragma once
@@ -36,6 +39,7 @@ class rssClient: public xmlListener, public iConfigurable {
         int tagLevel = 0;
         String currentPath = "";
         char lastErrorMessage[128];
+        void (*yieldCallback)() = nullptr;
         
         bool rssEnabled = false;
         bool rssAddedtoMsgs = false;
@@ -96,7 +100,16 @@ class rssClient: public xmlListener, public iConfigurable {
         const char* getRssName() const { return rssName; }
         void setRssName(const char* name) { strncpy(rssName, name, sizeof(rssName)-1); }
 
+        /**
+         * @brief Default constructor for the RSS client.
+         */
         rssClient();
+        /**
+         * @brief Registers a callback function to be invoked during blocking I/O operations.
+         * @param cb Pointer to the yield function.
+         */
+        void setYieldCallback(void (*cb)()) { yieldCallback = cb; }
+
 /**
  * @brief Connects to the provided URL, fetches the RSS feed, and streams the XML to extract item titles.
  * @param url The URL of the RSS feed to fetch (supports HTTP and HTTPS).

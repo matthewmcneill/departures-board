@@ -14,6 +14,9 @@
  *
  * Exported Functions/Classes:
  * - weatherClient: Main service class for OpenWeatherMap integration.
+ * - weatherClient::updateWeather: Fetches and parses weather data for a status object.
+ * - weatherClient::setYieldCallback: Registers a callback for non-blocking I/O.
+ * - weatherClient::reapplyConfig: Updates API keys from central configuration.
  */
 #pragma once
 #include <JsonStreamingParser.h>
@@ -28,6 +31,7 @@ class weatherClient: public JsonListener, public iConfigurable {
         String currentKey = "";
         String currentObject = "";
         int weatherItem = 0;
+        void (*yieldCallback)() = nullptr;
 
         WeatherStatus* activeStatus = nullptr; // Pointer to the status object being updated by the parser
         
@@ -53,7 +57,12 @@ class weatherClient: public JsonListener, public iConfigurable {
         char* getWeatherMsg() { return weatherMsg; }
         void setWeatherMsg(const char* newMsg) { strncpy(weatherMsg, newMsg, sizeof(weatherMsg)-1); }
 
+        /**
+         * @brief Default constructor for the weather client.
+         */
         weatherClient();
+
+        void setYieldCallback(void (*cb)()) { yieldCallback = cb; }
 
 /**
  * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.

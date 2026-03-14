@@ -39,7 +39,7 @@ TfLBoard::TfLBoard(appContext* contextPtr)
 }
 
 void TfLBoard::onActivate() {
-    dataSource.configure(tubeId, tflAppkey);
+    dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
     headWidget.setTitle(tubeName);
     
     // Configure message pools

@@ -85,8 +85,21 @@ void ConfigManager::loadApiKeys() {
         if (settings[F("appKey")].is<const char*>()) {
           strlcpy(config.tflAppkey, settings[F("appKey")], sizeof(config.tflAppkey));
         }
+
+        if (settings[F("owmToken")].is<const char*>()) {
+          strlcpy(config.owmToken, settings[F("owmToken")], sizeof(config.owmToken));
+        }
+
         config.apiKeysLoaded = true;
-        LOG_INFO("SYSTEM", "API keys loaded (NR=" + String(config.nrToken[0] ? "SET" : "MISSING") + ", TfL=" + String(config.tflAppkey[0] ? "SET" : "MISSING") + ")");
+
+        // Register secrets for automatic log redaction
+        if (config.nrToken[0]) Logger::registerSecret(config.nrToken);
+        if (config.tflAppkey[0]) Logger::registerSecret(config.tflAppkey);
+        if (config.owmToken[0]) Logger::registerSecret(config.owmToken);
+
+        LOG_INFO("SYSTEM", "API keys loaded (NR=" + String(config.nrToken[0] ? "SET" : "MISSING") + 
+                           ", TfL=" + String(config.tflAppkey[0] ? "SET" : "MISSING") + 
+                           ", OWM=" + String(config.owmToken[0] ? "SET" : "MISSING") + ")");
 
       } else {
         LOG_ERROR("CONFIG", String("Failed to parse /apikeys.json: ") + error.c_str());
@@ -195,6 +208,7 @@ bool ConfigManager::save() {
         b[F("secId")] = bc.secondaryId;
         b[F("secName")] = bc.secondaryName;
         b[F("offset")] = bc.timeOffset;
+        b[F("weather")] = bc.showWeather;
     }
 
     String output;
@@ -276,7 +290,15 @@ void ConfigManager::loadConfig() {
                 strlcpy(bc.secondaryId, b[F("secId")] | "", sizeof(bc.secondaryId));
                 strlcpy(bc.secondaryName, b[F("secName")] | "", sizeof(bc.secondaryName));
                 bc.timeOffset = b[F("offset")] | 0;
-                LOG_INFO("SYSTEM", "Loaded Config: Board " + String(config.boardCount-1) + " Type=" + String((int)bc.type) + " ID=" + String(bc.id));
+                
+                // Weather Toggle: Default to true unless it's a Tube board (legacy behavior)
+                if (b[F("weather")].is<bool>()) {
+                    bc.showWeather = b[F("weather")];
+                } else {
+                    bc.showWeather = (bc.type != MODE_TUBE);
+                }
+                
+                LOG_INFO("SYSTEM", "Loaded Config: Board " + String(config.boardCount-1) + " Type=" + String((int)bc.type) + " ID=" + String(bc.id) + " Weather=" + String(bc.showWeather ? "ON" : "OFF"));
             }
             LOG_INFO("CONFIG", "Loaded " + String(config.boardCount) + " boards from modern config format.");
         } else {
@@ -287,8 +309,9 @@ void ConfigManager::loadConfig() {
                 BoardConfig& br = config.boards[config.boardCount++];
                 br.type = MODE_RAIL;
                 strlcpy(br.id, settings[F("crs")] | "", sizeof(br.id));
-                br.lat = settings[F("lat")] | 0.0f;
-                br.lon = settings[F("lon")] | 0.0f;
+                // Try multiple legacy keys for coordinates
+                br.lat = settings[F("lat")] | settings[F("stationLat")] | 0.0f;
+                br.lon = settings[F("lon")] | settings[F("stationLon")] | 0.0f;
                 strlcpy(br.secondaryId, settings[F("callingCrs")] | "", sizeof(br.secondaryId));
                 strlcpy(br.secondaryName, settings[F("callingStation")] | "", sizeof(br.secondaryName));
                 strlcpy(br.filter, settings[F("platformFilter")] | "", sizeof(br.filter));

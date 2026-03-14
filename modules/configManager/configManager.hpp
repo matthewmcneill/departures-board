@@ -55,6 +55,9 @@ struct BoardConfig {
     // --- Timing ---
     int timeOffset = 0;          // Local board time adjustment (NR specific)
 
+    // --- Features ---
+    bool showWeather = true;     // Enable/Disable weather overlay for this board
+
     // --- Runtime Readiness (Computed by ConfigManager) ---
     bool complete = false;       // True if all mandatory fields are present
     int errorType = 0;           // 0: OK, 1: Missing API Keys, 2: Missing Station ID

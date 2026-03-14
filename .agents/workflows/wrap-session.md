@@ -4,7 +4,7 @@ description: Session wrap-up: House style check, doc updates, validation, git co
 
 1.  **House Style Audit**: Run the `house-style-documentation` skill on all files modified during this session to ensure compliance with naming conventions (camelCase) and header documentation standards.
 2.  **Architecture Documentation**: Identify any changes to system design or interfaces. Run the `architectural-refactoring` skill to update relevant documents in `/docs` (e.g., `NewMultiBoardArchitecture.md`, `WeatherSystemDesign.md`).
-3.  **Validation**: Verify that the code compiles successfully (`pio run`) and that any relevant tests have passed. Record any notable build statistics (Flash/RAM usage).
+3.  **Validation**: Verify that the code compiles successfully (`pio run`) and that any relevant tests have passed. **IMPORTANT**: If any code modifications were made during the House Style Audit or Architecture Documentation steps, you MUST rerun this validation to ensure only tested code is committed. Record any notable build statistics (Flash/RAM usage).
 4.  **Project TODO**: Review `TODO.md`. Mark completed items with `[x]` and add any new technical debt or follow-on tasks identified during the session.
 5.  **Git Commit**: Prepare and execute a git commit with a "rich" description. The message should include:
     - A high-level summary of the changes.
@@ -15,3 +15,4 @@ description: Session wrap-up: House style check, doc updates, validation, git co
     - Key decisions and their rationales.
     - The Git commit ID generated in the previous step.
 7.  **Session Walkthrough**: Finalize the `walkthrough.md` for this session, ensuring it captures the final state and verification results.
+8.  **Queue Release**: Check if the current session ID is holding the lock in `.agents/queue.md`. If it is, forcefully release the lock by setting `Locked By` to `NONE` and clearing `Reason` and `Since`, following the `queue-release` workflow.

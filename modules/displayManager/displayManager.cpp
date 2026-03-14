@@ -393,6 +393,9 @@ void DisplayManager::yieldAnimationUpdate() {
             u8g2.drawStr(0, 50, "\xAB");
             u8g2.updateDisplayArea(0, 6, 1, 2);
         }
+
+        // Keep web server responsive during animations and background fetches
+        if (context) context->getWebServer().handleClient();
     }
 }
 
@@ -402,6 +405,10 @@ void DisplayManager::yieldAnimationUpdate() {
  */
 void DisplayManager::applyConfig(const Config& config) {
     LOG_INFO("DISPLAY", "Applying configuration to DisplayManager...");
+    
+    // Reset active board pointer to force a fresh onActivate() 
+    // when showBoard() is called at the end of provisioning.
+    currentBoard = nullptr;
     
     // --- Step 1: Apply Global Hardware and Power settings ---
     setBrightness(config.brightness);

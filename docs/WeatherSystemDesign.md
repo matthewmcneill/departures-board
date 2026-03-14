@@ -10,6 +10,8 @@ Historically, weather was a global service that updated a single shared string. 
 **Decision**: We moved to an **Injectable Weather Object (`WeatherStatus`)**. Each board instance in the carousel owns its own `WeatherStatus` object. This ensures:
 - **Per-Board State**: Each board maintains its own weather data, coordinates, and refresh cycle.
 - **Encapsulation**: The board manages its own display logic while the `WeatherClient` acts as a stateless service that updates these objects.
+- **Resource Optimization**: Weather fetching is only performed for the **active board**. When the carousel switches, an immediate fetch is triggered for the new location if data is stale.
+- **Feature Toggles**: A `showWeather` flag was added to `BoardConfig`. This allows disabling weather fetching (and saving display real estate) on a per-board basis. Tube boards default to `OFF` while Rail and Bus default to `ON`.
 
 ### 1.2 Configuration Standardization
 To reduce semantic complexity and redundancy in the configuration schema:
@@ -29,25 +31,27 @@ OpenWeatherMap (OWM) provides two ways to identify weather:
 
 ### 2.2 Status Tracking
 The `WeatherStatus` object includes a data status flag:
-- `WS_NOT_CONFIGURED`: Default state.
+- `WS_NOT_CONFIGURED`: Default state or coordinates are explicit `0,0`.
 - `WS_FETCH_ERROR`: Network or API failure.
 - `WS_OK`: Data is current and valid.
 
-## 3. Future Icon Rendering Assessment
+### 2.3 Coordinate Validation
+To prevent unnecessary network traffic and API-key consumption:
+- The system checks if coordinates are `0,0` before attempting a fetch.
+- If invalid, a `LOG_WARN` is issued, and the status is set to `WS_NOT_CONFIGURED`.
+- This is particularly important for boards that haven't been configured via the Web UI yet.
 
-For the hardware OLED (U8g2), we evaluated two strategies for rendering weather icons:
+### Implementation: Custom Icon Font (`WeatherIcons16`)
 
-| Feature | Unicode/Fonts | XBM Bitmaps |
-| :--- | :--- | :--- |
-| **Storage Efficiency** | **Medium**. Requires embedding a font. Even a cut-down font includes overhead for character mapping. | **High**. Stores only the raw bits for the required icons. |
-| **Rendering Performance** | **High**. Uses standard `drawGlyph` routines. | **High**. Uses standard `drawXBM` routines. |
-| **Flexibility** | **Low**. Limited to the glyphs defined in the font. | **High**. Any custom graphic can be converted to XBM. |
-| **Complexity** | **Low**. Simple text API. | **Medium**. Requires managing a library of arrays. |
+While XBM was initially considered, we implemented a **Human-Readable Font Source** pipeline:
+- **Source**: `modules/displayManager/fonts/source/WeatherIcons16.txt` contains visual ASCII-art of the icons.
+- **Pipeline**: A Python build script converts these to BDF and then to compressed U8G2 font arrays in `fonts.cpp`.
+- **Mapping**: `WeatherStatus::getIconChar()` translates OWM condition IDs into font glyphs.
 
-### Recommendation: XBM Bitmaps
-For a constrained environment like the ESP32 where Flash space is at a premium:
-- **XBM is the winner**. We only need ~10 icons (Clear, Few Clouds, Rain, Thunder, etc.). 
-- 10 icons at 16x16 pixels consume only **320 bytes** of Flash total. 
-- Even a tiny custom font would likely consume 2-5 KB of Flash.
+This approach balances the storage efficiency of XBM with the ease of use of a standard text API.
 
-By storing the `conditionId`, the system is ready to map OWM categories directly to optimized XBM bitmaps in the future.
+## 4. Non-Blocking I/O (Yield Mechanism)
+
+The `weatherClient` participates in the system-wide **Yield Mechanism**:
+- Long-running HTTP GET requests and JSON parsing loops periodically invoke a `yieldCallback`.
+- This callback is wired to `webServer.handleClient()`, ensuring the device remains responsive to the Web GUI even during slow weather updates (which can take several seconds due to SSL handshake or large response headers).

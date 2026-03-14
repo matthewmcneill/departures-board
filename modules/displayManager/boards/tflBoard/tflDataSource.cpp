@@ -61,7 +61,7 @@ int tflDataSource::updateData() {
     httpsClient->print(request);
     if (callback) callback();
 
-    unsigned long ticker = millis() + 800;
+    unsigned long ticker = millis() + 350;
     int retry = 0;
     while(!httpsClient->available() && retry < 40) { delay(200); retry++; }
     if (retry >= 40) return UPD_TIMEOUT;
@@ -95,7 +95,7 @@ int tflDataSource::updateData() {
         while(httpsClient->available() && !maxServicesRead) {
             parser->parse(httpsClient->read());
             dataReceived++;
-            if (millis() > ticker) { if (callback) callback(); ticker = millis() + 800; }
+            if (millis() > ticker) { if (callback) callback(); ticker = millis() + 350; }
         }
         delay(10);
     }
@@ -116,6 +116,7 @@ int tflDataSource::updateData() {
                     while(httpsClient->available() && !maxServicesRead) {
                         parser->parse(httpsClient->read());
                         dataReceived++;
+                        if (millis() > ticker) { if (callback) callback(); ticker = millis() + 350; }
                     }
                     delay(10);
                 }

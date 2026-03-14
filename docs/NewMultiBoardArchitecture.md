@@ -167,12 +167,14 @@ Currently, `loadConfig()` (in `include/gfx/DisplayEngine.hpp`) parses a flat JSO
   "brightness": 20,
   "sleepStarts": 23,
   "boards": [
-    { "mode": 0, "crs": "PAD", "altCrs": "" },
-    { "mode": 2, "busId": "490000077E" },
-    { "mode": 1, "tubeId": "940GZZLUKSX" }
+    { "type": 0, "id": "PAD", "lat": 51.517, "lon": -0.176, "weather": true },
+    { "type": 2, "id": "490000077E", "lat": 51.503, "lon": -0.005, "weather": true },
+    { "type": 1, "id": "940GZZLUKSX", "lat": 0, "lon": 0, "weather": false }
   ]
 }
 ```
+> [!NOTE]
+> The `weather` toggle and `lat`/`lon` coordinates are now stored per-board. This allows different transport modes (which may be miles apart) to fetch accurate local weather data.
 
 ### 4.2 Schema Migration (Backward Compatibility)
 When a user updates their firmware via OTA, they will have the old flat `config.json` on their device. If we try to parse `settings["boards"].as<JsonArray>()`, it will fail or return null, crashing the board on reboot.

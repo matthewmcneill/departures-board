@@ -628,42 +628,50 @@
         alert(hostnameError);
     }
 
+    let nrSearchTimeout;
     const substringMatcher = () => {
       return (q, cb) => {
+        clearTimeout(nrSearchTimeout);
         if (q.length > 2) {
-          $.ajax({
-            url: '/stationpicker?q=' + encodeURIComponent(q),
-            method: 'GET',
-            success: function(data) {
-              const stations = data.payload.stations.filter(s => s.kbState !== 0);
-              cb(stations);
-            },
-            error: function(xhr, status, error) {
-              console.error(`Station fetch failed: ${status} - ${error}`);
-              cb([]);
-            }
-          });
+          nrSearchTimeout = setTimeout(() => {
+            $.ajax({
+              url: '/stationpicker?q=' + encodeURIComponent(q),
+              method: 'GET',
+              success: function(data) {
+                const stations = data.payload.stations.filter(s => s.kbState !== 0);
+                cb(stations);
+              },
+              error: function(xhr, status, error) {
+                console.error(`Station fetch failed: ${status} - ${error}`);
+                cb([]);
+              }
+            });
+          }, 350);
         } else {
           cb([]);
         }
       };
     };
 
+    let tflSearchTimeout;
     const substringMatcherTfL = () => {
       return (q, cb) => {
+        clearTimeout(tflSearchTimeout);
         if (q.length > 2) {
-          $.ajax({
-            url: 'https://api.tfl.gov.uk/StopPoint/Search/' + encodeURIComponent(q) + '?modes=tube,dlr&maxResults=10&faresOnly=False&includeHubs=False&app_key=' + appState.appKey ,
-            method: 'GET',
-            success: function(data) {
-              const stations = data.matches.filter(s => s.kbState !== 0);
-              cb(stations);
-            },
-            error: function(xhr, status, error) {
-              console.error(`UG Station fetch failed: ${status} - ${error}`);
-              cb([]);
-            }
-          });
+          tflSearchTimeout = setTimeout(() => {
+            $.ajax({
+              url: 'https://api.tfl.gov.uk/StopPoint/Search/' + encodeURIComponent(q) + '?modes=tube,dlr&maxResults=10&faresOnly=False&includeHubs=False&app_key=' + appState.appKey ,
+              method: 'GET',
+              success: function(data) {
+                const stations = data.matches.filter(s => s.kbState !== 0);
+                cb(stations);
+              },
+              error: function(xhr, status, error) {
+                console.error(`UG Station fetch failed: ${status} - ${error}`);
+                cb([]);
+              }
+            });
+          }, 350);
         } else {
           cb([]);
         }
@@ -960,6 +968,7 @@
 
     function loadSettings() {
       const s = appState.jsonSettings;
+      appState.appKey = s.appKey || "";
       appState.stationName = s.station || "";
       appState.stationCRS = s.crs || "";
       appState.stationLatitude = s.lat || 0;
@@ -983,7 +992,7 @@
       appState.busFilter = s.busFilter || "";
       appState.boardType = s.type !== undefined ? s.type : (s.mode !== undefined ? s.mode : (s.tube != undefined ? (s.tube ? 1 : 0) : 0));
       delete s.tube;
-      highlightModeButtons(appState.boardMode);
+      highlightModeButtons(appState.boardType);
       applyBoardMode();
       elements.searchName.value = appState.stationName;
       elements.callingStation.value = appState.callingStation;
@@ -1042,12 +1051,32 @@
       document.getElementById(id).checked = !!value;
     }
 
-    function handleStationSelected(item) {
+    async function recoverCoordinates(stationName, stateKeyLat, stateKeyLon) {
+      try {
+        const response = await fetch(`https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(stationName)}?modes=national-rail&maxResults=1&app_key=${appState.appKey}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.matches && data.matches.length > 0) {
+          const match = data.matches[0];
+          appState[stateKeyLat] = match.lat;
+          appState[stateKeyLon] = match.lon;
+          console.log(`Recovered coords for ${stationName}: ${match.lat}, ${match.lon}`);
+        }
+      } catch (err) {
+        console.warn("Coordinate recovery failed:", err);
+      }
+    }
+
+    async function handleStationSelected(item) {
       appState.stationSelected = true;
       appState.stationName = item.name;
       appState.stationCRS = item.crsCode;
       appState.stationLatitude = item.latitude;
       appState.stationLongitude = item.longitude;
+
+      if (appState.stationLatitude === 0 && appState.stationLongitude === 0) {
+        await recoverCoordinates(item.name, 'stationLatitude', 'stationLongitude');
+      }
 
       if (item.classification === "LONDON_UNDERGROUND") {
         elements.saveButton.setAttribute("disabled", true);
@@ -1068,12 +1097,16 @@
       appState.altCallingCrs = item.crsCode;
     }
 
-    function handleAltStationSelected(item) {
+    async function handleAltStationSelected(item) {
       appState.altStationSelected = true;
       appState.altStation = item.name;
       appState.altCrs = item.crsCode;
       appState.altLatitude = item.latitude;
       appState.altLongitude = item.longitude;
+
+      if (appState.altLatitude === 0 && appState.altLongitude === 0) {
+        await recoverCoordinates(item.name, 'altLatitude', 'altLongitude');
+      }
       toggleAltSelectors();
     }
 

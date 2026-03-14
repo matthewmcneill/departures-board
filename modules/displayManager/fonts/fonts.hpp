@@ -35,3 +35,4 @@ extern const uint8_t NatRailClockSmall7[];
 extern const uint8_t NatRailClockLarge9[];
 extern const uint8_t Underground10[];
 extern const uint8_t UndergroundClock8[];
+extern const uint8_t WeatherIcons16[];

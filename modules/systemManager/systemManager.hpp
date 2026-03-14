@@ -47,6 +47,7 @@ private:
     int dataLoadFailure;              ///< Count of connection/parse breaks
     unsigned long lastLoadFailure;    ///< Last exception time (ms)
     int lastUpdateResult;             ///< HTTP return code from last poll
+    int lastActiveSlotIndex;          ///< Cached index to detect board switching
 
 public:
     /**

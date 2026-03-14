@@ -8,7 +8,13 @@ This document tracks the different API endpoints used for National Rail services
 **Endpoint:** `https://ojp.nationalrail.co.uk/find/stationsDLRLU/{query}`
 - **Usage:** National Rail Online Journey Planner (OJP).
 - **Format:** Array of arrays `[ ["CRS", "Station Name", ...], ... ]`.
-- **Notes:** Efficient and reliable. Requires back-end transformation to legacy object format for compatibility with embedded web UI.
+- **Notes:** Efficient and reliable for station identification. **CRITICAL CHANGE (March 2026)**: This endpoint stopped providing latitude/longitude coordinates (indices 7 and 8 now return `0.0`). 
+
+### Coordinate Recovery (TfL Fallback)
+**Endpoint:** `https://api.tfl.gov.uk/StopPoint/Search/{name}?modes=national-rail`
+- **Usage:** Secondary lookup in the Web UI to recover coordinates for National Rail boards.
+- **Notes:** The TfL API provides comprehensive coverage of all National Rail stations in Great Britain via the national NaPTAN database. 
+- **Rationale**: Replaces the lost spatial data from the official NR picker, ensuring the weather system can function without requiring manual coordinate entry.
 
 ### Legacy (Recent Failure - March 2026)
 **Endpoint:** `https://stationpicker.nationalrail.co.uk/stationPicker/{query}`

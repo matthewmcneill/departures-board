@@ -62,4 +62,52 @@ public:
         if (!isValid()) return "Weather: N/A";
         return String(description) + " " + String((int)temp) + "C, " + String((int)windSpeed) + "knt";
     }
+
+    /**
+     * @brief Maps OpenWeatherMap condition IDs and day/night status to Font characters.
+     *        Font: WeatherIcons16
+     * @return char The character mapping to the icon.
+     */
+    char getIconChar() const {
+        if (!isValid()) return '?';
+
+        // OWM Groups:
+        // 2xx: Thunderstorm
+        // 3xx: Drizzle
+        // 5xx: Rain
+        // 6xx: Snow
+        // 7xx: Atmosphere (Mist, Smoke, Haze, etc.)
+        // 800: Clear
+        // 80x: Clouds
+
+        if (conditionId == 800) {
+            return isNight ? 'B' : 'A'; // B: Clear Night, A: Clear Day
+        }
+
+        if (conditionId == 801 || conditionId == 802) {
+            return isNight ? 'D' : 'C'; // D: Few Clouds Night, C: Few Clouds Day
+        }
+
+        if (conditionId >= 803 && conditionId <= 804) {
+            return 'E'; // E: Clouds / Overcast
+        }
+
+        if (conditionId >= 200 && conditionId < 300) {
+            return 'G'; // G: Thunderstorm
+        }
+
+        if ((conditionId >= 300 && conditionId < 400) || (conditionId >= 500 && conditionId < 600)) {
+            return 'F'; // F: Rain / Shower
+        }
+
+        if (conditionId >= 600 && conditionId < 700) {
+            return 'H'; // H: Snow
+        }
+
+        if (conditionId >= 700 && conditionId < 800) {
+            return 'I'; // I: Atmosphere (Mist/Fog/Haze)
+        }
+
+        return '?';
+    }
 };

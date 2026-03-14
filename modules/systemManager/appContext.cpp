@@ -8,6 +8,13 @@
  *
  * Module: modules/systemManager/appContext.cpp
  * Description: Implementation of the central appContext orchestrator.
+ *
+ * Exported Functions/Classes:
+ * - appContext::appContext: Constructor initializes core state.
+ * - appContext::begin: Master initialization sequence for all hardware and software services.
+ * - appContext::tick: Central administrative loop for high-level tasks.
+ * - yieldCallbackWrapper: Global yield relay for non-blocking I/O.
+ * - raildataYieldWrapper: Global progress callback relay for National Rail.
  */
 
 #include "appContext.hpp"
@@ -15,6 +22,24 @@
 #include <timeManager.hpp>
 #include <Logger.hpp>
 #include <WiFiConfig.hpp>
+
+appContext* _instance = nullptr;
+
+/**
+ * @brief Global wrapper to trigger DisplayManager's non-blocking yield.
+ *        Required for raw function pointers used in data clients.
+ */
+void yieldCallbackWrapper() {
+    if (_instance) _instance->getDisplayManager().yieldAnimationUpdate();
+}
+
+/**
+ * @brief Adaptor for National Rail data source which provides progress events.
+ *        Relays to the central yield handler.
+ */
+void raildataYieldWrapper(int stage, int nServices) {
+    yieldCallbackWrapper();
+}
 
 /**
  * @brief Construct the appContext and its managed service singletons.
@@ -27,6 +52,7 @@ appContext::appContext() : globalMessagePool(4) {
  * @brief Initialize all system services in the required boot order.
  */
 void appContext::begin() {
+    _instance = this;
     LOG_INFO("SYSTEM", "Initializing appContext managers...");
 
     // 1. Hardware Filesystem (Must be first for config)
@@ -79,6 +105,10 @@ void appContext::begin() {
 
     LOG_INFO("SYSTEM", "Initializing Web Server...");
     webServer.init();
+
+    // 7. Connect Yield Callbacks for Non-Blocking I/O
+    weather.setYieldCallback(yieldCallbackWrapper);
+    rss.setYieldCallback(yieldCallbackWrapper);
 
     LOG_INFO("SYSTEM", "Network ready. IP Address: " + WiFi.localIP().toString());
 

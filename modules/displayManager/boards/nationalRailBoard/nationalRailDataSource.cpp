@@ -171,7 +171,7 @@ int nationalRailDataSource::updateData() {
 
     if (callback) callback(1, 0);
     
-    unsigned long ticker = millis() + 800;
+    unsigned long ticker = millis() + 350;
     int retry = 0;
     while(!httpsClient.available() && retry < 30) { delay(100); retry++; }
     if (retry >= 30) {
@@ -212,7 +212,7 @@ int nationalRailDataSource::updateData() {
             bytesRecv++;
             if (millis() > ticker && stationData) {
                 if (callback) callback(2, stationData->numServices);
-                ticker = millis() + 800;
+                ticker = millis() + 350;
             }
         }
         delay(5);

@@ -254,6 +254,7 @@ void handleGetConfigSettings() {
   // System Settings
   doc[F("hostname")] = config.hostname;
   doc[F("TZ")] = config.timezone;
+  doc[F("appKey")] = config.tflAppkey;
   doc[F("brightness")] = config.brightness;
   doc[F("mode")] = config.defaultBoardIndex;
   doc[F("sleep")] = config.sleepEnabled;
@@ -275,8 +276,13 @@ void handleGetConfigSettings() {
     const BoardConfig& bc = config.boards[i];
     if (bc.type == MODE_RAIL && i == 0) {
       doc[F("crs")] = bc.id;
-      doc[F("lat")] = bc.lat;
-      doc[F("lon")] = bc.lon;
+      doc[F("station")] = bc.name;
+      // Protection: Only write coordinates for the main Rail board if it's the active slot
+      // or if no other board has claimed the 'lat'/'lon' keys yet.
+      if (!doc.containsKey(F("lat")) || (config.defaultBoardIndex == i && bc.lat != 0)) {
+          doc[F("lat")] = bc.lat;
+          doc[F("lon")] = bc.lon;
+      }
       doc[F("callingCrs")] = bc.secondaryId;
       doc[F("callingStation")] = bc.secondaryName;
       doc[F("platformFilter")] = bc.filter;
@@ -284,6 +290,12 @@ void handleGetConfigSettings() {
     } else if (bc.type == MODE_TUBE) {
       doc[F("tubeId")] = bc.id;
       doc[F("tubeName")] = bc.name;
+      // Protection: Only write coordinates for Tube if it's the active slot
+      // or if no other board (like Rail) has provided them yet.
+      if (!doc.containsKey(F("lat")) || (config.defaultBoardIndex == i && bc.lat != 0)) {
+          doc[F("lat")] = bc.lat;
+          doc[F("lon")] = bc.lon;
+      }
     } else if (bc.type == MODE_BUS) {
       doc[F("busId")] = bc.id;
       doc[F("busName")] = bc.name;
@@ -298,7 +310,6 @@ void handleGetConfigSettings() {
       doc[F("altCallingCrs")] = bc.secondaryId;
       doc[F("altCallingStation")] = bc.secondaryName;
       doc[F("altPlatformFilter")] = bc.filter;
-      // Note: altStarts/altEnds aren't in current BoardConfig, using legacy mapping if needed
     }
   }
 
@@ -358,8 +369,12 @@ void handleSaveSettings() {
     BoardConfig& br = config.boards[0];
     br.type = MODE_RAIL;
     if (settings[F("crs")].is<const char*>()) strlcpy(br.id, settings[F("crs")], sizeof(br.id));
-    if (settings[F("lat")].is<float>()) br.lat = settings[F("lat")];
-    if (settings[F("lon")].is<float>()) br.lon = settings[F("lon")];
+    if (settings[F("station")].is<const char*>()) strlcpy(br.name, settings[F("station")], sizeof(br.name));
+    // ONLY update Rail coordinates if Rail mode is currently active
+    if (settings[F("type")].as<int>() == MODE_RAIL) {
+        if (settings.containsKey(F("lat")) && settings[F("lat")].as<float>() != 0) br.lat = settings[F("lat")].as<float>();
+        if (settings.containsKey(F("lon")) && settings[F("lon")].as<float>() != 0) br.lon = settings[F("lon")].as<float>();
+    }
     if (settings[F("callingCrs")].is<const char*>()) strlcpy(br.secondaryId, settings[F("callingCrs")], sizeof(br.secondaryId));
     if (settings[F("callingStation")].is<const char*>()) strlcpy(br.secondaryName, settings[F("callingStation")], sizeof(br.secondaryName));
     if (settings[F("platformFilter")].is<const char*>()) strlcpy(br.filter, settings[F("platformFilter")], sizeof(br.filter));
@@ -371,6 +386,11 @@ void handleSaveSettings() {
     bt.type = MODE_TUBE;
     if (settings[F("tubeId")].is<const char*>()) strlcpy(bt.id, settings[F("tubeId")], sizeof(bt.id));
     if (settings[F("tubeName")].is<const char*>()) strlcpy(bt.name, settings[F("tubeName")], sizeof(bt.name));
+    // ONLY update Tube coordinates if Tube mode is currently active
+    if (settings[F("type")].as<int>() == MODE_TUBE) {
+        if (settings.containsKey(F("lat")) && settings[F("lat")].as<float>() != 0) bt.lat = settings[F("lat")].as<float>();
+        if (settings.containsKey(F("lon")) && settings[F("lon")].as<float>() != 0) bt.lon = settings[F("lon")].as<float>();
+    }
     bt.complete = (strlen(bt.id) > 0);
 
     // Board 2: Bus
@@ -378,8 +398,8 @@ void handleSaveSettings() {
     bb.type = MODE_BUS;
     if (settings[F("busId")].is<const char*>()) strlcpy(bb.id, settings[F("busId")], sizeof(bb.id));
     if (settings[F("busName")].is<const char*>()) strlcpy(bb.name, settings[F("busName")], sizeof(bb.name));
-    if (settings[F("busLat")].is<float>()) bb.lat = settings[F("busLat")];
-    if (settings[F("busLon")].is<float>()) bb.lon = settings[F("busLon")];
+    if (settings.containsKey(F("busLat"))) bb.lat = settings[F("busLat")].as<float>();
+    if (settings.containsKey(F("busLon"))) bb.lon = settings[F("busLon")].as<float>();
     if (settings[F("busFilter")].is<const char*>()) strlcpy(bb.filter, settings[F("busFilter")], sizeof(bb.filter));
     bb.complete = (strlen(bb.id) > 0);
 
@@ -388,8 +408,8 @@ void handleSaveSettings() {
         BoardConfig& ba = config.boards[3];
         ba.type = MODE_RAIL;
         strlcpy(ba.id, settings[F("altCrs")], sizeof(ba.id));
-        if (settings[F("altLat")].is<float>()) ba.lat = settings[F("altLat")];
-        if (settings[F("altLon")].is<float>()) ba.lon = settings[F("altLon")];
+        if (settings.containsKey(F("altLat"))) ba.lat = settings[F("altLat")].as<float>();
+        if (settings.containsKey(F("altLon"))) ba.lon = settings[F("altLon")].as<float>();
         if (settings[F("altCallingCrs")].is<const char*>()) strlcpy(ba.secondaryId, settings[F("altCallingCrs")], sizeof(ba.secondaryId));
         if (settings[F("altCallingStation")].is<const char*>()) strlcpy(ba.secondaryName, settings[F("altCallingStation")], sizeof(ba.secondaryName));
         if (settings[F("altPlatformFilter")].is<const char*>()) strlcpy(ba.filter, settings[F("altPlatformFilter")], sizeof(ba.filter));
@@ -912,9 +932,15 @@ void handleStationPicker() {
         JsonObject stationObj = stationsArr.add<JsonObject>();
         stationObj["crsCode"] = stationData[0];
         stationObj["name"] = stationData[1];
-        stationObj["latitude"] = stationData[7] | 0.0;
-        stationObj["longitude"] = stationData[8] | 0.0;
+        
+        float lat = stationData[7].as<float>();
+        float lon = stationData[8].as<float>();
+        stationObj["latitude"] = lat;
+        stationObj["longitude"] = lon;
         stationObj["kbState"] = 1; // Mark as selectable
+        if (lat != 0 || lon != 0) {
+            LOG_DEBUG("WEB", "Station: " + String(stationData[0].as<const char*>()) + " Lat: " + String(lat, 6) + " Lon: " + String(lon, 6));
+        }
       }
     }
   }

@@ -26,7 +26,7 @@ systemManager::systemManager()
       lastWiFiReconnect(0), firstLoad(true), startupProgressPercent(0), 
       prevProgressBarPosition(0), nextDataUpdate(0), lastDataLoadTime(0), 
       noDataLoaded(true), dataLoadSuccess(0), dataLoadFailure(0), 
-      lastLoadFailure(0), lastUpdateResult(0) {
+      lastLoadFailure(0), lastUpdateResult(0), lastActiveSlotIndex(-1) {
     strlcpy(myUrl, "http://0.0.0.0", sizeof(myUrl));
 }
 
@@ -66,21 +66,32 @@ void systemManager::tick() {
 
     // Data Fetching Logic
     if (!displayMgr.getIsSleeping()) {
+        int activeIndex = displayMgr.getActiveSlotIndex();
+        
+        // Detect board switch to trigger immediate update
+        if (activeIndex != lastActiveSlotIndex) {
+            LOG_INFO("SYSTEM", "Board switch detected. Triggering immediate data update.");
+            nextDataUpdate = 0;
+            lastActiveSlotIndex = activeIndex;
+        }
+
         if (millis() > nextDataUpdate && wifiConnected) {
             displayMgr.setOtaUpdateAvailable(true);
             
-            iDisplayBoard* activeBoard = displayMgr.getDisplayBoard(displayMgr.getActiveSlotIndex());
+            const BoardConfig& activeBC = config.boards[activeIndex];
+
+            iDisplayBoard* activeBoard = displayMgr.getDisplayBoard(activeIndex);
             if (activeBoard) {
-                LOG_INFO("DATA", "Triggering active board data update for slot index: " + String(displayMgr.getActiveSlotIndex()));
+                LOG_INFO("DATA", "Triggering active board data update for slot index: " + String(activeIndex));
                 lastUpdateResult = activeBoard->updateData();
             } else {
-                LOG_WARN("DATA", "Active board is NULL for slot index: " + String(displayMgr.getActiveSlotIndex()));
+                LOG_WARN("DATA", "Active board is NULL for slot index: " + String(activeIndex));
             }
 
             // Select next update interval
-            if (config.boardType == MODE_RAIL)      nextDataUpdate = millis() + config.apiRefreshRate; // MODE_RAIL
-            else if (config.boardType == MODE_TUBE) nextDataUpdate = millis() + 30000; // MODE_TUBE (UGDATAUPDATEINTERVAL)
-            else if (config.boardType == MODE_BUS)  nextDataUpdate = millis() + 45000; // MODE_BUS (BUSDATAUPDATEINTERVAL)
+            if (activeBC.type == MODE_RAIL)      nextDataUpdate = millis() + config.apiRefreshRate; // MODE_RAIL
+            else if (activeBC.type == MODE_TUBE) nextDataUpdate = millis() + 30000; // MODE_TUBE (UGDATAUPDATEINTERVAL)
+            else if (activeBC.type == MODE_BUS)  nextDataUpdate = millis() + 45000; // MODE_BUS (BUSDATAUPDATEINTERVAL)
 
             // Handle Result Codes
             if (lastUpdateResult == 0 || lastUpdateResult == 1) { // UPD_SUCCESS, UPD_NO_CHANGE
@@ -93,16 +104,21 @@ void systemManager::tick() {
                 weatherClient& weather = context->getWeather();
                 rssClient& rss = context->getRss();
                 
-                if (weather.getWeatherEnabled() && config.boardType != MODE_TUBE && millis() > weather.getNextWeatherUpdate()) {
-                    iDisplayBoard* active = displayMgr.getDisplayBoard(displayMgr.getActiveSlotIndex());
+                if (weather.getWeatherEnabled() && activeBC.showWeather && millis() > weather.getNextWeatherUpdate()) {
+                    iDisplayBoard* active = displayMgr.getDisplayBoard(activeIndex);
                     if (active) {
                         WeatherStatus& ws = active->getWeatherStatus();
-                        ws.lat = (config.boardType == MODE_RAIL) ? config.stationLat : config.busLat;
-                        ws.lon = (config.boardType == MODE_RAIL) ? config.stationLon : config.busLon;
-                        weather.updateWeather(ws);
+                        if (activeBC.lat == 0.0f && activeBC.lon == 0.0f) {
+                            LOG_WARN("DATA", "Weather enabled but coordinates are 0,0. Skipping.");
+                            ws.status = WeatherUpdateStatus::NOT_CONFIGURED;
+                        } else {
+                            ws.lat = activeBC.lat;
+                            ws.lon = activeBC.lon;
+                            weather.updateWeather(ws);
+                        }
                     }
                 }
-                if (rss.getRssEnabled() && config.boardType != MODE_BUS && millis() > rss.getNextRssUpdate()) {
+                if (rss.getRssEnabled() && activeBC.type != MODE_BUS && millis() > rss.getNextRssUpdate()) {
                     updateRssFeed();
                 }
                 

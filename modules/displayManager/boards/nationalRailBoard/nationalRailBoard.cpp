@@ -57,7 +57,7 @@ NationalRailBoard::NationalRailBoard(appContext* contextPtr)
 
 void NationalRailBoard::onActivate() {
     LOG_INFO("DISPLAY", "NR Board: onActivate() called.");
-    int status = dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr); // Official public Darwin API
+    int status = dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", raildataYieldWrapper); 
     if (status != 0) {
         LOG_WARN("DISPLAY", "NR Board: dataSource.init() failed with status: " + String(status));
     } else {

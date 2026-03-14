@@ -161,8 +161,8 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.dirname(script_dir)
     
-    source_dir = os.path.join(root_dir, "docs", "fonts", "dumps")
-    dest_dir = os.path.join(root_dir, "modules", "displayManager", "fonts", "source")
+    source_dir = os.path.join(root_dir, "modules", "displayManager", "fonts", "source")
+    dest_dir = source_dir
     
     if not os.path.exists(dest_dir):
         os.makedirs(dest_dir)

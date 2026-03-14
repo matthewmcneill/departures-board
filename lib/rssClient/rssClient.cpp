@@ -12,12 +12,9 @@
  * Description: Implementation of the RSS XML client.
  *
  * Exported Functions/Classes:
- * - class rssClient: Streaming XML parser and HTTP client to fetch and decode RSS feeds.
- *   - rssClient(): Constructor.
- *   - loadFeed(): Connects to URL, fetches RSS feed, and extracts item titles.
- *   - getLastError(): Retrieves the last error message from RSS fetch operations.
- *   - rssTitle: Attribute array containing the fetched RSS item titles.
- *   - numRssTitles: Attribute storing the number of fetched RSS titles.
+ * - rssClient::rssClient: Constructor.
+ * - rssClient::loadFeed: Fetches RSS XML and extracts titles.
+ * - rssClient::reapplyConfig: Provisions RSS settings from global configuration.
  */
 
 #include <rssClient.h>
@@ -78,6 +75,7 @@ int rssClient::loadFeed(String url) {
     int redirectCount = 0;
     const int maxRedirects = 5;
 
+    // --- Step 1: Initialization ---
     strcpy(lastErrorMessage, "Success");
     clientSecure->setInsecure();
     http->setReuse(false);
@@ -85,6 +83,7 @@ int rssClient::loadFeed(String url) {
     LOG_INFO("DATA", "RSS Client: Loading feed from " + url);
 
     while (redirectCount < maxRedirects) {
+        // --- Step 2: HTTP Connection ---
         if (url.startsWith(F("https"))) http->begin(*clientSecure, url);
         else http->begin(*client, url);
         int httpCode = http->GET();
@@ -105,12 +104,14 @@ int rssClient::loadFeed(String url) {
             char c;
             unsigned long dataSendTimeout = millis() + 3000UL;
 
+            // --- Step 3: Streaming Parse ---
             while((stream->available() || http->connected()) && millis() < dataSendTimeout && numRssTitles < MAX_RSS_TITLES) {
                 while (stream->available() && numRssTitles < MAX_RSS_TITLES) {
                     c = stream->read();
                     parser->parse(c);
                     dataReceived++;
                 }
+                if (yieldCallback) yieldCallback();
                 delay(1);
             }
 

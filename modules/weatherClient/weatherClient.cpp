@@ -12,11 +12,9 @@
  * Description: Implementation of the OpenWeatherMap JSON client.
  *
  * Exported Functions/Classes:
- * - class weatherClient: Streaming JSON parser and HTTP client to fetch weather data.
- *   - weatherClient(): Constructor.
- *   - updateWeather(): Connects to OpenWeatherMap API, retrieves current weather, and parses JSON.
- *   - currentWeather: Attribute containing the formatted current weather description.
- *   - lastErrorMsg: Attribute containing the last error message from API operations.
+ * - weatherClient::weatherClient: Constructor.
+ * - weatherClient::updateWeather: Connects to OpenWeatherMap API and parses JSON.
+ * - weatherClient::reapplyConfig: Provisions setting from global configuration.
  */
 
 #include <weatherClient.h>
@@ -30,15 +28,14 @@
  */
 void weatherClient::reapplyConfig(const Config& config) {
     setOpenWeatherMapApiKey(config.owmToken);
+    setWeatherEnabled(config.owmToken[0] != '\0');
 }
 
 weatherClient::weatherClient() {}
 
 /**
  * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
- * @param apiKey The user's OpenWeatherMap API key.
- * @param lat The latitude of the location.
- * @param lon The longitude of the location.
+ * @param status Reference to the WeatherStatus object to update (must have valid lat/lon).
  * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
 bool weatherClient::updateWeather(WeatherStatus& status) {
@@ -64,9 +61,11 @@ bool weatherClient::updateWeather(WeatherStatus& status) {
     }
 
     parser->setListener(this);
-
+    
+    // --- Step 1: Protocol Handshake ---
     int retryCounter=0;
     while (!httpClient->connect(apiHost, 80) && (retryCounter++ < 15)){
+        if (yieldCallback) yieldCallback();
         delay(200);
     }
     if (retryCounter>=15) {
@@ -75,10 +74,13 @@ bool weatherClient::updateWeather(WeatherStatus& status) {
         return false;
     }
 
+    // --- Step 2: GET Request ---
     String request = "GET /data/2.5/weather?units=metric&lang=en&lat=" + lat + F("&lon=") + lon + F("&appid=") + apiKey + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
+    LOG_DEBUG("DATA", "Weather Client: Requesting " + request); // API Key will be redacted by Logger
     httpClient->print(request);
     retryCounter=0;
     while(!httpClient->available() && retryCounter++ < 40) {
+        if (yieldCallback) yieldCallback();
         delay(200);
     }
 
@@ -90,6 +92,7 @@ bool weatherClient::updateWeather(WeatherStatus& status) {
         return false;
     }
 
+    // --- Step 3: Status Check ---
     // Parse status code
     String statusLine = httpClient->readStringUntil('\n');
     if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
@@ -109,6 +112,7 @@ bool weatherClient::updateWeather(WeatherStatus& status) {
         return false;
     }
 
+    // --- Step 4: Skip Headers ---
     // Skip the remaining headers
     while (httpClient->connected() || httpClient->available()) {
         String line = httpClient->readStringUntil('\n');
@@ -120,14 +124,24 @@ bool weatherClient::updateWeather(WeatherStatus& status) {
     weatherItem=0;
 
     unsigned long dataSendTimeout = millis() + 10000UL;
+    LOG_DEBUG("DATA", "Weather Client: Receiving streaming response...");
+    
+    // --- Step 5: Streaming Parse ---
     while((httpClient->available() || httpClient->connected()) && (millis() < dataSendTimeout)) {
         while(httpClient->available()) {
             c = httpClient->read();
+            #ifdef ENABLE_DEBUG_LOG
+            Serial.print(c); // Raw dump to serial (Logger doesn't handle char-by-char)
+            #endif
             if (c == '{' || c == '[') isBody = true;
             if (isBody) parser->parse(c);
         }
+        if (yieldCallback) yieldCallback();
         delay(5);
     }
+    #ifdef ENABLE_DEBUG_LOG
+    Serial.println(); // Newline after dump
+    #endif
     httpClient->stop();
     if (millis() >= dataSendTimeout) {
         strcpy(lastErrorMsg, "Data timeout");
@@ -169,18 +183,31 @@ void weatherClient::value(String value) {
 
     if (currentObject == F("weather") && weatherItem==0) {
         // Only read the first weather entry in the array
-        if (currentKey == F("description")) strlcpy(activeStatus->description, value.c_str(), sizeof(activeStatus->description));
-        else if (currentKey == F("id")) activeStatus->conditionId = value.toInt();
+        if (currentKey == F("description")) {
+            strlcpy(activeStatus->description, value.c_str(), sizeof(activeStatus->description));
+            LOG_DEBUG("DATA", "Weather Parser: Description=" + value);
+        }
+        else if (currentKey == F("id")) {
+            activeStatus->conditionId = value.toInt();
+            LOG_DEBUG("DATA", "Weather Parser: ID=" + value);
+        }
         else if (currentKey == F("icon")) {
             // OWM icon codes like "01d" or "01n". If ends with 'n', it's night.
             if (value.length() >= 3) {
                 activeStatus->isNight = (value.charAt(2) == 'n');
+                LOG_DEBUG("DATA", "Weather Parser: Icon=" + value + " (isNight=" + String(activeStatus->isNight ? "true" : "false") + ")");
             }
         }
     }
-    else if (currentKey == F("temp")) activeStatus->temp = value.toFloat();
+    else if (currentKey == F("temp")) {
+        activeStatus->temp = value.toFloat();
+        LOG_DEBUG("DATA", "Weather Parser: Temp=" + value);
+    }
     // Windspeed reported in mps, converting to knots (1 m/s ≈ 1.94384 knots)
-    else if (currentKey == F("speed")) activeStatus->windSpeed = value.toFloat() * 1.94384;
+    else if (currentKey == F("speed")) {
+        activeStatus->windSpeed = value.toFloat() * 1.94384;
+        LOG_DEBUG("DATA", "Weather Parser: Wind=" + value + " (" + String(activeStatus->windSpeed) + " knots)");
+    }
 }
 
 /**
