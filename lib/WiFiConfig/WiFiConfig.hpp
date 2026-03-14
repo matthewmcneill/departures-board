@@ -14,8 +14,10 @@
 #define WIFI_CONFIG_HPP
 
 #include <Arduino.h>
-#include <WiFiManager.h>
+#include <Arduino.h>
 #include "iConfigurable.hpp"
+
+class DNSServer; // Forward declaration
 
 /**
  * @brief Class managing WiFi connectivity and configuration.
@@ -26,6 +28,8 @@ private:
     char wifiSsid[33];
     char wifiPass[65];
     char currentHostname[33];
+    bool isAPMode = false;
+    DNSServer* dnsServer = nullptr;
 
     void loadWiFiConfig();
     void saveWiFiConfig();
@@ -34,11 +38,10 @@ public:
     WiFiManagerModule();
 
     /**
-     * @brief Initialize WiFi using LittleFS credentials, handling NVS migration and captive portal fallback.
+     * @brief Initialize WiFi using LittleFS credentials. If it fails, spins up an Access Point and DNS hijacker.
      * @param hostname The hostname to use for the AP and mDNS
-     * @param apCallback Optional WiFiManager callback when the portal is started
      */
-    void begin(const char* hostname, void (*apCallback)(WiFiManager*));
+    void begin(const char* hostname);
 
     /**
      * @brief Implements the iConfigurable interface.
@@ -46,9 +49,43 @@ public:
     void reapplyConfig(const Config& config) override;
 
     /**
-     * @brief Internal callback for WiFiManager saving.
+     * @brief Handles the DNS Hijack loop when in AP mode. Should be called repeatedly in loop().
      */
-    void processPortalSave();
+    void processDNS();
+
+    /**
+     * @brief Update and save WiFi credentials.
+     */
+    void updateWiFi(const char* ssid, const char* pass);
+
+    /**
+     * @brief Erase stored WiFi credentials and disconnect.
+     */
+    void resetSettings();
+
+    /**
+     * @brief Returns true if currently operating in Setup/AP Mode.
+     */
+    bool getAPMode() const { return isAPMode; }
+
+    /**
+     * @brief Returns the current stored SSID.
+     */
+    const char* getSSID() const { return wifiSsid; }
+
+    /**
+     * @brief Returns a masked version of the password if set.
+     */
+    const char* getPassMasked() const { return (strlen(wifiPass) > 0) ? "****" : ""; }
+
+    /**
+     * @brief Test a WiFi connection without permanently changing stored credentials.
+     * @param ssid SSID to test
+     * @param pass Password to test (can be "****" to use current)
+     * @param ipOut String to store IP on success
+     * @return true on success
+     */
+    bool testConnection(const char* ssid, const char* pass, String& ipOut);
 };
 
 extern WiFiManagerModule wifiManager;

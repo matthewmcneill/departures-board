@@ -67,7 +67,7 @@ void appContext::begin() {
 
     // 3. Networking (WiFi)
     LOG_INFO("SYSTEM", "Initializing WiFi...");
-    wifiManager.begin(config.hostname, nullptr);
+    wifiManager.begin(config.hostname);
 
     // 4. Hardware Display
     LOG_INFO("SYSTEM", "Initializing DisplayManager...");
@@ -131,6 +131,9 @@ void appContext::tick() {
     // 3. Display rendering tick
     displayManager.tick(millis());
 
-    // 4. Web server handle
+    // 4. DNS hijacked processing (Captive Portal)
+    wifiManager.processDNS();
+
+    // 5. Web server handle
     webServer.handleClient();
 }

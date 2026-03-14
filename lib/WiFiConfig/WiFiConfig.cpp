@@ -14,9 +14,11 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
+#include <DNSServer.h>
 #include <ESPmDNS.h>
 #include <WiFiConfig.hpp>
 #include <Logger.hpp>
+#include <esp_wifi.h>
 
 WiFiManagerModule wifiManager;
 
@@ -74,23 +76,9 @@ void WiFiManagerModule::saveWiFiConfig() {
 }
 
 /**
- * @brief Captures credentials from the portal.
- */
-void wifiManagerPortalSaveCallback() {
-    wifiManager.processPortalSave();
-}
-
-void WiFiManagerModule::processPortalSave() {
-  LOG_INFO("WIFI", "WiFiManager connected. Saving entered credentials to LittleFS...");
-  strlcpy(wifiSsid, WiFi.SSID().c_str(), sizeof(wifiSsid));
-  strlcpy(wifiPass, WiFi.psk().c_str(), sizeof(wifiPass));
-  saveWiFiConfig();
-}
-
-/**
  * @brief Core initialization routine.
  */
-void WiFiManagerModule::begin(const char* hostname, void (*apCallback)(WiFiManager*)) {
+void WiFiManagerModule::begin(const char* hostname) {
   if (hostname != nullptr) strlcpy(currentHostname, hostname, sizeof(currentHostname));
   
   loadWiFiConfig();
@@ -135,23 +123,102 @@ void WiFiManagerModule::begin(const char* hostname, void (*apCallback)(WiFiManag
     }
   }
 
-  // Fallback to Portal
+  // Fallback to Bespoke Captive Portal
   if (WiFi.status() != WL_CONNECTED) {
-    WiFiManager wm;
-    wm.setSaveConfigCallback(wifiManagerPortalSaveCallback);
-    if (apCallback != nullptr) wm.setAPCallback(apCallback);
-    wm.setWiFiAutoReconnect(true);
+    LOG_INFO("WIFI", "Connection failed or no credentials. Starting AP Mode (Captive Portal).");
+    isAPMode = true;
+    
+    // Switch to Access Point mode
+    WiFi.mode(WIFI_AP);
+    
+    // Set AP IP manually (standard captive portal IP)
+    IPAddress apIP(192, 168, 4, 1);
+    WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+    
+    const char* portalName = (strlen(currentHostname) > 0) ? currentHostname : "Departures-Board";
+    WiFi.softAP(portalName);
+    
+    LOG_INFO("WIFI", String("Access Point started: ") + portalName);
+    LOG_INFO("WIFI", String("AP IP address: ") + WiFi.softAPIP().toString());
 
-    const char* portalName = (strlen(currentHostname) > 0) ? currentHostname : "Departures Board";
-    if (!wm.autoConnect(portalName)) {
-        LOG_ERROR("WIFI", "Portal timeout. Restarting.");
-        ESP.restart();
+    LOG_INFO("WIFI", String("AP IP address: ") + WiFi.softAPIP().toString());
+
+    // Start DNS Hijacker
+    if (dnsServer != nullptr) delete dnsServer;
+    dnsServer = new DNSServer();
+    dnsServer->start(53, "*", apIP);
+    LOG_INFO("WIFI", "DNS Server started on port 53 (Hijacking all requests to AP).");
+  } else {
+    isAPMode = false;
+    LOG_INFO("WIFI", String("Connected successfully. IP: ") + WiFi.localIP().toString());
+  }
+}
+
+/**
+ * @brief Handles DNS requests when in AP mode.
+ */
+void WiFiManagerModule::processDNS() {
+    if (isAPMode && dnsServer != nullptr) {
+        dnsServer->processNextRequest();
     }
-  }
+}
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(250);
-  }
+/**
+ * @brief Update and save WiFi credentials.
+ */
+void WiFiManagerModule::updateWiFi(const char* ssid, const char* pass) {
+    if (ssid != nullptr) strlcpy(wifiSsid, ssid, sizeof(wifiSsid));
+    // Skip if password is the UI mask "****"
+    if (pass != nullptr && strcmp(pass, "****") != 0) {
+        strlcpy(wifiPass, pass, sizeof(wifiPass));
+    }
+    saveWiFiConfig();
+}
+
+bool WiFiManagerModule::testConnection(const char* ssid, const char* pass, String& ipOut) {
+    LOG_INFO("WIFI", "WIFI_TEST: Starting connection test...");
+    
+    const char* realPass = pass;
+    // If masked, use the real stored password
+    if (strcmp(pass, "****") == 0) {
+        LOG_INFO("WIFI", "WIFI_TEST: Using stored credentials for test.");
+        realPass = wifiPass;
+    }
+
+    WiFi.begin(ssid, realPass);
+    
+    int retries = 0;
+    while (WiFi.status() != WL_CONNECTED && retries < 20) {
+        delay(500);
+        retries++;
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+        ipOut = WiFi.localIP().toString();
+        LOG_INFO("WIFI", "WIFI_TEST: Success! IP: " + ipOut);
+        return true;
+    } else {
+        LOG_WARN("WIFI", "WIFI_TEST: Failed. Reconnecting to primary credentials.");
+        // Revert to known-good credentials immediately
+        if (strlen(wifiSsid) > 0) {
+            WiFi.begin(wifiSsid, wifiPass);
+        }
+        return false;
+    }
+}
+
+/**
+ * @brief Erase stored WiFi credentials and disconnect.
+ */
+void WiFiManagerModule::resetSettings() {
+    memset(wifiSsid, 0, sizeof(wifiSsid));
+    memset(wifiPass, 0, sizeof(wifiPass));
+    LittleFS.remove("/wifi.json");
+    
+    WiFi.disconnect(true, true);
+    esp_wifi_restore();
+    
+    LOG_INFO("WIFI", "WiFi settings thoroughly erased (LittleFS + NVS restore).");
 }
 
 /**
