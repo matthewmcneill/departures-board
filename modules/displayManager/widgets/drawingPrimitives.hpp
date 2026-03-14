@@ -15,6 +15,11 @@
  * - getStringWidth: Calculates the pixel width of a string using the current font.
  * - drawTruncatedText: Renders text left-aligned, truncating with ellipsis if too long.
  * - centreText: Renders text horizontally centered on the screen.
+ * - drawBox: Draws a rectangle (filled or unfilled).
+ * - drawLine: Draws a straight line between two points.
+ * - drawCircle: Draws a circle (filled or unfilled).
+ * - drawRoundedBox: Draws a rectangle with rounded corners (filled or unfilled).
+ * - drawTriangle: Draws a triangle (filled or unfilled).
  */
 
 #pragma once
@@ -76,5 +81,56 @@ void centreText(U8G2& display, const char *message, int line);
  * @param line The Y coordinate for the baseline
  */
 void centreText(U8G2& display, const __FlashStringHelper *message, int line);
+
+/**
+ * @brief Draw a rectangle (box) on the OLED display
+ * @param x Top left X coordinate
+ * @param y Top left Y coordinate
+ * @param w Width of the box
+ * @param h Height of the box
+ * @param isFilled true to fill the box, false for an outline only
+ */
+void drawBox(U8G2& display, int x, int y, int w, int h, bool isFilled = false);
+
+/**
+ * @brief Draw a straight line between two points
+ * @param x0 Start X coordinate
+ * @param y0 Start Y coordinate
+ * @param x1 End X coordinate
+ * @param y1 End Y coordinate
+ */
+void drawLine(U8G2& display, int x0, int y0, int x1, int y1);
+
+/**
+ * @brief Draw a circle on the OLED display
+ * @param x Center X coordinate
+ * @param y Center Y coordinate
+ * @param r Radius of the circle
+ * @param isFilled true to fill the circle, false for an outline only
+ */
+void drawCircle(U8G2& display, int x, int y, int r, bool isFilled = false);
+
+/**
+ * @brief Draw a rectangle with rounded corners on the OLED display
+ * @param x Top left X coordinate
+ * @param y Top left Y coordinate
+ * @param w Width of the box
+ * @param h Height of the box
+ * @param r Radius of the rounded corners
+ * @param isFilled true to fill the box, false for an outline only
+ */
+void drawRoundedBox(U8G2& display, int x, int y, int w, int h, int r, bool isFilled = false);
+
+/**
+ * @brief Draw a triangle on the OLED display
+ * @param x0 First vertex X coordinate
+ * @param y0 First vertex Y coordinate
+ * @param x1 Second vertex X coordinate
+ * @param y1 Second vertex Y coordinate
+ * @param x2 Third vertex X coordinate
+ * @param y2 Third vertex Y coordinate
+ * @param isFilled true to fill the triangle, false for an outline only
+ */
+void drawTriangle(U8G2& display, int x0, int y0, int x1, int y1, int x2, int y2, bool isFilled = false);
 
 
