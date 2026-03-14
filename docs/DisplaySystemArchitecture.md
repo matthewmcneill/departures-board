@@ -22,6 +22,9 @@ public:
 
     // Used by DisplayManager during blocking operations to keep UI animated
     virtual void animationTick(U8G2& display, uint32_t currentMillis) = 0;
+
+    // Weather Integration: Each board owns its own localized weather state
+    virtual WeatherStatus& getWeatherStatus() = 0;
 };
 ```
 Every specific screen (e.g., `busBoard`, `tflBoard`, `wifiSetupScreen`, `systemMessageScreen`) will inherit directly from `iDisplayBoard`. This flattens the class hierarchy and prevents unrelated boards from being overly entangled.
