@@ -6,101 +6,129 @@ This document outlines the architectural redesign and user flow for the Departur
 
 Instead of two separate systems (Captive Portal vs. Config Site), we will adopt a **Unified Single-Page Application (SPA)**. The device will serve the exact same interface whether it is in "Setup Mode" (Access Point) or "Station Mode" (connected to Home WiFi).
 
-### Why the Unified Approach?
-- **Cognitive Consistency**: The user sees the same design language, layout, and "tabs" from the first moment they connect.
-- **Resilience**: By removing CDN dependencies (Bootstrap/jQuery), we can serve the full "Pro" UI directly from Flash even when the device has no internet access.
-- **Less Friction**: No confusing jump between a generic WiFi manager and the "real" departures board settings.
+### 1.1 The Bespoke Captive Portal
+We will remove the bloated third-party `WiFiManager` library. Instead, we will implement our own lightweight DNS Hijacker (`DNSServer`) alongside our existing `WebHandlerManager`.
+- **Zero Bloat**: This removes roughly 30-50KB of compiled HTML/Bootstrap strings from flash memory.
+- **Cognitive Consistency**: The user sees the same Pico CSS design language from the first moment they connect.
+- **Focus Mode**: When the device boots in AP Mode (Setup Mode), the frontend will detect this state and **hide all tabs except the WiFi tab**. This prevents users from trying to configure boards or fetch APIs when there is no upstream internet connection.
+- **Live Scanning**: The WiFi tab will feature an asynchronous network scanner to populate available SSIDs directly into the Pico dropdown, replicating the ease of use of the old third-party library.
+- **Automatic Testing & Hand-off**: When a user inputs new credentials, they can click "Test Connection" to perform a dry-run connection attempt while keeping the AP mode alive. The frontend will stream the connection logs. Upon clicking "Save & Apply", the frontend will display clear hand-off instructions ("Reconnecting... please join your home WiFi and visit http://<hostname>.local") as the device reboots.
 
-## 2. New Architectural Components
+## 2. Design Paradigm: Modern SPA Utility
 
-### 2.1 The API Key Registry
+The interface will adhere to a **Mobile-First, Low-Overhead** design paradigm inspired by modern app interfaces, specifically utilizing **Pico CSS** for a premium look with minimal bytes.
+
+### 2.1 Key UI Patterns (The "uiproto" standard)
+- **Bottom App Navigation**: A persistent fixed footer for instant tab switching (WiFi, Keys, Boards, Schedule, System).
+- **Sticky Global Action**: A "Save & Apply" button pinned to the top of the viewport. This reinforces the "Batch Save" model where users can tweak multiple settings before triggering a device write/reboot.
+- **Drawer Diagnostics**: Status information (RSSI, API health) is tucked into expandable inline drawers (`.diagnostic-container`). This keeps the UI clean while putting technical data exactly where it's needed.
+- **Native Modal CRUD**: Selection and editing of Boards/Keys occurs in native `<dialog>` overlays, preventing navigation jumps.
+- **Theme Native**: Built-in support for Light/Dark/Auto modes using Pico's CSS variables.
+
+## 3. New Architectural Components
+
+### 3.1 The API Key Registry
 Instead of bundling API keys with WiFi or Global settings, we treat them as **Data Providers**.
 - **CRUD List**: A centralized registry of providers (National Rail, TfL, OpenWeatherMap).
 - **Instructional Cards**: Tapping an unregistered provider opens a card with direct sign-up links and verification logic.
 - **Lazy Setup**: Users only configure keys when they add a board that requires that specific data source.
 
-### 2.2 The dynamic Scheduler
+### 3.2 The Dynamic Scheduler
 The **Scheduler** is a time-driven manager that decides "what shows when".
 - **Rules Engine**: "07:00-09:00 -> Focus: Rail", "23:00-06:00 -> Focus: Screensaver".
 - **Screensaver as a Board**: The screensaver is just another board type (Black screen + Clock).
 - **Manual Override**: Physical button cycles through boards, overriding the scheduler until the next time-based trigger.
 
-## 2. Design Paradigm: "In-situ Diagnostics"
+---
 
-Instead of a single hidden "Diagnostics" page, we will apply the **In-situ Diagnostics** paradigm. Every configuration point should have immediate, conveniently placed feedback to help the user understand the state of that specific component.
+## 4. Detailed Interface Specification
 
-### Connectivity Tab
-- **Configuration**: SSID, Password.
-- **Diagnostics**: Real-time RSSI meter, IP/Gateway info, and the last 5 connection log lines.
+### 4.1 Connectivity Tab
+Focus: Getting the device online and keeping it there.
 
-### Board Details Card (Rail/Bus/Tube)
-- **Configuration**: Station, Filters, Timing.
-- **Diagnostics**: 
-    - **Sync Status**: "Updated 45s ago" or "Offline: Retry in 30s".
-    - **API Feedback**: "Provider: TfL - Status: 200 OK".
+#### Mode Context
+The tab reacts to the current network state returned by `/api/status`:
+- **AP Mode (Setup)**: Device acts as an Access Point (`192.168.4.1`). All other tabs (Boards, Keys, System) are disabled/hidden. Focus is purely on configuration.
+- **Station Mode (Connected)**: Device is connected to the home network. Standard functionality applies.
 
-### Global System & Health Tab
-- **Configuration**: Brightness, Hostname, Reboot.
-- **Diagnostics**: **Unified Hardware Health Card**:
-    - **Memory**: Live Free Heap sparkline.
-    - **Storage**: LittleFS usage percentage.
-    - **Identity**: Chip MAC, Firmware Version, NVS Migration status.
+#### Form Fields & UI Components
+| Field/Component | Type | Mapping (C++) | Description |
+| :--- | :--- | :--- | :--- |
+| **Network State** | Banner | `status.ap_mode` | Visual banner showing "Setup Mode" (Warning color) or "Connected to [SSID]" (Success color). |
+| **SSID** | Dropdown + Button | `wifiSsid` | Targeted WiFi network. Populated via `GET /api/wifi/scan`. Includes an async "↻ Rescan" button next to the field. Include an option for "Hidden Network" that reveals a standard text input. |
+| **Password** | Password + Toggle | `wifiPass` | WiFi network password. Includes a standard "eye" icon to unmask text for verification on mobile keyboards. |
+| **Hostname** | Text | `config.hostname` | mDNS name (e.g., `departures.local`). Used to generate the AP name (e.g., "Departures-Board") and network address. |
+
+#### Action Buttons
+- **Test Connection**: (Visible mostly in AP Mode) Triggers a `POST /api/wifi/test` to attempt a connection to the selected SSID without rebooting. Success/Failure streams to the Diagnostic Drawer.
+- **Save & Apply**: Saves credentials to `wifi.json`. If modifying from AP mode, pops a modal with hand-off instructions ("Please switch back to your home WiFi. The board is now rebooting and will be available at http://[hostname].local") before firing the final reboot API.
+
+#### In-situ Diagnostics (The Drawer)
+- **Signal Strength**: Visual RSSI meter (dBm) or "Access Point Mode" indicator.
+- **Network Info**: Current IP, Gateway, and Subnet mask.
+- **Connection Log**: A scrollable console showing recent WiFi module logs (especially useful during "Test Connection" to see DHCP timeouts or password rejections).
+
+### 4.2 API Key Registry (CRUD List)
+Focus: Managing secrets and identity for data sources.
+
+#### **Key Detail Card**
+| Field | Mapping | Description |
+| :--- | :--- | :--- |
+| **Key Name** | `key.label` (new) | Friendly name (e.g., "Home OWM Key"). |
+| **Token/Key** | `key.token` | The actual API secret. |
+| **Status** | Diagnostic | Results from a "Test Connection" button. |
+
+### 4.3 Board Manager (CRUD List)
+Focus: Managing the virtual boards in the carousel.
+
+#### **Board Detail Card: General**
+| Field | Mapping | Description |
+| :--- | :--- | :--- |
+| **Board Name** | `board.name` | Human label (e.g., "Home Station"). |
+| **API Key** | `board.apiKeyId` (new) | **Dropdown**: Select from compatible keys in the Registry. |
+| **Show Weather** | `board.showWeather` | Toggle weather overlay for this board. |
+
+#### **Board Detail Card: Type Specifics**
+- **Rail**: CRS Code, Platform Filter, Calling Station (Secondary ID), Time Offset.
+- **Tube & Bus**: Naptan/Atco ID, Line/Route filters.
+- **Screensaver**: Style (Analog, Digital, Blank), Brightness Override.
+
+### 4.4 Global System & Health
+Focus: Hardware toggles and overall device maintenance.
+
+| Category | Field | Mapping | Description |
+| :--- | :--- | :--- | :--- |
+| **Hardware** | Brightness | `config.brightness` | PWM level (0-255). |
+| **Hardware** | Flip Screen | `config.flipScreen` | Rotate 180 degrees. |
+| **System** | Timezone | `config.timezone` | POSIX timezone string. |
+| **System** | Update Policy | `config.firmwareUpdatesEnabled` | Background OTA toggle. |
+
+**In-situ Diagnostics (The "Health Card"):**
+- **Memory**: Free Heap, Max Alloc.
+- **Storage**: LittleFS used/free space.
+- **Build Info**: MAC, Version, Config Ver.
 
 ---
 
-## 3. Critical Evaluation of the Previous Design
-The "Separated" design we currently have exists primarily because:
-1. **CDN Reliance**: The legacy UI (Bootstrap 3/jQuery) requires an internet connection to load its styling and logic. Therefore, it *cannot* work in setup mode before WiFi is configured.
-2. **Library Constraints**: The `WiFiManager` library is an "all-in-one" solution that provides its own web server and generic UI templates. It's essentially a shortcut that trades aesthetic control for development speed.
-3. **Reboot Cycle**: In many ESP32 implementations, changing network modes triggers a hard reset. This makes a "seamless transition" in the browser difficult without a unified state-management system.
+## 5. Development Strategy: Parallel Evolution
 
-**The Refactor Solution**: By moving to Vanilla JS + Pico CSS (under 15KB), we can bundle the entire logic into a single hex-array in Flash, served by our own `WebHandlerManager`, meaning we no longer need the generic `WiFiManager` UI at all.
+To minimize risk and allow for iterative testing, we will follow a **Parallel Evolution** strategy.
 
----
-
-## 3. Configuration Split: Global vs. Board-Specific
-
-To maintain the **Open/Closed Principle (OCP)**, settings must be logically separated. This allows new board types to be added without modifying the global settings UI.
-
-### Board-Specific Options (Detailed Card)
-*Options that vary depending on whether the board is Rail, Tube, Bus, or Weather.*
-
-- **Identity**: Station Name/Code (CRS, ATCO, Naptan).
-- **Filtering**: Platform filters, service number filters (Bus).
-- **Timing**: Time offsets (Arrival/Departure lead times).
-- **Navigation**: Secondary/Filter stations (e.g., "Only show services calling at ...").
-- **Local Logic**: Board-specific refresh rates (if they differ from global).
-
-### Global / Board-Wide Options
-*Settings that affect the physical hardware or system-wide behavior.*
-
-- **Hardware**: OLED Brightness, 180° Flip.
-- **Connectivity**: WiFi credentials, Hostname (mDNS).
-- **API Registry**: Integrated CRUD for NRE, TfL, OWM keys + instructions.
-- **Scheduler**: Set time-based rules for board focus (e.g., Morning Station, Night Screensaver).
-- **System**: Firmware Update policy, Timezone, Reboot.
-- **Global Features**: RSS Feed URL/Name, Date display toggle on header.
+### 5.1 The `portal/` Directory
+- **Concept**: A brand new root folder `/portal` will be created. 
+- **Blank Canvas**: All modern SPA assets (HTML, JS, CSS) will reside here, starting with the **uiproto** payload.
+- **Side-by-Side Operation**: The ESP32 will serve the legacy UI on `/` and the new UI on `/portal`.
 
 ---
 
-## 3. Codebase Review Summary
+## 6. Codebase Review Summary
 *Excerpted from [web_codebase_review.md](file:///Users/mcneillm/.gemini/antigravity/brain/5357ecdd-bebf-4f73-b13b-68cda47f4505/web_codebase_review.md)*
 
 ### Architectural Issues
 - **Weak Encapsulation**: `WebHandlers.hpp` is a monolithic implementation header.
 - **Tight Coupling**: Direct reliance on `extern` globals instead of Dependency Injection.
-- **Manual Build**: Frontend assets are manually converted to hex arrays.
 
 ### Recommended Refactor Roadmap
 1. **Extract `WebHandlerManager`**: Move logic into a class with properly injected dependencies.
 2. **Frontend Modernization**: Rewrite using Vanilla ES6+ JS and Pico CSS (target < 15KB).
 3. **Automated Asset Pipeline**: Use Python scripts to gzip and hexify assets during the build process.
-4. **Captive Portal Unification**: Style the `WiFiConfig` portal to match the new UI.
-
----
-
-## 4. Evaluation of the Proposed Flow
-The proposed **WiFi -> Boards -> Global** flow is a significant improvement over the current multi-tab legacy form because:
-1. **Scalability**: Adding a "Weather Board" or "News Board" only requires creating one new details card.
-2. **Clarity**: Users no longer have to hunt through a long list of checkboxes to find settings for Board #2.
-3. **Robustness**: Localizing dependencies (removing CDNs) ensures the UI works even when the device has no internet connection (essential for setup).

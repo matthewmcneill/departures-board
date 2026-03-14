@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Departures Board Config</title>
+  <style>
+    :root {
+      --primary: #f57c00;
+      --primary-hover: #e65100;
+      --bg: #ffffff;
+      --card-bg: #f8f9fa;
+      --text: #212529;
+      --text-muted: #6c757d;
+      --border: #dee2e6;
+      --nav-bg: #ffffff;
+      --success: #2e7d32;
+      --error: #c62828;
+      --warning: #f9a825;
+      --font-size-base: 16px;
+    }
+    [data-theme="dark"] {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --text: #e0e0e0;
+      --text-muted: #adb5bd;
+      --border: #333333;
+      --nav-bg: #1e1e1e;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { 
+      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      background: var(--bg); color: var(--text); line-height: 1.5; font-size: var(--font-size-base);
+      padding-bottom: 80px; transition: background 0.3s, color 0.3s;
+    }
+    .container { max-width: 600px; margin: 0 auto; padding: 1rem; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    h2 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: var(--primary); }
+    .subtitle { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+    
+    .ap-banner { 
+      display: none; background: rgba(245, 124, 0, 0.1); border: 1px solid var(--primary); color: var(--primary); 
+      padding: 0.8rem; border-radius: 12px; margin-bottom: 1.2rem; font-weight: 700; text-align: center; font-size: 0.85rem;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    body.ap-mode .ap-banner { display: block; }
+    body.ap-mode .tab-link:not([data-target="tab-wifi"]) { display: none; }
+
+    article { background: var(--card-bg); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--border); }
+    header { font-weight: 700; font-size: 1.1rem; margin-bottom: 1rem; display: block; }
+
+    label { display: block; margin-bottom: 1rem; font-weight: 600; font-size: 0.9rem; }
+    .input-row { display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 1rem; }
+    input[type="text"], input[type="password"], select, input[type="range"] { 
+      width: 100%; padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 1rem; margin-top: 0.4rem;
+    }
+    
+    .password-container { position: relative; }
+    .eye-btn { 
+      position: absolute; right: 10px; bottom: 8px; background: none; border: none; color: var(--text-muted);
+      cursor: pointer; padding: 5px; z-index: 5; display: flex; align-items: center; justify-content: center;
+    }
+    .eye-btn svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0.5; }
+
+    button { 
+      background: var(--primary); color: white; border: none; padding: 0.8rem 1.25rem; border-radius: 10px;
+      font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 1rem;
+    }
+    button:active { transform: scale(0.98); opacity: 0.9; }
+    button.outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+    button.secondary { background: var(--card-bg); color: var(--text); border: 1px solid var(--border); }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .bottom-nav { 
+      position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--nav-bg); 
+      border-top: 1px solid var(--border); display: flex; justify-content: space-around; 
+      align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .tab-link { 
+      flex: 1; display: flex; flex-direction: column; align-items: center; text-decoration: none; 
+      color: var(--text-muted); font-size: 0.7rem; font-weight: 700; gap: 4px;
+    }
+    .tab-link .icon { font-size: 1.5rem; transition: 0.2s; }
+    .tab-link.active { color: var(--primary); }
+    .tab-link.active .icon { transform: translateY(-2px); }
+
+    /* Drawer Styles */
+    .drawer { border-top: 1px solid var(--border); margin-top: 1.5rem; }
+    .drawer-trigger { 
+      display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; 
+      cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--text-muted);
+    }
+    .drawer-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .drawer.active .drawer-content { max-height: 500px; padding-bottom: 1rem; }
+    .drawer-trigger::after { content: '▼'; font-size: 0.7rem; transition: transform 0.3s; }
+    .drawer.active .drawer-trigger::after { transform: rotate(180deg); }
+
+    .status-badge { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.green { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .dot.red { background: var(--error); box-shadow: 0 0 8px var(--error); }
+    .dot.yellow { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+
+    .diag-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-top: 1rem; color: var(--text-muted); }
+    .diag-table tr { border-bottom: 1px solid var(--border); }
+    .diag-table tr:last-child { border-bottom: none; }
+    .diag-table td { padding: 6px 0; }
+    .diag-table td:first-child { font-weight: 700; color: var(--text); width: 40%; }
+    .diag-table td:last-child { font-family: 'Courier New', monospace; text-align: right; }
+
+    #wifi-test-log { 
+      font-family: 'Courier New', monospace; font-size: 0.75rem; background: #000; color: #00ff00; 
+      padding: 10px; border-radius: 8px; margin-top: 1rem; max-height: 120px; overflow-y: auto; display: none; border: 1px solid #333;
+    }
+    
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+    .list-item:last-child { border-bottom: none; }
+    .list-item h4 { margin: 0; font-size: 1rem; }
+    .list-item p { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+    
+    dialog { border: none; border-radius: 20px; padding: 0; background: var(--bg); color: var(--text); box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 90%; max-width: 400px; }
+    dialog::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+    
+    .loading-spinner { width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="">
+    <div class="ap-banner">Setup Mode: Access Point Active</div>
+    <div class="top-bar">
+      <div><h2>DEPARTURES</h2><div class="subtitle">Unified Portal</div></div>
+      <button class="secondary" id="theme-btn" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 20px; font-weight: 800; letter-spacing: 1px;">THEME: AUTO</button>
+    </div>
+
+    <div style="margin-bottom: 1.5rem;">
+      <button id="save-btn" style="width: 100%; padding: 1rem; box-shadow: 0 4px 15px rgba(245, 124, 0, 0.3);" onclick="app.saveAll()">Save & Apply Settings</button>
+    </div>
+
+    <section id="tab-wifi" class="tab-content active">
+      <article>
+        <header>WiFi Configuration</header>
+        <form id="wifi-form">
+          <label>Hostname (mDNS)<input type="text" name="hostname" value="departures" /></label>
+          
+          <div class="input-row">
+            <label style="flex: 1; margin-bottom: 0;">Network (SSID)
+              <select name="ssid" id="wifi-ssid-select" onchange="app.handleSSIDChange(this.value)">
+                <option value="">Select a network...</option>
+              </select>
+            </label>
+            <button type="button" onclick="app.scanWiFi()" id="scan-btn" style="padding: 0.75rem 1rem;">Scan</button>
+          </div>
+          
+          <div id="manual-ssid-group" style="display: none; margin-bottom: 1rem;">
+            <label>Manual SSID Entry<input type="text" id="manual-ssid-input" placeholder="Enter network name..." /></label>
+          </div>
+          
+          <div class="password-container">
+            <label>WiFi Password
+              <input type="password" name="password" id="wifi-pass" placeholder="Password..." />
+            </label>
+            <button type="button" class="eye-btn" onclick="app.togglePass('wifi-pass', this)" title="Toggle Visibility">
+              <svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+            <button type="button" class="outline" onclick="app.testWiFi()" id="test-btn" style="font-size: 0.85rem;">Test Connection</button>
+          </div>
+        </form>
+        
+        <div id="wifi-test-log"></div>
+
+        <div class="drawer" id="diag-drawer">
+          <div class="drawer-trigger" onclick="app.toggleDiag()">Network Diagnostics</div>
+          <div class="drawer-content">
+            <div class="status-badge" style="margin-bottom: 1rem;">
+              <div class="dot" id="wifi-dot"></div>
+              <span id="wifi-status-text" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Detecting...</span>
+            </div>
+            <table class="diag-table" id="wifi-diag-table">
+              <!-- Populated by JS -->
+            </table>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="tab-apikeys" class="tab-content">
+      <article><header>API Credentials</header><div id="keys-list"></div></article>
+    </section>
+
+    <section id="tab-boards" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"><h3 style="margin:0;">Active Boards</h3><button class="outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="app.editBoard(-1)">+ Add</button></div>
+      <div id="boards-list"></div>
+    </section>
+
+    <section id="tab-system" class="tab-content">
+      <article>
+        <header>Display & System</header>
+        <form id="system-form">
+          <label>Timezone<input type="text" name="timezone" /></label>
+          <label>Brightness<input type="range" name="brightness" min="0" max="255" oninput="app.updateBrightness(this.value)" /></label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180°)</label>
+        </form>
+      </article>
+    </section>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="#" class="tab-link active" data-target="tab-wifi">
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+      WIFI
+    </a>
+    <a href="#" class="tab-link" data-target="tab-apikeys">
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778z"></path><path d="M12 12l.93-2.01 2.01-.93-2.01-.93L12 6.12l-.93 2.01-2.01.93 2.01.93L12 12z"></path><path d="M18 8l2.64 2.64a.5.5 0 0 1 0 .707L18.12 13.88a.5.5 0 0 1-.707 0L14.77 11.23a.5.5 0 0 1 0-.707l2.52-2.52a.5.5 0 0 1 .707 0z"></path></svg>
+      KEYS
+    </a>
+    <a href="#" class="tab-link" data-target="tab-boards">
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+      BOARDS
+    </a>
+    <a href="#" class="tab-link" data-target="tab-system">
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      SYSTEM
+    </a>
+  </nav>
+
+  <dialog id="modal-board">
+    <article><header>Board Editor</header><form id="board-form"><input type="hidden" name="index" /><label>Display Name<input type="text" name="name" required /></label><label>Transport Mode<select name="type"><option value="0">National Rail</option><option value="1">London Underground</option><option value="2">Bus / Tram</option></select></label><label>Station / Stop ID<input type="text" name="id" required placeholder="e.g. WAT, 940GZZLULIB..." /></label><label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="weather" checked style="width: auto; margin:0;"/> Show Weather Overlay</label><div style="display: flex; gap: 1rem; margin-top: 1.5rem;"><button type="button" class="secondary" style="flex:1;" onclick="app.closeModal('modal-board')">Cancel</button><button type="submit" style="flex:1;">Apply</button></div></form></article>
+  </dialog>
+
+  <script>
+    const app = {
+      state: { config: null, status: null },
+      init: function() {
+        this.initTheme();
+        this.fetchStatus();
+        this.fetchConfig();
+        setInterval(() => this.fetchStatus(), 5000);
+        this.bindEvents();
+        setTimeout(() => this.scanWiFi(), 500);
+      },
+      initTheme: function() {
+        const btn = document.getElementById('theme-btn');
+        let theme = localStorage.getItem('theme') || 'auto';
+        const apply = (t) => {
+          document.documentElement.setAttribute('data-theme', t === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t);
+          btn.innerText = 'THEME: ' + t.toUpperCase();
+        };
+        apply(theme);
+        btn.onclick = () => {
+          theme = theme === 'light' ? 'dark' : (theme === 'dark' ? 'auto' : 'light');
+          localStorage.setItem('theme', theme);
+          apply(theme);
+        };
+      },
+      fetchConfig: async function() {
+        try {
+          const res = await fetch('/api/config');
+          if (!res.ok) throw new Error();
+          this.state.config = await res.json();
+          this.render();
+        } catch (e) { console.log('Config fetch restricted'); }
+      },
+      fetchStatus: async function() {
+        try {
+          const res = await fetch('/api/status');
+          this.state.status = await res.json();
+          this.updateStatusUI();
+        } catch (e) { console.error('Status fetch failed'); }
+      },
+      updateStatusUI: function() {
+        const s = this.state.status;
+        if (!s) return;
+        if (s.ap_mode) {
+          document.body.classList.add('ap-mode');
+          if (!this.prev_ap_mode) { this.switchTab('tab-wifi'); document.getElementById('diag-drawer').classList.add('active'); }
+        } else {
+          document.body.classList.remove('ap-mode');
+        }
+        this.prev_ap_mode = s.ap_mode;
+        const dot = document.getElementById('wifi-dot');
+        dot.className = 'dot ' + (s.ap_mode ? 'yellow' : (s.rssi > -80 ? 'green' : 'red'));
+        document.getElementById('wifi-status-text').innerText = s.ap_mode ? 'Access Point Mode' : `Connected: ${s.ssid}`;
+        
+        const rows = [
+          ['Local IP', s.ip],
+          ['Gateway', s.gateway],
+          ['Subnet Mask', s.subnet],
+          ['DNS 1', s.dns1],
+          ['DNS 2', s.dns2],
+          ['RSSI', `${s.rssi} dBm`],
+          ['MAC Address', s.mac],
+          ['BSSID', s.bssid],
+          ['WiFi Channel', s.channel],
+          ['System Heap', `${Math.round(s.heap/1024)} KB`],
+          ['Storage', `${Math.round(s.storage_used/1024)} / ${Math.round(s.storage_total/1024)} KB`],
+          ['Uptime', `${Math.round(s.uptime/60)} min`]
+        ];
+        
+        document.getElementById('wifi-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+      },
+      scanWiFi: async function() {
+        const btn = document.getElementById('scan-btn');
+        const oldText = btn.innerText;
+        btn.innerHTML = '<div class="loading-spinner"></div>';
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/wifi/scan');
+          const networks = await res.json();
+          const select = document.getElementById('wifi-ssid-select');
+          let html = '<option value="">Select a network...</option>';
+          html += networks.map(n => `<option value="${n.ssid}">${n.ssid} (${n.rssi}dBm)${n.secure?' 🔒':''}</option>`).join('');
+          html += '<option value="__manual__">➕ Enter SSID Manually...</option>';
+          select.innerHTML = html;
+          // Re-populate SSID if we have it in state
+          if (this.state.config?.wifi?.ssid) select.value = this.state.config.wifi.ssid;
+        } catch(e) { 
+           document.getElementById('wifi-ssid-select').innerHTML = '<option value="">Scan failed.</option><option value="__manual__">➕ Enter SSID Manually...</option>';
+        } finally { btn.innerText = oldText; btn.disabled = false; }
+      },
+      handleSSIDChange: function(val) {
+        document.getElementById('manual-ssid-group').style.display = (val === '__manual__') ? 'block' : 'none';
+      },
+      togglePass: function(id, btn) {
+        const input = document.getElementById(id);
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        
+        if (btn) {
+          const eyeSvg = `<svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+          const eyeOffSvg = `<svg><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+          btn.innerHTML = isPass ? eyeOffSvg : eyeSvg;
+        }
+      },
+      toggleDiag: function() {
+        document.getElementById('diag-drawer').classList.toggle('active');
+      },
+      testWiFi: async function() {
+        const log = document.getElementById('wifi-test-log');
+        const btn = document.getElementById('test-btn');
+        log.style.display = 'block';
+        log.innerHTML = '<b>> Attempting connection test...</b><br>';
+        btn.disabled = true;
+        const selectVal = document.getElementById('wifi-ssid-select').value;
+        const ssid = (selectVal === '__manual__') ? document.getElementById('manual-ssid-input').value : selectVal;
+        
+        if (!ssid) {
+          log.innerHTML += '<span style="color:#ff4444">> Error: No SSID selected</span>';
+          btn.disabled = false; return;
+        }
+
+        const host = window.location.hostname;
+        const isAp = (host === "192.168.4.1" || host.toLowerCase().endsWith(".local"));
+
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          
+          const res = await fetch('/api/wifi/test', { 
+            method: 'POST', 
+            body: JSON.stringify({ ssid, pass: document.getElementById('wifi-pass').value }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          
+          const result = await res.json();
+          log.innerHTML += result.status === 'ok' ? `<span style="color:#00ff00">> SUCCESS! IP: ${result.ip}</span>` : `<span style="color:#ff4444">> FAILED: ${result.error}</span>`;
+        } catch (e) { 
+          console.log("Test connection lost (expected if network switched)");
+          log.innerHTML += `
+            <div style="margin-top:0.5rem; padding:0.5rem; border:1px solid #f9a825; border-radius:8px; background: rgba(249,168,37,0.1);">
+              <span style="color:#f9a825; font-weight:700;">📡 Connection Transitioning...</span><br>
+              <div style="font-size:0.8rem; margin-top:0.3rem;">
+                The board may have joined the new network. <br>
+                1. Check the <b>board's screen</b> for a new IP.<br>
+                2. reconnect your 📱/💻 to the same network.<br>
+                3. Click below to try reconnecting:<br>
+                <a href="http://${document.querySelector('[name=hostname]').value}.local/portal" style="color:var(--primary); font-weight:700; display:block; margin-top:0.4rem;">👉 Open ${document.querySelector('[name=hostname]').value}.local</a>
+              </div>
+            </div>`;
+        }
+        btn.disabled = false;
+      },
+      render: function() {
+        const cfg = this.state.config;
+        if (!cfg) return;
+        document.querySelector('[name="hostname"]').value = cfg.system.hostname;
+        document.querySelector('[name="timezone"]').value = cfg.system.timezone;
+        document.querySelector('[name="brightness"]').value = cfg.system.brightness;
+        document.querySelector('[name="flip"]').checked = cfg.system.flip;
+        if (cfg.wifi) {
+          document.getElementById('wifi-ssid-select').value = cfg.wifi.ssid || "";
+          document.getElementById('wifi-pass').value = cfg.wifi.pass || "";
+        }
+        this.renderBoards();
+        this.renderKeys();
+      },
+      renderBoards: function() {
+        const list = document.getElementById('boards-list');
+        const boards = this.state.config?.boards || [];
+        if (boards.length === 0) { list.innerHTML = '<article style="text-align:center; padding: 2rem; opacity:0.6;">No boards configured.</article>'; return; }
+        list.innerHTML = boards.map((b, i) => `<div class="list-item"><div><h4>${b.name}</h4><p>${['Rail','Tube','Bus'][b.type]} • ${b.id}</p></div><div style="display:flex; gap:8px;"><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem;" onclick="app.editBoard(${i})">Edit</button><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem; color: #ff4444;" onclick="app.deleteBoard(${i})">X</button></div></div>`).join('');
+      },
+      renderKeys: function() {
+        const list = document.getElementById('keys-list');
+        const k = this.state.config?.keys || {nrToken:'', tflAppkey:'', owmToken:''};
+        
+        const createField = (id, label, val) => `
+          <div class="password-container">
+            <label>${label}<input type="password" id="${id}" value="${val}" /></label>
+            <button type="button" class="eye-btn" onclick="app.togglePass('${id}', this)">
+              <svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>`;
+
+        list.innerHTML = 
+          createField('key-nr', 'National Rail Token', k.nrToken) +
+          createField('key-tfl', 'TfL App Key', k.tflAppkey) +
+          createField('key-owm', 'OpenWeatherMap Token', k.owmToken);
+      },
+      editBoard: function(index) {
+        const form = document.getElementById('board-form');
+        const b = index === -1 ? {name:'', type:0, id:'', weather:true} : this.state.config.boards[index];
+        form.index.value = index; form.name.value = b.name; form.type.value = b.type; form.id.value = b.id; form.weather.checked = b.weather;
+        document.getElementById('modal-board').showModal();
+      },
+      deleteBoard: function(index) {
+        if (confirm('Remove this board?')) { this.state.config.boards.splice(index, 1); this.renderBoards(); }
+      },
+      saveAll: async function() {
+        const btn = document.getElementById('save-btn');
+        const oldText = btn.innerText;
+        btn.innerHTML = '<div class="loading-spinner"></div> Saving...';
+        btn.disabled = true;
+        const form = document.querySelector('#wifi-form');
+        const selectVal = document.getElementById('wifi-ssid-select').value;
+        const ssid = (selectVal === '__manual__') ? document.getElementById('manual-ssid-input').value : selectVal;
+        const payload = {
+          system: {
+            hostname: form.hostname.value,
+            timezone: document.querySelector('[name="timezone"]')?.value || "GMT0BST,M3.5.0/2,M10.5.0/3",
+            brightness: parseInt(document.querySelector('[name="brightness"]')?.value || 128),
+            flip: document.querySelector('[name="flip"]')?.checked || false
+          },
+          keys: {
+            nrToken: document.getElementById('key-nr')?.value || "",
+            tflAppkey: document.getElementById('key-tfl')?.value || "",
+            owmToken: document.getElementById('key-owm')?.value || ""
+          },
+          boards: this.state.config?.boards || [],
+          wifi: { ssid, pass: document.getElementById('wifi-pass').value }
+        };
+        try {
+          const res = await fetch('/api/saveall', { method: 'POST', body: JSON.stringify(payload) });
+          if (!res.ok) throw new Error();
+          if (this.state.status.ap_mode) { alert("Success! System is rebooting to connect to " + ssid); }
+          else { alert("Settings updated successfully!"); }
+        } catch (e) { alert("Save failed. Check connection."); }
+        finally { btn.innerText = oldText; btn.disabled = false; }
+      },
+      switchTab: function(targetId) {
+        document.querySelectorAll('.tab-link, .tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelector(`[data-target="${targetId}"]`)?.classList.add('active');
+        document.getElementById(targetId).classList.add('active');
+      },
+      closeModal: id => document.getElementById(id).close(),
+      bindEvents: function() {
+        document.querySelectorAll('.tab-link').forEach(link => { link.onclick = (e) => { e.preventDefault(); this.switchTab(link.dataset.target); }; });
+        document.getElementById('board-form').onsubmit = (e) => {
+          e.preventDefault();
+          const f = e.target;
+          const b = { name: f.name.value, type: parseInt(f.type.value), id: f.id.value, weather: f.weather.checked };
+          if (!this.state.config) this.state.config = { boards: [] };
+          if (f.index.value == -1) this.state.config.boards.push(b); else this.state.config.boards[f.index.value] = b;
+          this.closeModal('modal-board');
+          this.renderBoards();
+        };
+      }
+    };
+    app.init();
+  </script>
+</body>
+</html>
