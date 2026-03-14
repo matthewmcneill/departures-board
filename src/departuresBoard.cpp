@@ -51,7 +51,6 @@
 // Networking & Web Libraries
 #include <WiFi.h>
 #include <ESPmDNS.h>
-#include <WiFiManager.h>
 
 // Internal Modules & Managers
 #include <Logger.hpp>
@@ -110,10 +109,7 @@ void setup(void) {
   Logger::begin();
   LOG_SPLASH("DEPARTURES BOARD BOOTING...");
 
-  #ifdef ENABLE_DEBUG_LOG
-    LOG_INFO("SYSTEM", "Starting boot sequence...");
-  #endif
-  
+  LOG_INFO("SYSTEM", "Starting boot sequence...");  
   appContext.begin();
   LOG_INFO("SYSTEM", "appContext.begin() finished.");
 

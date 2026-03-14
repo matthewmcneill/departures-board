@@ -750,8 +750,7 @@ void handleReboot() {
 void handleEraseWiFi() {
   sendResponse(200,F("Erasing stored WiFi. You will need to connect to the \"Departures Board\" network and use WiFi Manager to reconfigure."));
   delay(1000);
-  WiFiManager wm;
-  wm.resetSettings();
+  wifiManager.resetSettings();
   delay(500);
   ESP.restart();
 }
@@ -763,8 +762,7 @@ void handleFactoryReset() {
   LOG_WARN("WEB", "Factory reset initiated. Wiping WiFi credentials and formatting LittleFS.");
   sendResponse(200,F("Factory reseting the Departures Board..."));
   delay(1000);
-  WiFiManager wm;
-  wm.resetSettings();
+  wifiManager.resetSettings();
   delay(500);
   LittleFS.format();
   delay(500);
@@ -786,7 +784,6 @@ void handleBrightness() {
   sendResponse(200,F("invalid request"));
 }
 
-#include <WiFiManager.h>
 
 /**
  * @brief Endpoint where the Web GUI has requested an OTA GitHub update to be installed

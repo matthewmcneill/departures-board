@@ -19,6 +19,8 @@
 
 #include <WebServer.h>
 
+class WebHandlerManager;
+
 class WebServerManager {
 public:
     /**
@@ -30,6 +32,9 @@ public:
      * @brief Hand control to the HTTP connection listener if any clients are waiting.
      */
     void handleClient();
+
+private:
+    WebHandlerManager* _handlerManager = nullptr;
 };
 
 extern WebServerManager webServer;

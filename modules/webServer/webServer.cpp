@@ -9,7 +9,8 @@
  */
 
 #include "webServer.hpp"
-#include <WiFiManager.h>
+#include <WiFiConfig.hpp>
+#include "webHandlerManager.hpp"
 #include <SPIFFS.h>
 #include <Update.h>
 #include <LittleFS.h>
@@ -97,6 +98,10 @@ void WebServerManager::init() {
     server.send(200, "text/html", successPage);
   });
  
+  // Initialize and register new portal handlers
+  _handlerManager = new WebHandlerManager(server, appContext.getConfigManager());
+  _handlerManager->begin();
+
   server.begin();     
   LOG_INFO("WEB", "Local webserver started at http://" + WiFi.localIP().toString() + ":80/");
 }
