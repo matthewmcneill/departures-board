@@ -19,7 +19,7 @@
  */
 
 #include "configManager.hpp"
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <timeManager.hpp>
 
 // Forward declaration of the configuration subscriber interface

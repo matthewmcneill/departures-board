@@ -7,14 +7,10 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  *
- * Module: include/Logger.hpp
- * Description: Application logging interface with automatic sensitive data redaction.
+ * Module: lib/logger/logger.hpp
+ * Description: Lightweight logging utility for ESP32 with color-coded levels.
  *
  * Exported Functions/Classes:
- * - class Logger: Static class managing the redaction list and console logging.
- * - Logger::registerSecret: Add a sensitive string to the redaction list.
- * - LOG_INFO(msg): Macro to log an informational message.
- * - LOG_WARN(msg): Macro to log a warning message.
  * - LOG_ERROR(msg): Macro to log an error message.
  * - LOG_DEBUG(msg): Macro to log a debug message.
  */

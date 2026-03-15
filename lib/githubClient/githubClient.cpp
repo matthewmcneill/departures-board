@@ -29,7 +29,7 @@
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <LittleFS.h>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <md5Utils.h>
 
 github::github(String repository, String token) {

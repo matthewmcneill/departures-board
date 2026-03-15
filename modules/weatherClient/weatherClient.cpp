@@ -20,7 +20,7 @@
 #include <weatherClient.h>
 #include <JsonListener.h>
 #include <WiFiClient.h>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <memory>
 
 /**

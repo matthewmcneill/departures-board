@@ -38,12 +38,14 @@ Every file MUST start with the standard license header, followed by `Module:`, `
  *
  * Exported Functions/Classes:
  * - [Name]: [Single-line description]
- * - [ClassName]::[MethodName]: [Single-line description for methods]
+ * - [ClassName]: [Class description]
+ *   - [MethodName](): [Single-line description]
+ *   - [VariableName]: [Single-line description]
  */
 ```
 
 > [!IMPORTANT]
-> The "Exported Functions/Classes" list is critical. It should allow a developer to quickly see the services offered by the module without reading the whole file. Provide a one-line description for each.
+> The "Exported Functions/Classes" list is critical. It should allow a developer to quickly see the services offered by the module without reading the whole file. Provide a one-line summary for EVERY externalized method, property, and variable.
 
 ---
 

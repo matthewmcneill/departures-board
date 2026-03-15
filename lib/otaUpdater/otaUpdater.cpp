@@ -8,11 +8,11 @@
 
 #include "otaUpdater.hpp"
 #include <HTTPClient.h>
-#include <HTTPUpdateGitHub.h>
+#include <hTTPUpdateGitHub.h>
 #include <githubClient.h>
 #include <time.h>
 #include <displayManager.hpp>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <configManager.hpp>
 #include <memory>
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>

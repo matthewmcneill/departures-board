@@ -62,6 +62,7 @@ The tab reacts to the current network state returned by `/api/status`:
 #### Action Buttons
 - **Test Connection**: (Visible mostly in AP Mode) Triggers a `POST /api/wifi/test` to attempt a connection to the selected SSID without rebooting. Success/Failure streams to the Diagnostic Drawer.
 - **Save & Apply**: Saves credentials to `wifi.json`. If modifying from AP mode, pops a modal with hand-off instructions ("Please switch back to your home WiFi. The board is now rebooting and will be available at http://[hostname].local") before firing the final reboot API.
+- **WiFi Reset**: Triggers a `POST /api/wifi/reset` to erase credentials (LittleFS and NVS) and reboot into AP mode. Requires a clear warning in the UI about the hand-off.
 
 #### In-situ Diagnostics (The Drawer)
 - **Signal Strength**: Visual RSSI meter (dBm) or "Access Point Mode" indicator.
@@ -77,6 +78,7 @@ Focus: Managing secrets and identity for data sources.
 | **Key Name** | `key.label` (new) | Friendly name (e.g., "Home OWM Key"). |
 | **Token/Key** | `key.token` | The actual API secret. |
 | **Status** | Diagnostic | Results from a "Test Connection" button. |
+| **Setup Help** | UI Component | **Instructional Cards**: Pop-up cards or links to help users find where to get their tokens (e.g. National Rail sign-up). |
 
 ### 4.3 Board Manager (CRUD List)
 Focus: Managing the virtual boards in the carousel.
@@ -102,11 +104,15 @@ Focus: Hardware toggles and overall device maintenance.
 | **Hardware** | Flip Screen | `config.flipScreen` | Rotate 180 degrees. |
 | **System** | Timezone | `config.timezone` | POSIX timezone string. |
 | **System** | Update Policy | `config.firmwareUpdatesEnabled` | Background OTA toggle. |
+| **Maintenance** | Factory Reset | API Call | Full wipe of `/config.json`, `/apikeys.json`, and `/wifi.json`. |
+| **Maintenance** | Reboot | API Call | Dedicated button to restart the board. |
+| **RSS Config** | RSS URL | `config.rssUrl` | XML news feed source. |
 
 **In-situ Diagnostics (The "Health Card"):**
 - **Memory**: Free Heap, Max Alloc.
-- **Storage**: LittleFS used/free space.
+- **Storage**: LittleFS used/free space (Primary Health feature).
 - **Build Info**: MAC, Version, Config Ver.
+- **Diagnostics**: Uptime and advanced metrics tucked in health drawer.
 
 ---
 
@@ -131,4 +137,9 @@ To minimize risk and allow for iterative testing, we will follow a **Parallel Ev
 ### Recommended Refactor Roadmap
 1. **Extract `WebHandlerManager`**: Move logic into a class with properly injected dependencies.
 2. **Frontend Modernization**: Rewrite using Vanilla ES6+ JS and Pico CSS (target < 15KB).
-3. **Automated Asset Pipeline**: Use Python scripts to gzip and hexify assets during the build process.
+
+---
+
+### Functional Gaps
+- **Hidden Networks**: Enhanced "Manual SSID" entry flow within the scanner interface.
+- **Screensaver Mode**: Implementation of the "Screensaver" board type as a selectable transport mode.

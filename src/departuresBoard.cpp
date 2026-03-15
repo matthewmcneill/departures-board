@@ -53,8 +53,8 @@
 #include <ESPmDNS.h>
 
 // Internal Modules & Managers
-#include <Logger.hpp>
-#include <WiFiConfig.hpp>
+#include <logger.hpp>
+#include <wiFiConfig.hpp>
 #include <configManager.hpp>
 #include <timeManager.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>

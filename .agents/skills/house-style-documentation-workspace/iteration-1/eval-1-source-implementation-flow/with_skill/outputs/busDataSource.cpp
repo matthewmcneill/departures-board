@@ -26,7 +26,7 @@
 #include "busDataSource.hpp"
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
-#include <Logger.hpp>
+#include <logger.hpp>
 
 // Mapping status codes from IStation/old client
 #define UPD_SUCCESS 0      // Data updated successfully

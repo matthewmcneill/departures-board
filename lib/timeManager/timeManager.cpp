@@ -10,8 +10,8 @@
 #include <U8g2lib.h>
 #include <widgets/drawingPrimitives.hpp>
 #include <WiFi.h>
-#include <WiFiConfig.hpp>
-#include <Logger.hpp>
+#include <wiFiConfig.hpp>
+#include <logger.hpp>
 #include <displayManager.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <appContext.hpp>

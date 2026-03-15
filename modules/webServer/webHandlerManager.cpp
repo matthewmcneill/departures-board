@@ -18,7 +18,7 @@
 #include <webServer/portalAssets.h>
 #include <ArduinoJson.h>
 #include <logger.hpp>
-#include <WiFiConfig.hpp>
+#include <wiFiConfig.hpp>
 #include <WiFi.h>
 
 WebHandlerManager::WebHandlerManager(WebServer& server, ConfigManager& config) 
@@ -50,6 +50,7 @@ void WebHandlerManager::begin() {
     // API: WiFi (Bespoke Captive Portal)
     _server.on("/api/wifi/scan", HTTP_GET, [this]() { this->handleWiFiScan(); });
     _server.on("/api/wifi/test", HTTP_POST, [this]() { this->handleWiFiTest(); });
+    _server.on("/api/wifi/reset", HTTP_POST, [this]() { this->handleWiFiReset(); });
 
     // Captive Portal Redirect
     _server.onNotFound([this]() { this->handleCaptivePortalRedirect(); });
@@ -106,9 +107,9 @@ void WebHandlerManager::handleGetConfig() {
 
     // --- API Keys (Masked) ---
     JsonObject keys = doc["keys"].to<JsonObject>();
-    keys["nrToken"] = (strlen(config.nrToken) > 0) ? "****" : "";
-    keys["tflAppkey"] = (strlen(config.tflAppkey) > 0) ? "****" : "";
-    keys["owmToken"] = (strlen(config.owmToken) > 0) ? "****" : "";
+    keys["nrToken"] = (strlen(config.nrToken) > 0) ? "●●●●●●●●" : "";
+    keys["tflAppkey"] = (strlen(config.tflAppkey) > 0) ? "●●●●●●●●" : "";
+    keys["owmToken"] = (strlen(config.owmToken) > 0) ? "●●●●●●●●" : "";
 
     // --- Boards ---
     JsonArray boardsArr = doc["boards"].to<JsonArray>();
@@ -163,9 +164,9 @@ void WebHandlerManager::handleSaveAll() {
         // In this simplified version, we'll assume the client sends the real key if changed.
         if (doc["keys"].is<JsonObject>()) {
             JsonObject k = doc["keys"];
-            if (k["nrToken"].is<const char*>() && strcmp(k["nrToken"], "****") != 0) strlcpy(config.nrToken, k["nrToken"], sizeof(config.nrToken));
-            if (k["tflAppkey"].is<const char*>() && strcmp(k["tflAppkey"], "****") != 0) strlcpy(config.tflAppkey, k["tflAppkey"], sizeof(config.tflAppkey));
-            if (k["owmToken"].is<const char*>() && strcmp(k["owmToken"], "****") != 0) strlcpy(config.owmToken, k["owmToken"], sizeof(config.owmToken));
+            if (k["nrToken"].is<const char*>() && strcmp(k["nrToken"], "●●●●●●●●") != 0) strlcpy(config.nrToken, k["nrToken"], sizeof(config.nrToken));
+            if (k["tflAppkey"].is<const char*>() && strcmp(k["tflAppkey"], "●●●●●●●●") != 0) strlcpy(config.tflAppkey, k["tflAppkey"], sizeof(config.tflAppkey));
+            if (k["owmToken"].is<const char*>() && strcmp(k["owmToken"], "●●●●●●●●") != 0) strlcpy(config.owmToken, k["owmToken"], sizeof(config.owmToken));
         }
 
         // Update Boards (Full replace strategy suggested by unified save)
@@ -304,6 +305,21 @@ void WebHandlerManager::handleWiFiTest() {
     String output;
     serializeJson(res, output);
     _server.send(200, "application/json", output);
+}
+
+void WebHandlerManager::handleWiFiReset() {
+    LOG_WARN("WEB_API", "POST /api/wifi/reset called - ERASING WiFi credentials and rebooting!");
+    
+    // 1. Erase credentials using WiFiConfig manager
+    wifiManager.resetSettings();
+
+    // 2. Respond to client before rebooting
+    _server.send(200, "application/json", "{\"status\":\"ok\",\"msg\":\"WiFi erased. Board rebooting into AP mode...\"}");
+
+    // 3. Trigger reboot after short delay to allow response to send
+    LOG_INFO("SYSTEM", "Rebooting in 2 seconds...");
+    delay(2000);
+    ESP.restart();
 }
 
 void WebHandlerManager::handleCaptivePortalRedirect() {

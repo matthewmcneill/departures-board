@@ -1,4 +1,4 @@
-#include <Logger.hpp>
+#include <logger.hpp>
 
 std::vector<String> Logger::secrets;
 

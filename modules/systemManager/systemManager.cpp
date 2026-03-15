@@ -12,7 +12,7 @@
 
 #include "systemManager.hpp"
 #include "appContext.hpp"
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <timeManager.hpp>
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>

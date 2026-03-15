@@ -6,8 +6,15 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/WiFiConfig/WiFiConfig.cpp
+ * Module: lib/WiFiConfig/wiFiConfig.cpp
  * Description: Implementation of Wi-Fi credentials management and architecture-independent NVS migration logic.
+ *
+ * Exported Functions/Classes:
+ * - WiFiManagerModule: Singleton class for managing WiFi connectivity.
+ *   - begin(): Initializes WiFi and enters AP mode if no credentials found.
+ *   - updateWiFi(): Updates and persists WiFi credentials to LittleFS.
+ *   - testConnection(): Validates credentials without persisting changes.
+ *   - resetSettings(): Erases all WiFi configuration (NVS + LittleFS).
  */
 #include <Arduino.h>
 #include <FS.h>
@@ -16,8 +23,8 @@
 #include <WiFi.h>
 #include <DNSServer.h>
 #include <ESPmDNS.h>
-#include <WiFiConfig.hpp>
-#include <Logger.hpp>
+#include <wiFiConfig.hpp>
+#include <logger.hpp>
 #include <esp_wifi.h>
 
 WiFiManagerModule wifiManager;
@@ -168,8 +175,8 @@ void WiFiManagerModule::processDNS() {
  */
 void WiFiManagerModule::updateWiFi(const char* ssid, const char* pass) {
     if (ssid != nullptr) strlcpy(wifiSsid, ssid, sizeof(wifiSsid));
-    // Skip if password is the UI mask "****"
-    if (pass != nullptr && strcmp(pass, "****") != 0) {
+    // Skip if password is the UI mask "●●●●●●●●"
+    if (pass != nullptr && strcmp(pass, "●●●●●●●●") != 0) {
         strlcpy(wifiPass, pass, sizeof(wifiPass));
     }
     saveWiFiConfig();
@@ -180,9 +187,17 @@ bool WiFiManagerModule::testConnection(const char* ssid, const char* pass, Strin
     
     const char* realPass = pass;
     // If masked, use the real stored password
-    if (strcmp(pass, "****") == 0) {
+    if (strcmp(pass, "●●●●●●●●") == 0) {
         LOG_INFO("WIFI", "WIFI_TEST: Using stored credentials for test.");
         realPass = wifiPass;
+    }
+
+    // Optimization: If already connected to this IDENTICAL SSID/PASS, skip re-connecting
+    // This prevents dropping the current web session during the test.
+    if (WiFi.status() == WL_CONNECTED && strcmp(WiFi.SSID().c_str(), ssid) == 0 && strcmp(realPass, wifiPass) == 0) {
+        ipOut = WiFi.localIP().toString();
+        LOG_INFO("WIFI", "WIFI_TEST: Already connected to this network. IP: " + ipOut);
+        return true;
     }
 
     WiFi.begin(ssid, realPass);

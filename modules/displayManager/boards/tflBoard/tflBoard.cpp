@@ -12,7 +12,7 @@
  */
 
 #include "tflBoard.hpp"
-#include <Logger.hpp>
+#include <logger.hpp>
 
 extern const char tflAttribution[];
 extern const uint8_t Underground10[];

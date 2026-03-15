@@ -13,7 +13,7 @@
 #include "loadingBoard.hpp"
 #include <string.h>
 #include "../../widgets/drawingPrimitives.hpp"
-#include <Logger.hpp>
+#include <logger.hpp>
 
 LoadingBoard::LoadingBoard() 
     : pBar(0, 15, 256, 17) {

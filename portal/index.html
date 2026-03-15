@@ -1,10 +1,22 @@
 <!DOCTYPE html>
+<!--
+  Departures Board (c) 2025-2026 Gadec Software
+ 
+  https://github.com/gadec-uk/departures-board
+ 
+  This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+  To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ 
+  Module: portal/index.html
+  Description: Unified Configuration Portal for the ESP32 Departures Board.
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Departures Board Config</title>
   <style>
+    /* --- Design System & CSS Variables --- */
     :root {
       --primary: #f57c00;
       --primary-hover: #e65100;
@@ -19,6 +31,7 @@
       --warning: #f9a825;
       --font-size-base: 16px;
     }
+    /* --- Dark Mode Theme Overrides --- */
     [data-theme="dark"] {
       --bg: #121212;
       --card-bg: #1e1e1e;
@@ -33,7 +46,7 @@
       background: var(--bg); color: var(--text); line-height: 1.5; font-size: var(--font-size-base);
       padding-bottom: 80px; transition: background 0.3s, color 0.3s;
     }
-    .container { max-width: 600px; margin: 0 auto; padding: 1rem; }
+    .container { max-width: 480px; margin: 0 auto; padding: 1rem; }
     .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     h2 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: var(--primary); }
     .subtitle { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
@@ -56,12 +69,13 @@
       background: var(--bg); color: var(--text); font-size: 1rem; margin-top: 0.4rem;
     }
     
-    .password-container { position: relative; }
+    .password-input-wrapper { position: relative; width: 100%; margin-top: 0.4rem; }
     .eye-btn { 
-      position: absolute; right: 10px; bottom: 8px; background: none; border: none; color: var(--text-muted);
-      cursor: pointer; padding: 5px; z-index: 5; display: flex; align-items: center; justify-content: center;
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%); 
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; padding: 4px; z-index: 5; display: flex; align-items: center; justify-content: center;
     }
-    .eye-btn svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0.5; }
+    .eye-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0.5; }
 
     button { 
       background: var(--primary); color: white; border: none; padding: 0.8rem 1.25rem; border-radius: 10px;
@@ -76,7 +90,7 @@
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     .bottom-nav { 
-      position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--nav-bg); 
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 70px; background: var(--nav-bg); 
       border-top: 1px solid var(--border); display: flex; justify-content: space-around; 
       align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
     }
@@ -98,6 +112,7 @@
     .drawer.active .drawer-content { max-height: 500px; padding-bottom: 1rem; }
     .drawer-trigger::after { content: '▼'; font-size: 0.7rem; transition: transform 0.3s; }
     .drawer.active .drawer-trigger::after { transform: rotate(180deg); }
+    .drawer-trigger .status-badge { margin-left: auto; margin-right: 1rem; font-size: 0.7rem; opacity: 0.8; font-weight: 500; }
 
     .status-badge { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; }
     .dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -125,15 +140,47 @@
     dialog { border: none; border-radius: 20px; padding: 0; background: var(--bg); color: var(--text); box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 90%; max-width: 400px; }
     dialog::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
     
-    .loading-spinner { width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+    .theme-toggle {
+      display: flex; background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 30px; padding: 4px; gap: 4px;
+    }
+    .theme-btn {
+      background: transparent; border: none; color: var(--text-muted); padding: 0;
+      width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; transition: all 0.2s ease;
+    }
+    .theme-btn.active { background: var(--bg); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .theme-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+
+    /* Loading Spinner */
     @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body class="">
+    <div class="container">
     <div class="ap-banner">Setup Mode: Access Point Active</div>
     <div class="top-bar">
       <div><h2>DEPARTURES</h2><div class="subtitle">Unified Portal</div></div>
-      <button class="secondary" id="theme-btn" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 20px; font-weight: 800; letter-spacing: 1px;">THEME: AUTO</button>
+      <div class="theme-toggle">
+        <button class="theme-btn" data-theme="auto" title="Auto Mode">
+          <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </button>
+        <button class="theme-btn" data-theme="light" title="Light Mode">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        </button>
+        <button class="theme-btn" data-theme="dark" title="Dark Mode">
+          <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+      </div>
     </div>
 
     <div style="margin-bottom: 1.5rem;">
@@ -152,36 +199,39 @@
                 <option value="">Select a network...</option>
               </select>
             </label>
-            <button type="button" onclick="app.scanWiFi()" id="scan-btn" style="padding: 0.75rem 1rem;">Scan</button>
+            <button type="button" onclick="app.scanWiFi()" id="scan-btn" style="padding: 0.75rem 1rem; min-width: 75px; display: flex; align-items: center; justify-content: center;">Scan</button>
           </div>
           
           <div id="manual-ssid-group" style="display: none; margin-bottom: 1rem;">
             <label>Manual SSID Entry<input type="text" id="manual-ssid-input" placeholder="Enter network name..." /></label>
           </div>
           
-          <div class="password-container">
-            <label>WiFi Password
-              <input type="password" name="password" id="wifi-pass" placeholder="Password..." />
-            </label>
-            <button type="button" class="eye-btn" onclick="app.togglePass('wifi-pass', this)" title="Toggle Visibility">
-              <svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-          </div>
+          <label>WiFi Password
+            <div class="password-input-wrapper">
+              <input type="password" name="password" id="wifi-pass" placeholder="Password..." style="margin-top:0;"/>
+              <button type="button" class="eye-btn" style="display:none" onclick="app.togglePass('wifi-pass', this)" title="Toggle Visibility">
+                <svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </label>
 
-          <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+          <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem; gap: 0.5rem;">
             <button type="button" class="outline" onclick="app.testWiFi()" id="test-btn" style="font-size: 0.85rem;">Test Connection</button>
+            <button type="button" class="outline" onclick="app.resetWiFi()" id="reset-btn" style="font-size: 0.85rem; color: #ff4444; border-color: rgba(255, 68, 68, 0.3);">Reset WiFi</button>
           </div>
         </form>
         
         <div id="wifi-test-log"></div>
 
         <div class="drawer" id="diag-drawer">
-          <div class="drawer-trigger" onclick="app.toggleDiag()">Network Diagnostics</div>
-          <div class="drawer-content">
-            <div class="status-badge" style="margin-bottom: 1rem;">
+          <div class="drawer-trigger" onclick="app.toggleDiag()">
+            <span>Network Diagnostics</span>
+            <div class="status-badge" id="diag-status-summary">
               <div class="dot" id="wifi-dot"></div>
               <span id="wifi-status-text" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Detecting...</span>
             </div>
+          </div>
+          <div class="drawer-content">
             <table class="diag-table" id="wifi-diag-table">
               <!-- Populated by JS -->
             </table>
@@ -235,38 +285,63 @@
   </dialog>
 
   <script>
+    // app: Core application logic for the configuration portal.
+    // Handles state management, API communication, and dynamic UI rendering.
+    const DUMMY_PASS = "●●●●●●●●";
     const app = {
-      state: { config: null, status: null },
+      // --- Application State ---
+      state: { 
+        config: null,  // Persisted device configuration
+        status: null   // Real-time system status
+      },
+
+      // Toggles visibility of eye buttons based on field content.
+      refreshEyes: function() {
+        document.querySelectorAll('input[type="password"]').forEach(input => {
+          const eye = input.closest('.password-input-wrapper')?.querySelector('.eye-btn');
+          if (eye) eye.style.display = (input.value === DUMMY_PASS || !input.value) ? 'none' : 'flex';
+        });
+      },
+
+      // Initializes the application on page load.
       init: function() {
         this.initTheme();
         this.fetchStatus();
         this.fetchConfig();
-        setInterval(() => this.fetchStatus(), 5000);
+        setInterval(() => this.fetchStatus(), 5000); // Polling for diagnostics
         this.bindEvents();
         setTimeout(() => this.scanWiFi(), 500);
       },
+
+      // Configures and manages the UI color theme.
       initTheme: function() {
-        const btn = document.getElementById('theme-btn');
         let theme = localStorage.getItem('theme') || 'auto';
         const apply = (t) => {
           document.documentElement.setAttribute('data-theme', t === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t);
-          btn.innerText = 'THEME: ' + t.toUpperCase();
+          document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
         };
         apply(theme);
-        btn.onclick = () => {
-          theme = theme === 'light' ? 'dark' : (theme === 'dark' ? 'auto' : 'light');
-          localStorage.setItem('theme', theme);
-          apply(theme);
-        };
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+          btn.onclick = () => {
+            theme = btn.dataset.theme;
+            localStorage.setItem('theme', theme);
+            apply(theme);
+          };
+        });
       },
+
+      // Fetches the current device configuration from the API.
       fetchConfig: async function() {
         try {
           const res = await fetch('/api/config');
           if (!res.ok) throw new Error();
           this.state.config = await res.json();
           this.render();
+          this.refreshEyes();
         } catch (e) { console.log('Config fetch restricted'); }
       },
+
+      // Fetches system health and network status from the API.
       fetchStatus: async function() {
         try {
           const res = await fetch('/api/status');
@@ -274,7 +349,11 @@
           this.updateStatusUI();
         } catch (e) { console.error('Status fetch failed'); }
       },
+
+      // Updates the diagnostics UI based on fetchStatus results.
       updateStatusUI: function() {
+        // --- Step 1: Handle AP Mode Detection ---
+        // If the board is in Captive Portal mode, we force the WiFi tab and alert the user.
         const s = this.state.status;
         if (!s) return;
         if (s.ap_mode) {
@@ -284,10 +363,13 @@
           document.body.classList.remove('ap-mode');
         }
         this.prev_ap_mode = s.ap_mode;
+
+        // --- Step 2: Update Connection Badge ---
         const dot = document.getElementById('wifi-dot');
         dot.className = 'dot ' + (s.ap_mode ? 'yellow' : (s.rssi > -80 ? 'green' : 'red'));
         document.getElementById('wifi-status-text').innerText = s.ap_mode ? 'Access Point Mode' : `Connected: ${s.ssid}`;
         
+        // --- Step 3: Populate Diagnostics Table ---
         const rows = [
           ['Local IP', s.ip],
           ['Gateway', s.gateway],
@@ -305,6 +387,8 @@
         
         document.getElementById('wifi-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
       },
+
+      // Triggers a WiFi scan and updates the selector.
       scanWiFi: async function() {
         const btn = document.getElementById('scan-btn');
         const oldText = btn.innerText;
@@ -324,11 +408,16 @@
            document.getElementById('wifi-ssid-select').innerHTML = '<option value="">Scan failed.</option><option value="__manual__">➕ Enter SSID Manually...</option>';
         } finally { btn.innerText = oldText; btn.disabled = false; }
       },
+
+      // Handles manual SSID entry toggle.
       handleSSIDChange: function(val) {
         document.getElementById('manual-ssid-group').style.display = (val === '__manual__') ? 'block' : 'none';
       },
+
+      // Toggles password field visibility.
       togglePass: function(id, btn) {
         const input = document.getElementById(id);
+        if (input.value === DUMMY_PASS) return; // No point toggling dummy stars
         const isPass = input.type === 'password';
         input.type = isPass ? 'text' : 'password';
         
@@ -338,9 +427,13 @@
           btn.innerHTML = isPass ? eyeOffSvg : eyeSvg;
         }
       },
+
+      // Toggles diagnostics drawer.
       toggleDiag: function() {
         document.getElementById('diag-drawer').classList.toggle('active');
       },
+
+      // Tests WiFi connection.
       testWiFi: async function() {
         const log = document.getElementById('wifi-test-log');
         const btn = document.getElementById('test-btn');
@@ -372,6 +465,9 @@
           const result = await res.json();
           log.innerHTML += result.status === 'ok' ? `<span style="color:#00ff00">> SUCCESS! IP: ${result.ip}</span>` : `<span style="color:#ff4444">> FAILED: ${result.error}</span>`;
         } catch (e) { 
+          // --- Functional Flow: Connection Lost Handling ---
+          // When testing a new network, the board might reconnect and disconnect existing clients. 
+          // We provide a helpful transition message.
           console.log("Test connection lost (expected if network switched)");
           log.innerHTML += `
             <div style="margin-top:0.5rem; padding:0.5rem; border:1px solid #f9a825; border-radius:8px; background: rgba(249,168,37,0.1);">
@@ -387,6 +483,37 @@
         }
         btn.disabled = false;
       },
+
+      // Erases WiFi credentials and reboots the board.
+      resetWiFi: async function() {
+        const msg = "WARNING: This will erase all stored WiFi credentials and reboot the board into 'Setup Mode' (Access Point).\n\n" +
+                    "To reconfigure, you will need to:\n" +
+                    "1. Connect your phone/laptop to the 'departures' (or '" + (this.state.config?.system?.hostname || 'departures') + "') WiFi network.\n" +
+                    "2. Visit http://192.168.4.1\n\n" +
+                    "Are you sure you want to proceed?";
+        
+        if (!confirm(msg)) return;
+
+        const btn = document.getElementById('reset-btn');
+        btn.disabled = true;
+        btn.innerText = "Resetting...";
+
+        try {
+          const res = await fetch('/api/wifi/reset', { method: 'POST' });
+          if (res.ok) {
+            alert("WiFi Erased. The board is rebooting...\n\nPlease switch to the 'departures' WiFi network in a few moments.");
+            window.location.reload();
+          } else {
+            throw new Error();
+          }
+        } catch (e) {
+          alert("Reset failed. Check connection.");
+          btn.disabled = false;
+          btn.innerText = "Reset WiFi";
+        }
+      },
+
+      // Renders application UI.
       render: function() {
         const cfg = this.state.config;
         if (!cfg) return;
@@ -396,51 +523,74 @@
         document.querySelector('[name="flip"]').checked = cfg.system.flip;
         if (cfg.wifi) {
           document.getElementById('wifi-ssid-select').value = cfg.wifi.ssid || "";
-          document.getElementById('wifi-pass').value = cfg.wifi.pass || "";
+          document.getElementById('wifi-pass').value = cfg.wifi.ssid ? DUMMY_PASS : "";
         }
         this.renderBoards();
         this.renderKeys();
       },
+
+      // Renders active boards list.
       renderBoards: function() {
         const list = document.getElementById('boards-list');
         const boards = this.state.config?.boards || [];
         if (boards.length === 0) { list.innerHTML = '<article style="text-align:center; padding: 2rem; opacity:0.6;">No boards configured.</article>'; return; }
         list.innerHTML = boards.map((b, i) => `<div class="list-item"><div><h4>${b.name}</h4><p>${['Rail','Tube','Bus'][b.type]} • ${b.id}</p></div><div style="display:flex; gap:8px;"><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem;" onclick="app.editBoard(${i})">Edit</button><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem; color: #ff4444;" onclick="app.deleteBoard(${i})">X</button></div></div>`).join('');
       },
+
+      // Renders API keys section.
       renderKeys: function() {
         const list = document.getElementById('keys-list');
         const k = this.state.config?.keys || {nrToken:'', tflAppkey:'', owmToken:''};
         
-        const createField = (id, label, val) => `
-          <div class="password-container">
-            <label>${label}<input type="password" id="${id}" value="${val}" /></label>
-            <button type="button" class="eye-btn" onclick="app.togglePass('${id}', this)">
-              <svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-          </div>`;
+        const createField = (id, label, val) => {
+          const isDummy = val && val.length > 0;
+          return `
+            <label>${label}
+              <div class="password-input-wrapper">
+                <input type="password" id="${id}" value="${isDummy ? DUMMY_PASS : ''}" style="margin-top:0;" />
+                <button type="button" class="eye-btn" style="display:none" onclick="app.togglePass('${id}', this)">
+                  <svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+              </div>
+            </label>`;
+        };
 
         list.innerHTML = 
           createField('key-nr', 'National Rail Token', k.nrToken) +
           createField('key-tfl', 'TfL App Key', k.tflAppkey) +
           createField('key-owm', 'OpenWeatherMap Token', k.owmToken);
       },
+
+      // Opens board editor modal.
       editBoard: function(index) {
         const form = document.getElementById('board-form');
         const b = index === -1 ? {name:'', type:0, id:'', weather:true} : this.state.config.boards[index];
         form.index.value = index; form.name.value = b.name; form.type.value = b.type; form.id.value = b.id; form.weather.checked = b.weather;
         document.getElementById('modal-board').showModal();
       },
+
+      // Deletes a board locally.
       deleteBoard: function(index) {
         if (confirm('Remove this board?')) { this.state.config.boards.splice(index, 1); this.renderBoards(); }
       },
+
+      // Aggregates and saves configuration.
       saveAll: async function() {
         const btn = document.getElementById('save-btn');
         const oldText = btn.innerText;
         btn.innerHTML = '<div class="loading-spinner"></div> Saving...';
         btn.disabled = true;
+        
+        // --- Step 1: Collect Payload ---
         const form = document.querySelector('#wifi-form');
         const selectVal = document.getElementById('wifi-ssid-select').value;
         const ssid = (selectVal === '__manual__') ? document.getElementById('manual-ssid-input').value : selectVal;
+        
+        const getVal = (id) => {
+          const val = document.getElementById(id)?.value;
+          return (val === DUMMY_PASS) ? undefined : val; // undefined will be filtered out by JSON.stringify
+        };
+
         const payload = {
           system: {
             hostname: form.hostname.value,
@@ -449,13 +599,15 @@
             flip: document.querySelector('[name="flip"]')?.checked || false
           },
           keys: {
-            nrToken: document.getElementById('key-nr')?.value || "",
-            tflAppkey: document.getElementById('key-tfl')?.value || "",
-            owmToken: document.getElementById('key-owm')?.value || ""
+            nrToken: getVal('key-nr'),
+            tflAppkey: getVal('key-tfl'),
+            owmToken: getVal('key-owm')
           },
           boards: this.state.config?.boards || [],
-          wifi: { ssid, pass: document.getElementById('wifi-pass').value }
+          wifi: { ssid, pass: getVal('wifi-pass') }
         };
+
+        // --- Step 2: Dispatch Save ---
         try {
           const res = await fetch('/api/saveall', { method: 'POST', body: JSON.stringify(payload) });
           if (!res.ok) throw new Error();
@@ -464,13 +616,26 @@
         } catch (e) { alert("Save failed. Check connection."); }
         finally { btn.innerText = oldText; btn.disabled = false; }
       },
+
+      // Navigates between tabs.
       switchTab: function(targetId) {
         document.querySelectorAll('.tab-link, .tab-content').forEach(el => el.classList.remove('active'));
         document.querySelector(`[data-target="${targetId}"]`)?.classList.add('active');
         document.getElementById(targetId).classList.add('active');
       },
+
+      // Closes a modal dialog.
       closeModal: id => document.getElementById(id).close(),
+
+      // Binds UI events.
       bindEvents: function() {
+        // Delegated listener for password field changes (handles dynamic fields)
+        document.addEventListener('input', (e) => {
+          if (e.target.type === 'password') {
+            const eye = e.target.closest('.password-input-wrapper')?.querySelector('.eye-btn');
+            if (eye) eye.style.display = (e.target.value === DUMMY_PASS || !e.target.value) ? 'none' : 'flex';
+          }
+        });
         document.querySelectorAll('.tab-link').forEach(link => { link.onclick = (e) => { e.preventDefault(); this.switchTab(link.dataset.target); }; });
         document.getElementById('board-form').onsubmit = (e) => {
           e.preventDefault();

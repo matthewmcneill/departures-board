@@ -22,7 +22,7 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <WiFiClient.h>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <memory>
 
 /**

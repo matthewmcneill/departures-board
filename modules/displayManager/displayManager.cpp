@@ -22,7 +22,7 @@
 #include "displayManager.hpp"
 #include "widgets/drawingPrimitives.hpp"
 #include <timeManager.hpp>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <weatherClient.h>
 #include <rssClient.h>
 #include <otaUpdater.hpp>

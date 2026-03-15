@@ -2,11 +2,31 @@
 import os
 import gzip
 import shutil
+import re
 
 # --- Configuration ---
 PORTAL_DIR = "portal"
 OUTPUT_FILE = "include/webServer/portalAssets.h" # Updated to match implementation plan's logical path
 ASSETS = ["index.html"] # We start with index.html as per Phase 1
+
+def minify_html(content):
+    """
+    Aggressively minify HTML by stripping comments and whitespace.
+    """
+    # 1. Remove HTML comments
+    content = re.sub(r'<!--.*?-->', '', content, flags=re.DOTALL)
+    
+    # 2. Remove Multi-line comments in JS and CSS
+    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+    
+    # 3. Strip whitespace from line ends and remove empty lines
+    lines = [line.strip() for line in content.splitlines()]
+    content = "".join([line for line in lines if line])
+    
+    # 4. Replace multiple spaces with single space (optional but saves space)
+    content = re.sub(r'\s+', ' ', content)
+    
+    return content.strip()
 
 def generate_assets():
     print(f"--- Portal Builder: Generating {OUTPUT_FILE} ---")
@@ -31,16 +51,17 @@ def generate_assets():
 
             print(f"Processing: {asset}...")
             
-            # Gzip the content
-            with open(asset_path, "rb") as f_in:
+            # Minify and Gzip the content
+            with open(asset_path, "r", encoding="utf-8") as f_in:
                 content = f_in.read()
-                gzipped_content = gzip.compress(content)
+                minified_content = minify_html(content)
+                gzipped_content = gzip.compress(minified_content.encode("utf-8"))
 
             # Generate C++ array name
             var_name = asset.replace(".", "_") + "_gz"
             
             # Write to header
-            f.write(f"// Original: {asset} ({len(content)} bytes), Gzipped: ({len(gzipped_content)} bytes)\n")
+            f.write(f"// Original: {asset} ({len(content)} bytes), Minified: {len(minified_content)} bytes, Gzipped: ({len(gzipped_content)} bytes)\n")
             f.write(f"const uint8_t {var_name}[] PROGMEM = {{\n    ")
             
             # Format as hex

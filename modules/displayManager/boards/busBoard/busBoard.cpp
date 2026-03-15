@@ -20,7 +20,7 @@
  */
 
 #include "busBoard.hpp"
-#include <Logger.hpp>
+#include <logger.hpp>
 
 extern const char btAttribution[]; ///< Global attribution text
 extern const uint8_t Underground10[]; ///< Built-in font

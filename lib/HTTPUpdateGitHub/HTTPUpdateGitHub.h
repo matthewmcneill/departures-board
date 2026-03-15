@@ -21,14 +21,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *
- * Module: lib/HTTPUpdateGitHub/HTTPUpdateGitHub.h
- * Description: OTA Update class for fetching binaries from GitHub Releases over HTTPS.
+ * Module: lib/hTTPUpdateGitHub/hTTPUpdateGitHub.h
+ * Description: Over-the-air (OTA) update client for fetching firmware from private/public GitHub releases.
  *
  * Exported Functions/Classes:
- * - class HTTPUpdate: Core class handling the HTTP request, redirects, parsing MD5 headers, and writing to flash.
- *   - HTTPUpdate(): Constructor.
- *   - ~HTTPUpdate(): Destructor.
- *   - rebootOnUpdate(): Configures whether to reboot on update success.
  *   - handleUpdate(): Handles the full OTA update process from a custom URL.
  *   - onStart(), onEnd(), onError(), onProgress(): Registers callback functions for update events.
  *   - getLastError(): Retrieves the last error code encountered.

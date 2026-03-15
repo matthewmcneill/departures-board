@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *
- * Module: lib/HTTPUpdateGitHub/HTTPUpdateGitHub.cpp
+ * Module: lib/HTTPUpdateGitHub/hTTPUpdateGitHub.cpp
  * Description: Implementation of the GitHub OTA Update handler.
  *
  * Exported Functions/Classes:
@@ -35,12 +35,12 @@
  *   - getLastErrorString(): Retrieves a human-readable string for the last error.
  */
 
- #include <HTTPUpdateGitHub.h>
+ #include <hTTPUpdateGitHub.h>
 #include <Update.h>
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
-#include <Logger.hpp>
+#include <logger.hpp>
  #include <StreamString.h>
 
  #include <esp_partition.h>

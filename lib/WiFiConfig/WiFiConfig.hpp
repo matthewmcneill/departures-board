@@ -6,8 +6,16 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/WiFiConfig/WiFiConfig.hpp
+ * Module: lib/wiFiConfig/wiFiConfig.hpp
  * Description: Wi-Fi credentials management and architecture-independent NVS migration logic.
+ *
+ * Exported Functions/Classes:
+ * - WiFiManagerModule: Singleton class for managing WiFi connectivity.
+ *   - begin(): Initializes WiFi and enters AP mode if no credentials found.
+ *   - updateWiFi(): Updates and persists WiFi credentials to LittleFS.
+ *   - testConnection(): Validates credentials without persisting changes.
+ *   - resetSettings(): Erases all WiFi configuration (NVS + LittleFS).
+ *   - getAPMode(): Returns true if currently in Access Point mode.
  */
 
 #ifndef WIFI_CONFIG_HPP
@@ -76,7 +84,7 @@ public:
     /**
      * @brief Returns a masked version of the password if set.
      */
-    const char* getPassMasked() const { return (strlen(wifiPass) > 0) ? "****" : ""; }
+    const char* getPassMasked() const { return (strlen(wifiPass) > 0) ? "●●●●●●●●" : ""; }
 
     /**
      * @brief Test a WiFi connection without permanently changing stored credentials.

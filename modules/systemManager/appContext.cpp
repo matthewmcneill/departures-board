@@ -20,8 +20,8 @@
 #include "appContext.hpp"
 #include "systemManager.hpp"
 #include <timeManager.hpp>
-#include <Logger.hpp>
-#include <WiFiConfig.hpp>
+#include <logger.hpp>
+#include <wiFiConfig.hpp>
 
 appContext* _instance = nullptr;
 

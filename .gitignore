@@ -4,6 +4,7 @@
 *.bin
 *.hex
 *.elf
+tmp/
 
 # Fonts (Generated)
 modules/displayManager/fonts/fonts.cpp

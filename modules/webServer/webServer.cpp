@@ -9,13 +9,13 @@
  */
 
 #include "webServer.hpp"
-#include <WiFiConfig.hpp>
+#include <wiFiConfig.hpp>
 #include "webHandlerManager.hpp"
 #include <SPIFFS.h>
 #include <Update.h>
 #include <LittleFS.h>
 #include <WiFi.h>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <displayManager.hpp>
 #include <configManager.hpp>
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>

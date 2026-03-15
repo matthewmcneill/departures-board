@@ -11,13 +11,21 @@
  *
  * Exported Functions/Classes:
  * - WebHandlerManager: Class for registering and handling portal-specific HTTP routes.
+ *   - begin(): Registers all routes with the ESP32 WebServer.
+ *   - handlePortalRoot(): Serves gzipped SPA assets from PROGMEM.
+ *   - handleGetStatus(): Returns JSON representing hardware health.
+ *   - handleGetConfig(): Returns unified System/Keys/Boards configuration.
+ *   - handleSaveAll(): Atomic validation and save of portal settings.
+ *   - handleWiFiScan(): Returns JSON list of local SSIDs/RSSI.
+ *   - handleWiFiTest(): Asynchronous non-blocking connection verification.
+ *   - handleWiFiReset(): Erases NVS/LittleFS credentials and reboots to AP.
  */
 
 #pragma once
 
 #include <Arduino.h>
 #include <WebServer.h>
-#include <ConfigManager.hpp>
+#include <configManager.hpp>
 
 /**
  * @brief Manages the registration and execution of web handlers for the modern portal.
@@ -76,6 +84,11 @@ private:
      * @brief API: Test a specific WiFi connection asynchronously.
      */
     void handleWiFiTest();
+
+    /**
+     * @brief API: Reset WiFi credentials and reboot into AP mode.
+     */
+    void handleWiFiReset();
 
     /**
      * @brief Get all boards configuration.
