@@ -27,8 +27,15 @@
  * @brief Implements the iConfigurable interface.
  */
 void weatherClient::reapplyConfig(const Config& config) {
-    setOpenWeatherMapApiKey(config.owmToken);
-    setWeatherEnabled(config.owmToken[0] != '\0');
+    const char* token = "";
+    for (int i = 0; i < config.keyCount; i++) {
+        if (strcmp(config.keys[i].type, "owm") == 0) {
+            token = config.keys[i].token;
+            break;
+        }
+    }
+    setOpenWeatherMapApiKey(token);
+    setWeatherEnabled(token[0] != '\0');
 }
 
 weatherClient::weatherClient() {}

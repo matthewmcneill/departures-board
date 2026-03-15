@@ -58,7 +58,9 @@ void TfLBoard::onDeactivate() {}
 void TfLBoard::configure(const BoardConfig& config) {
     this->config = config;
     if (context) {
-        setTflAppkey(context->getConfigManager().getConfig().tflAppkey);
+        ApiKey* key = context->getConfigManager().getKeyById(config.apiKeyId);
+        if (key) setTflAppkey(key->token);
+        else tflAppkey[0] = '\0';
     }
     setTubeId(config.id);
     setTubeName(config.name);

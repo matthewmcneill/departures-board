@@ -42,6 +42,7 @@ struct BoardConfig {
     BoardTypes type = MODE_RAIL; // Type of board (Rail, Tube, Bus)
     char name[80] = "";          // Human-readable name for the station/stop
     char id[13] = "";            // ID (CRS for Rail, Naptan for Tube, Atco for Bus)
+    char apiKeyId[13] = "";      // ID of the API key to use for this board
     
     // --- Location Settings ---
     float lat = 0.0f;            // Latitude for weather/local info
@@ -64,14 +65,23 @@ struct BoardConfig {
 };
 
 /**
+ * @brief Represents a single API key in the registry.
+ */
+struct ApiKey {
+    char id[13] = "";            // Unique ID for referencing (e.g. k-12345678)
+    char label[32] = "";         // Human-readable label
+    char type[12] = "";          // rail, tfl, owm
+    char token[64] = "";         // The actual key/token
+};
+
+/**
  * @brief Container for all application configuration settings.
  */
 struct Config {
-    // --- API Keys & Tokens ---
-    char nrToken[37] = ""; // National Rail Darwin token
-    char tflAppkey[50] = ""; // TfL application key
-    char owmToken[33] = ""; // OpenWeatherMap API key
-    bool apiKeysLoaded = false; // Flag indicating if secrets are successfully loaded
+    // --- API Key Registry ---
+    ApiKey keys[MAX_KEYS];       // Registry of API keys
+    int keyCount = 0;            // Number of keys in the registry
+    bool apiKeysLoaded = false;  // Flag indicating if secrets are successfully loaded
 
     // --- System Settings ---
     char hostname[33] = "DeparturesBoard"; // Network hostname
@@ -174,6 +184,27 @@ public:
      * @return True if save succeeded.
      */
     bool save();
+
+    /**
+     * @brief Writes the current Key Registry to `/apikeys.json`.
+     * @return True if save succeeded.
+     */
+    bool saveApiKeys();
+
+    /**
+     * @brief Adds or updates a key in the registry.
+     */
+    void updateKey(const ApiKey& key);
+
+    /**
+     * @brief Removes a key from the registry by ID.
+     */
+    void deleteKey(const char* id);
+
+    /**
+     * @brief Retrieves a key from the registry by ID.
+     */
+    ApiKey* getKeyById(const char* id);
 
     /**
      * @brief Save textual data string to a file in LittleFS.

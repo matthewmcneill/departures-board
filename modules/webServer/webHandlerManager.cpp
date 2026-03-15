@@ -20,6 +20,11 @@
 #include <logger.hpp>
 #include <wiFiConfig.hpp>
 #include <WiFi.h>
+#include <appContext.hpp>
+#include "../displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp"
+#include "../displayManager/boards/tflBoard/tflDataSource.hpp"
+
+extern class appContext appContext;
 
 WebHandlerManager::WebHandlerManager(WebServer& server, ConfigManager& config) 
     : _server(server), _config(config) {
@@ -46,6 +51,8 @@ void WebHandlerManager::begin() {
     // API: Keys (CRUD)
     _server.on("/api/keys", HTTP_GET, [this]() { this->handleGetKeys(); });
     _server.on("/api/keys", HTTP_POST, [this]() { this->handleSaveKey(); });
+    _server.on("/api/keys", HTTP_DELETE, [this]() { this->handleDeleteKey(); });
+    _server.on("/api/keys/test", HTTP_POST, [this]() { this->handleTestKey(); });
 
     // API: WiFi (Bespoke Captive Portal)
     _server.on("/api/wifi/scan", HTTP_GET, [this]() { this->handleWiFiScan(); });
@@ -105,11 +112,16 @@ void WebHandlerManager::handleGetConfig() {
     system["rssUrl"] = config.rssUrl;
     system["rssName"] = config.rssName;
 
-    // --- API Keys (Masked) ---
-    JsonObject keys = doc["keys"].to<JsonObject>();
-    keys["nrToken"] = (strlen(config.nrToken) > 0) ? "●●●●●●●●" : "";
-    keys["tflAppkey"] = (strlen(config.tflAppkey) > 0) ? "●●●●●●●●" : "";
-    keys["owmToken"] = (strlen(config.owmToken) > 0) ? "●●●●●●●●" : "";
+    // --- API Key Registry ---
+    JsonArray keysArr = doc["keys"].to<JsonArray>();
+    for (int i = 0; i < config.keyCount; i++) {
+        JsonObject kObj = keysArr.add<JsonObject>();
+        kObj["id"] = config.keys[i].id;
+        kObj["label"] = config.keys[i].label;
+        kObj["type"] = config.keys[i].type;
+        // Mask token for security
+        kObj["token"] = (strlen(config.keys[i].token) > 0) ? "●●●●●●●●" : "";
+    }
 
     // --- Boards ---
     JsonArray boardsArr = doc["boards"].to<JsonArray>();
@@ -160,14 +172,8 @@ void WebHandlerManager::handleSaveAll() {
             if (sys["flip"].is<bool>()) config.flipScreen = sys["flip"];
         }
 
-        // Update Keys (Only if not masked or manually provided)
-        // In this simplified version, we'll assume the client sends the real key if changed.
-        if (doc["keys"].is<JsonObject>()) {
-            JsonObject k = doc["keys"];
-            if (k["nrToken"].is<const char*>() && strcmp(k["nrToken"], "●●●●●●●●") != 0) strlcpy(config.nrToken, k["nrToken"], sizeof(config.nrToken));
-            if (k["tflAppkey"].is<const char*>() && strcmp(k["tflAppkey"], "●●●●●●●●") != 0) strlcpy(config.tflAppkey, k["tflAppkey"], sizeof(config.tflAppkey));
-            if (k["owmToken"].is<const char*>() && strcmp(k["owmToken"], "●●●●●●●●") != 0) strlcpy(config.owmToken, k["owmToken"], sizeof(config.owmToken));
-        }
+        // Note: Keys are now managed via separate /api/keys endpoints.
+        // Board apiKeyId references are updated in the boards loop below.
 
         // Update Boards (Full replace strategy suggested by unified save)
         if (doc["boards"].is<JsonArray>()) {
@@ -186,6 +192,7 @@ void WebHandlerManager::handleSaveAll() {
                 strlcpy(bc.secondaryName, b["secName"] | "", sizeof(bc.secondaryName));
                 bc.timeOffset = b["offset"] | 0;
                 bc.showWeather = b["weather"] | true;
+                strlcpy(bc.apiKeyId, b["apiKeyId"] | "", sizeof(bc.apiKeyId));
             }
         }
 
@@ -200,17 +207,8 @@ void WebHandlerManager::handleSaveAll() {
             }
         }
 
-        // Save everything
+        // Save System & Boards
         _config.save();
-        
-        // Key saving requires separate file in current architecture
-        JsonDocument keyDoc;
-        keyDoc["nrToken"] = config.nrToken;
-        keyDoc["appKey"] = config.tflAppkey;
-        keyDoc["owmToken"] = config.owmToken;
-        String keyOutput;
-        serializeJson(keyDoc, keyOutput);
-        _config.saveFile("/apikeys.json", keyOutput);
 
         _server.send(200, "application/json", "{\"status\":\"ok\"}");
         
@@ -243,13 +241,119 @@ void WebHandlerManager::handleDeepDeleteBoard() {
 }
 
 void WebHandlerManager::handleGetKeys() {
-    // Placeholder for Phase 2 implementation
-    _server.send(200, "application/json", "[]");
+    const Config& config = _config.getConfig();
+    JsonDocument doc;
+    JsonArray arr = doc.to<JsonArray>();
+
+    for (int i = 0; i < config.keyCount; i++) {
+        JsonObject kObj = arr.add<JsonObject>();
+        kObj["id"] = config.keys[i].id;
+        kObj["label"] = config.keys[i].label;
+        kObj["type"] = config.keys[i].type;
+        kObj["token"] = (strlen(config.keys[i].token) > 0) ? "●●●●●●●●" : "";
+    }
+
+    String output;
+    serializeJson(doc, output);
+    _server.send(200, "application/json", output);
 }
 
 void WebHandlerManager::handleSaveKey() {
-    // Placeholder for Phase 2 implementation
-    _server.send(200, "application/json", "{\"status\":\"key_saved\"}");
+    if (!_server.hasArg("plain")) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
+        return;
+    }
+
+    JsonDocument doc;
+    deserializeJson(doc, _server.arg("plain"));
+    
+    ApiKey key;
+    strlcpy(key.id, doc["id"] | "", sizeof(key.id));
+    strlcpy(key.label, doc["label"] | "", sizeof(key.label));
+    strlcpy(key.type, doc["type"] | "", sizeof(key.type));
+    
+    const char* token = doc["token"] | "";
+    // Only update token if it's not the mask
+    if (strcmp(token, "●●●●●●●●") != 0) {
+        strlcpy(key.token, token, sizeof(key.token));
+    } else {
+        // Find existing key to preserve token
+        ApiKey* existing = _config.getKeyById(key.id);
+        if (existing) {
+            strlcpy(key.token, existing->token, sizeof(key.token));
+        }
+    }
+
+    if (strlen(key.label) == 0 || strlen(key.type) == 0) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Label and Type are required\"}");
+        return;
+    }
+
+    _config.updateKey(key);
+    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+}
+
+void WebHandlerManager::handleDeleteKey() {
+    if (!_server.hasArg("id")) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing ID\"}");
+        return;
+    }
+
+    _config.deleteKey(_server.arg("id").c_str());
+    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+}
+
+void WebHandlerManager::handleTestKey() {
+    if (!_server.hasArg("plain")) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
+        return;
+    }
+
+    JsonDocument doc;
+    deserializeJson(doc, _server.arg("plain"));
+    const char* type = doc["type"] | "";
+    const char* token = doc["token"] | "";
+    
+    // Resolve mask to real token if testing existing key
+    if (strcmp(token, "●●●●●●●●") == 0) {
+        ApiKey* existing = _config.getKeyById(doc["id"] | "");
+        if (existing) token = existing->token;
+    }
+
+    bool success = false;
+    String errorMsg = "Unsupported test type";
+
+    if (strcmp(type, "owm") == 0) {
+        WeatherStatus tempStatus;
+        tempStatus.lat = 51.52;
+        tempStatus.lon = -0.13;
+        String oldKey = appContext.getWeather().getOpenWeatherMapApiKey();
+        appContext.getWeather().setOpenWeatherMapApiKey(token);
+        success = appContext.getWeather().updateWeather(tempStatus);
+        if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
+        appContext.getWeather().setOpenWeatherMapApiKey(oldKey.c_str());
+    } else if (strcmp(type, "rail") == 0) {
+        // National Rail test - try a simple request
+        nationalRailDataSource ds;
+        ds.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
+        ds.configure(token, "EUS"); // Euston
+        success = (ds.updateData() == 0);
+        if (!success) errorMsg = ds.getLastErrorMsg();
+    } else if (strcmp(type, "tfl") == 0) {
+        // TfL test
+        tflDataSource ds;
+        ds.configure("940GZZLUBND", token, nullptr); // Bond Street
+        success = (ds.updateData() == 0);
+        if (!success) errorMsg = ds.getLastErrorMsg();
+    }
+
+    JsonDocument res;
+    res["status"] = success ? "ok" : "fail";
+    if (!success) res["msg"] = errorMsg;
+    
+    String output;
+    serializeJson(res, output);
+    _server.send(200, "application/json", output);
 }
 
 void WebHandlerManager::handleWiFiScan() {

@@ -65,10 +65,12 @@ String ConfigManager::loadFile(String fName) {
 /**
  * @brief Load sensitive tokens (NR token, OWM token, TfL App Key) from `/apikeys.json`.
  */
+/**
+ * @brief Load sensitive tokens (NR token, OWM token, TfL App Key) from `/apikeys.json`.
+ */
 void ConfigManager::loadApiKeys() {
   LOG_INFO("CONFIG", "Loading API keys from /apikeys.json...");
-  // --- Step 1: Open and Parse File ---
-  JsonDocument doc; // JSON staging document
+  JsonDocument doc;
 
   if (LittleFS.exists("/apikeys.json")) {
     String contents = loadFile("/apikeys.json");
@@ -76,37 +78,132 @@ void ConfigManager::loadApiKeys() {
     
     DeserializationError error = deserializeJson(doc, contents);
     if (!error) {
-        JsonObject settings = doc.as<JsonObject>();
+        JsonObject root = doc.as<JsonObject>();
+        float version = root[F("version")] | 1.0f;
 
-        if (settings[F("nrToken")].is<const char*>()) {
-          strlcpy(config.nrToken, settings[F("nrToken")], sizeof(config.nrToken));
+        if (version < 2.0f) {
+            // --- Migration v1.0 -> v2.0 ---
+            LOG_INFO("CONFIG", "Migrating /apikeys.json to v2.0 registry format...");
+            config.keyCount = 0;
+
+            if (root[F("nrToken")].is<const char*>()) {
+                ApiKey& k = config.keys[config.keyCount++];
+                strlcpy(k.id, "k-nr-legacy", sizeof(k.id));
+                strlcpy(k.label, "Default Rail Key", sizeof(k.label));
+                strlcpy(k.type, "rail", sizeof(k.type));
+                strlcpy(k.token, root[F("nrToken")], sizeof(k.token));
+            }
+
+            if (root[F("appKey")].is<const char*>()) {
+                ApiKey& k = config.keys[config.keyCount++];
+                strlcpy(k.id, "k-tfl-legacy", sizeof(k.id));
+                strlcpy(k.label, "Default TfL Key", sizeof(k.label));
+                strlcpy(k.type, "tfl", sizeof(k.type));
+                strlcpy(k.token, root[F("appKey")], sizeof(k.token));
+            }
+
+            if (root[F("owmToken")].is<const char*>()) {
+                ApiKey& k = config.keys[config.keyCount++];
+                strlcpy(k.id, "k-owm-legacy", sizeof(k.id));
+                strlcpy(k.label, "Default Weather Key", sizeof(k.label));
+                strlcpy(k.type, "owm", sizeof(k.type));
+                strlcpy(k.token, root[F("owmToken")], sizeof(k.token));
+            }
+
+            config.apiKeysLoaded = true;
+            saveApiKeys(); // Persist migrated format
+        } else {
+            // --- Load v2.0 Format ---
+            JsonArray keys = root[F("keys")].as<JsonArray>();
+            config.keyCount = 0;
+            for (JsonObject kObj : keys) {
+                if (config.keyCount >= MAX_KEYS) break;
+                ApiKey& k = config.keys[config.keyCount++];
+                strlcpy(k.id, kObj[F("id")] | "", sizeof(k.id));
+                strlcpy(k.label, kObj[F("label")] | "", sizeof(k.label));
+                strlcpy(k.type, kObj[F("type")] | "", sizeof(k.type));
+                strlcpy(k.token, kObj[F("token")] | "", sizeof(k.token));
+            }
+            config.apiKeysLoaded = true;
         }
 
-        if (settings[F("appKey")].is<const char*>()) {
-          strlcpy(config.tflAppkey, settings[F("appKey")], sizeof(config.tflAppkey));
+        // Register secrets for redaction
+        for (int i = 0; i < config.keyCount; i++) {
+            if (config.keys[i].token[0]) {
+                Logger::registerSecret(config.keys[i].token);
+            }
         }
 
-        if (settings[F("owmToken")].is<const char*>()) {
-          strlcpy(config.owmToken, settings[F("owmToken")], sizeof(config.owmToken));
-        }
-
-        config.apiKeysLoaded = true;
-
-        // Register secrets for automatic log redaction
-        if (config.nrToken[0]) Logger::registerSecret(config.nrToken);
-        if (config.tflAppkey[0]) Logger::registerSecret(config.tflAppkey);
-        if (config.owmToken[0]) Logger::registerSecret(config.owmToken);
-
-        LOG_INFO("SYSTEM", "API keys loaded (NR=" + String(config.nrToken[0] ? "SET" : "MISSING") + 
-                           ", TfL=" + String(config.tflAppkey[0] ? "SET" : "MISSING") + 
-                           ", OWM=" + String(config.owmToken[0] ? "SET" : "MISSING") + ")");
-
+        LOG_INFO("SYSTEM", "API Key Registry loaded with " + String(config.keyCount) + " keys.");
       } else {
         LOG_ERROR("CONFIG", String("Failed to parse /apikeys.json: ") + error.c_str());
       }
   } else {
     LOG_WARN("CONFIG", "/apikeys.json not found on LittleFS.");
   }
+}
+
+/**
+ * @brief Writes the current Key Registry to `/apikeys.json`.
+ */
+bool ConfigManager::saveApiKeys() {
+    LOG_INFO("CONFIG", "Saving API Key Registry to /apikeys.json...");
+    JsonDocument doc;
+    doc[F("version")] = 2.0;
+    JsonArray keys = doc[F("keys")].to<JsonArray>();
+
+    for (int i = 0; i < config.keyCount; i++) {
+        JsonObject kObj = keys.add<JsonObject>();
+        kObj[F("id")] = config.keys[i].id;
+        kObj[F("label")] = config.keys[i].label;
+        kObj[F("type")] = config.keys[i].type;
+        kObj[F("token")] = config.keys[i].token;
+    }
+
+    String output;
+    serializeJson(doc, output);
+    return saveFile(F("/apikeys.json"), output);
+}
+
+/**
+ * @brief Adds or updates a key in the registry.
+ */
+void ConfigManager::updateKey(const ApiKey& key) {
+    ApiKey* existing = getKeyById(key.id);
+    if (existing) {
+        memcpy(existing, &key, sizeof(ApiKey));
+    } else if (config.keyCount < MAX_KEYS) {
+        memcpy(&config.keys[config.keyCount++], &key, sizeof(ApiKey));
+    }
+    saveApiKeys();
+}
+
+/**
+ * @brief Removes a key from the registry by ID.
+ */
+void ConfigManager::deleteKey(const char* id) {
+    for (int i = 0; i < config.keyCount; i++) {
+        if (strcmp(config.keys[i].id, id) == 0) {
+            // Shift remaining keys
+            for (int j = i; j < config.keyCount - 1; j++) {
+                memcpy(&config.keys[j], &config.keys[j+1], sizeof(ApiKey));
+            }
+            config.keyCount--;
+            saveApiKeys();
+            return;
+        }
+    }
+}
+
+/**
+ * @brief Retrieves a key from the registry by ID.
+ */
+ApiKey* ConfigManager::getKeyById(const char* id) {
+    if (!id || id[0] == '\0') return nullptr;
+    for (int i = 0; i < config.keyCount; i++) {
+        if (strcmp(config.keys[i].id, id) == 0) return &config.keys[i];
+    }
+    return nullptr;
 }
 
 /**
@@ -209,6 +306,7 @@ bool ConfigManager::save() {
         b[F("secName")] = bc.secondaryName;
         b[F("offset")] = bc.timeOffset;
         b[F("weather")] = bc.showWeather;
+        b[F("apiKeyId")] = bc.apiKeyId;
     }
 
     String output;
@@ -290,6 +388,7 @@ void ConfigManager::loadConfig() {
                 strlcpy(bc.secondaryId, b[F("secId")] | "", sizeof(bc.secondaryId));
                 strlcpy(bc.secondaryName, b[F("secName")] | "", sizeof(bc.secondaryName));
                 bc.timeOffset = b[F("offset")] | 0;
+                strlcpy(bc.apiKeyId, b[F("apiKeyId")] | "", sizeof(bc.apiKeyId));
                 
                 // Weather Toggle: Default to true unless it's a Tube board (legacy behavior)
                 if (b[F("weather")].is<bool>()) {
@@ -435,18 +534,14 @@ void ConfigManager::validate() {
 
         switch (bc.type) {
             case MODE_RAIL:
-                if (strlen(config.nrToken) == 0) {
-                    bc.errorType = 1; // Missing Key
-                } else if (strlen(bc.id) == 0) {
+                if (strlen(bc.id) == 0) {
                     bc.errorType = 2; // Missing ID
                 } else {
                     bc.complete = true;
                 }
                 break;
             case MODE_TUBE:
-                if (strlen(config.tflAppkey) == 0) {
-                    bc.errorType = 1; // Missing Key
-                } else if (strlen(bc.id) == 0) {
+                if (strlen(bc.id) == 0) {
                     bc.errorType = 2; // Missing ID
                 } else {
                     bc.complete = true;
@@ -460,6 +555,19 @@ void ConfigManager::validate() {
                 }
                 break;
         }
+
+        // --- Cross-Validation: API Key Registry Check ---
+        if (bc.complete) {
+            // Bus does not require a key currently
+            if (bc.type != MODE_BUS) {
+                ApiKey* key = getKeyById(bc.apiKeyId);
+                if (!key) {
+                    bc.complete = false;
+                    bc.errorType = 1; // Missing/Invalid Key
+                }
+            }
+        }
+
         if (bc.complete) {
             LOG_INFO("SYSTEM", "Board " + String(i) + " Validation: READY (Err=" + String(bc.errorType) + ")");
         } else {

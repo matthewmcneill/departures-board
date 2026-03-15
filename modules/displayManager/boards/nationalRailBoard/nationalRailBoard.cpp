@@ -83,7 +83,9 @@ void NationalRailBoard::onDeactivate() {}
 void NationalRailBoard::configure(const BoardConfig& config) {
     this->config = config;
     if (context) {
-        setNrToken(context->getConfigManager().getConfig().nrToken);
+        ApiKey* key = context->getConfigManager().getKeyById(config.apiKeyId);
+        if (key) setNrToken(key->token);
+        else nrToken[0] = '\0';
     }
     setCrsCode(config.id);
     setPlatformFilter(config.filter);

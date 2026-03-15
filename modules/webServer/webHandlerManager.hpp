@@ -116,6 +116,16 @@ private:
     void handleSaveKey();
 
     /**
+     * @brief CRUD: Delete an API key.
+     */
+    void handleDeleteKey();
+
+    /**
+     * @brief API: Test an API key connection.
+     */
+    void handleTestKey();
+
+    /**
      * @brief Captive portal redirect: Catch-all for unknown requests to redirect to /portal.
      */
     void handleCaptivePortalRedirect();

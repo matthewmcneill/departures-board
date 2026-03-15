@@ -433,7 +433,6 @@ void DisplayManager::applyConfig(const Config& config) {
                 setBoardType(i, BoardType::NR_BOARD);
                 NationalRailBoard* rb = (NationalRailBoard*)getDisplayBoard(i);
                 if (rb) {
-                    rb->setNrToken(config.nrToken);
                     rb->setCrsCode(bc.id);
                     rb->setStationLat(bc.lat);
                     rb->setStationLon(bc.lon);
@@ -448,7 +447,6 @@ void DisplayManager::applyConfig(const Config& config) {
                 setBoardType(i, BoardType::TFL_BOARD);
                 TfLBoard* tb = (TfLBoard*)getDisplayBoard(i);
                 if (tb) {
-                    tb->setTflAppkey(config.tflAppkey);
                     tb->setTubeId(bc.id);
                     tb->setTubeName(bc.name);
                 }
