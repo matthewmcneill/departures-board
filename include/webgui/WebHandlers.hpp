@@ -195,14 +195,10 @@ void handleSaveKeys() {
           WeatherStatus tempStatus;
           tempStatus.lat = 51.52;
           tempStatus.lon = -0.13;
-          // Temporarily swap key for validation
-          String oldKey = appContext.getWeather().getOpenWeatherMapApiKey();
-          appContext.getWeather().setOpenWeatherMapApiKey(owmToken.c_str());
-          if (!appContext.getWeather().updateWeather(tempStatus)) {
+          if (!appContext.getWeather().updateWeather(tempStatus, nullptr, owmToken.c_str())) {
             msg = F("The OpenWeather Map API key is not valid. Please check you have copied your key correctly. It may take up to 30 minutes for a newly created key to become active.\n\nNo changes have been saved.");
             result = false;
           }
-          appContext.getWeather().setOpenWeatherMapApiKey(oldKey.c_str());
         }
         if (result) {
           if (!appContext.getConfigManager().saveFile(F("/apikeys.json"),newJSON)) {
@@ -959,7 +955,9 @@ void updateCurrentWeather(float latitude, float longitude) {
   WeatherStatus tempStatus;
   tempStatus.lat = latitude;
   tempStatus.lon = longitude;
-  bool currentWeatherValid = appContext.getWeather().updateWeather(tempStatus);
+  int activeIdx = appContext.getDisplayManager().getActiveSlotIndex();
+  const BoardConfig& bc = appContext.getConfigManager().getConfig().boards[activeIdx];
+  bool currentWeatherValid = appContext.getWeather().updateWeather(tempStatus, bc.apiKeyId);
   if (currentWeatherValid) {
     appContext.getWeather().setWeatherMsg(tempStatus.description);
   } else {

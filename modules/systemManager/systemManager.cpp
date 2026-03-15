@@ -120,7 +120,7 @@ void systemManager::tick() {
                         } else {
                             ws.lat = activeBC.lat;
                             ws.lon = activeBC.lon;
-                            weather.updateWeather(ws);
+                            weather.updateWeather(ws, activeBC.apiKeyId);
                         }
                     }
                 }
@@ -327,12 +327,14 @@ void systemManager::raildataCallback(int stage, int nServices) {
 void systemManager::updateCurrentWeather(float lat, float lon) {
     weatherClient& weather = context->getWeather();
     if (weather.getWeatherEnabled()) {
-        iDisplayBoard* active = context->getDisplayManager().getDisplayBoard(context->getDisplayManager().getActiveSlotIndex());
+        int activeIndex = context->getDisplayManager().getActiveSlotIndex();
+        iDisplayBoard* active = context->getDisplayManager().getDisplayBoard(activeIndex);
         if (active) {
             WeatherStatus& ws = active->getWeatherStatus();
             ws.lat = lat;
             ws.lon = lon;
-            weather.updateWeather(ws);
+            const BoardConfig& bc = context->getConfigManager().getConfig().boards[activeIndex];
+            weather.updateWeather(ws, bc.apiKeyId);
         }
     }
 }

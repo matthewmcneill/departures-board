@@ -327,11 +327,8 @@ void WebHandlerManager::handleTestKey() {
         WeatherStatus tempStatus;
         tempStatus.lat = 51.52;
         tempStatus.lon = -0.13;
-        String oldKey = appContext.getWeather().getOpenWeatherMapApiKey();
-        appContext.getWeather().setOpenWeatherMapApiKey(token);
-        success = appContext.getWeather().updateWeather(tempStatus);
+        success = appContext.getWeather().updateWeather(tempStatus, nullptr, token);
         if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
-        appContext.getWeather().setOpenWeatherMapApiKey(oldKey.c_str());
     } else if (strcmp(type, "rail") == 0) {
         // National Rail test - try a simple request
         nationalRailDataSource ds;

@@ -91,3 +91,17 @@ Conducted a comprehensive audit of all project source files to ensure strict adh
 
 ### Git Commit
 Generated commit: 15d5aa3
+
+## Bug Report - Agent Session "Mega Crash"
+
+### Date
+2026-03-15T13:40Z (Estimated based on queue log)
+
+### Description
+The Antigravity agent session tasked with "Implement Keys Manager Registry (CRUD, Key IDs, Board Mapping)" crashed mid-execution. The agent's conversation (`abb31206-f8fc-443b-a9ed-4c604e1a4de6`) was abruptly terminated, resulting in a loss of session state and chat history. A stale lock was left in `.agents/queue.md`. 
+Upon investigation, there was no internal git crash checkpoint stored in `.gemini/antigravity/code_tracker/history` for today's session. However, the exact state of the refactoring was still present in the user's working tree as 20 distinct uncommitted file modifications (spanning `index.html`, `configManager`, board implementations, etc.). These changes have been successfully captured and safely stored in the `temp/recovery-api-key-refactor` branch.
+
+### Steps to Reproduce
+1. Start an agent session with a complex, multi-file refactoring task (e.g., modifying `index.html` bindings and multiple C++ `configManager` references concurrently).
+2. Allow the session to perform extensive uncommitted file modifications in the working tree.
+3. Observe the system prematurely crashing; the chat context and session state is lost, leaving a stale lock in `.agents/queue.md`, while the workspace retains the uncommitted modified files.

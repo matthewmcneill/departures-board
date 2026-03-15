@@ -22,20 +22,22 @@
 #include <WiFiClient.h>
 #include <logger.hpp>
 #include <memory>
+#include <appContext.hpp>
+
+extern class appContext appContext;
 
 /**
  * @brief Implements the iConfigurable interface.
  */
 void weatherClient::reapplyConfig(const Config& config) {
-    const char* token = "";
+    bool hasOwmKey = false;
     for (int i = 0; i < config.keyCount; i++) {
         if (strcmp(config.keys[i].type, "owm") == 0) {
-            token = config.keys[i].token;
+            hasOwmKey = true;
             break;
         }
     }
-    setOpenWeatherMapApiKey(token);
-    setWeatherEnabled(token[0] != '\0');
+    setWeatherEnabled(hasOwmKey);
 }
 
 weatherClient::weatherClient() {}
@@ -45,11 +47,25 @@ weatherClient::weatherClient() {}
  * @param status Reference to the WeatherStatus object to update (must have valid lat/lon).
  * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
-bool weatherClient::updateWeather(WeatherStatus& status) {
+bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, const char* overrideToken) {
     activeStatus = &status;
     activeStatus->status = WeatherUpdateStatus::DATA_ERROR; // Assume error until success
 
-    String apiKey = String(openWeatherMapApiKey);
+    String apiKey = "";
+    if (overrideToken && strlen(overrideToken) > 0) {
+        apiKey = String(overrideToken);
+    } else if (apiKeyId && strlen(apiKeyId) > 0) {
+        ApiKey* key = appContext.getConfigManager().getKeyById(apiKeyId);
+        if (key && strlen(key->token) > 0) {
+            apiKey = String(key->token);
+        }
+    }
+
+    if (apiKey.length() == 0) {
+        strcpy(lastErrorMsg, "No valid API Key");
+        LOG_WARN("DATA", lastErrorMsg);
+        return false;
+    }
     char latBuf[16], lonBuf[16];
     dtostrf(status.lat, 4, 4, latBuf);
     dtostrf(status.lon, 4, 4, lonBuf);

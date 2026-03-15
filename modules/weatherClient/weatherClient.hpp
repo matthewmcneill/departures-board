@@ -35,7 +35,6 @@ class weatherClient: public JsonListener, public iConfigurable {
 
         WeatherStatus* activeStatus = nullptr; // Pointer to the status object being updated by the parser
         
-        char openWeatherMapApiKey[64] = "";
         char weatherMsg[46] = "";
         
         bool weatherEnabled = false;
@@ -44,9 +43,6 @@ class weatherClient: public JsonListener, public iConfigurable {
     public:
         String currentWeather = "";
         char lastErrorMsg[128];
-
-        const char* getOpenWeatherMapApiKey() const { return openWeatherMapApiKey; }
-        void setOpenWeatherMapApiKey(const char* newKey) { strncpy(openWeatherMapApiKey, newKey, sizeof(openWeatherMapApiKey)-1); }
 
         bool getWeatherEnabled() const { return weatherEnabled; }
         void setWeatherEnabled(bool val) { weatherEnabled = val; }
@@ -67,9 +63,11 @@ class weatherClient: public JsonListener, public iConfigurable {
 /**
  * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
  * @param status Reference to the WeatherStatus object to update.
+ * @param apiKeyId The board's API key reference.
+ * @param overrideToken Optional token for testing.
  * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
-        bool updateWeather(WeatherStatus& status);
+        bool updateWeather(WeatherStatus& status, const char* apiKeyId, const char* overrideToken = nullptr);
 
 /**
  * @brief JSON whitespace handler.
