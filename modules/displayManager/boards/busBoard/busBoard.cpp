@@ -103,6 +103,7 @@ int BusBoard::updateData() {
         return 7;
     }
     int status = dataSource.updateData();
+    lastUpdateStatus = status;
     needsRefresh = true;
     
     if (status == 0) { // UPD_SUCCESS
@@ -140,6 +141,14 @@ void BusBoard::render(U8G2& display) {
 
     headWidget.render(display);
     
+    if (lastUpdateStatus == 5) { // UPD_UNAUTHORISED
+        display.setFont(Underground10);
+        display.drawStr(10, 35, "API Token Invalid");
+        display.setFont(NatRailSmall9);
+        display.drawStr(10, 50, "Check portal settings.");
+        return;
+    }
+
     // Render the departures
     BusStop* data = dataSource.getStationData();
     

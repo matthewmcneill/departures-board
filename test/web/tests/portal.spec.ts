@@ -189,4 +189,17 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     expect(text).toContain('TestWiFi');
     expect(text).toContain('Configured');
   });
+
+  test('should display provider logos in key slots and type picker', async ({ page }) => {
+    // Check key slot logo
+    await page.click('a[data-target="tab-apikeys"]');
+    const slotLogo = page.locator('.key-slot.filled .provider-logo svg');
+    await expect(slotLogo).toBeVisible();
+
+    // Check type picker logos
+    await page.locator('.key-slot').filter({ hasText: 'Empty Slot' }).first().click();
+    await expect(page.locator('#modal-key-selection')).toBeVisible();
+    const pickerLogos = page.locator('#modal-key-selection .provider-logo svg');
+    await expect(pickerLogos).toHaveCount(3); // Rail, TfL, OWM
+  });
 });

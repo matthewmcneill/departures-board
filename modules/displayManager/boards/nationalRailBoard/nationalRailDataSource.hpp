@@ -118,6 +118,7 @@ public:
 
     // Configuration & Data Access
     int init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb);
+    bool isInitialized() const { return soapHost[0] != '\0'; }
     void configure(const char* token, const char* crs, const char* filter = "", const char* callingCrs = "", int offset = 0);
     
     NationalRailStation* getStationData() { return stationData.get(); }

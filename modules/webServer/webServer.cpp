@@ -108,4 +108,5 @@ void WebServerManager::init() {
 
 void WebServerManager::handleClient() {
     server.handleClient();
+    yield();
 }

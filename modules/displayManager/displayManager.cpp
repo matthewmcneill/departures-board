@@ -82,6 +82,8 @@ void DisplayManager::begin(appContext* contextPtr) {
     u8g2.setFontPosTop();
     u8g2.setFont(NatRailTall12);
     
+    showBoard(&splashBoard);
+    
     lastActivity = millis();
 }
 
@@ -406,8 +408,8 @@ void DisplayManager::yieldAnimationUpdate() {
 void DisplayManager::applyConfig(const Config& config) {
     LOG_INFO("DISPLAY", "Applying configuration to DisplayManager...");
     
-    // Reset active board pointer to force a fresh onActivate() 
-    // when showBoard() is called at the end of provisioning.
+    // Save previous board and detach to force fresh onActivate
+    iDisplayBoard* previousBoard = currentBoard;
     currentBoard = nullptr;
     
     // --- Step 1: Apply Global Hardware and Power settings ---
@@ -471,7 +473,15 @@ void DisplayManager::applyConfig(const Config& config) {
     }
 
     // --- Step 3: Finalize Initial View ---
-    if (currentBoard != getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK)) {
+    if (context && context->getAppState() != AppState::RUNNING) {
+        // Do not activate configured display boards if we aren't in RUNNING state yet.
+        // Restore whatever system board was overriding the screen.
+        if (previousBoard != nullptr) {
+            showBoard(previousBoard);
+        } else {
+            showBoard(&splashBoard);
+        }
+    } else if (previousBoard != getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK)) {
         // Use defaultBoardIndex if valid, otherwise fallback to first available board
         int targetSlot = -1;
         
@@ -497,6 +507,9 @@ void DisplayManager::applyConfig(const Config& config) {
         } else {
            activeSlotIndex = 0; // fallback if no boards were populated
         }
+    } else {
+        // It was sleeping, restore the sleep screen
+        showBoard(previousBoard);
     }
 }
 

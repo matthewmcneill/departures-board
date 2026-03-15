@@ -32,14 +32,27 @@ class DNSServer; // Forward declaration
  */
 class WiFiManagerModule : public iConfigurable {
 private:
+enum class WiFiState {
+        WIFI_INIT,             // System just started, need to decide next step
+        WIFI_STA_CONNECTING,   // Trying to connect as Station
+        WIFI_AP_STARTING,      // Station failed, starting AP mode
+        WIFI_READY,            // Connected or AP is active
+        WIFI_SHUTDOWN          // Explicitly disabled
+    };
+
     char wifiSsid[33];
     char wifiPass[65];
     char currentHostname[33];
     bool isAPMode = false;
+    WiFiState currentState = WiFiState::WIFI_INIT;
+    unsigned long stateTimer = 0;
+    int connectionRetries = 0;
+
     DNSServer* dnsServer = nullptr;
 
     void loadWiFiConfig();
     void saveWiFiConfig();
+    void transitionTo(WiFiState newState);
 
 public:
     WiFiManagerModule();
@@ -54,6 +67,11 @@ public:
      * @brief Implements the iConfigurable interface.
      */
     void reapplyConfig(const Config& config) override;
+
+    /**
+     * @brief Periodic maintenance tick for the WiFi state machine.
+     */
+    void tick();
 
     /**
      * @brief Handles the DNS Hijack loop when in AP mode. Should be called repeatedly in loop().
@@ -77,6 +95,11 @@ public:
      * @brief Returns true if currently operating in Setup/AP Mode.
      */
     bool getAPMode() const { return isAPMode; }
+
+    /**
+     * @brief Returns true if WiFi is ready (either STA connected or AP active).
+     */
+    bool isReady() const { return currentState == WiFiState::WIFI_READY; }
 
     /**
      * @brief Returns the current stored SSID.

@@ -6,6 +6,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
+ * DESIGN RATIONALE:
+ * This class serves as the central "System Hub" for several critical technical reasons:
+ * 1. Dependency Injection: It allows modules to receive a pointer to the context 
+ *    rather than being "hard-pinned" to global variables in the main file.
+ * 2. Deterministic Boot: It ensures a predictable initialization sequence across 
+ *    different translation units, avoiding the C++ "Static Initialization Order Fiasco".
+ * 3. Service Discovery: It provides a clean, header-based entry point for modules 
+ *    to find and interact with other system services (Config, Display, Network).
+ * 
+ * For a deep dive into this architecture, see doc/ArchitectureAndEncapsulation.md.
+ *
  * Module: modules/systemManager/appContext.hpp
  * Description: Central context orchestrator that owns core managers and services.
  *              Serves as the primary dependency injection point for the system.
@@ -28,18 +39,17 @@
 #include <messaging/messagePool.hpp>
 
 /**
+ * @brief High-level states for the AppContext Hierarchical State Machine.
+ */
+enum class AppState {
+    BOOTING,         // Initializing FS, Configs, Boot Splash
+    WIFI_SETUP,      // WiFiManager is in AP mode. Show captive portal instructions.
+    BOARD_SETUP,     // WiFi connected, but config.boards is empty. Show "Please configure" screen.
+    RUNNING          // Normal operation.
+};
+
+/**
  * @brief Orchestrator for all core system services and shared state.
- * 
- * DESIGN RATIONALE:
- * This class serves as the central "System Hub" for several critical technical reasons:
- * 1. Dependency Injection: It allows modules to receive a pointer to the context 
- *    rather than being "hard-pinned" to global variables in the main file.
- * 2. Deterministic Boot: It ensures a predictable initialization sequence across 
- *    different translation units, avoiding the C++ "Static Initialization Order Fiasco".
- * 3. Service Discovery: It provides a clean, header-based entry point for modules 
- *    to find and interact with other system services (Config, Display, Network).
- * 
- * For a deep dive into this architecture, see doc/ArchitectureAndEncapsulation.md.
  */
 class appContext {
 private:
@@ -51,6 +61,8 @@ private:
     weatherClient weather;          ///< External weather conditions client
     rssClient rss;                  ///< News feed scroller client
     MessagePool globalMessagePool;  ///< Shared pool for scrolling status messages
+    AppState currentState;          ///< Current tracked system state
+    bool webServerInitialized;      ///< Checks if webServer was safely started
 
 public:
     /**
@@ -77,6 +89,7 @@ public:
     weatherClient& getWeather() { return weather; }
     rssClient& getRss() { return rss; }
     MessagePool& getGlobalMessagePool() { return globalMessagePool; }
+    AppState getAppState() const { return currentState; }
 };
 
 // Global yield wrappers for non-blocking I/O

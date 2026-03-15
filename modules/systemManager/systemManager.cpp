@@ -23,6 +23,7 @@
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
+#include <wiFiConfig.hpp> // Added as per instruction
 
 /**
  * @brief Initialize default system state.
@@ -60,11 +61,14 @@ void systemManager::tick() {
     }
 
     if (WiFi.status() != WL_CONNECTED && millis() > lastWiFiReconnect + 10000) {
-        LOG_INFO("SYSTEM", "Attempting WiFi reconnection...");
-        WiFi.disconnect();
-        delay(100);
-        WiFi.reconnect();
-        lastWiFiReconnect = millis();
+        // Only attempt reconnection if NOT in AP (Captive Portal) mode
+        if (!wifiManager.getAPMode()) {
+            LOG_INFO("SYSTEM", "Attempting WiFi reconnection...");
+            WiFi.disconnect();
+            delay(100);
+            WiFi.reconnect();
+            lastWiFiReconnect = millis();
+        }
     }
 
     DisplayManager& displayMgr = context->getDisplayManager();
@@ -81,7 +85,8 @@ void systemManager::tick() {
             lastActiveSlotIndex = activeIndex;
         }
 
-        if (millis() > nextDataUpdate && wifiConnected) {
+        // Data Fetching Logic (Only fetch when in RUNNING state)
+        if (millis() > nextDataUpdate && wifiConnected && context->getAppState() == AppState::RUNNING) {
             displayMgr.setOtaUpdateAvailable(true);
             
             const BoardConfig& activeBC = config.boards[activeIndex];
@@ -130,15 +135,16 @@ void systemManager::tick() {
                 
                 displayMgr.render();
             } else if (lastUpdateResult == 5) { // UPD_UNAUTHORISED
-                displayMgr.showBoard(displayMgr.getSystemBoard(SystemBoardId::SYS_ERROR_TOKEN));
+                // Board must render its own error inline; do not hijack the display here.
+                LOG_WARN("DATA", "API Unauthorised. Displaying inline warning.");
             } else {
                 lastLoadFailure = millis();
                 dataLoadFailure++;
                 nextDataUpdate = millis() + 30000;
                 displayMgr.setOtaUpdateAvailable(false);
-                if (noDataLoaded) displayMgr.showBoard(displayMgr.getSystemBoard(SystemBoardId::SYS_ERROR_NO_DATA));
+                LOG_WARN("DATA", "Data update failed with code: " + String(lastUpdateResult) + ". Board will handle display.");
             }
-        } else if (millis() > nextDataUpdate) {
+        } else if (millis() > nextDataUpdate && context->getAppState() == AppState::RUNNING) {
             // Log once per minute why we aren't updating if WiFi is down
             static unsigned long lastWifiWaitLog = 0;
             if (millis() - lastWifiWaitLog > 60000) {

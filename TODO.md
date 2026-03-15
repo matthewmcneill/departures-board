@@ -24,3 +24,4 @@
 - [x] the 'eye' visible icon for the passwords is stil misaligned - I asked the agent 3 times to fix it and it just could not understand.
 - [x] the scan button is not aligned with the networks drop-down box and changes size when the scan icon is showing.
 - [x] just check that the key registry IS actually being used as a registry.  i.e. anything that references it uses an ID for the key that is served by the registry with the actual key. Similarly, in the storage, the configuration storage should reference the id of the key and the apiKeyManager should use that ID to serve the correct key.  
+- [ ] Add unit tests for `ConfigManager::hasConfiguredBoards()` to verify it correctly evaluates incomplete default boards as unconfigured, preventing the system from skipping the `BOARD_SETUP` sequence.

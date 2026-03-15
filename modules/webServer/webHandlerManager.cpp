@@ -342,6 +342,9 @@ void WebHandlerManager::handleTestKey() {
         ds.configure("940GZZLUBND", token, nullptr); // Bond Street
         success = (ds.updateData() == 0);
         if (!success) errorMsg = ds.getLastErrorMsg();
+    } else if (strcmp(type, "bus") == 0) {
+        // bustimes.org doesn't use a token for now, but we'll return ok for the UI
+        success = true;
     }
 
     JsonDocument res;

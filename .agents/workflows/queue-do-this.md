@@ -14,3 +14,4 @@ description: Select the current session and kick off the implementation plan.
     - Remove the current session from the `## Pending Queue` table if it was there.
     - Notify the user: "Lock claimed. Starting work now."
     - Proceed to execute the current implementation plan.
+6.  **IMPORTANT**: Upon completion of implementation, DO NOT release the lock. You MUST retain the lock for testing and hardware verification. The lock should only be released via `/queue-do-next`, `/queue-release`, or as the final step of the `/wrap-session` workflow.

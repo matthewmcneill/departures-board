@@ -107,13 +107,10 @@ extern const char btAttribution[] = "Powered by bustimes.org"; // Mandatory attr
  */
 void setup(void) {
   Logger::begin();
-  LOG_SPLASH("DEPARTURES BOARD BOOTING...");
 
   LOG_INFO("SYSTEM", "Starting boot sequence...");  
   appContext.begin();
   LOG_INFO("SYSTEM", "appContext.begin() finished.");
-
-  LOG_SPLASH("BOOT SEQUENCE COMPLETE");
 
 }
 

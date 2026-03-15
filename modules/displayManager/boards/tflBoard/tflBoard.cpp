@@ -78,6 +78,7 @@ int TfLBoard::updateData() {
         return 7;
     }
     int status = dataSource.updateData();
+    lastUpdateStatus = status;
 
     if (status == 0) { // UPD_SUCCESS
         // Populate widget data only when data actually changes
@@ -110,6 +111,14 @@ void TfLBoard::render(U8G2& display) {
 
     headWidget.render(display);
     
+    if (lastUpdateStatus == 5) { // UPD_UNAUTHORISED
+        display.setFont(Underground10);
+        display.drawStr(10, 35, "API Token Invalid");
+        display.setFont(NatRailSmall9);
+        display.drawStr(10, 50, "Check portal settings.");
+        return;
+    }
+
     TflStation* data = dataSource.getStationData();
     
     if (data->numServices > 0) {

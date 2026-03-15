@@ -83,86 +83,94 @@ void WiFiManagerModule::saveWiFiConfig() {
 }
 
 /**
- * @brief Core initialization routine.
+ * @brief transitionTo helper to log and reset timers.
+ */
+void WiFiManagerModule::transitionTo(WiFiState newState) {
+    currentState = newState;
+    stateTimer = millis();
+}
+
+/**
+ * @brief Core initialization routine (Non-Blocking).
  */
 void WiFiManagerModule::begin(const char* hostname) {
-  if (hostname != nullptr) strlcpy(currentHostname, hostname, sizeof(currentHostname));
-  
-  loadWiFiConfig();
+    if (hostname != nullptr) strlcpy(currentHostname, hostname, sizeof(currentHostname));
+    loadWiFiConfig();
 
-  // --- Step 1: Migration and Connectivity Prep ---
-  // Legacy Migration Check
-  if (strlen(wifiSsid) == 0) {
-    LOG_INFO("WIFI", "No wifi.json found. Checking if legacy NVS credentials exist...");
-    WiFi.begin(); 
-    int retries = 0;
-    while (WiFi.status() != WL_CONNECTED && retries < 15) {
-      delay(500);
-      retries++;
+    // Prepare for tick-based init
+    WiFi.persistent(false);
+    WiFi.disconnect(true, true);
+    WiFi.mode(WIFI_OFF);
+    
+    transitionTo(WiFiState::WIFI_INIT);
+    LOG_INFO("WIFI", "WiFi Manager initialized in NON-BLOCKING mode.");
+}
+
+/**
+ * @brief Periodic maintenance tick for the WiFi state machine.
+ */
+void WiFiManagerModule::tick() {
+    switch (currentState) {
+        case WiFiState::WIFI_INIT:
+            // Wait 2 seconds for system stability before touching the radio
+            if (millis() - stateTimer > 2000) {
+                if (strlen(wifiSsid) > 0) {
+                    LOG_INFO("WIFI", String("Connecting to ") + wifiSsid + "...");
+                    WiFi.mode(WIFI_STA);
+                    WiFi.setSleep(WIFI_PS_NONE);
+                    if (strlen(currentHostname) > 0) WiFi.setHostname(currentHostname);
+                    WiFi.begin(wifiSsid, wifiPass);
+                    connectionRetries = 0;
+                    transitionTo(WiFiState::WIFI_STA_CONNECTING);
+                } else {
+                    LOG_WARN("WIFI", "No credentials found. Falling back to AP mode.");
+                    transitionTo(WiFiState::WIFI_AP_STARTING);
+                }
+            }
+            break;
+
+        case WiFiState::WIFI_STA_CONNECTING:
+            if (WiFi.status() == WL_CONNECTED) {
+                LOG_INFO("WIFI", String("Connected successfully. IP: ") + WiFi.localIP().toString());
+                isAPMode = false;
+                transitionTo(WiFiState::WIFI_READY);
+            } else if (millis() - stateTimer > 15000) { // 15 second timeout for STA
+                LOG_WARN("WIFI", "WiFi connection timed out. Falling back to AP.");
+                WiFi.disconnect();
+                transitionTo(WiFiState::WIFI_AP_STARTING);
+            }
+            break;
+
+        case WiFiState::WIFI_AP_STARTING:
+            LOG_INFO("WIFI", "Starting Access Point setup (Captive Portal)...");
+            isAPMode = true;
+            WiFi.mode(WIFI_AP);
+            
+            {
+                IPAddress apIP(192, 168, 4, 1);
+                WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+                
+                const char* portalName = (strlen(currentHostname) > 0) ? currentHostname : "Departures-Board";
+                WiFi.softAP(portalName);
+                
+                // Start DNS Hijacker
+                if (dnsServer) delete dnsServer;
+                dnsServer = new DNSServer();
+                dnsServer->start(53, "*", apIP);
+                LOG_INFO("WIFI", String("Access Point '") + portalName + "' is online.");
+            }
+            
+            transitionTo(WiFiState::WIFI_READY);
+            break;
+
+        case WiFiState::WIFI_READY:
+            // Standard operational maintenance
+            processDNS();
+            break;
+
+        case WiFiState::WIFI_SHUTDOWN:
+            break;
     }
-    
-    if (WiFi.status() == WL_CONNECTED) {
-      LOG_INFO("WIFI", "Legacy NVS WiFi connection successful! Migrating to LittleFS...");
-      strlcpy(wifiSsid, WiFi.SSID().c_str(), sizeof(wifiSsid));
-      strlcpy(wifiPass, WiFi.psk().c_str(), sizeof(wifiPass));
-      saveWiFiConfig();
-    }
-  }
-
-  // --- Step 2: Configure System Mode ---
-  // Purge buggy NVS partition (Core v3 fix)
-  WiFi.disconnect(true, true);
-  WiFi.persistent(false);
-  
-  WiFi.mode(WIFI_MODE_NULL);
-  if (strlen(currentHostname) > 0) {
-    WiFi.hostname(currentHostname);
-  }
-  WiFi.mode(WIFI_STA);
-  WiFi.setSleep(WIFI_PS_NONE);
-
-  // --- Step 3: Attempt Primary Connection ---
-  // Attempt connection
-  if (strlen(wifiSsid) > 0) {
-    LOG_INFO("WIFI", String("Connecting to ") + wifiSsid + "...");
-    WiFi.begin(wifiSsid, wifiPass);
-    int retries = 0;
-    while (WiFi.status() != WL_CONNECTED && retries < 20) {
-      delay(500);
-      retries++;
-    }
-  }
-
-  // --- Step 4: Fallback to Captive Portal ---
-  // Fallback to Bespoke Captive Portal
-  if (WiFi.status() != WL_CONNECTED) {
-    LOG_INFO("WIFI", "Connection failed or no credentials. Starting AP Mode (Captive Portal).");
-    isAPMode = true;
-    
-    // Switch to Access Point mode
-    WiFi.mode(WIFI_AP);
-    
-    // Set AP IP manually (standard captive portal IP)
-    IPAddress apIP(192, 168, 4, 1);
-    WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-    
-    const char* portalName = (strlen(currentHostname) > 0) ? currentHostname : "Departures-Board";
-    WiFi.softAP(portalName);
-    
-    LOG_INFO("WIFI", String("Access Point started: ") + portalName);
-    LOG_INFO("WIFI", String("AP IP address: ") + WiFi.softAPIP().toString());
-
-    LOG_INFO("WIFI", String("AP IP address: ") + WiFi.softAPIP().toString());
-
-    // Start DNS Hijacker
-    if (dnsServer != nullptr) delete dnsServer;
-    dnsServer = new DNSServer();
-    dnsServer->start(53, "*", apIP);
-    LOG_INFO("WIFI", "DNS Server started on port 53 (Hijacking all requests to AP).");
-  } else {
-    isAPMode = false;
-    LOG_INFO("WIFI", String("Connected successfully. IP: ") + WiFi.localIP().toString());
-  }
 }
 
 /**

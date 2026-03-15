@@ -32,6 +32,9 @@ This skill provides the logic for interacting with `.agents/queue.md`. It is use
 - Else:
     - Return ERROR ("Not the lock holder").
 
+> [!NOTE]
+> Only release the lock once all verification steps are complete and the session is being finalized.
+
 ### list_queue
 - Read `.agents/queue.md`.
 - Display the "Lock Status" and "Pending Queue" in a clean markdown table.
@@ -57,3 +60,6 @@ This skill provides the logic for interacting with `.agents/queue.md`. It is use
 - Set `Locked By` to `[MY_SESSION_ID]`.
 - Remove from "Pending Queue".
 - Return SUCCESS and proceed to start the implementation plan.
+
+> [!IMPORTANT]
+> Once a session claims the lock, it MUST hold it through the entire lifecycle of the task, including testing and verification. Do not release the lock until the `/wrap-session` workflow or a manual release is requested.

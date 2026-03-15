@@ -44,7 +44,7 @@ void raildataYieldWrapper(int stage, int nServices) {
 /**
  * @brief Construct the appContext and its managed service singletons.
  */
-appContext::appContext() : globalMessagePool(4) {
+appContext::appContext() : globalMessagePool(4), currentState(AppState::BOOTING), webServerInitialized(false) {
     // Note: Managers are initialized via their default constructors here.
 }
 
@@ -53,6 +53,7 @@ appContext::appContext() : globalMessagePool(4) {
  */
 void appContext::begin() {
     _instance = this;
+    LOG_SPLASH("APP STATE: BOOTING");
     LOG_INFO("SYSTEM", "Initializing appContext managers...");
 
     // 1. Hardware Filesystem (Must be first for config)
@@ -65,26 +66,19 @@ void appContext::begin() {
     configManager.loadConfig();
     const Config& config = configManager.getConfig();
 
-    // 3. Networking (WiFi)
-    LOG_INFO("SYSTEM", "Initializing WiFi...");
-    wifiManager.begin(config.hostname);
-
-    // 4. Hardware Display
+    // 3. Hardware Display (Prioritize for boot visuals/stability)
     LOG_INFO("SYSTEM", "Initializing DisplayManager...");
     displayManager.begin(this);
+
+    // 4. Networking (WiFi)
+    LOG_INFO("SYSTEM", "Initializing WiFi...");
+    wifiManager.begin(config.hostname);
 
     // 5. System Management (State & Refresh)
     LOG_INFO("SYSTEM", "Initializing systemManager...");
     sysManager.begin(this);
 
-    LOG_INFO("SYSTEM", "Network state: SSID=" + WiFi.SSID() + ", IP=" + WiFi.localIP().toString());
-    
-    struct tm timeinfo;
-    if(getLocalTime(&timeinfo)) {
-        char timeStr[32];
-        strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
-        LOG_INFO("SYSTEM", String("Current time: ") + timeStr);
-    }
+    LOG_INFO("SYSTEM", "Network state: SSID=" + String(WiFi.SSID()) + ", IP=" + WiFi.localIP().toString());
 
     // 6. Register Config Consumers
     LOG_INFO("SYSTEM", "Registering Configuration Consumers...");
@@ -100,40 +94,85 @@ void appContext::begin() {
     otaAssetUpdater.init(this);
     timeManager.init(this);
 
-    LOG_INFO("SYSTEM", "Stabilizing network stack...");
-    delay(2000);
-
-    LOG_INFO("SYSTEM", "Initializing Web Server...");
-    webServer.init();
-
+    LOG_INFO("SYSTEM", "Stabilizing system...");
     // 7. Connect Yield Callbacks for Non-Blocking I/O
     weather.setYieldCallback(yieldCallbackWrapper);
     rss.setYieldCallback(yieldCallbackWrapper);
 
-    LOG_INFO("SYSTEM", "Network ready. IP Address: " + WiFi.localIP().toString());
-
-    LOG_INFO("SYSTEM", "Notifying consumers to apply initial configuration...");
-    configManager.notifyConsumersToReapplyConfig();
-
-    LOG_INFO("SYSTEM", "appContext initialization complete.");
+    LOG_INFO("SYSTEM", "appContext initialization complete. Waiting for WiFi to start web components...");
 }
 
 /**
  * @brief Dispatch periodic maintenance ticks to all active services.
  */
 void appContext::tick() {
-    // 1. Firmware update lifecycle
+    // 1. WiFi lifecycle (Non-blocking state machine)
+    wifiManager.tick();
+    yield();
+
+    // 2. Firmware update lifecycle
     otaAssetUpdater.tick();
+    yield();
 
-    // 2. System state and refresh logic
+    // 3. System state and refresh logic
     sysManager.tick();
+    yield();
 
-    // 3. Display rendering tick
+    // 4. Evaluate AppState Reactively
+    if (currentState == AppState::BOOTING) {
+        // Booting ends when WiFi has completed its sequence (either STA or AP)
+        if (wifiManager.isReady()) {
+            
+            // Safe to initialize web server now that network is up
+            if (!webServerInitialized) {
+                LOG_INFO("SYSTEM", "Network ready. IP Address: " + WiFi.localIP().toString());
+                LOG_INFO("SYSTEM", "Initializing Web Server...");
+                webServer.init();
+
+                LOG_INFO("SYSTEM", "Notifying consumers to apply initial configuration...");
+                configManager.notifyConsumersToReapplyConfig(); // This calls MDNS.begin!
+                
+                webServerInitialized = true;
+            }
+
+            if (!sysManager.getFirstLoad()) {
+                if (wifiManager.getAPMode()) {
+                    currentState = AppState::WIFI_SETUP;
+                    LOG_SPLASH("APP STATE: WIFI_SETUP");
+                    displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_WIFI_WIZARD));
+                } else if (!configManager.hasConfiguredBoards()) {
+                    currentState = AppState::BOARD_SETUP;
+                    LOG_SPLASH("APP STATE: BOARD_SETUP");
+                    displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_HELP_CRS));
+                } else {
+                    currentState = AppState::RUNNING;
+                    LOG_SPLASH("APP STATE: RUNNING");
+                    displayManager.resetState();
+                }
+            }
+        }
+    } else if (wifiManager.getAPMode() && currentState != AppState::WIFI_SETUP) {
+        currentState = AppState::WIFI_SETUP;
+        LOG_SPLASH("APP STATE: WIFI_SETUP");
+        displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_WIFI_WIZARD));
+    } else if (!wifiManager.getAPMode()) {
+        if (!configManager.hasConfiguredBoards() && currentState != AppState::BOARD_SETUP) {
+            currentState = AppState::BOARD_SETUP;
+            LOG_SPLASH("APP STATE: BOARD_SETUP");
+            displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_HELP_CRS));
+        } else if (configManager.hasConfiguredBoards() && currentState != AppState::RUNNING) {
+            currentState = AppState::RUNNING;
+            LOG_SPLASH("APP STATE: RUNNING");
+            // Allow display rotation to naturally resume
+            displayManager.resetState();
+        }
+    }
+
+    // 5. Display rendering tick
     displayManager.tick(millis());
+    yield();
 
-    // 4. DNS hijacked processing (Captive Portal)
-    wifiManager.processDNS();
-
-    // 5. Web server handle
+    // 6. Web server handle
     webServer.handleClient();
+    yield();
 }

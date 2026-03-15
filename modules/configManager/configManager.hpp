@@ -234,6 +234,17 @@ public:
     const Config& getConfig() const { return config; }
 
     /**
+     * @brief Checks if there is at least one fully configured board available.
+     * @return True if at least one board's .complete flag is true.
+     */
+    bool hasConfiguredBoards() const {
+        for (int i = 0; i < config.boardCount; i++) {
+            if (config.boards[i].complete) return true;
+        }
+        return false;
+    }
+
+    /**
      * @brief Register a component to receive configuration updates.
      * @param consumer Pointer to a class implementing iConfigurable.
      */

@@ -57,11 +57,17 @@ NationalRailBoard::NationalRailBoard(appContext* contextPtr)
 
 void NationalRailBoard::onActivate() {
     LOG_INFO("DISPLAY", "NR Board: onActivate() called.");
-    int status = dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", raildataYieldWrapper); 
-    if (status != 0) {
-        LOG_WARN("DISPLAY", "NR Board: dataSource.init() failed with status: " + String(status));
+    
+    // Defer data source initialization if WiFi is not connected to avoid boot blocking
+    if (WiFi.status() == WL_CONNECTED) {
+        int status = dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", raildataYieldWrapper); 
+        if (status != 0) {
+            LOG_WARN("DISPLAY", "NR Board: dataSource.init() failed with status: " + String(status));
+        } else {
+            LOG_INFO("DISPLAY", "NR Board: dataSource.init() succeeded.");
+        }
     } else {
-        LOG_INFO("DISPLAY", "NR Board: dataSource.init() succeeded.");
+        LOG_INFO("DISPLAY", "NR Board: WiFi not connected. Deferring dataSource.init().");
     }
     
     // Use the stored configuration
@@ -112,15 +118,22 @@ int NationalRailBoard::updateData() {
         LOG_WARN("DISPLAY", "NR Board: Skipping updateData() - Configuration incomplete.");
         return 7; // Use a dedicated "Unconfigured" code if defined, or just return an error
     }
+
+    // Check if we need to perform deferred initialization
+    if (WiFi.status() == WL_CONNECTED && !dataSource.isInitialized()) {
+        LOG_INFO("DISPLAY", "NR Board: Performing deferred dataSource.init()...");
+        dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", raildataYieldWrapper);
+    }
+
     LOG_INFO("DISPLAY", "NR Board: Starting data update...");
-    int status = dataSource.updateData();
-    if (status != 0) {
-        LOG_WARN("DISPLAY", "NR Board: Data update failed with status: " + String(status));
+    lastUpdateStatus = dataSource.updateData();
+    if (lastUpdateStatus != 0) {
+        LOG_WARN("DISPLAY", "NR Board: Data update failed with status: " + String(lastUpdateStatus));
     } else {
         LOG_INFO("DISPLAY", "NR Board: Data update finished successfully.");
     }
     
-    if (status == 0) { // UPD_SUCCESS
+    if (lastUpdateStatus == 0) { // UPD_SUCCESS
         // Update header once we have the station name
         NationalRailStation* data = dataSource.getStationData();
         if (data->location[0]) {
@@ -152,7 +165,7 @@ int NationalRailBoard::updateData() {
             }
         }
     }
-    return status;
+    return lastUpdateStatus;
 }
 
 void NationalRailBoard::render(U8G2& display) {
@@ -168,6 +181,14 @@ void NationalRailBoard::render(U8G2& display) {
 
     headWidget.render(display);
     
+    if (lastUpdateStatus == 5) { // UPD_UNAUTHORISED
+        display.setFont(NatRailTall12);
+        display.drawStr(5, 30, "API Token Invalid");
+        display.setFont(NatRailSmall9);
+        display.drawStr(5, 45, "Check portal settings.");
+        return;
+    }
+
     NationalRailStation* data = dataSource.getStationData();
     if (data->numServices > 0) {
         // Draw Primary Service (Row 0)

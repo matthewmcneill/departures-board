@@ -62,6 +62,12 @@ public:
     virtual const char* getLastErrorMsg() = 0;
 
     /**
+     * @brief Retrieves the HTTP or internal result code from the last updateData() call.
+     * @return Result code (e.g., 0 for Success, 5 for Unauthorised).
+     */
+    virtual int getLastUpdateStatus() const { return lastUpdateStatus; }
+
+    /**
      * @brief Apply a specific configuration to this board.
      * @param config The BoardConfig struct containing settings for this instance.
      */
@@ -83,6 +89,9 @@ public:
      * @return Reference to the WeatherStatus object.
      */
     virtual class WeatherStatus& getWeatherStatus() = 0;
+
+protected:
+    int lastUpdateStatus = -1; ///< Stores the result of the last updateData() call for inline error handling.
 };
 
 #endif // I_DISPLAY_BOARD_HPP
