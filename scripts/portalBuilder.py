@@ -19,12 +19,17 @@ def minify_html(content):
     # 2. Remove Multi-line comments in JS and CSS
     content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
     
-    # 3. Strip whitespace from line ends and remove empty lines
+    # 3. Remove single-line comments (be careful with URLs)
+    # This is a simple regex that avoids most URLs by requiring a space or start of line
+    content = re.sub(r'(?m)^\s*//.*$', '', content) # Remove lines that are ONLY comments
+    content = re.sub(r'([^\s])\s*//(?!!).*$', r'\1', content) # Remove trailng comments (naive)
+
+    # 4. Strip whitespace from line ends and remove empty lines
     lines = [line.strip() for line in content.splitlines()]
-    content = "".join([line for line in lines if line])
+    content = "\n".join([line for line in lines if line])
     
-    # 4. Replace multiple spaces with single space (optional but saves space)
-    content = re.sub(r'\s+', ' ', content)
+    # 5. Replace multiple spaces with single space
+    content = re.sub(r'[ \t]+', ' ', content)
     
     return content.strip()
 

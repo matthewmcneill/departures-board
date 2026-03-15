@@ -415,14 +415,15 @@
   </dialog>
 
   <script>
-    // app: Core application logic for the configuration portal.
-    // Handles state management, API communication, and dynamic     const DUMMY_PASS = "●●●●●●●●";
+    // Handles state management, API communication, and dynamic rendering.
+    const DUMMY_PASS = "●●●●●●●●";
     const MAX_KEYS = 8; // Matching platformio.ini
 
     const app = {
       state: { 
         config: null,
         status: null,
+        prev_ap_mode: false,
         keys: [],
         newKeyType: null, // Context for adding a key from selection modal
         inContextBoardFlow: false // true if adding key while editing a board
@@ -431,7 +432,7 @@
       init: function() {
         this.initTheme();
         this.fetchStatus();
-        this.fetchConfig();
+        this.fetchConfig().catch(e => console.error('Initial config fetch failed', e));
         setInterval(() => this.fetchStatus(), 5000);
         this.bindEvents();
         setTimeout(() => this.scanWiFi(), 500);
@@ -803,6 +804,96 @@
           const eye = input.closest('.password-input-wrapper')?.querySelector('.eye-btn');
           if (eye) eye.style.display = (input.value === DUMMY_PASS || !input.value) ? 'none' : 'flex';
         });
+      },
+
+      togglePass: function(id, btn) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        btn.classList.toggle('active', !isPass);
+        btn.querySelector('svg').style.opacity = isPass ? '1' : '0.5';
+      },
+
+      scanWiFi: async function() {
+        const btn = document.getElementById('scan-btn');
+        const select = document.getElementById('wifi-ssid-select');
+        if (!btn || !select) return;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading-spinner"></div>';
+        
+        try {
+          const res = await fetch('/api/wifi/scan');
+          const data = await res.json();
+          select.innerHTML = '<option value="">Select a network...</option>';
+          data.forEach(net => {
+            const opt = document.createElement('option');
+            opt.value = net.ssid;
+            opt.textContent = `${net.ssid} (${net.rssi}dBm)${net.secure ? ' 🔒' : ''}`;
+            select.appendChild(opt);
+          });
+          const optManual = document.createElement('option');
+          optManual.value = '__manual__';
+          optManual.textContent = '-- Enter SSID Manually --';
+          select.appendChild(optManual);
+        } catch (e) { console.error('Scan failed', e); }
+        finally { btn.disabled = false; btn.innerText = 'Scan'; }
+      },
+
+      handleSSIDChange: function(val) {
+        document.getElementById('manual-ssid-group').style.display = (val === '__manual__') ? 'block' : 'none';
+        if (val !== '__manual__' && val !== "") {
+           document.getElementById('wifi-pass').value = DUMMY_PASS;
+           this.refreshEyes();
+        }
+      },
+
+      testWiFi: async function() {
+        const btn = document.getElementById('test-btn');
+        const log = document.getElementById('wifi-test-log');
+        const selectVal = document.getElementById('wifi-ssid-select').value;
+        const ssid = (selectVal === '__manual__') ? document.getElementById('manual-ssid-input').value : selectVal;
+        const passRaw = document.getElementById('wifi-pass').value;
+        const pass = (passRaw === DUMMY_PASS) ? undefined : passRaw;
+
+        if (!ssid) { alert('Please select or enter a network first'); return; }
+
+        btn.disabled = true;
+        log.style.display = 'block';
+        log.innerHTML = `> Initiating test connection to: ${ssid}\n> Please wait (this can take 15s)...\n`;
+        
+        try {
+          const res = await fetch('/api/wifi/test', {
+            method: 'POST',
+            body: JSON.stringify({ ssid, pass })
+          });
+          const result = await res.json();
+          if (result.status === 'ok') {
+            log.innerHTML += `> SUCCESS! IP assigned: ${result.ip}\n> Signal strength is good.\n`;
+          } else {
+            log.innerHTML += `> FAILED: ${result.error || 'Connection timed out'}\n`;
+          }
+        } catch (e) {
+          log.innerHTML += `> ERROR: Could not reach API\n`;
+        } finally {
+          btn.disabled = false;
+        }
+      },
+
+      resetWiFi: function() {
+        if (confirm('Are you sure you want to ERASE all WiFi settings? The board will reboot into Access Point mode.')) {
+          fetch('/api/wifi/reset', { method: 'POST' })
+            .then(() => alert('Reset command sent. Re-join the "Departures-Board" hotspot in ~10 seconds.'))
+            .catch(() => alert('Failed to send reset command.'));
+        }
+      },
+
+      toggleDiag: function() {
+        document.getElementById('diag-drawer').classList.toggle('active');
+      },
+
+      updateBrightness: function(val) {
+        // UI update for brightness slider
       }
     };
     app.init();
