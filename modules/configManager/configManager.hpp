@@ -24,7 +24,7 @@
 #include <LittleFS.h>
 #include <WiFi.h>
 
-#include <buildOptions.h>
+#include "departuresBoard.hpp"
 
 /**
  * @brief Supported operational types for the display boards.

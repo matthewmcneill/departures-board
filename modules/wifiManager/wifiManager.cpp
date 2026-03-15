@@ -6,15 +6,18 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/WiFiConfig/wiFiConfig.cpp
- * Description: Implementation of Wi-Fi credentials management and architecture-independent NVS migration logic.
+ * Module: modules/wifiManager/wifiManager.cpp
+ * Description: Implementation of Wi-Fi credentials management and architecture-independent configuration logic.
  *
  * Exported Functions/Classes:
- * - WiFiManagerModule: Singleton class for managing WiFi connectivity.
+ * - WifiManager: Class for managing WiFi connectivity and captive portal.
  *   - begin(): Initializes WiFi and enters AP mode if no credentials found.
- *   - updateWiFi(): Updates and persists WiFi credentials to LittleFS.
- *   - testConnection(): Validates credentials without persisting changes.
- *   - resetSettings(): Erases all WiFi configuration (NVS + LittleFS).
+ *   - reapplyConfig(): Responds to hostname configuration changes.
+ *   - tick(): Periodic non-blocking lifecycle management loop.
+ *   - processDNS(): Intercepts captive portal DNS requests in AP mode.
+ *   - updateWiFi(): Persists new WiFi credentials to LittleFS.
+ *   - resetSettings(): Erases WiFi configuration and restores ESP WiFi state.
+ *   - testConnection(): Connects to standard AP momentarily to validate credentials.
  */
 #include <Arduino.h>
 #include <FS.h>
@@ -23,13 +26,12 @@
 #include <WiFi.h>
 #include <DNSServer.h>
 #include <ESPmDNS.h>
-#include <wiFiConfig.hpp>
+#include <wifiManager.hpp>
 #include <logger.hpp>
 #include <esp_wifi.h>
 
-WiFiManagerModule wifiManager; // Global system WiFi orchestrator singleton
 
-WiFiManagerModule::WiFiManagerModule() {
+WifiManager::WifiManager() {
     memset(wifiSsid, 0, sizeof(wifiSsid));
     memset(wifiPass, 0, sizeof(wifiPass));
     memset(currentHostname, 0, sizeof(currentHostname));
@@ -38,7 +40,7 @@ WiFiManagerModule::WiFiManagerModule() {
 /**
  * @brief Load Wi-Fi credentials from wifi.json on LittleFS.
  */
-void WiFiManagerModule::loadWiFiConfig() {
+void WifiManager::loadWiFiConfig() {
   LOG_INFO("WIFI", "Loading WiFi credentials from wifi.json...");
   if (LittleFS.exists("/wifi.json")) {
     File f = LittleFS.open("/wifi.json", "r");
@@ -66,7 +68,7 @@ void WiFiManagerModule::loadWiFiConfig() {
 /**
  * @brief Save Wi-Fi credentials to wifi.json on LittleFS.
  */
-void WiFiManagerModule::saveWiFiConfig() {
+void WifiManager::saveWiFiConfig() {
   LOG_INFO("WIFI", "Saving WiFi credentials to wifi.json...");
   JsonDocument doc;
   doc["ssid"] = wifiSsid;
@@ -85,7 +87,7 @@ void WiFiManagerModule::saveWiFiConfig() {
 /**
  * @brief transitionTo helper to log and reset timers.
  */
-void WiFiManagerModule::transitionTo(WiFiState newState) {
+void WifiManager::transitionTo(WiFiState newState) {
     currentState = newState;
     stateTimer = millis();
 }
@@ -93,7 +95,7 @@ void WiFiManagerModule::transitionTo(WiFiState newState) {
 /**
  * @brief Core initialization routine (Non-Blocking).
  */
-void WiFiManagerModule::begin(const char* hostname) {
+void WifiManager::begin(const char* hostname) {
     if (hostname != nullptr) strlcpy(currentHostname, hostname, sizeof(currentHostname));
     loadWiFiConfig();
 
@@ -109,7 +111,7 @@ void WiFiManagerModule::begin(const char* hostname) {
 /**
  * @brief Periodic maintenance tick for the WiFi state machine.
  */
-void WiFiManagerModule::tick() {
+void WifiManager::tick() {
     switch (currentState) {
         case WiFiState::WIFI_INIT:
             // Wait 2 seconds for system stability before touching the radio
@@ -176,7 +178,7 @@ void WiFiManagerModule::tick() {
 /**
  * @brief Handles DNS requests when in AP mode.
  */
-void WiFiManagerModule::processDNS() {
+void WifiManager::processDNS() {
     if (isAPMode && dnsServer != nullptr) {
         dnsServer->processNextRequest();
     }
@@ -185,7 +187,7 @@ void WiFiManagerModule::processDNS() {
 /**
  * @brief Update and save WiFi credentials.
  */
-void WiFiManagerModule::updateWiFi(const char* ssid, const char* pass) {
+void WifiManager::updateWiFi(const char* ssid, const char* pass) {
     if (ssid != nullptr) strlcpy(wifiSsid, ssid, sizeof(wifiSsid));
     // Skip if password is the UI mask "●●●●●●●●"
     if (pass != nullptr && strcmp(pass, "●●●●●●●●") != 0) {
@@ -194,7 +196,7 @@ void WiFiManagerModule::updateWiFi(const char* ssid, const char* pass) {
     saveWiFiConfig();
 }
 
-bool WiFiManagerModule::testConnection(const char* ssid, const char* pass, String& ipOut) {
+bool WifiManager::testConnection(const char* ssid, const char* pass, String& ipOut) {
     LOG_INFO("WIFI", "WIFI_TEST: Starting connection test...");
     
     const char* realPass = pass;
@@ -237,7 +239,7 @@ bool WiFiManagerModule::testConnection(const char* ssid, const char* pass, Strin
 /**
  * @brief Erase stored WiFi credentials and disconnect.
  */
-void WiFiManagerModule::resetSettings() {
+void WifiManager::resetSettings() {
     memset(wifiSsid, 0, sizeof(wifiSsid));
     memset(wifiPass, 0, sizeof(wifiPass));
     LittleFS.remove("/wifi.json");
@@ -251,7 +253,7 @@ void WiFiManagerModule::resetSettings() {
 /**
  * @brief React to configuration changes.
  */
-void WiFiManagerModule::reapplyConfig(const Config& config) {
+void WifiManager::reapplyConfig(const Config& config) {
     if (strcmp(currentHostname, config.hostname) != 0) {
         LOG_INFO("WIFI", String("Updating hostname to: ") + config.hostname);
         strlcpy(currentHostname, config.hostname, sizeof(currentHostname));

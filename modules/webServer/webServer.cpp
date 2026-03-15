@@ -9,7 +9,7 @@
  */
 
 #include "webServer.hpp"
-#include <wiFiConfig.hpp>
+#include <wifiManager.hpp>
 #include "webHandlerManager.hpp"
 #include <SPIFFS.h>
 #include <Update.h>

@@ -20,6 +20,7 @@ class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
 #include "../../widgets/imageWidget.hpp"
+#include "../../widgets/progressBarWidget.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
 #include <string.h>
 #include "../../../../../include/gfx/xbmgfx.h"
@@ -32,6 +33,7 @@ private:
     appContext* context;
     char noticeMessage[64];
     imageWidget* splashLogo;
+    progressBarWidget* bootProgressBar;
     WeatherStatus weatherStatus;
 
 protected:
@@ -46,6 +48,12 @@ public:
      * @param message Text string (e.g. Copyright notice)
      */
     void setNotice(const char* message);
+
+    /**
+     * @brief Updates the boot progress bar
+     * @param percentage Integer between 0 and 100
+     */
+    void setProgress(int percentage);
 
     void init(appContext* contextPtr) { context = contextPtr; }
 

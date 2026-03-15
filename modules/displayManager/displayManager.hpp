@@ -40,7 +40,7 @@ class appContext;
 #include <widgets/wifiStatusWidget.hpp>
 #include <messaging/messagePool.hpp>
 
-#include <buildOptions.h>
+#include "departuresBoard.hpp"
 
 
 /**

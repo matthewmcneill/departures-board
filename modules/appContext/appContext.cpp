@@ -6,7 +6,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: modules/systemManager/appContext.cpp
+ * Module: modules/appContext/appContext.cpp
  * Description: Implementation of the central appContext orchestrator.
  *
  * Exported Functions/Classes:
@@ -21,7 +21,7 @@
 #include "systemManager.hpp"
 #include <timeManager.hpp>
 #include <logger.hpp>
-#include <wiFiConfig.hpp>
+#include <wifiManager.hpp>
 
 appContext* _instance = nullptr; // Global static pointer for yield callback adaptor
 
@@ -56,27 +56,40 @@ void appContext::begin() {
     LOG_SPLASH("APP STATE: BOOTING");
     LOG_INFO("SYSTEM", "Initializing appContext managers...");
 
-    // 1. Hardware Filesystem (Must be first for config)
+    // 1. Hardware Display (Must be first for boot visuals/stability)
+    LOG_INFO("SYSTEM", "Initializing DisplayManager...");
+    displayManager.begin(this);
+
+    auto updateBootProgress = [&](int percentage) {
+        if (auto* splash = static_cast<SplashBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_SPLASH))) {
+            splash->setProgress(percentage);
+            displayManager.render();
+        }
+    };
+    
+    updateBootProgress(10);
+
+    // 2. Hardware Filesystem (Must be first for config)
     LOG_INFO("SYSTEM", "Initializing LittleFS...");
     LittleFS.begin(true);
+    updateBootProgress(30);
 
-    // 2. Storage & Config
+    // 3. Storage & Config
     LOG_INFO("SYSTEM", "Loading API keys and configuration...");
     configManager.loadApiKeys();
     configManager.loadConfig();
     const Config& config = configManager.getConfig();
-
-    // 3. Hardware Display (Prioritize for boot visuals/stability)
-    LOG_INFO("SYSTEM", "Initializing DisplayManager...");
-    displayManager.begin(this);
+    updateBootProgress(50);
 
     // 4. Networking (WiFi)
     LOG_INFO("SYSTEM", "Initializing WiFi...");
     wifiManager.begin(config.hostname);
+    updateBootProgress(70);
 
     // 5. System Management (State & Refresh)
     LOG_INFO("SYSTEM", "Initializing systemManager...");
     sysManager.begin(this);
+    updateBootProgress(85);
 
     LOG_INFO("SYSTEM", "Network state: SSID=" + String(WiFi.SSID()) + ", IP=" + WiFi.localIP().toString());
 
@@ -88,14 +101,16 @@ void appContext::begin() {
     configManager.registerConsumer(&otaAssetUpdater);
     configManager.registerConsumer(&timeManager);
     configManager.registerConsumer(&wifiManager);
+    updateBootProgress(95);
 
-    // 6. Initialize global helper modules
-    LOG_INFO("SYSTEM", "Initializing Hardware Display...");
+    // 7. Initialize global helper modules
+    LOG_INFO("SYSTEM", "Initializing helper modules...");
     otaAssetUpdater.init(this);
     timeManager.init(this);
+    updateBootProgress(100);
 
     LOG_INFO("SYSTEM", "Stabilizing system...");
-    // 7. Connect Yield Callbacks for Non-Blocking I/O
+    // 8. Connect Yield Callbacks for Non-Blocking I/O
     weather.setYieldCallback(yieldCallbackWrapper);
     rss.setYieldCallback(yieldCallbackWrapper);
 

@@ -17,10 +17,11 @@
 #include <U8g2lib.h>
 #include <widgets/drawingPrimitives.hpp>
 #include <WiFi.h>
-#include <wiFiConfig.hpp>
+#include <wifiManager.hpp>
 #include <logger.hpp>
 #include <displayManager.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
+#include <WebServer.h>
 #include <appContext.hpp>
 
 TimeManager timeManager; // Global system clock manager singleton

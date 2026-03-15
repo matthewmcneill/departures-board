@@ -18,7 +18,7 @@
 #include <webServer/portalAssets.h>
 #include <ArduinoJson.h>
 #include <logger.hpp>
-#include <wiFiConfig.hpp>
+#include <wifiManager.hpp>
 #include <WiFi.h>
 #include <appContext.hpp>
 #include "../displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp"
@@ -142,8 +142,8 @@ void WebHandlerManager::handleGetConfig() {
 
     // --- WiFi Config (Secure) ---
     JsonObject wifi = doc["wifi"].to<JsonObject>();
-    wifi["ssid"] = wifiManager.getSSID();
-    wifi["pass"] = wifiManager.getPassMasked();
+    wifi["ssid"] = appContext.getWifiManager().getSSID();
+    wifi["pass"] = appContext.getWifiManager().getPassMasked();
 
     String output;
     serializeJson(doc, output);
@@ -203,7 +203,7 @@ void WebHandlerManager::handleSaveAll() {
             const char* pass = w["pass"] | "";
             if (strlen(ssid) > 0) {
                 LOG_INFO("WEB_API", "Received new WiFi credentials. Saving to wifi.json...");
-                wifiManager.updateWiFi(ssid, pass);
+                appContext.getWifiManager().updateWiFi(ssid, pass);
             }
         }
 
@@ -215,7 +215,7 @@ void WebHandlerManager::handleSaveAll() {
         _config.notifyConsumersToReapplyConfig();
 
         // If we were in AP mode, we should reboot to connect to the new network
-        if (wifiManager.getAPMode()) {
+        if (appContext.getWifiManager().getAPMode()) {
             LOG_INFO("WEB_API", "System in AP mode. rebooting in 2 seconds to apply new connectivity...");
             delay(2000);
             ESP.restart();
@@ -398,7 +398,7 @@ void WebHandlerManager::handleWiFiTest() {
 
     JsonDocument res;
     String ip;
-    if (wifiManager.testConnection(ssid, pass, ip)) {
+    if (appContext.getWifiManager().testConnection(ssid, pass, ip)) {
         res["status"] = "ok";
         res["ip"] = ip;
     } else {
@@ -415,7 +415,7 @@ void WebHandlerManager::handleWiFiReset() {
     LOG_WARN("WEB_API", "POST /api/wifi/reset called - ERASING WiFi credentials and rebooting!");
     
     // 1. Erase credentials using WiFiConfig manager
-    wifiManager.resetSettings();
+    appContext.getWifiManager().resetSettings();
 
     // 2. Respond to client before rebooting
     _server.send(200, "application/json", "{\"status\":\"ok\",\"msg\":\"WiFi erased. Board rebooting into AP mode...\"}");

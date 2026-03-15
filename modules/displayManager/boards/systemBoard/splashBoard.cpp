@@ -17,10 +17,15 @@ SplashBoard::SplashBoard() {
     noticeMessage[0] = '\0';
     // Instantiate the graphic at runtime
     splashLogo = new imageWidget(81, 0, gadeclogo_width, gadeclogo_height, gadeclogo_bits);
+    
+    // Instantiate the progress bar at the bottom center
+    bootProgressBar = new progressBarWidget(58, 52, 140, 8);
+    bootProgressBar->setShowPercentText(false);
 }
 
 SplashBoard::~SplashBoard() {
     delete splashLogo;
+    delete bootProgressBar;
 }
 
 void SplashBoard::setNotice(const char* message) {
@@ -28,6 +33,12 @@ void SplashBoard::setNotice(const char* message) {
         strlcpy(noticeMessage, message, sizeof(noticeMessage));
     } else {
         noticeMessage[0] = '\0';
+    }
+}
+
+void SplashBoard::setProgress(int percentage) {
+    if (bootProgressBar) {
+        bootProgressBar->setPercent(percentage);
     }
 }
 
@@ -54,5 +65,10 @@ void SplashBoard::render(U8G2& display) {
     if (noticeMessage[0] != '\0') {
         display.setFont(NatRailSmall9);
         centreText(display, noticeMessage, 48);
+    }
+    
+    // Draw the progress bar widget
+    if (bootProgressBar) {
+        bootProgressBar->render(display);
     }
 }

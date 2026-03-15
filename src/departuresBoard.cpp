@@ -54,7 +54,7 @@
 
 // Internal Modules & Managers
 #include <logger.hpp>
-#include <wiFiConfig.hpp>
+#include <wifiManager.hpp>
 #include <configManager.hpp>
 #include <timeManager.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
@@ -73,7 +73,7 @@
 // Definitions & Macros
 // -----------------------------------------------------------------------------
 
-#include <buildOptions.h>
+#include "departuresBoard.hpp"
 
 // -----------------------------------------------------------------------------
 // Global Object Instantiations

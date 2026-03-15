@@ -23,7 +23,7 @@
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
-#include <wiFiConfig.hpp> // Added as per instruction
+#include <wifiManager.hpp> // Added as per instruction
 
 /**
  * @brief Initialize default system state.
@@ -62,7 +62,7 @@ void systemManager::tick() {
 
     if (WiFi.status() != WL_CONNECTED && millis() > lastWiFiReconnect + 10000) {
         // Only attempt reconnection if NOT in AP (Captive Portal) mode
-        if (!wifiManager.getAPMode()) {
+        if (!context->getWifiManager().getAPMode()) {
             LOG_INFO("SYSTEM", "Attempting WiFi reconnection...");
             WiFi.disconnect();
             delay(100);

@@ -6,14 +6,19 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: include/buildOptions.h
+ * Module: src/departuresBoard.hpp
  * Description: Centralized build-time configuration and hardware defaults.
  *              Allows for board-level tuning via platformio.ini flags.
  *
  * Exported Functions/Classes:
  * - MAX_BOARDS: Maximum number of configurable display boards.
  * - DATAUPDATEINTERVAL: Default data refresh interval (ms).
+ * - FASTDATAUPDATEINTERVAL: Accelerated refresh for urgent updates.
+ * - UGDATAUPDATEINTERVAL: TfL Underground refresh rate.
+ * - BUSDATAUPDATEINTERVAL: Bus data refresh rate.
  * - SCREENSAVERINTERVAL: Cycling interval for snooze screens (ms).
+ * - MAX_CONFIG_CONSUMERS: Maximum classes subscribing to config updates.
+ * - MAX_BUS_ATCO_HISTORY: Maximum ATCO history depth.
  */
 
 #pragma once

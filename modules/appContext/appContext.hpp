@@ -17,7 +17,7 @@
  * 
  * For a deep dive into this architecture, see doc/ArchitectureAndEncapsulation.md.
  *
- * Module: modules/systemManager/appContext.hpp
+ * Module: modules/appContext/appContext.hpp
  * Description: Central context orchestrator that owns core managers and services.
  *              Serves as the primary dependency injection point for the system.
  *
@@ -35,6 +35,7 @@
 #include <webServer.hpp>
 #include <weatherClient.hpp>
 #include <rssClient.hpp>
+#include <wifiManager.hpp>
 #include "systemManager.hpp"
 #include <messaging/messagePool.hpp>
 
@@ -60,6 +61,7 @@ private:
     systemManager sysManager;       ///< Global application and network state
     weatherClient weather;          ///< External weather conditions client
     rssClient rss;                  ///< News feed scroller client
+    WifiManager wifiManager;        ///< WiFi configuration and connectivity manager
     MessagePool globalMessagePool;  ///< Shared pool for scrolling status messages
     AppState currentState;          ///< Current tracked system state
     bool webServerInitialized;      ///< Checks if webServer was safely started
@@ -87,6 +89,7 @@ public:
     WebServerManager& getWebServer() { return webServer; }
     systemManager& getsystemManager() { return sysManager; }
     weatherClient& getWeather() { return weather; }
+    WifiManager& getWifiManager() { return wifiManager; }
     rssClient& getRss() { return rss; }
     MessagePool& getGlobalMessagePool() { return globalMessagePool; }
     AppState getAppState() const { return currentState; }

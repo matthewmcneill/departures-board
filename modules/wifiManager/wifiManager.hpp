@@ -6,23 +6,29 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/wiFiConfig/wiFiConfig.hpp
- * Description: Wi-Fi credentials management and architecture-independent NVS migration logic.
+ * Module: modules/wifiManager/wifiManager.hpp
+ * Description: Wi-Fi credentials management and architecture-independent configuration logic.
  *
  * Exported Functions/Classes:
- * - WiFiManagerModule: Singleton class for managing WiFi connectivity.
+ * - WifiManager: Class for managing WiFi connectivity and captive portal.
  *   - begin(): Initializes WiFi and enters AP mode if no credentials found.
- *   - updateWiFi(): Updates and persists WiFi credentials to LittleFS.
- *   - testConnection(): Validates credentials without persisting changes.
- *   - resetSettings(): Erases all WiFi configuration (NVS + LittleFS).
- *   - getAPMode(): Returns true if currently in Access Point mode.
+ *   - reapplyConfig(): Responds to hostname configuration changes.
+ *   - tick(): Periodic non-blocking lifecycle management loop.
+ *   - processDNS(): Intercepts captive portal DNS requests in AP mode.
+ *   - updateWiFi(): Persists new WiFi credentials to LittleFS.
+ *   - resetSettings(): Erases WiFi configuration and restores ESP WiFi state.
+ *   - getAPMode(): Returns true if currently operating in Setup/AP Mode.
+ *   - isReady(): Returns true if WiFi is ready (either STA connected or AP active).
+ *   - getSSID(): Returns the current stored SSID.
+ *   - getPassMasked(): Returns a masked version of the password if set.
+ *   - testConnection(): Connects to standard AP momentarily to validate credentials.
  */
 
-#ifndef WIFI_CONFIG_HPP
-#define WIFI_CONFIG_HPP
+#ifndef WIFI_MANAGER_HPP
+#define WIFI_MANAGER_HPP
 
 #include <Arduino.h>
-#include "iConfigurable.hpp"
+#include <iConfigurable.hpp>
 
 class DNSServer; // Forward declaration
 
@@ -30,9 +36,12 @@ class DNSServer; // Forward declaration
  * @brief Class managing WiFi connectivity and configuration.
  *        Implements iConfigurable to react to hostname changes.
  */
-class WiFiManagerModule : public iConfigurable {
+class WifiManager : public iConfigurable {
 private:
-enum class WiFiState {
+    /**
+     * @brief High-level states for the WiFi connection state machine.
+     */
+    enum class WiFiState {
         WIFI_INIT,             // System just started, need to decide next step
         WIFI_STA_CONNECTING,   // Trying to connect as Station
         WIFI_AP_STARTING,      // Station failed, starting AP mode
@@ -55,7 +64,7 @@ enum class WiFiState {
     void transitionTo(WiFiState newState);
 
 public:
-    WiFiManagerModule();
+    WifiManager();
 
     /**
      * @brief Initialize WiFi using LittleFS credentials. If it fails, spins up an Access Point and DNS hijacker.
@@ -120,7 +129,5 @@ public:
      */
     bool testConnection(const char* ssid, const char* pass, String& ipOut);
 };
-
-extern WiFiManagerModule wifiManager; // Global system WiFi orchestrator
 
 #endif
