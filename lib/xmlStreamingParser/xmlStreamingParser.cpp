@@ -35,7 +35,7 @@
  *   - setListener(): Attaches an interface implementation to handle XML parsing events.
  *   - reset(): Reinitializes the parser state back to zero to begin a new document.
  */
-#include <xmlStreamingParser.h>
+#include <xmlStreamingParser.hpp>
 
 #define fallthrough  __attribute__((__fallthrough__))
 

@@ -67,16 +67,66 @@ public:
     void tick();
 
     // --- Business Logic extracted from systemBoard.cpp ---
+    /**
+     * @brief Trigger a manual update of the RSS feed headlines.
+     */
     void updateRssFeed();
+
+    /**
+     * @brief Append RSS headlines to the scrolling message pool.
+     */
     void addRssMessage();
+
+    /**
+     * @brief Clean up RSS messages from the board message pool.
+     */
     void removeRssMessage();
+
+    /**
+     * @brief Performs a soft reload of the application state based on new configuration.
+     *        Signals all consumers to refresh themselves.
+     */
     void softResetBoard();
+
+    /**
+     * @brief Update the internal URL string for the Web GUI based on current IP.
+     */
     void updateMyUrl();
+
+    /**
+     * @brief Returns true if an alternate station is currently active based on schedule.
+     */
     bool isAltActive();
+
+    /**
+     * @brief Check schedule and set alternate station variables if in time range.
+     * @return True if station was changed.
+     */
     bool setAlternateStation();
+
+    /**
+     * @brief Callback from data clients to update UI progress during boot.
+     */
     void tflCallback();
+
+    /**
+     * @brief Callback from National Rail data client to keep UI responsive.
+     * @param stage Current stage (0-100 placeholder or discrete).
+     * @param nServices Number of services found.
+     */
     void raildataCallback(int stage, int nServices);
+
+    /**
+     * @brief Proxy to correctly format and trigger a weather update via the weatherClient.
+     * @param lat Station latitude.
+     * @param lon Station longitude.
+     */
     void updateCurrentWeather(float lat, float lon);
+
+    /**
+     * @brief Get the Build Timestamp of the running firmware.
+     * @return String formatted build timestamp (YYMMDDHHMM).
+     */
     String getBuildTime();
 
     // --- Accessors ---

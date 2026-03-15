@@ -3,13 +3,22 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
  * Module: lib/otaUpdater/otaUpdater.cpp
+ * Description: Implementation of firmware lifecycle and OTA update sequence.
+ *
+ * Exported Functions/Classes:
+ * - otaUpdater: Lifecycle manager for firmware updates.
+ * - isFirmwareUpdateAvailable(): Compares version strings.
+ * - update_progress(): Callback for download progress.
  */
 
 #include "otaUpdater.hpp"
 #include <HTTPClient.h>
-#include <hTTPUpdateGitHub.h>
-#include <githubClient.h>
+#include <hTTPUpdateGitHub.hpp>
+#include <githubClient.hpp>
 #include <time.h>
 #include <displayManager.hpp>
 #include <logger.hpp>
@@ -21,7 +30,7 @@
 
 extern struct tm timeinfo;       // Global synchronized time struct
 
-otaUpdater ota;                       // Global OTA maintenance instance
+otaUpdater ota;                       // Global OTA maintenance instance singleton
 github ghUpdate("gadec-uk/departures-board", ""); // Global GitHub client for updates
 
 otaUpdater::otaUpdater() : context(nullptr), prevUpdateCheckDay(-1), fwUpdateCheckTimer(0), updatesEnabled(false), dailyCheckEnabled(false) {

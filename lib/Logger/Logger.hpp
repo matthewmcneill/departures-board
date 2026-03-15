@@ -8,11 +8,14 @@
  *
  *
  * Module: lib/logger/logger.hpp
- * Description: Lightweight logging utility for ESP32 with color-coded levels.
+ * Description: Lightweight logging utility for ESP32 with color-coded levels and secret redaction.
  *
  * Exported Functions/Classes:
- * - LOG_ERROR(msg): Macro to log an error message.
- * - LOG_DEBUG(msg): Macro to log a debug message.
+ * - Logger: Static utility class for system-wide logging.
+ *   - begin(): Initializes Serial communication.
+ *   - logSplashMessage(): Prints a framed splash message.
+ *   - registerSecret(): Adds a string to the redaction list.
+ *   - _info(), _warn(), _error(), _debug(): Internal logging handlers.
  */
 #pragma once
 
@@ -33,29 +36,63 @@
   #define LOG_SPLASH(msg)
 #endif
 
+/**
+ * @brief Static utility class for system-wide logging with redaction support.
+ */
 class Logger {
 public:
-  // Initialize Serial
+  /**
+   * @brief Initializes the Serial port and waits for it to stabilize.
+   * @param baud The baud rate for the Serial connection (Default: 115200).
+   */
   static void begin(unsigned long baud = 115200);
 
-  // Log framed splash message (only active if ENABLE_DEBUG_LOG)
+  /**
+   * @brief Logs a framed splash message to the Serial console.
+   * @param message The text to be framed.
+   */
   static void logSplashMessage(const char* message);
 
-  // Add a sensitive string to the redaction list
+  /**
+   * @brief Registers a sensitive string (e.g., API key) to be redacted from all future log output.
+   * @param secret The plaintext string that should not appear in the logs.
+   */
   static void registerSecret(const String& secret);
 
-  // Core logging functions (internal use only, use macros instead)
+  /**
+   * @brief Logs an informational message. Called internally by the LOG_INFO macro.
+   * @param category Subsystem or tag.
+   * @param message Message content.
+   */
   static void _info(const char* category, const String& message);
   static void _info(const char* category, const char* message);
+
+  /**
+   * @brief Logs a warning message. Called internally by the LOG_WARN macro.
+   * @param category Subsystem or tag.
+   * @param message Message content.
+   */
   static void _warn(const char* category, const String& message);
   static void _warn(const char* category, const char* message);
+
+  /**
+   * @brief Logs an error message. Called internally by the LOG_ERROR macro.
+   * @param category Subsystem or tag.
+   * @param message Message content.
+   */
   static void _error(const char* category, const String& message);
   static void _error(const char* category, const char* message);
+
+  /**
+   * @brief Logs a debug message. Called internally by the LOG_DEBUG macro.
+   * @param category Subsystem or tag.
+   * @param message Message content.
+   */
   static void _debug(const char* category, const String& message);
   static void _debug(const char* category, const char* message);
 
 private:
-  static std::vector<String> secrets;
+  static std::vector<String> secrets; ///< Registry of sensitive strings
 /**
  * @brief Print redacted
  * @param icon

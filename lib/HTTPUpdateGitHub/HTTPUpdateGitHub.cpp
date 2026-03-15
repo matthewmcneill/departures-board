@@ -35,7 +35,7 @@
  *   - getLastErrorString(): Retrieves a human-readable string for the last error.
  */
 
- #include <hTTPUpdateGitHub.h>
+ #include <hTTPUpdateGitHub.hpp>
 #include <Update.h>
 #include <Arduino.h>
 #include <WiFi.h>
@@ -45,7 +45,7 @@
 
  #include <esp_partition.h>
  #include <esp_ota_ops.h>                // get running partition
- #include <md5Utils.h>
+ #include <md5Utils.hpp>
 
  HTTPUpdate::HTTPUpdate(void)
          : _httpClientTimeout(8000)
@@ -352,5 +352,5 @@
  }
 
  #if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_HTTPUPDATE)
- HTTPUpdate httpUpdate;
+ HTTPUpdate httpUpdate; // Global OTA update handler instance
  #endif

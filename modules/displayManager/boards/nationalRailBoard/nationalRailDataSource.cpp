@@ -13,7 +13,7 @@
 #include "nationalRailDataSource.hpp"
 #include <WiFiClientSecure.h>
 #include <logger.hpp>
-#include "../xmlStreamingParser/xmlStreamingParser.h"
+#include "../xmlStreamingParser/xmlStreamingParser.hpp"
 #include <algorithm>
 
 #include "../interfaces/iDataSource.hpp"

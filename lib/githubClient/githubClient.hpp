@@ -26,7 +26,7 @@
 #pragma once
 #include <JsonListener.h>
 #include <JsonStreamingParser.h>
-#include <md5Utils.h>
+#include <md5Utils.hpp>
 
 #define MAX_RELEASE_ASSETS 16   //  The maximum number of release asset details that will be read and stored
 

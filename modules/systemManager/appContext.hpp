@@ -22,8 +22,8 @@
 #include <displayManager.hpp>
 #include <otaUpdater.hpp>
 #include <webServer.hpp>
-#include <weatherClient.h>
-#include <rssClient.h>
+#include <weatherClient.hpp>
+#include <rssClient.hpp>
 #include "systemManager.hpp"
 #include <messaging/messagePool.hpp>
 

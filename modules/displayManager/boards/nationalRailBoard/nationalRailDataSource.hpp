@@ -14,7 +14,7 @@
 #define NATIONAL_RAIL_DATA_SOURCE_HPP
 
 #include "../interfaces/iDataSource.hpp"
-#include "../xmlListener/xmlListener.h"
+#include "../xmlListener/xmlListener.hpp"
 #include "../../messaging/messagePool.hpp"
 #include <memory>
 

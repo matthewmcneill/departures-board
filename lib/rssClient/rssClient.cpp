@@ -17,8 +17,8 @@
  * - rssClient::reapplyConfig: Provisions RSS settings from global configuration.
  */
 
-#include <rssClient.h>
-#include <xmlListener.h>
+#include <rssClient.hpp>
+#include <xmlListener.hpp>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <WiFiClient.h>

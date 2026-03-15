@@ -8,6 +8,12 @@
  *
  * Module: modules/systemManager/systemManager.cpp
  * Description: Implementation of the systemManager for global state and logic.
+ *
+ * Exported Functions/Classes:
+ * - systemManager: Lifecycle owner for non-display system tasks.
+ *   - begin(): Initialize with appContext.
+ *   - tick(): Main administrative logic loop.
+ *   - softResetBoard(): Performs a soft reconfiguration and reboot of the state.
  */
 
 #include "systemManager.hpp"

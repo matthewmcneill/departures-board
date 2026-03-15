@@ -24,13 +24,13 @@
  *   - releaseAssetName: Attribute array of asset names.
  */
 
-#include <githubClient.h>
+#include <githubClient.hpp>
 #include <JsonListener.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <LittleFS.h>
 #include <logger.hpp>
-#include <md5Utils.h>
+#include <md5Utils.hpp>
 
 github::github(String repository, String token) {
     if (repository!="") apiGetLatestRelease = "/repos/" + repository + "/releases/latest";

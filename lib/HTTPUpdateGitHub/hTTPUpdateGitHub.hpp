@@ -40,7 +40,7 @@
  #include <WiFiUdp.h>
  #include <HTTPClient.h>
  #include <Update.h>
- #include <md5Utils.h>
+ #include <md5Utils.hpp>
 
  /// note we use HTTP client errors too so we start at 100
  #define HTTP_UE_TOO_LESS_SPACE              (-100)

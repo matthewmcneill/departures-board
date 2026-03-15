@@ -21,7 +21,7 @@
 #include <Arduino.h>
 #include <widgets/drawingPrimitives.hpp>
 #include <WiFiClientSecure.h>
-#include <githubClient.h>
+#include <githubClient.hpp>
 #include "iConfigurable.hpp"
 #include <LittleFS.h>
 #include <boards/systemBoard/loadingBoard.hpp>
@@ -91,4 +91,4 @@ public:
     void reapplyConfig(const Config& config) override;
 };
 
-extern otaUpdater ota;
+extern otaUpdater ota; // Global OTA maintenance orchestrator

@@ -27,7 +27,7 @@
 #include <logger.hpp>
 #include <esp_wifi.h>
 
-WiFiManagerModule wifiManager;
+WiFiManagerModule wifiManager; // Global system WiFi orchestrator singleton
 
 WiFiManagerModule::WiFiManagerModule() {
     memset(wifiSsid, 0, sizeof(wifiSsid));
@@ -90,6 +90,7 @@ void WiFiManagerModule::begin(const char* hostname) {
   
   loadWiFiConfig();
 
+  // --- Step 1: Migration and Connectivity Prep ---
   // Legacy Migration Check
   if (strlen(wifiSsid) == 0) {
     LOG_INFO("WIFI", "No wifi.json found. Checking if legacy NVS credentials exist...");
@@ -108,6 +109,7 @@ void WiFiManagerModule::begin(const char* hostname) {
     }
   }
 
+  // --- Step 2: Configure System Mode ---
   // Purge buggy NVS partition (Core v3 fix)
   WiFi.disconnect(true, true);
   WiFi.persistent(false);
@@ -119,6 +121,7 @@ void WiFiManagerModule::begin(const char* hostname) {
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(WIFI_PS_NONE);
 
+  // --- Step 3: Attempt Primary Connection ---
   // Attempt connection
   if (strlen(wifiSsid) > 0) {
     LOG_INFO("WIFI", String("Connecting to ") + wifiSsid + "...");
@@ -130,6 +133,7 @@ void WiFiManagerModule::begin(const char* hostname) {
     }
   }
 
+  // --- Step 4: Fallback to Captive Portal ---
   // Fallback to Bespoke Captive Portal
   if (WiFi.status() != WL_CONNECTED) {
     LOG_INFO("WIFI", "Connection failed or no credentials. Starting AP Mode (Captive Portal).");

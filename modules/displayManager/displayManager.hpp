@@ -6,7 +6,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/displayManager/displayManager.hpp
+ * Module: modules/displayManager/displayManager.hpp
  * Description: Memory pool utilizing std::variant to statically allocate
  *              the memory required for up to MAX_BOARDS departures without 
  *              fragmenting the heap during run-time. Also manages global

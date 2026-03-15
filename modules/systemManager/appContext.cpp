@@ -23,7 +23,7 @@
 #include <logger.hpp>
 #include <wiFiConfig.hpp>
 
-appContext* _instance = nullptr;
+appContext* _instance = nullptr; // Global static pointer for yield callback adaptor
 
 /**
  * @brief Global wrapper to trigger DisplayManager's non-blocking yield.

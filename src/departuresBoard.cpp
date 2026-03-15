@@ -64,9 +64,9 @@
 #include <webServer.hpp>
 
 // API Service Clients
-#include <weatherClient.h>
-#include <githubClient.h>
-#include <rssClient.h>
+#include <weatherClient.hpp>
+#include <githubClient.hpp>
+#include <rssClient.hpp>
 
 
 // -----------------------------------------------------------------------------
@@ -88,13 +88,13 @@ appContext appContext;
 // -----------------------------------------------------------------------------
 
 // Versioning
-int VERSION_MAJOR = 2;
-int VERSION_MINOR = 2;
+int VERSION_MAJOR = 2; // Major system version incremented for breaking features
+int VERSION_MINOR = 2; // Minor system version incremented for incremental updates
 
 // API Credits and Attribution Text
-extern const char nrAttributionn[] = "Powered by National Rail Enquiries";
-extern const char tflAttribution[] = "Powered by TfL Open Data";
-extern const char btAttribution[] = "Powered by bustimes.org";
+extern const char nrAttributionn[] = "Powered by National Rail Enquiries"; // Mandatory attribution for National Rail
+extern const char tflAttribution[] = "Powered by TfL Open Data"; // Mandatory attribution for TfL
+extern const char btAttribution[] = "Powered by bustimes.org"; // Mandatory attribution for bus data
 
 
 

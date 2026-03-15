@@ -1,6 +1,25 @@
+/*
+ * Departures Board (c) 2025-2026 Gadec Software
+ *
+ * https://github.com/gadec-uk/departures-board
+ *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: lib/logger/logger.cpp
+ * Description: Implementation of the lightweight logging utility.
+ *
+ * Exported Functions/Classes:
+ * - Logger: Static utility class for system-wide logging.
+ *   - begin(): Initializes Serial communication.
+ *   - logSplashMessage(): Prints a framed splash message.
+ *   - registerSecret(): Adds a string to the redaction list.
+ *   - redact(): Filters sensitive strings from logs.
+ */
+
 #include <logger.hpp>
 
-std::vector<String> Logger::secrets;
+std::vector<String> Logger::secrets; // Registry of sensitive strings to be redacted
 
 /**
  * @brief Initializes the Serial port and waits for it to stabilize.

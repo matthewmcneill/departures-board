@@ -19,8 +19,8 @@
  */
 
 #pragma once
-#include <xmlListener.h>
-#include <xmlStreamingParser.h>
+#include <xmlListener.hpp>
+#include <xmlStreamingParser.hpp>
 #include "iConfigurable.hpp"
 
 #include <boards/interfaces/iDataSource.hpp>

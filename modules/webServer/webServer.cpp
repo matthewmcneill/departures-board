@@ -20,11 +20,11 @@
 #include <configManager.hpp>
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
-#include <weatherClient.h>
-#include <rssClient.h>
+#include <weatherClient.hpp>
+#include <rssClient.hpp>
 #include <WiFiClientSecure.h>
 #include <appContext.hpp>
-#include <githubClient.h>
+#include <githubClient.hpp>
 #include <otaUpdater.hpp>
 #include "../../include/webgui/index.h"
 #include "../../include/webgui/pages.h"

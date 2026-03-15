@@ -22,7 +22,6 @@
 #define WIFI_CONFIG_HPP
 
 #include <Arduino.h>
-#include <Arduino.h>
 #include "iConfigurable.hpp"
 
 class DNSServer; // Forward declaration
@@ -63,11 +62,14 @@ public:
 
     /**
      * @brief Update and save WiFi credentials.
+     * @param ssid SSID to save.
+     * @param pass Password to save (Masked as dots in UI).
      */
     void updateWiFi(const char* ssid, const char* pass);
 
     /**
      * @brief Erase stored WiFi credentials and disconnect.
+     *        Clears LittleFS json and restores ESP WiFi to factory.
      */
     void resetSettings();
 
@@ -96,6 +98,6 @@ public:
     bool testConnection(const char* ssid, const char* pass, String& ipOut);
 };
 
-extern WiFiManagerModule wifiManager;
+extern WiFiManagerModule wifiManager; // Global system WiFi orchestrator
 
 #endif

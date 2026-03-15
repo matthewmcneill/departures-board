@@ -63,5 +63,5 @@ public:
     void reapplyConfig(const Config& config) override;
 };
 
-extern TimeManager timeManager;
-extern struct tm timeinfo;
+extern TimeManager timeManager; // Global system clock manager
+extern struct tm timeinfo;      // Global synchronized time

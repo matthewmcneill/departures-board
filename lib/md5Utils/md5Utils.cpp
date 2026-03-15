@@ -18,7 +18,7 @@
  *   - base64ToHex(): Converts a base64 encoded MD5 hash into a hex string.
  */
 
-#include <md5Utils.h>
+#include <md5Utils.hpp>
 #include <LittleFS.h>
 #include <mbedtls/md5.h>
 

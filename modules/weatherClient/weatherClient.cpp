@@ -17,7 +17,7 @@
  * - weatherClient::reapplyConfig: Provisions setting from global configuration.
  */
 
-#include <weatherClient.h>
+#include <weatherClient.hpp>
 #include <JsonListener.h>
 #include <WiFiClient.h>
 #include <logger.hpp>

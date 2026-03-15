@@ -3,7 +3,14 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
  * Module: lib/timeManager/timeManager.cpp
+ * Description: Implementation of NTP time synchronization.
+ *
+ * Exported Functions/Classes:
+ * - TimeManager: Core class for system clock management.
  */
 
 #include "timeManager.hpp"
@@ -16,9 +23,9 @@
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <appContext.hpp>
 
-TimeManager timeManager;
-struct tm timeinfo;
-const char* weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+TimeManager timeManager; // Global system clock manager singleton
+struct tm timeinfo;      // Global synchronized time structure
+const char* weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}; // Weekday labels
 
 const char TimeManager::ntpServer[] = "europe.pool.ntp.org";
 const char TimeManager::ukTimezone[] = "GMT0BST,M3.5.0/1,M10.5.0";

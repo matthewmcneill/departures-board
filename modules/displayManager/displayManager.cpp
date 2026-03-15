@@ -6,7 +6,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/displayManager/displayManager.cpp
+ * Module: modules/displayManager/displayManager.cpp
  * Description: Implementation of the DisplayManager singleton orchestrator.
  *              Manages hardware display state, power management, and board rendering.
  *
@@ -23,8 +23,8 @@
 #include "widgets/drawingPrimitives.hpp"
 #include <timeManager.hpp>
 #include <logger.hpp>
-#include <weatherClient.h>
-#include <rssClient.h>
+#include <weatherClient.hpp>
+#include <rssClient.hpp>
 #include <otaUpdater.hpp>
 #include <boards/systemBoard/sleepingBoard.hpp>
 #include "configManager.hpp"

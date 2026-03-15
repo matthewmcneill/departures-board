@@ -38,7 +38,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "../xmlListener/xmlListener.h"
+#include "../xmlListener/xmlListener.hpp"
 
 #define XML_BUFFER_MAX_LENGTH 450
 
