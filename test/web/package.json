@@ -1,0 +1,18 @@
+{
+  "name": "departures-board-web-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for Departures Board Config Portal",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:live": "playwright test tests/live_portal.spec.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^25.5.0",
+    "typescript": "^5.7.2"
+  }
+}
