@@ -10,10 +10,14 @@ This file tracks active and pending agent sessions to prevent hardware and build
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |
 | :--- | :--- | :--- | :--- |
+| 7253f91e-a7b9-4b21-8a21-357988484c5b | Investigate and fix API Key validation UI & backend logic | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/7253f91e-a7b9-4b21-8a21-357988484c5b/implementation_plan.md) | 2026-03-15T16:08:06Z |
+| 36b83bfe-d960-4008-95c5-1d5d2bc7b326 | Add data provider logos to API Key Registry UI | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/36b83bfe-d960-4008-95c5-1d5d2bc7b326/implementation_plan.md) | 2026-03-15T16:13:00Z |
+| 6ac93dc9-d478-4cf2-9a19-c40eef924938 | Implement Display Boards List with reordering, default star, and station search | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6ac93dc9-d478-4cf2-9a19-c40eef924938/implementation_plan.md) | 2026-03-15T16:40:47Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |
 | :--- | :--- | :--- | :--- |
+| 2c182619-b8f2-4fb3-94c5-26c1a77fd51a | Deep Portal UI Debugging: WiFi Dropdown & Connection Stability | Success | 2026-03-15T16:45:00Z |
 | d09180d0-b976-4ddf-858f-a977de894d05 | Web Portal Test Suite & API Key Verification | Success | 2026-03-15T15:55:42Z |
 | 61cae59c-a0c3-4f76-8082-1590261c7c79 | Repository-wide House Style Audit & Header Standardisation | Success | 2026-03-15T11:27:00Z |
 | 8783aa65-8a5f-4263-913a-68ac04023415 | Web Portal Refinement: WiFi Reset & Connectivity Stability | Success | 2026-03-15T00:15:00Z |
