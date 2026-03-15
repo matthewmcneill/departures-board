@@ -20,16 +20,17 @@ def minify_html(content):
     content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
     
     # 3. Remove single-line comments (be careful with URLs)
-    # This is a simple regex that avoids most URLs by requiring a space or start of line
-    content = re.sub(r'(?m)^\s*//.*$', '', content) # Remove lines that are ONLY comments
-    content = re.sub(r'([^\s])\s*//(?!!).*$', r'\1', content) # Remove trailng comments (naive)
+    # Strategy: Remove // comments if they are at the start of a line or 
+    # preceded by whitespace, but NOT prepended by a colon (to protect http://)
+    content = re.sub(r'(?m)^\s*//.*$', '', content)
+    content = re.sub(r'(?<!:)\/\/.*$', '', content, flags=re.MULTILINE)
 
     # 4. Strip whitespace from line ends and remove empty lines
     lines = [line.strip() for line in content.splitlines()]
-    content = "\n".join([line for line in lines if line])
+    content = " ".join([line for line in lines if line])
     
     # 5. Replace multiple spaces with single space
-    content = re.sub(r'[ \t]+', ' ', content)
+    content = re.sub(r'\s+', ' ', content)
     
     return content.strip()
 
