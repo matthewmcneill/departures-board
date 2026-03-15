@@ -55,7 +55,7 @@ The tab reacts to the current network state returned by `/api/status`:
 | Field/Component | Type | Mapping (C++) | Description |
 | :--- | :--- | :--- | :--- |
 | **Network State** | Banner | `status.ap_mode` | Visual banner showing "Setup Mode" (Warning color) or "Connected to [SSID]" (Success color). |
-| **SSID** | Dropdown + Button | `wifiSsid` | Targeted WiFi network. Populated via `GET /api/wifi/scan`. Includes an async "↻ Rescan" button next to the field. Include an option for "Hidden Network" that reveals a standard text input. |
+| **SSID** | Dropdown + Button | `wifiSsid` | Targeted WiFi network. Populated via `GET /api/wifi/scan`. The currently configured network is prioritized at the top, labeled with a lightning bolt (⚡) and "(Configured)". Includes an async "↻ Rescan" button next to the field. Includes an option for "Hidden Network" that reveals a standard text input. |
 | **Password** | Password + Toggle | `wifiPass` | WiFi network password. Includes a standard "eye" icon to unmask text for verification on mobile keyboards. |
 | **Hostname** | Text | `config.hostname` | mDNS name (e.g., `departures.local`). Used to generate the AP name (e.g., "Departures-Board") and network address. |
 

@@ -139,7 +139,7 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     
     // Wait for the scan to populate the dropdown
     await expect(select.locator('option:has-text("MockNet1")')).toBeAttached();
-    await expect(select.locator('option')).toHaveCount(4); // Default + 2 Mock + Manual
+    await expect(select.locator('option')).toHaveCount(5); // Default + Configured + 2 Mock + Manual
 
     // Mock WiFi test success
     await page.route('**/api/wifi/test', async route => {
@@ -161,5 +161,32 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     await expect(table).toContainText('192.168.1.100');
     await expect(table).toContainText('-50 dBm');
     await expect(table).toContainText('100 KB');
+  });
+
+  test('should show configured WiFi even if scan results are empty', async ({ page }) => {
+    // Note: The beforeEach already mocks /api/config with { wifi: { ssid: "TestWiFi" } }
+    // No need to re-mock unless we want a different SSID
+    
+    // Mock WiFi scan to be empty
+    await page.route('**/api/wifi/scan', async route => {
+      await route.fulfill({ json: [] });
+    });
+
+    // Refresh config to trigger render (or just wait for initial render)
+    // Actually, at this point, the page has already loaded with "TestWiFi"
+    const select = page.locator('#wifi-ssid-select');
+    await expect(select).toHaveValue('TestWiFi');
+    await expect(select.locator('option:has-text("TestWiFi")')).toBeAttached();
+
+    // Click Scan and verify it still shows TestWiFi
+    await page.click('#scan-btn');
+    // Wait for the scan spinner to disappear (implicit in next check)
+    await expect(select.locator('option:has-text("TestWiFi")')).toBeAttached();
+    await expect(select).toHaveValue('TestWiFi');
+    
+    // Verify it's labeled with lightning bolt or "Configured"
+    const text = await select.locator('option:checked').textContent();
+    expect(text).toContain('TestWiFi');
+    expect(text).toContain('Configured');
   });
 });

@@ -1,0 +1,26 @@
+# Next Session TODO
+
+- [x] move all the u8g2 setup and handling into the display manager. Add a displaymanager.Showboard( iDisplayBoard ) instead of calling render directly whcih injects the display hardware. Move all of the constants related to the display into the display manager
+- [x] clean up the drawing primitives. These routines should all take a u82g display as a paramaeter and not assume the global one exists.
+- [x] continue with the rationalisation of the data providers
+- [ ] finish the updates to the web configuration front end to enable better board configuration (Backend support for multi-board added, UI still needs multi-board components)
+- [x] iStation and messageData - shoudl be obsolete
+- [ ] header widgets - I have a feeling this is not generalised, and is spacific to NatRail. (Still largely NR specific)
+- [x] systemBoard.cpp still has a lot of old straggling stuff that needs to go into displays, widgets or modules. (Cleanup complete, broken into separate classes)
+- [x] Departures Board (systemManager) still has a bunch of specific data to the various boards which needs moving into the classes.
+- [x] check that the active display boards are maintained correctly when going through sub-loops of the main loop (e.g. OTA check flow handles this)
+- [x] there is a weird dependency on the fonts in the widgets - to calculate font size we set properties on the u8g2 board and pull a value which may upset actual board state.
+- [x] rationalise the include folder and get rid of it. (Renamed libraries and moved assets)
+- [x] House Style Refactor: libraries to camelCase and headers documented. (Completed: Audited repository, added Doxygen, renamed headers to .hpp)
+- [ ] why do we haev an appContext class, it seems to just to add one layer of dereference from the departureboard.cpp. Is it superflouous?
+- [x] need to check that the config is being upgraded and then rewritten - looks like the old one. (Rewritten to modernize on save and serve from memory)
+- [x] check that when dumping API keys we have already registered them as secrets in the logger (implemented in appContext.cpp)
+- [x] Port existing functionality: WiFi Reset (backend & frontend).
+- [x] Investigate and fix intermittent synchronization issues/delays in the Web GUI mode switching.
+- [ ] Fix 'Rail Station' field population to resolve CRS to human-readable names on load (currently empty until manual input).
+- [ ] Investigate missing Latitude/Longitude fields in the 'Advanced Options' tab of the Web UI.
+- [ ] Add RSS feed configuration UI to the System tab.
+- [ ] startup screens don't show and then the board display seems very static and is not laid out properly. need to work through this. Probably starting with the startup screens and then working through the system screens.
+- [x] the 'eye' visible icon for the passwords is stil misaligned - I asked the agent 3 times to fix it and it just could not understand.
+- [x] the scan button is not aligned with the networks drop-down box and changes size when the scan icon is showing.
+- [x] just check that the key registry IS actually being used as a registry.  i.e. anything that references it uses an ID for the key that is served by the registry with the actual key. Similarly, in the storage, the configuration storage should reference the id of the key and the apiKeyManager should use that ID to serve the correct key.  

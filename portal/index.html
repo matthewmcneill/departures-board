@@ -9,6 +9,20 @@
  
   Module: portal/index.html
   Description: Unified Configuration Portal for the ESP32 Departures Board.
+
+  Exported Functions/Classes:
+  - app: Main application object containing state and logic
+    - init(): Initialize theme, bind events, and fetch initial data
+    - fetchConfig(): Fetch and render system configuration
+    - fetchStatus(): Periodic fetch of system health and WiFi stats
+    - render(): Main UI rendering entry point
+    - renderBoards(): Render the board list
+    - renderKeys(): Render the API key registry slots
+    - scanWiFi(): Trigger background WiFi scan and update dropdown
+    - updateSSIDDropdown(): Helper to populate WiFi SSID selection
+    - saveAll(): Unified save for system and WiFi settings
+    - testWiFi(): Execute connectivity test to selected SSID
+    - resetWiFi(): Erase credentials and reboot to AP mode
 -->
 <html lang="en">
 <head>
@@ -75,7 +89,7 @@
       background: none; border: none; color: var(--text-muted);
       cursor: pointer; padding: 4px; z-index: 5; display: flex; align-items: center; justify-content: center;
     }
-    .eye-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0.5; }
+    .eye-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0.7; }
 
     button { 
       background: var(--primary); color: white; border: none; padding: 0.8rem 1.25rem; border-radius: 10px;
@@ -241,13 +255,12 @@
         <form id="wifi-form">
           <label>Hostname (mDNS)<input type="text" name="hostname" value="departures" /></label>
           
-          <div class="input-row">
-            <label style="flex: 1; margin-bottom: 0;">Network (SSID)
-              <select name="ssid" id="wifi-ssid-select" onchange="app.handleSSIDChange(this.value)">
-                <option value="">Select a network...</option>
-              </select>
-            </label>
-            <button type="button" onclick="app.scanWiFi()" id="scan-btn" style="padding: 0.75rem 1rem; min-width: 75px; display: flex; align-items: center; justify-content: center;">Scan</button>
+          <label>Network (SSID)</label>
+          <div class="input-row" style="margin-top: 0.4rem;">
+            <select name="ssid" id="wifi-ssid-select" onchange="app.handleSSIDChange(this.value)" style="margin-top: 0;">
+              <option value="">Select a network...</option>
+            </select>
+            <button type="button" onclick="app.scanWiFi()" id="scan-btn" style="padding: 0.75rem 1rem; min-width: 90px; height: 44px; display: flex; align-items: center; justify-content: center;">Scan</button>
           </div>
           
           <div id="manual-ssid-group" style="display: none; margin-bottom: 1rem;">
@@ -429,12 +442,16 @@
         inContextBoardFlow: false // true if adding key while editing a board
       },
 
-      init: function() {
+      init: async function() {
         this.initTheme();
-        this.fetchStatus();
-        this.fetchConfig().catch(e => console.error('Initial config fetch failed', e));
-        setInterval(() => this.fetchStatus(), 5000);
         this.bindEvents();
+        try {
+          await Promise.all([this.fetchStatus(), this.fetchConfig()]);
+        } catch (e) { 
+          console.error('Initial fetch failed', e); 
+        }
+        setInterval(() => this.fetchStatus(), 5000);
+        // Initial scan after a short delay to allow UI to settle
         setTimeout(() => this.scanWiFi(), 500);
       },
 
@@ -502,7 +519,7 @@
         document.querySelector('[name="brightness"]').value = cfg.system.brightness;
         document.querySelector('[name="flip"]').checked = cfg.system.flip;
         if (cfg.wifi) {
-          document.getElementById('wifi-ssid-select').value = cfg.wifi.ssid || "";
+          this.updateSSIDDropdown(cfg.wifi.ssid);
           document.getElementById('wifi-pass').value = cfg.wifi.ssid ? DUMMY_PASS : "";
         }
         this.renderBoards();
@@ -815,6 +832,47 @@
         btn.querySelector('svg').style.opacity = isPass ? '1' : '0.5';
       },
 
+      updateSSIDDropdown: function(currentSsid, scanResults = []) {
+        const select = document.getElementById('wifi-ssid-select');
+        if (!select) return;
+        
+        const prevValue = select.value;
+        select.innerHTML = '<option value="">Select a network...</option>';
+        
+        // 1. Add Configured Network first
+        const ssid = currentSsid || this.state.config?.wifi?.ssid;
+        if (ssid) {
+          const opt = document.createElement('option');
+          opt.value = ssid;
+          const scanMatch = scanResults.find(n => n.ssid === ssid);
+          const rssiInfo = scanMatch ? ` (${scanMatch.rssi}dBm)${scanMatch.secure ? ' 🔒' : ''}` : ' (Configured)';
+          opt.textContent = `⚡ ${ssid}${rssiInfo}`;
+          select.appendChild(opt);
+        }
+        
+        // 2. Add other scan results
+        scanResults.forEach(net => {
+          if (net.ssid === ssid) return;
+          const opt = document.createElement('option');
+          opt.value = net.ssid;
+          opt.textContent = `${net.ssid} (${net.rssi}dBm)${net.secure ? ' 🔒' : ''}`;
+          select.appendChild(opt);
+        });
+        
+        // 3. Manual entry always at bottom
+        const optManual = document.createElement('option');
+        optManual.value = '__manual__';
+        optManual.textContent = '-- Enter SSID Manually --';
+        select.appendChild(optManual);
+        
+        // Restore value or default to current
+        if (prevValue && Array.from(select.options).some(o => o.value === prevValue)) {
+          select.value = prevValue;
+        } else if (ssid) {
+          select.value = ssid;
+        }
+      },
+
       scanWiFi: async function() {
         const btn = document.getElementById('scan-btn');
         const select = document.getElementById('wifi-ssid-select');
@@ -825,18 +883,12 @@
         try {
           const res = await fetch('/api/wifi/scan');
           const data = await res.json();
-          select.innerHTML = '<option value="">Select a network...</option>';
-          data.forEach(net => {
-            const opt = document.createElement('option');
-            opt.value = net.ssid;
-            opt.textContent = `${net.ssid} (${net.rssi}dBm)${net.secure ? ' 🔒' : ''}`;
-            select.appendChild(opt);
-          });
-          const optManual = document.createElement('option');
-          optManual.value = '__manual__';
-          optManual.textContent = '-- Enter SSID Manually --';
-          select.appendChild(optManual);
-        } catch (e) { console.error('Scan failed', e); }
+          this.updateSSIDDropdown(this.state.config?.wifi?.ssid, data);
+        } catch (e) {
+          console.error('Scan failed', e);
+          // Still refresh with current config even if scan fails
+          this.updateSSIDDropdown(this.state.config?.wifi?.ssid);
+        }
         finally { btn.disabled = false; btn.innerText = 'Scan'; }
       },
 

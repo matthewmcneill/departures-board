@@ -45,7 +45,22 @@ def generate_assets():
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 
     with open(OUTPUT_FILE, "w") as f:
-        f.write("/* Automated Portal Assets - DO NOT EDIT MANUALLY */\n")
+        f.write("/*\n")
+        f.write(" * Departures Board (c) 2025-2026 Gadec Software\n")
+        f.write(" *\n")
+        f.write(" * https://github.com/gadec-uk/departures-board\n")
+        f.write(" *\n")
+        f.write(" * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.\n")
+        f.write(" * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/\n")
+        f.write(" *\n")
+        f.write(f" * Module: {OUTPUT_FILE}\n")
+        f.write(" * Description: Automated Portal Assets - embedded gzipped binary data.\n *\n")
+        f.write(" * Exported Functions/Classes:\n")
+        for asset in ASSETS:
+            var_name = asset.replace(".", "_") + "_gz"
+            f.write(f" * - {var_name}: Gzipped content of {asset}\n")
+            f.write(f" * - {var_name}_len: Length of {var_name}\n")
+        f.write(" */\n\n")
         f.write("#pragma once\n\n")
         f.write("#include <Arduino.h>\n\n")
 
