@@ -133,5 +133,5 @@ Resolved critical WiFi portal usability issues and race conditions. Improved UI 
 - **House Style Audit**: Updated headers for `portal/index.html` and the generated `portalAssets.h` to include full "Exported Functions/Classes" lists, satisfying project documentation standards.
 
 ### Git Commit
-Generated commit: [COMMIT_ID]
+Generated commit: 8e61ab9
 
