@@ -68,8 +68,8 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     await expect(slot).toContainText('My Rail Key');
     await expect(slot).toContainText('rail');
     
-    // Open edit modal
-    await slot.getByRole('button', { name: 'Edit' }).click();
+    // Open edit modal by clicking the card
+    await slot.click();
     await expect(page.locator('#modal-apikey')).toBeVisible();
     await expect(page.locator('input[name="token"]')).toHaveValue('');
     await expect(page.locator('input[name="token"]')).toHaveAttribute('placeholder', '••••••••');
@@ -94,7 +94,7 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     
     // Fill the form
     await page.fill('input[name="label"]', 'New Test Key');
-    await page.fill('input[name="token"]', 'secret_token_123');
+    await page.fill('input[name="token"]', '0123456789abcdef0123456789abcdef');
     
     // Save
     await page.click('#key-form button[type="submit"]');
@@ -103,9 +103,9 @@ test.describe('Web Portal - Local Mocked Tests', () => {
 
   test('should validate an API key and show feedback', async ({ page }) => {
     await page.click('a[data-target="tab-apikeys"]');
-    // Wait for the key slot to render and find the Edit button within it
+    // Wait for the key slot to render and click it
     const slot = page.locator('.key-slot.filled').first();
-    await slot.getByRole('button', { name: 'Edit' }).click();
+    await slot.click();
     
     // Mock test success
     await page.route('**/api/keys/test', async route => {
@@ -202,7 +202,7 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     await page.locator('.key-slot').filter({ hasText: 'Empty Slot' }).first().click();
     await expect(page.locator('#modal-key-selection')).toBeVisible();
     const pickerLogos = page.locator('#modal-key-selection .icon svg');
-    await expect(pickerLogos).toHaveCount(4); // Rail, TfL, Bus, OWM
+    await expect(pickerLogos).toHaveCount(3); // Rail, TfL, OWM
   });
 
   test('should implement secure placeholder pattern for WiFi password', async ({ page }) => {
@@ -232,6 +232,9 @@ test.describe('Web Portal - Local Mocked Tests', () => {
       await route.fulfill({ json });
     });
 
+    // Reload to pick up the mocked keys
+    await page.goto('http://localhost:3000/');
+
     let testCalls = 0;
     const callTimes: number[] = [];
 
@@ -243,14 +246,21 @@ test.describe('Web Portal - Local Mocked Tests', () => {
       await route.fulfill({ json: { status: 'ok' } });
     });
 
+    // Prepare to wait for console message via Promise
+    const finishedSignal = new Promise(resolve => {
+      page.on('console', (msg: any) => {
+        if (msg.text() === 'Sequential tests finished.') resolve(true);
+      });
+    });
+
     // Switch to Keys tab
     await page.click('a[data-target="tab-apikeys"]');
     
-    // Wait for tests to finish (2 keys * (1s delay + fetch time))
-    await page.waitForFunction(() => {
-      const finished = document.querySelectorAll('.key-status-dot.green').length === 2;
-      return finished;
-    }, { timeout: 5000 });
+    // Wait for tests to signal completion
+    await finishedSignal;
+
+    // Wait for BOTH to be green
+    await page.waitForFunction(() => document.querySelectorAll('.key-status-dot.green').length === 2, { timeout: 5000 });
 
     expect(testCalls).toBe(2);
     // Verify at least 1s gap between calls (sequential logic uses 1000ms delay)

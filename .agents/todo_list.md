@@ -32,3 +32,10 @@
 - [ ] make an ota widget and remove the OTA overlay board
 - [ ] Investigate persistent National Rail SOAP connection instability (success on WSDL boot, but frequent "SOAP connection failed" during data updates; requires retry logic evaluation).
 
+- [x] need to fix the national rail key and testing process in the portal. Currently it always fails. (Resolved: Implemented sequential testing to handle connection overhead).
+- [x] fix the 'Testing' button height in the keys detailed form to ensure it remains constant when text changes. (Resolved: Buttons now have consistent vertical rhythm in modern modal layout).
+- [ ] add an 'X' close button to the top right of the keys detailed form (acts as cancel).
+- [ ] ensure API key save commits existing values if no changes were made.
+- [ ] check if the key UI provides format validation when keys are entered.
+- [ ] include instructions and links on where to get keys in the key creation UI (replicate help strings from `web/keys.htm`).
+- [x] remove the bus key button from the add keys dialog. No key is needed for bus times. (Resolved: Bustimes.org uses scrapers/unauthenticated APIs).

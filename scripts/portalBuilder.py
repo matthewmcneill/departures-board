@@ -1,13 +1,46 @@
 #!/usr/bin/env python3
+"""
+Departures Board (c) 2025-2026 Gadec Software
+Refactored for v3.0 by Matt McNeill 2026 CB Labs
+
+https://github.com/gadec-uk/departures-board
+
+This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Module: scripts/portalBuilder.py
+Description: Aggressively minifies and gzips web portal assets for embedding into ESP32 firmware.
+"""
 import os
 import gzip
 import shutil
 import re
 
 # --- Configuration ---
-PORTAL_DIR = "portal"
-OUTPUT_FILE = "include/webServer/portalAssets.h" # Updated to match implementation plan's logical path
-ASSETS = ["index.html"] # We start with index.html as per Phase 1
+try:
+    from SCons.Script import Import
+    Import("env")
+except ImportError:
+    class MockEnv:
+        def get(self, key, default):
+            return os.environ.get(key, default)
+    env = MockEnv()
+
+ROOT_DIR = env.get("PROJECT_DIR", os.getcwd())
+PORTAL_DIR = os.path.join(ROOT_DIR, "portal")
+OUTPUT_FILE = os.path.join(ROOT_DIR, "include/webServer/portalAssets.h")
+ASSETS = ["index.html"] 
+
+def should_rebuild():
+    if not os.path.exists(OUTPUT_FILE):
+        return True
+    
+    dest_mtime = os.path.getmtime(OUTPUT_FILE)
+    for asset in ASSETS:
+        asset_path = os.path.join(PORTAL_DIR, asset)
+        if os.path.exists(asset_path) and os.path.getmtime(asset_path) > dest_mtime:
+            return True
+    return False
 
 def minify_html(content):
     """
@@ -35,6 +68,10 @@ def minify_html(content):
     return content.strip()
 
 def generate_assets():
+    if not should_rebuild():
+        print("Portal assets are up to date. Skipping rebuild.")
+        return
+
     print(f"--- Portal Builder: Generating {OUTPUT_FILE} ---")
     
     if not os.path.exists(PORTAL_DIR):
@@ -47,6 +84,7 @@ def generate_assets():
     with open(OUTPUT_FILE, "w") as f:
         f.write("/*\n")
         f.write(" * Departures Board (c) 2025-2026 Gadec Software\n")
+        f.write(" * Refactored for v3.0 by Matt McNeill 2026 CB Labs\n")
         f.write(" *\n")
         f.write(" * https://github.com/gadec-uk/departures-board\n")
         f.write(" *\n")

@@ -13,9 +13,12 @@ This file tracks active and pending agent sessions to prevent hardware and build
 | 6ac93dc9-d478-4cf2-9a19-c40eef924938 | Implement Display Boards List with reordering, default star, and station search | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6ac93dc9-d478-4cf2-9a19-c40eef924938/implementation_plan.md) | 2026-03-15T16:40:47Z |
 | 4036f49f-6381-45b6-a8f1-9b972b454d64 | Planning Feeds UI | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/4036f49f-6381-45b6-a8f1-9b972b454d64/implementation_plan.md) | 2026-03-15T22:26:14Z |
 | 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
+| 45557708-ca25-4ac0-9ef4-5424065f90c7 | Fix National Rail Key Validation (SOAP Connection / Memory) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/45557708-ca25-4ac0-9ef4-5424065f90c7/implementation_plan.md) | 2026-03-16T21:42:00Z |
+| 02d69dd3-1b75-448c-930d-3e14292b29fa | Remove bustimes.org button from API Key selection dialog | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/02d69dd3-1b75-448c-930d-3e14292b29fa/implementation_plan.md) | 2026-03-16T21:40:00Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |
+| ad513d90-fb1c-4c56-9f90-8fe6049e0594 | Refining API Key UI and Build System | Success | 2026-03-16T22:06:44Z |
 | a57da37d-5394-4798-84f2-791ef8118b40 | Repository-wide House Style Update: Refactoring Attribution | Success | 2026-03-16T17:30:56Z |
 | 43a2533e-f07d-418c-b934-1167fef97ee7 | Verify Sequential Validation and Optimize Memory | Success | 2026-03-16T17:21:00Z |
 | 7253f91e-a7b9-4b21-8a21-357988484c5b | Investigate and fix API Key validation UI & backend logic | Success | 2026-03-16T11:45:00Z |

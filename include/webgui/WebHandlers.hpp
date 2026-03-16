@@ -12,6 +12,7 @@ static const unsigned long msHour = 3600000;
 static const unsigned long msDay = 86400000;
 /*
  * Departures Board (c) 2025-2026 Gadec Software
+ * Refactored for v3.0 by Matt McNeill 2026 CB Labs
  *
  * https://github.com/gadec-uk/departures-board
  *

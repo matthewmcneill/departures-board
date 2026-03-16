@@ -80,6 +80,9 @@ void WebHandlerManager::handleGetStatus() {
     doc["rssi"] = WiFi.RSSI();
     doc["ssid"] = WiFi.SSID();
     doc["ip"] = WiFi.localIP().toString();
+    doc["ap_mode"] = appContext.getWifiManager().getAPMode();
+    doc["connected"] = (WiFi.status() == WL_CONNECTED);
+    
     // Add Network Details
     doc["gateway"] = WiFi.gatewayIP().toString();
     doc["subnet"] = WiFi.subnetMask().toString();
