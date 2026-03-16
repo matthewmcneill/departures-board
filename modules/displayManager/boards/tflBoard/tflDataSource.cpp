@@ -6,8 +6,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/tflBoard/src/tflDataSource.cpp
+ * Module: modules/displayManager/boards/tflBoard/tflDataSource.cpp
  * Description: Implementation of TfL data source ported from TfLdataClient.
+ *
+ * Exported Functions/Classes:
+ * - tflDataSource: Data client for TfL Unified API.
+ *   - configure(): Sets Naptan ID and optional API key.
+ *   - updateData(): Performs SSL GET request and parses JSON response.
+ *   - getStation(): Accessor for parsed station metadata.
+ *   - getServicesCount(): Returns current found arrivals.
+ *   - getService(): Accessor for individual arrival data.
+ *   - getMessagesCount(): Accessor for line disruption messages.
  */
 
 #include "tflDataSource.hpp"

@@ -16,7 +16,7 @@
 - [x] need to check that the config is being upgraded and then rewritten - looks like the old one. (Rewritten to modernize on save and serve from memory)
 - [x] check that when dumping API keys we have already registered them as secrets in the logger (implemented in appContext.cpp)
 - [x] Port existing functionality: WiFi Reset (backend & frontend).
-- [x] Investigate and fix intermittent synchronization issues/delays in the Web GUI mode switching.
+- [x] Investigate and fix intermittent synchronization issues/delays in the Web GUI mode switching (Resolved: Implemented sequential validation to prevent ESP32 saturation).
 - [ ] Fix 'Rail Station' field population to resolve CRS to human-readable names on load (currently empty until manual input).
 - [ ] Investigate missing Latitude/Longitude fields in the 'Advanced Options' tab of the Web UI.
 - [ ] Add RSS feed configuration UI to the System tab.
@@ -28,6 +28,7 @@
 - [ ] need to add in the footers containing credits and acknowledgements to the bottom of the portal screen
 - [ ] departuresBoard.hpp - does it have all the platformio.ini variables in it - what about max keys?  (btw we probably only need 4 max - 6 to be generous)
 - [ ] add a machine state to app context for OTA updates. If the ota update flag is checked it should go to UPDATING state before running.  In this state it should check for updates, and then do an OTA if there is one whilst displaying the OTA wizard or progress bar. Otherwise it just checks and then moves to RUNNING.  We also need to think about how a long running device periodically goes to UPDATING state to check.
-- [ ] need to review all password masking.  Best practice on the web seems to be to have a text box behind the editable one which is populated with light grey stars on load to indicate a password or key exists.  The actual field entry box is not populated at all when the portal loads existing settings.  IF the user updates the field then the indicator field disappears and we have the show/hide   of the actual box contents - we need to evaluate this and turn it into a pattern in the portal.
-- [ ] make an ota widget and remove the OTA overlay board - need to understand how thins works and also integrate it into the app state machine.
+- [/] need to review all password masking. (Stage 1: Implemented logic to prevent overwriting keys/passwords if the placeholder is unchanged. Stage 2: Refining grey stars indicator UI).
+- [ ] make an ota widget and remove the OTA overlay board
+- [ ] Investigate persistent National Rail SOAP connection instability (success on WSDL boot, but frequent "SOAP connection failed" during data updates; requires retry logic evaluation).
 

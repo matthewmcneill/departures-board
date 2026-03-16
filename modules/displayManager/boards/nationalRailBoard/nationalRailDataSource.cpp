@@ -6,8 +6,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/nationalRailBoard/src/nationalRailDataSource.cpp
+ * Module: modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp
  * Description: Implementation of National Rail data source ported from raildataXmlClient.
+ *
+ * Exported Functions/Classes:
+ * - nationalRailDataSource: Data client for Darwin (National Rail SOAP API).
+ *   - init(): Initializes the WSDL parser and SSL handshake.
+ *   - updateData(): High-level trigger for polling departure info.
+ *   - getStation(): Returns parsed station name and meta.
+ *   - getServicesCount(): Returns current found services.
+ *   - getService(): Accessor for individual service rows.
+ *   - getMessagesCount(): Accessor for rail disruption messages.
  */
 
 #include "nationalRailDataSource.hpp"

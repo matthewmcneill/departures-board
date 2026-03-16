@@ -6,8 +6,14 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/wifiStatusWidget.cpp
+ * Module: modules/displayManager/widgets/wifiStatusWidget.cpp
  * Description: Implementation of the Wi-Fi status warning widget.
+ *
+ * Exported Functions/Classes:
+ * - wifiStatusWidget: Graphical icon indicator for WiFi loss.
+ *   - tick(): Monitors connection state and handles blinking timers.
+ *   - render(): Draws the icon to the screen buffer.
+ *   - renderAnimationUpdate(): Performs partial screen refresh for blinking.
  */
 
 #include <widgets/wifiStatusWidget.hpp>

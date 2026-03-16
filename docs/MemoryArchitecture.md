@@ -42,7 +42,7 @@ Even though the data structures are in DRAM, the **execution code** happens on t
 *   **Board Slots**: The `slots[]` array. Static allocation here prevents the "OOM (Out Of Memory) at 2 AM" problem caused by heap fragmentation.
 
 ### Move to Heap (Recommended Candidates)
-*   **Network Clients**: (Done for NR). Objects like `WiFiClientSecure` or `HTTPClient` should always be heap-allocated inside the function that needs them and deleted immediately after.
+*   **Network Clients**: (Done for NR and TfL). Objects like `WiFiClientSecure` or `HTTPClient` should always be heap-allocated inside the function that needs them and deleted immediately after. This prevents stack overflows during deep call stacks or complex SSL handshakes.
 *   **JSON Documents**: Use `JsonDocument` as a local heap-based object rather than a member variable.
 *   **Transient Buffers**: Any `char buffer[1024]` used for temporary text manipulation should be offloaded to the heap if the call stack is deep.
 

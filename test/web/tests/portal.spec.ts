@@ -219,4 +219,44 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     await passInput.fill('newpassword');
     await expect(eyeBtn).toBeEnabled();
   });
+
+  test('should execute API key tests sequentially on tab switch', async ({ page }) => {
+    // Mock the status to have multiple keys
+    await page.route('**/api/config', async route => {
+      const json = {
+        keys: [
+          { id: "key_1", type: "rail", label: "Rail Key", tokenExists: true },
+          { id: "key_2", type: "tfl", label: "TfL Key", tokenExists: true }
+        ]
+      };
+      await route.fulfill({ json });
+    });
+
+    let testCalls = 0;
+    const callTimes: number[] = [];
+
+    // Mock the test API with a slight delay
+    await page.route('**/api/keys/test', async route => {
+      testCalls++;
+      callTimes.push(Date.now());
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await route.fulfill({ json: { status: 'ok' } });
+    });
+
+    // Switch to Keys tab
+    await page.click('a[data-target="tab-apikeys"]');
+    
+    // Wait for tests to finish (2 keys * (1s delay + fetch time))
+    await page.waitForFunction(() => {
+      const finished = document.querySelectorAll('.key-status-dot.green').length === 2;
+      return finished;
+    }, { timeout: 5000 });
+
+    expect(testCalls).toBe(2);
+    // Verify at least 1s gap between calls (sequential logic uses 1000ms delay)
+    if (callTimes.length >= 2) {
+      const diff = callTimes[1] - callTimes[0];
+      expect(diff).toBeGreaterThanOrEqual(1000);
+    }
+  });
 });
