@@ -190,12 +190,13 @@ Implemented sequential API key validation in the web portal to prevent ESP32 net
 ## 2026-03-16 - Repository-wide House Style Update: Refactoring Attribution
 
 ### Session Summary
-Applied the new refactoring attribution line to the standard module header across the entire C++ codebase. This involved updating 87 files across `src`, `modules`, and `lib`. The `house-style-documentation` skill was also updated to ensure all future headers include this line.
+Applied the new refactoring attribution line to the standard module header across the entire C++ codebase (87 files). Optimized the build system configuration to prioritize hardware targets and renamed the host-side test environment to `unit_testing_host`. Enhanced the agent skills infrastructure by adding targeted triggers to the `house-style-documentation` skill and migrating the project TODO list to the `.agents/` directory.
 
 ### Key Decisions
 - **Automated Replacement**: Used `sed` with a repository-wide `find` search to ensure 100% consistency across all `.cpp` and `.hpp` files.
-- **Documentation Alignment**: Synchronized the project's "House Style" definition in the agent skills to prevent future agents from accidentally reverting or omitting the new attribution.
-- **Build Optimization**: Configured `default_envs` in `platformio.ini` to only build hardware targets by default. This resolves the false-positive failure in the `native` environment during a standard `pio run`, while maintaining functional unit tests via `pio test`.
+- **Documentation Alignment**: Synchronized the project's "House Style" definition and added explicit triggers (`review-ip`, `ip-review`) to the agent skills to ensure consistent policy enforcement.
+- **Build Optimization**: Configured `default_envs` in `platformio.ini` and renamed the native environment to `unit_testing_host`. This provides semantic clarity and prevents hardware-dependency build errors when running standard compilation commands.
+- **Infrastructure Consolidation**: Migrated legacy `TODO.md` to `.agents/todo_list.md` and removed obsolete `.github` rules to centralize all agent logic.
 
 ### Git Commit
-Generated commits: 10a9bbf, b185905
+Generated commits: 10a9bbf, b185905, 011bd9f
