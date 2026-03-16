@@ -199,7 +199,7 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     // Check type picker logos
     await page.locator('.key-slot').filter({ hasText: 'Empty Slot' }).first().click();
     await expect(page.locator('#modal-key-selection')).toBeVisible();
-    const pickerLogos = page.locator('#modal-key-selection .provider-logo svg');
-    await expect(pickerLogos).toHaveCount(3); // Rail, TfL, OWM
+    const pickerLogos = page.locator('#modal-key-selection .icon svg');
+    await expect(pickerLogos).toHaveCount(4); // Rail, TfL, Bus, OWM
   });
 });

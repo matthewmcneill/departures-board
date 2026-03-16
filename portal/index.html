@@ -25,6 +25,7 @@
     - resetWiFi(): Erase credentials and reboot to AP mode
 -->
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -45,6 +46,7 @@
       --warning: #f9a825;
       --font-size-base: 16px;
     }
+
     /* --- Dark Mode Theme Overrides --- */
     [data-theme="dark"] {
       --bg: #121212;
@@ -54,202 +56,716 @@
       --border: #333333;
       --nav-bg: #1e1e1e;
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { 
-      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-      background: var(--bg); color: var(--text); line-height: 1.5; font-size: var(--font-size-base);
-      padding-bottom: 80px; transition: background 0.3s, color 0.3s;
-    }
-    .container { max-width: 480px; margin: 0 auto; padding: 1rem; }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    h2 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: var(--primary); }
-    .subtitle { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
-    
-    .ap-banner { 
-      display: none; background: rgba(245, 124, 0, 0.1); border: 1px solid var(--primary); color: var(--primary); 
-      padding: 0.8rem; border-radius: 12px; margin-bottom: 1.2rem; font-weight: 700; text-align: center; font-size: 0.85rem;
-      text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    body.ap-mode .ap-banner { display: block; }
-    body.ap-mode .tab-link:not([data-target="tab-wifi"]) { display: none; }
 
-    article { background: var(--card-bg); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--border); }
-    header { font-weight: 700; font-size: 1.1rem; margin-bottom: 1rem; display: block; }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-    label { display: block; margin-bottom: 1rem; font-weight: 600; font-size: 0.9rem; }
-    .input-row { display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 1rem; }
-    input[type="text"], input[type="password"], select, input[type="range"] { 
-      width: 100%; padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--bg); color: var(--text); font-size: 1rem; margin-top: 0.4rem;
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      font-size: var(--font-size-base);
+      padding-bottom: 80px;
+      transition: background 0.3s, color 0.3s;
     }
-    
-    .password-input-wrapper { position: relative; width: 100%; margin-top: 0.4rem; }
-    .eye-btn { 
-      position: absolute; right: 8px; top: 50%; transform: translateY(-50%); 
-      background: none; border: none; color: var(--text-muted);
-      cursor: pointer; padding: 4px; z-index: 5; display: flex; align-items: center; justify-content: center;
-    }
-    .eye-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0.7; }
 
-    button { 
-      background: var(--primary); color: white; border: none; padding: 0.8rem 1.25rem; border-radius: 10px;
-      font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 1rem;
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1rem;
     }
-    button:active { transform: scale(0.98); opacity: 0.9; }
-    button.outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
-    button.secondary { background: var(--card-bg); color: var(--text); border: 1px solid var(--border); }
-    
-    .tab-content { display: none; }
-    .tab-content.active { display: block; animation: slideUp 0.3s ease-out; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    .bottom-nav { 
-      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 70px; background: var(--nav-bg); 
-      border-top: 1px solid var(--border); display: flex; justify-content: space-around; 
-      align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
     }
-    .tab-link { 
-      flex: 1; display: flex; flex-direction: column; align-items: center; text-decoration: none; 
-      color: var(--text-muted); font-size: 0.7rem; font-weight: 700; gap: 4px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--primary);
     }
-    .tab-link .icon { font-size: 1.5rem; transition: 0.2s; }
-    .tab-link.active { color: var(--primary); }
-    .tab-link.active .icon { transform: translateY(-2px); }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .ap-banner {
+      display: none;
+      background: rgba(245, 124, 0, 0.1);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 0.8rem;
+      border-radius: 12px;
+      margin-bottom: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    body.ap-mode .ap-banner {
+      display: block;
+    }
+
+    body.ap-mode .tab-link:not([data-target="tab-wifi"]) {
+      display: none;
+    }
+
+    article {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+    }
+
+    header {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 1rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    select,
+    input[type="range"] {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+      margin-top: 0.4rem;
+    }
+
+    .password-input-wrapper {
+      position: relative;
+      width: 100%;
+      margin-top: 0.4rem;
+    }
+
+    .password-input-wrapper input {
+      padding-right: 42px;
+      margin-top: 0 !important;
+    }
+
+    .eye-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50.1%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      outline: none;
+      cursor: pointer;
+      padding: 4px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+    }
+
+    .eye-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      pointer-events: none;
+    }
+
+    .eye-btn svg.eye-off {
+      display: none !important;
+    }
+
+    .eye-btn.active svg.eye-on {
+      display: none !important;
+    }
+
+    .eye-btn.active svg.eye-off {
+      display: block !important;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.8rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 1rem;
+    }
+
+    button:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    button.outline {
+      background: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    button.secondary {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: 70px;
+      background: var(--nav-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 1000;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .tab-link {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      gap: 4px;
+    }
+
+    .tab-link .icon {
+      font-size: 1.5rem;
+      transition: 0.2s;
+    }
+
+    .tab-link.active {
+      color: var(--primary);
+    }
+
+    .tab-link.active .icon {
+      transform: translateY(-2px);
+    }
 
     /* Drawer Styles */
-    .drawer { border-top: 1px solid var(--border); margin-top: 1.5rem; }
-    .drawer-trigger { 
-      display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; 
-      cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--text-muted);
+    .drawer {
+      border-top: 1px solid var(--border);
+      margin-top: 1.5rem;
     }
-    .drawer-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-    .drawer.active .drawer-content { max-height: 500px; padding-bottom: 1rem; }
-    .drawer-trigger::after { content: '▼'; font-size: 0.7rem; transition: transform 0.3s; }
-    .drawer.active .drawer-trigger::after { transform: rotate(180deg); }
-    .drawer-trigger .status-badge { margin-left: auto; margin-right: 1rem; font-size: 0.7rem; opacity: 0.8; font-weight: 500; }
 
-    .status-badge { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot.green { background: var(--success); box-shadow: 0 0 8px var(--success); }
-    .dot.red { background: var(--error); box-shadow: 0 0 8px var(--error); }
-    .dot.yellow { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
-
-    .diag-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-top: 1rem; color: var(--text-muted); }
-    .diag-table tr { border-bottom: 1px solid var(--border); }
-    .diag-table tr:last-child { border-bottom: none; }
-    .diag-table td { padding: 6px 0; }
-    .diag-table td:first-child { font-weight: 700; color: var(--text); width: 40%; }
-    .diag-table td:last-child { font-family: 'Courier New', monospace; text-align: right; }
-
-    #wifi-test-log { 
-      font-family: 'Courier New', monospace; font-size: 0.75rem; background: #000; color: #00ff00; 
-      padding: 10px; border-radius: 8px; margin-top: 1rem; max-height: 120px; overflow-y: auto; display: none; border: 1px solid #333;
+    .drawer-trigger {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text-muted);
     }
-    
-    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border); }
-    .list-item:last-child { border-bottom: none; }
-    .list-item h4 { margin: 0; font-size: 1rem; }
-    .list-item p { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
-    
-    dialog { border: none; border-radius: 20px; padding: 0; background: var(--bg); color: var(--text); box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 90%; max-width: 400px; }
-    dialog::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
-    
+
+    .drawer-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .drawer.active .drawer-content {
+      max-height: 500px;
+      padding-bottom: 1rem;
+    }
+
+    .drawer-trigger::after {
+      content: '▼';
+      font-size: 0.7rem;
+      transition: transform 0.3s;
+    }
+
+    .drawer.active .drawer-trigger::after {
+      transform: rotate(180deg);
+    }
+
+    .drawer-trigger .status-badge {
+      margin-left: auto;
+      margin-right: 1rem;
+      font-size: 0.7rem;
+      opacity: 0.8;
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot.green {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .dot.red {
+      background: var(--error);
+      box-shadow: 0 0 8px var(--error);
+    }
+
+    .dot.yellow {
+      background: var(--warning);
+      box-shadow: 0 0 8px var(--warning);
+    }
+
+    .diag-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      margin-top: 1rem;
+      color: var(--text-muted);
+    }
+
+    .diag-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .diag-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .diag-table td {
+      padding: 6px 0;
+    }
+
+    .diag-table td:first-child {
+      font-weight: 700;
+      color: var(--text);
+      width: 40%;
+    }
+
+    .diag-table td:last-child {
+      font-family: 'Courier New', monospace;
+      text-align: right;
+    }
+
+    #wifi-test-log {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      background: #000;
+      color: #00ff00;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 1rem;
+      max-height: 120px;
+      overflow-y: auto;
+      display: none;
+      border: 1px solid #333;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-item h4 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .list-item p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    dialog {
+      border: none;
+      border-radius: 20px;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 400px;
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+    }
+
     .theme-toggle {
-      display: flex; background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 30px; padding: 4px; gap: 4px;
+      display: flex;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 4px;
+      gap: 4px;
     }
+
     .theme-btn {
-      background: transparent; border: none; color: var(--text-muted); padding: 0;
-      width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
-      justify-content: center; cursor: pointer; transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .theme-btn.active { background: var(--bg); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .theme-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+
+    .theme-btn.active {
+      background: var(--bg);
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .theme-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      fill: none;
+    }
 
     /* Loading Spinner */
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .loading-spinner {
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
       border-top-color: #fff;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
       display: inline-block;
       vertical-align: middle;
     }
-    
+
     /* --- Key Registry Specific Styles --- */
-    .key-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
-    @media (max-width: 400px) { .key-slots { grid-template-columns: 1fr; } }
-    
-    .key-slot { 
-      background: var(--bg); border: 2px dashed var(--border); border-radius: 12px; 
-      padding: 1rem; display: flex; flex-direction: column; align-items: center; 
-      justify-content: center; text-align: center; min-height: 120px; transition: 0.2s;
-      cursor: pointer; position: relative;
+    .key-slots {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
     }
-    .key-slot:hover { border-color: var(--primary); background: rgba(245, 124, 0, 0.05); }
-    .key-slot.filled { display: flex; align-items: center; justify-content: flex-start; padding: 0 1rem; color: var(--text-primary); border-style: solid; border-color: var(--border); cursor: default; }
-    .key-slot.filled:hover { border-color: var(--primary); }
-    
-    .provider-logo { width: 1.2rem; height: 1.2rem; vertical-align: middle; margin-right: 0.5rem; fill: currentColor; opacity: 0.8; flex-shrink: 0; }
-    .key-slot.filled label { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    
-    .key-slot .add-icon { font-size: 1.5rem; color: var(--text-muted); margin-bottom: 0.5rem; }
-    .key-slot h4 { margin: 0; font-size: 0.9rem; font-weight: 700; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .key-slot .type-badge { 
-      font-size: 0.7rem; font-weight: 800; text-transform: uppercase; 
-      background: var(--card-bg); padding: 2px 6px; border-radius: 4px; margin-top: 4px;
-      color: var(--text-muted); border: 1px solid var(--border);
+
+    @media (max-width: 400px) {
+      .key-slots {
+        grid-template-columns: 1fr;
+      }
     }
-    .key-slot .slot-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 1rem; width: 100%; justify-content: flex-end; }
-    .key-status-dot { 
-      position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; border-radius: 50%; 
-      background: var(--text-muted); opacity: 0.3;
+
+    .key-slot {
+      background: var(--bg);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 120px;
+      transition: 0.2s;
+      cursor: pointer;
+      position: relative;
     }
-    .key-status-dot.active { opacity: 1; }
-    .key-status-dot.testing { animation: pulse 1s infinite alternate; }
-    @keyframes pulse { from { opacity: 0.3; } to { opacity: 1; } }
+
+    .key-slot:hover {
+      border-color: var(--primary);
+      background: rgba(245, 124, 0, 0.05);
+    }
+
+    .key-slot.filled {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 1rem;
+      color: var(--text-primary);
+      border-style: solid;
+      border-color: var(--border);
+      cursor: default;
+    }
+
+    .key-slot.filled:hover {
+      border-color: var(--primary);
+    }
+
+    .provider-logo {
+      width: 1.2rem;
+      height: 1.2rem;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+      fill: currentColor;
+      opacity: 0.8;
+      flex-shrink: 0;
+    }
+
+    .key-slot.filled label {
+      flex-grow: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .key-slot .add-icon {
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .key-slot h4 {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .key-slot .type-badge {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: var(--card-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .key-slot .slot-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 1rem;
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    .key-status-dot {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      opacity: 0.3;
+    }
+
+    .key-status-dot.active {
+      opacity: 1;
+    }
+
+    .key-status-dot.testing {
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from {
+        opacity: 0.3;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
 
     /* Selection Modal Styles */
-    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
-    .type-card { 
-      background: var(--bg); border: 1px solid var(--border); border-radius: 12px; 
-      padding: 1rem; cursor: pointer; transition: 0.2s; text-align: center;
+    .type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
     }
-    .type-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .type-card .icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
-    .type-card h5 { margin: 0; font-size: 0.9rem; }
-    .type-card p { margin: 0.2rem 0 0; font-size: 0.7rem; color: var(--text-muted); }
 
-    .test-feedback { 
-      margin-top: 1rem; padding: 0.8rem; border-radius: 8px; font-size: 0.85rem; 
-      display: none; border: 1px solid var(--border);
+    .type-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+      text-align: center;
     }
-    .test-feedback.success { background: rgba(46, 125, 50, 0.1); border-color: var(--success); color: var(--success); display: block; }
-    .test-feedback.error { background: rgba(198, 40, 40, 0.1); border-color: var(--error); color: var(--error); display: block; }
+
+    .type-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .type-card .icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .type-card h5 {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .type-card p {
+      margin: 0.2rem 0 0;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .test-feedback {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      display: none;
+      border: 1px solid var(--border);
+    }
+
+    .test-feedback.success {
+      background: rgba(46, 125, 50, 0.1);
+      border-color: var(--success);
+      color: var(--success);
+      display: block;
+    }
+
+    .test-feedback.error {
+      background: rgba(198, 40, 40, 0.1);
+      border-color: var(--error);
+      color: var(--error);
+      display: block;
+    }
   </style>
 </head>
+
 <body class="">
-    <div class="container">
+  <div class="container">
     <div class="ap-banner">Setup Mode: Access Point Active</div>
     <div class="top-bar">
-      <div><h2>DEPARTURES</h2><div class="subtitle">Unified Portal</div></div>
+      <div>
+        <h2>DEPARTURES</h2>
+        <div class="subtitle">Unified Portal</div>
+      </div>
       <div class="theme-toggle">
         <button class="theme-btn" data-theme="auto" title="Auto Mode">
-          <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <svg viewBox="0 0 24 24">
+            <rect width="20" height="14" x="2" y="3" rx="2" />
+            <line x1="8" y1="21" x2="16" y2="21" />
+            <line x1="12" y1="17" x2="12" y2="21" />
+          </svg>
         </button>
         <button class="theme-btn" data-theme="light" title="Light Mode">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2" />
+            <path d="M12 20v2" />
+            <path d="m4.93 4.93 1.41 1.41" />
+            <path d="m17.66 17.66 1.41 1.41" />
+            <path d="M2 12h2" />
+            <path d="M20 12h2" />
+            <path d="m6.34 17.66-1.41 1.41" />
+            <path d="m19.07 4.93-1.41 1.41" />
+          </svg>
         </button>
         <button class="theme-btn" data-theme="dark" title="Dark Mode">
-          <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg>
         </button>
       </div>
     </div>
 
     <div style="margin-bottom: 1.5rem;">
-      <button id="save-btn" style="width: 100%; padding: 1rem; box-shadow: 0 4px 15px rgba(245, 124, 0, 0.3);" onclick="app.saveAll()">Save & Apply Settings</button>
+      <button id="save-btn" style="width: 100%; padding: 1rem; box-shadow: 0 4px 15px rgba(245, 124, 0, 0.3);"
+        onclick="app.saveAll()">Save & Apply Settings</button>
     </div>
 
     <section id="tab-wifi" class="tab-content active">
@@ -257,34 +773,46 @@
         <header>WiFi Configuration</header>
         <form id="wifi-form">
           <label>Hostname (mDNS)<input type="text" name="hostname" value="departures" /></label>
-          
+
           <label>Network (SSID)</label>
           <div class="input-row" style="margin-top: 0.4rem;">
-            <select name="ssid" id="wifi-ssid-select" onchange="app.handleSSIDChange(this.value)" style="margin-top: 0;">
+            <select name="ssid" id="wifi-ssid-select" onchange="app.handleSSIDChange(this.value)"
+              style="margin-top: 0;">
               <option value="">Select a network...</option>
             </select>
-            <button type="button" onclick="app.scanWiFi()" id="scan-btn" style="padding: 0.75rem 1rem; min-width: 90px; height: 44px; display: flex; align-items: center; justify-content: center;">Scan</button>
+            <button type="button" onclick="app.scanWiFi()" id="scan-btn"
+              style="padding: 0.75rem 1rem; min-width: 90px; height: 44px; display: flex; align-items: center; justify-content: center;">Scan</button>
           </div>
-          
+
           <div id="manual-ssid-group" style="display: none; margin-bottom: 1rem;">
-            <label>Manual SSID Entry<input type="text" id="manual-ssid-input" placeholder="Enter network name..." /></label>
+            <label>Manual SSID Entry<input type="text" id="manual-ssid-input"
+                placeholder="Enter network name..." /></label>
           </div>
-          
+
           <label>WiFi Password
             <div class="password-input-wrapper">
-              <input type="password" name="password" id="wifi-pass" placeholder="Password..." style="margin-top:0;"/>
-              <button type="button" class="eye-btn" style="display:none" onclick="app.togglePass('wifi-pass', this)" title="Toggle Visibility">
-                <svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <input type="password" name="password" id="wifi-pass" placeholder="Password..." style="margin-top:0;" />
+              <button type="button" class="eye-btn" style="display:none" onclick="app.togglePass('wifi-pass', this)"
+                title="Toggle Visibility">
+                <svg class="eye-on" viewBox="0 0 24 24">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="eye-off" viewBox="0 0 24 24">
+                  <path d="M2 2l20 20M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                </svg>
               </button>
             </div>
           </label>
 
           <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem; gap: 0.5rem;">
-            <button type="button" class="outline" onclick="app.testWiFi()" id="test-btn" style="font-size: 0.85rem;">Test Connection</button>
-            <button type="button" class="outline" onclick="app.resetWiFi()" id="reset-btn" style="font-size: 0.85rem; color: #ff4444; border-color: rgba(255, 68, 68, 0.3);">Reset WiFi</button>
+            <button type="button" class="outline" onclick="app.testWiFi()" id="test-btn"
+              style="font-size: 0.85rem;">Test Connection</button>
+            <button type="button" class="outline" onclick="app.resetWiFi()" id="reset-btn"
+              style="font-size: 0.85rem; color: #ff4444; border-color: rgba(255, 68, 68, 0.3);">Reset WiFi</button>
           </div>
         </form>
-        
+
         <div id="wifi-test-log"></div>
 
         <div class="drawer" id="diag-drawer">
@@ -292,7 +820,8 @@
             <span>Network Diagnostics</span>
             <div class="status-badge" id="diag-status-summary">
               <div class="dot" id="wifi-dot"></div>
-              <span id="wifi-status-text" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Detecting...</span>
+              <span id="wifi-status-text"
+                style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Detecting...</span>
             </div>
           </div>
           <div class="drawer-content">
@@ -307,7 +836,8 @@
     <section id="tab-apikeys" class="tab-content">
       <article>
         <header>API Key Registry</header>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Manage your API credentials. Click a slot to add a new key.</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Manage your API credentials. Click
+          a slot to add a new key.</p>
         <div id="keys-slots" class="key-slots">
           <!-- Slots generated by JS based on MAX_KEYS -->
         </div>
@@ -315,7 +845,10 @@
     </section>
 
     <section id="tab-boards" class="tab-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"><h3 style="margin:0;">Active Boards</h3><button class="outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="app.editBoard(-1)">+ Add</button></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin:0;">Active Boards</h3><button class="outline"
+          style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="app.editBoard(-1)">+ Add</button>
+      </div>
       <div id="boards-list"></div>
     </section>
 
@@ -324,8 +857,10 @@
         <header>Display & System</header>
         <form id="system-form">
           <label>Timezone<input type="text" name="timezone" /></label>
-          <label>Brightness<input type="range" name="brightness" min="0" max="255" oninput="app.updateBrightness(this.value)" /></label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180°)</label>
+          <label>Brightness<input type="range" name="brightness" min="0" max="255"
+              oninput="app.updateBrightness(this.value)" /></label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox"
+              name="flip" style="width: auto; margin:0;" /> Flip Screen (180°)</label>
         </form>
       </article>
     </section>
@@ -333,19 +868,42 @@
 
   <nav class="bottom-nav">
     <a href="#" class="tab-link active" data-target="tab-wifi">
-      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+        <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
       WIFI
     </a>
     <a href="#" class="tab-link" data-target="tab-apikeys">
-      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778z"></path><path d="M12 12l.93-2.01 2.01-.93-2.01-.93L12 6.12l-.93 2.01-2.01.93 2.01.93L12 12z"></path><path d="M18 8l2.64 2.64a.5.5 0 0 1 0 .707L18.12 13.88a.5.5 0 0 1-.707 0L14.77 11.23a.5.5 0 0 1 0-.707l2.52-2.52a.5.5 0 0 1 .707 0z"></path></svg>
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778z"></path>
+        <path d="M12 12l.93-2.01 2.01-.93-2.01-.93L12 6.12l-.93 2.01-2.01.93 2.01.93L12 12z"></path>
+        <path
+          d="M18 8l2.64 2.64a.5.5 0 0 1 0 .707L18.12 13.88a.5.5 0 0 1-.707 0L14.77 11.23a.5.5 0 0 1 0-.707l2.52-2.52a.5.5 0 0 1 .707 0z">
+        </path>
+      </svg>
       KEYS
     </a>
     <a href="#" class="tab-link" data-target="tab-boards">
-      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="9" y1="3" x2="9" y2="21"></line>
+      </svg>
       BOARDS
     </a>
     <a href="#" class="tab-link" data-target="tab-system">
-      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+        </path>
+      </svg>
       SYSTEM
     </a>
   </nav>
@@ -356,22 +914,30 @@
       <form id="board-form">
         <input type="hidden" name="index" />
         <label>Display Name<input type="text" name="name" required /></label>
-        <label>Transport Mode<select name="type" onchange="app.handleBoardTypeChange(this.value)"><option value="0">National Rail</option><option value="1">London Underground</option><option value="2">Bus / Tram</option></select></label>
+        <label>Transport Mode<select name="type" onchange="app.handleBoardTypeChange(this.value)">
+            <option value="0">National Rail</option>
+            <option value="1">London Underground</option>
+            <option value="2">Bus / Tram</option>
+          </select></label>
         <label>Station / Stop ID<input type="text" name="id" required placeholder="e.g. WAT, 940GZZLULIB..." /></label>
-        
+
         <div id="board-key-section">
           <label>API Key
             <div class="input-row">
               <select name="apiKeyId" id="board-key-select">
                 <option value="">No key selected</option>
               </select>
-              <button type="button" class="outline" onclick="app.selectKeyType(true)" style="padding: 0.75rem; min-width: 50px;">+</button>
+              <button type="button" class="outline" onclick="app.selectKeyType(true)"
+                style="padding: 0.75rem; min-width: 50px;">+</button>
             </div>
           </label>
         </div>
 
-        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="weather" checked style="width: auto; margin:0;"/> Show Weather Overlay</label>
-        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;"><button type="button" class="secondary" style="flex:1;" onclick="app.closeModal('modal-board')">Cancel</button><button type="submit" style="flex:1;">Apply</button></div>
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox"
+            name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;"><button type="button" class="secondary"
+            style="flex:1;" onclick="app.closeModal('modal-board')">Cancel</button><button type="submit"
+            style="flex:1;">Apply</button></div>
       </form>
     </article>
   </dialog>
@@ -381,35 +947,53 @@
       <header>Select Key Type</header>
       <div class="type-grid">
         <div class="type-card" onclick="app.addKey('rail')">
-          <span class="icon" style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#003366"/><path d="M6 9h10l-4.5 3H6.5l4.5-3zm0 4h5.5l4.5-3h.5l-4.5 3H18l-4.5 3h1.5l4.5-3v2.5L16 17H6v-4z" fill="white"/></svg>
+          <span class="icon"
+            style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
+            <svg viewBox="4.9 4.9 80.9 80.9" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#003366"
+                d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z" />
+            </svg>
           </span>
           <h5>National Rail</h5>
           <p>Darwin LDBWS API</p>
         </div>
         <div class="type-card" onclick="app.addKey('tfl')">
-          <span class="icon" style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="none" stroke="#0019a8" stroke-width="3.5"/><rect x="2" y="10.25" width="20" height="3.5" fill="#0019a8"/></svg>
+          <span class="icon"
+            style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z"
+                fill="#0019A8" />
+            </svg>
           </span>
           <h5>TfL</h5>
           <p>Tube/Bus Arrivals</p>
         </div>
         <div class="type-card" onclick="app.addKey('bus')">
-          <span class="icon" style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="var(--primary)"><path d="M18 11V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v5H5v7h1v2h2v-2h8v2h2v-2h1v-7h-1zM9 6h6v4H9V6zm-1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm8 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-4H7V6h10v5z"/></svg>
+          <span class="icon"
+            style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="var(--primary)">
+              <path
+                d="M18 11V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v5H5v7h1v2h2v-2h8v2h2v-2h1v-7h-1zM9 6h6v4H9V6zm-1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm8 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-4H7V6h10v5z" />
+            </svg>
           </span>
           <h5>bustimes.org</h5>
           <p>Bus Schedule Scraper</p>
         </div>
         <div class="type-card" onclick="app.addKey('owm')">
-          <span class="icon" style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="var(--warning)"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+          <span class="icon"
+            style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="var(--warning)">
+              <path
+                d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" />
+            </svg>
           </span>
           <h5>Weather</h5>
           <p>OpenWeatherMap</p>
         </div>
       </div>
-      <button type="button" class="secondary" style="width:100%; margin-top: 1rem;" onclick="app.closeModal('modal-key-selection')">Cancel</button>
+      <button type="button" class="secondary" style="width:100%; margin-top: 1rem;"
+        onclick="app.closeModal('modal-key-selection')">Cancel</button>
     </article>
   </dialog>
 
@@ -419,19 +1003,27 @@
       <form id="key-form">
         <input type="hidden" name="id" />
         <input type="hidden" name="type" />
-        <label>Key Label (e.g. "Work Account")<input type="text" name="label" required /></label>
+        <label>Key Label (e.g. "TfL Key for myemail@gmail.com")<input type="text" name="label" required /></label>
         <label>API Token / Key
           <div class="password-input-wrapper">
             <input type="password" name="token" id="key-token-input" required style="margin-top:0;" />
-            <button type="button" class="eye-btn" style="display:none" onclick="app.togglePass('key-token-input', this)">
-              <svg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <button type="button" class="eye-btn" style="display:none"
+              onclick="app.togglePass('key-token-input', this)">
+              <svg class="eye-on" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-off" viewBox="0 0 24 24">
+                <path d="M2 2l20 20M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              </svg>
             </button>
           </div>
         </label>
         <div id="key-test-feedback" class="test-feedback"></div>
         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
           <button type="button" class="outline" style="flex:1;" onclick="app.testKey()" id="key-test-btn">Test</button>
-          <button type="button" class="secondary" style="flex:1;" onclick="app.closeModal('modal-apikey')">Cancel</button>
+          <button type="button" class="secondary" style="flex:1;"
+            onclick="app.closeModal('modal-apikey')">Cancel</button>
           <button type="submit" style="flex:1;">Save</button>
         </div>
       </form>
@@ -444,15 +1036,15 @@
     const MAX_KEYS = 8; // Matching platformio.ini
 
     const PROVIDER_LOGOS = {
-        rail: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#003366"/><path d="M6 9h10l-4.5 3H6.5l4.5-3zm0 4h5.5l4.5-3h.5l-4.5 3H18l-4.5 3h1.5l4.5-3v2.5L16 17H6v-4z" fill="white"/></svg>',
-        tfl: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="none" stroke="#0019a8" stroke-width="3.5"/><rect x="2" y="10.25" width="20" height="3.5" fill="#0019a8"/></svg>',
-        bus: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M18 11V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v5H5v7h1v2h2v-2h8v2h2v-2h1v-7h-1zM9 6h6v4H9V6zm-1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm8 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-4H7V6h10v5z"/></svg>',
-        owm: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>',
-        other: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>'
+      rail: '<svg viewBox="4.9 4.9 80.9 80.9" xmlns="http://www.w3.org/2000/svg"><path fill="#003366" d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z"/></svg>',
+      tfl: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z" fill="#0019A8" /></svg>',
+      bus: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M18 11V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v5H5v7h1v2h2v-2h8v2h2v-2h1v-7h-1zM9 6h6v4H9V6zm-1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm8 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-4H7V6h10v5z"/></svg>',
+      owm: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>',
+      other: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>'
     };
 
     const app = {
-      state: { 
+      state: {
         config: null,
         status: null,
         prev_ap_mode: false,
@@ -461,20 +1053,20 @@
         inContextBoardFlow: false // true if adding key while editing a board
       },
 
-      init: async function() {
+      init: async function () {
         this.initTheme();
         this.bindEvents();
         try {
           await Promise.all([this.fetchStatus(), this.fetchConfig()]);
-        } catch (e) { 
-          console.error('Initial fetch failed', e); 
+        } catch (e) {
+          console.error('Initial fetch failed', e);
         }
         setInterval(() => this.fetchStatus(), 5000);
         // Initial scan after a short delay to allow UI to settle
         setTimeout(() => this.scanWiFi(), 500);
       },
 
-      initTheme: function() {
+      initTheme: function () {
         let theme = localStorage.getItem('theme') || 'auto';
         const apply = (t) => {
           document.documentElement.setAttribute('data-theme', t === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t);
@@ -486,7 +1078,7 @@
         });
       },
 
-      fetchConfig: async function() {
+      fetchConfig: async function () {
         try {
           const res = await fetch('/api/config');
           this.state.config = await res.json();
@@ -496,7 +1088,7 @@
         } catch (e) { console.error('Config fetch failed'); }
       },
 
-      fetchStatus: async function() {
+      fetchStatus: async function () {
         try {
           const res = await fetch('/api/status');
           this.state.status = await res.json();
@@ -504,7 +1096,7 @@
         } catch (e) { console.error('Status fetch failed'); }
       },
 
-      updateStatusUI: function() {
+      updateStatusUI: function () {
         const s = this.state.status;
         if (!s) return;
         if (s.ap_mode) {
@@ -518,19 +1110,19 @@
         const dot = document.getElementById('wifi-dot');
         dot.className = 'dot ' + (s.ap_mode ? 'yellow' : (s.rssi > -80 ? 'green' : 'red'));
         document.getElementById('wifi-status-text').innerText = s.ap_mode ? 'Access Point Mode' : `Connected: ${s.ssid}`;
-        
+
         const rows = [
           ['Local IP', s.ip], ['Gateway', s.gateway], ['Subnet Mask', s.subnet],
           ['DNS 1', s.dns1], ['DNS 2', s.dns2], ['RSSI', `${s.rssi} dBm`],
           ['MAC Address', s.mac], ['BSSID', s.bssid], ['WiFi Channel', s.channel],
-          ['System Heap', `${Math.round(s.heap/1024)} KB`],
-          ['Storage', `${Math.round(s.storage_used/1024)} / ${Math.round(s.storage_total/1024)} KB`],
-          ['Uptime', `${Math.round(s.uptime/60)} min`]
+          ['System Heap', `${Math.round(s.heap / 1024)} KB`],
+          ['Storage', `${Math.round(s.storage_used / 1024)} / ${Math.round(s.storage_total / 1024)} KB`],
+          ['Uptime', `${Math.round(s.uptime / 60)} min`]
         ];
         document.getElementById('wifi-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
       },
 
-      render: function() {
+      render: function () {
         const cfg = this.state.config;
         if (!cfg) return;
         document.querySelector('[name="hostname"]').value = cfg.system.hostname;
@@ -545,16 +1137,16 @@
         this.renderKeys();
       },
 
-      renderBoards: function() {
+      renderBoards: function () {
         const list = document.getElementById('boards-list');
         const boards = this.state.config?.boards || [];
         if (boards.length === 0) { list.innerHTML = '<article style="text-align:center; padding: 2rem; opacity:0.6;">No boards configured.</article>'; return; }
-        list.innerHTML = boards.map((b, i) => `<div class="list-item"><div><h4>${b.name}</h4><p>${['Rail','Tube','Bus'][b.type]} • ${b.id}</p></div><div style="display:flex; gap:8px;"><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem;" onclick="app.editBoard(${i})">Edit</button><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem; color: #ff4444;" onclick="app.deleteBoard(${i})">X</button></div></div>`).join('');
+        list.innerHTML = boards.map((b, i) => `<div class="list-item"><div><h4>${b.name}</h4><p>${['Rail', 'Tube', 'Bus'][b.type]} • ${b.id}</p></div><div style="display:flex; gap:8px;"><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem;" onclick="app.editBoard(${i})">Edit</button><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem; color: #ff4444;" onclick="app.deleteBoard(${i})">X</button></div></div>`).join('');
       },
 
       // --- Key Registry Logic ---
 
-      renderKeys: function() {
+      renderKeys: function () {
         const container = document.getElementById('keys-slots');
         container.innerHTML = '';
         const keys = this.state.keys;
@@ -562,7 +1154,7 @@
         for (let i = 0; i < MAX_KEYS; i++) {
           const slot = document.createElement('div');
           slot.className = 'key-slot';
-          
+
           if (i < keys.length) {
             const key = keys[i];
             const logo = PROVIDER_LOGOS[key.type] || PROVIDER_LOGOS.other;
@@ -571,6 +1163,7 @@
               <div class="key-status-dot active" id="slot-status-${key.id}"></div>
               <span class="provider-logo">${logo}</span>
               <label>${key.label}</label>
+              <div class="type-badge">${key.type}</div>
               <div class="slot-actions">
                 <button class="secondary" style="padding: 0.3rem 0.6rem; font-size: 0.7rem;" onclick="app.editKey('${key.id}')">Edit</button>
                 <button class="secondary" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; color: var(--error);" onclick="app.deleteKey('${key.id}')">X</button>
@@ -592,7 +1185,7 @@
         this.updateBoardKeySelector();
       },
 
-      updateBoardKeySelector: function() {
+      updateBoardKeySelector: function () {
         const select = document.getElementById('board-key-select');
         if (!select) return;
         const currentVal = select.value;
@@ -606,12 +1199,12 @@
         select.value = currentVal;
       },
 
-      selectKeyType: function(inBoardFlow) {
+      selectKeyType: function (inBoardFlow) {
         this.state.inContextBoardFlow = !!inBoardFlow;
         document.getElementById('modal-key-selection').showModal();
       },
 
-      addKey: function(type) {
+      addKey: function (type) {
         this.closeModal('modal-key-selection');
         const form = document.getElementById('key-form');
         form.reset();
@@ -622,7 +1215,7 @@
         document.getElementById('modal-apikey').showModal();
       },
 
-      editKey: function(id) {
+      editKey: function (id) {
         const key = this.state.keys.find(k => k.id === id);
         if (!key) return;
         const form = document.getElementById('key-form');
@@ -636,7 +1229,7 @@
         this.refreshEyes();
       },
 
-      saveKey: async function(e) {
+      saveKey: async function (e) {
         e.preventDefault();
         const form = e.target;
         const payload = {
@@ -655,9 +1248,9 @@
             this.closeModal('modal-apikey');
             await this.fetchConfig(); // Refresh local state
             if (this.state.inContextBoardFlow) {
-               // Focus the key selector and pick the new key
-               const select = document.getElementById('board-key-select');
-               if (select) select.value = payload.id;
+              // Focus the key selector and pick the new key
+              const select = document.getElementById('board-key-select');
+              if (select) select.value = payload.id;
             }
           } else {
             alert('Failed to save key');
@@ -665,7 +1258,7 @@
         } catch (e) { console.error(e); }
       },
 
-      deleteKey: async function(id) {
+      deleteKey: async function (id) {
         if (!confirm('Delete this API key? This will affect any boards using it.')) return;
         try {
           const res = await fetch(`/api/keys?id=${id}`, { method: 'DELETE' });
@@ -673,11 +1266,11 @@
         } catch (e) { console.error(e); }
       },
 
-      testKey: async function() {
+      testKey: async function () {
         const btn = document.getElementById('key-test-btn');
         const feedback = document.getElementById('key-test-feedback');
         const form = document.getElementById('key-form');
-        
+
         btn.disabled = true;
         btn.innerHTML = '<div class="loading-spinner"></div> Testing...';
         feedback.className = 'test-feedback';
@@ -709,11 +1302,11 @@
         }
       },
 
-      testKeyAsync: async function(id, dotId) {
+      testKeyAsync: async function (id, dotId) {
         const dot = document.getElementById(dotId);
         if (!dot) return;
         dot.classList.add('testing');
-        
+
         const key = this.state.keys.find(k => k.id === id);
         if (!key) return;
 
@@ -733,23 +1326,23 @@
 
       // --- Board Editor Logic ---
 
-      editBoard: function(index) {
+      editBoard: function (index) {
         const form = document.getElementById('board-form');
-        const b = index === -1 ? {name:'', type:0, id:'', weather:true, apiKeyId:''} : this.state.config.boards[index];
+        const b = index === -1 ? { name: '', type: 0, id: '', weather: true, apiKeyId: '' } : this.state.config.boards[index];
         form.index.value = index;
         form.name.value = b.name;
         form.type.value = b.type;
         form.id.value = b.id;
         form.weather.checked = b.weather;
-        
+
         this.updateBoardKeySelector();
         document.getElementById('board-key-select').value = b.apiKeyId || '';
-        
+
         this.handleBoardTypeChange(b.type);
         document.getElementById('modal-board').showModal();
       },
 
-      handleBoardTypeChange: function(type) {
+      handleBoardTypeChange: function (type) {
         // Bus boards (type 2) don't need a key in current impl
         const keySection = document.getElementById('board-key-section');
         if (parseInt(type) === 2) {
@@ -759,13 +1352,13 @@
         }
       },
 
-      saveBoard: function(e) {
+      saveBoard: function (e) {
         e.preventDefault();
         const f = e.target;
-        const b = { 
-          name: f.name.value, 
-          type: parseInt(f.type.value), 
-          id: f.id.value, 
+        const b = {
+          name: f.name.value,
+          type: parseInt(f.type.value),
+          id: f.id.value,
           weather: f.weather.checked,
           apiKeyId: f.apiKeyId ? f.apiKeyId.value : ''
         };
@@ -775,20 +1368,20 @@
         this.renderBoards();
       },
 
-      deleteBoard: function(index) {
+      deleteBoard: function (index) {
         if (confirm('Remove this board?')) { this.state.config.boards.splice(index, 1); this.renderBoards(); }
       },
 
-      saveAll: async function() {
+      saveAll: async function () {
         const btn = document.getElementById('save-btn');
         const oldText = btn.innerText;
         btn.innerHTML = '<div class="loading-spinner"></div> Saving...';
         btn.disabled = true;
-        
+
         const form = document.querySelector('#wifi-form');
         const selectVal = document.getElementById('wifi-ssid-select').value;
         const ssid = (selectVal === '__manual__') ? document.getElementById('manual-ssid-input').value : selectVal;
-        
+
         const getVal = (id) => {
           const val = document.getElementById(id)?.value;
           return (val === DUMMY_PASS) ? undefined : val;
@@ -815,7 +1408,7 @@
         finally { btn.innerText = oldText; btn.disabled = false; }
       },
 
-      switchTab: function(targetId) {
+      switchTab: function (targetId) {
         document.querySelectorAll('.tab-link, .tab-content').forEach(el => el.classList.remove('active'));
         document.querySelector(`[data-target="${targetId}"]`)?.classList.add('active');
         document.getElementById(targetId).classList.add('active');
@@ -824,7 +1417,7 @@
 
       closeModal: id => document.getElementById(id).close(),
 
-      bindEvents: function() {
+      bindEvents: function () {
         document.addEventListener('input', (e) => {
           if (e.target.type === 'password') {
             const eye = e.target.closest('.password-input-wrapper')?.querySelector('.eye-btn');
@@ -836,29 +1429,28 @@
         document.getElementById('key-form').onsubmit = (e) => this.saveKey(e);
       },
 
-      refreshEyes: function() {
+      refreshEyes: function () {
         document.querySelectorAll('input[type="password"]').forEach(input => {
           const eye = input.closest('.password-input-wrapper')?.querySelector('.eye-btn');
           if (eye) eye.style.display = (input.value === DUMMY_PASS || !input.value) ? 'none' : 'flex';
         });
       },
 
-      togglePass: function(id, btn) {
+      togglePass: function (id, btn) {
         const input = document.getElementById(id);
         if (!input) return;
         const isPass = input.type === 'password';
         input.type = isPass ? 'text' : 'password';
-        btn.classList.toggle('active', !isPass);
-        btn.querySelector('svg').style.opacity = isPass ? '1' : '0.5';
+        btn.classList.toggle('active', isPass);
       },
 
-      updateSSIDDropdown: function(currentSsid, scanResults = []) {
+      updateSSIDDropdown: function (currentSsid, scanResults = []) {
         const select = document.getElementById('wifi-ssid-select');
         if (!select) return;
-        
+
         const prevValue = select.value;
         select.innerHTML = '<option value="">Select a network...</option>';
-        
+
         // 1. Add Configured Network first
         const ssid = currentSsid || this.state.config?.wifi?.ssid;
         if (ssid) {
@@ -869,7 +1461,7 @@
           opt.textContent = `⚡ ${ssid}${rssiInfo}`;
           select.appendChild(opt);
         }
-        
+
         // 2. Add other scan results
         scanResults.forEach(net => {
           if (net.ssid === ssid) return;
@@ -878,13 +1470,13 @@
           opt.textContent = `${net.ssid} (${net.rssi}dBm)${net.secure ? ' 🔒' : ''}`;
           select.appendChild(opt);
         });
-        
+
         // 3. Manual entry always at bottom
         const optManual = document.createElement('option');
         optManual.value = '__manual__';
         optManual.textContent = '-- Enter SSID Manually --';
         select.appendChild(optManual);
-        
+
         // Restore value or default to current
         if (prevValue && Array.from(select.options).some(o => o.value === prevValue)) {
           select.value = prevValue;
@@ -893,13 +1485,13 @@
         }
       },
 
-      scanWiFi: async function() {
+      scanWiFi: async function () {
         const btn = document.getElementById('scan-btn');
         const select = document.getElementById('wifi-ssid-select');
         if (!btn || !select) return;
         btn.disabled = true;
         btn.innerHTML = '<div class="loading-spinner"></div>';
-        
+
         try {
           const res = await fetch('/api/wifi/scan');
           const data = await res.json();
@@ -912,15 +1504,15 @@
         finally { btn.disabled = false; btn.innerText = 'Scan'; }
       },
 
-      handleSSIDChange: function(val) {
+      handleSSIDChange: function (val) {
         document.getElementById('manual-ssid-group').style.display = (val === '__manual__') ? 'block' : 'none';
         if (val !== '__manual__' && val !== "") {
-           document.getElementById('wifi-pass').value = DUMMY_PASS;
-           this.refreshEyes();
+          document.getElementById('wifi-pass').value = DUMMY_PASS;
+          this.refreshEyes();
         }
       },
 
-      testWiFi: async function() {
+      testWiFi: async function () {
         const btn = document.getElementById('test-btn');
         const log = document.getElementById('wifi-test-log');
         const selectVal = document.getElementById('wifi-ssid-select').value;
@@ -933,7 +1525,7 @@
         btn.disabled = true;
         log.style.display = 'block';
         log.innerHTML = `> Initiating test connection to: ${ssid}\n> Please wait (this can take 15s)...\n`;
-        
+
         try {
           const res = await fetch('/api/wifi/test', {
             method: 'POST',
@@ -952,7 +1544,7 @@
         }
       },
 
-      resetWiFi: function() {
+      resetWiFi: function () {
         if (confirm('Are you sure you want to ERASE all WiFi settings? The board will reboot into Access Point mode.')) {
           fetch('/api/wifi/reset', { method: 'POST' })
             .then(() => alert('Reset command sent. Re-join the "Departures-Board" hotspot in ~10 seconds.'))
@@ -960,15 +1552,16 @@
         }
       },
 
-      toggleDiag: function() {
+      toggleDiag: function () {
         document.getElementById('diag-drawer').classList.toggle('active');
       },
 
-      updateBrightness: function(val) {
+      updateBrightness: function (val) {
         // UI update for brightness slider
       }
     };
     app.init();
   </script>
 </body>
+
 </html>

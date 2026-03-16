@@ -76,6 +76,9 @@ def generate_assets():
             with open(asset_path, "r", encoding="utf-8") as f_in:
                 content = f_in.read()
                 minified_content = minify_html(content)
+                # Debug: Write minified content to a temp file for inspection
+                with open("/tmp/minified_index.html", "w") as f_debug:
+                    f_debug.write(minified_content)
                 gzipped_content = gzip.compress(minified_content.encode("utf-8"))
 
             # Generate C++ array name
