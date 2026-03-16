@@ -1,5 +1,6 @@
 /*
  * Departures Board (c) 2025-2026 Gadec Software
+ * Refactored for v3.0 by Matt McNeill 2026 CB Labs
  *
  * xmlListener Library
  *
