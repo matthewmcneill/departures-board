@@ -53,15 +53,24 @@ void systemManager::tick() {
     // Connection Management
     if (WiFi.status() != WL_CONNECTED && wifiConnected) {
         wifiConnected = false;
+        wifiDisconnectTimer = millis(); // Start tracking downtime
         LOG_WARN("SYSTEM", "WiFi connection lost.");
     } else if (WiFi.status() == WL_CONNECTED && !wifiConnected) {
         wifiConnected = true;
+        wifiDisconnectTimer = 0; // Reset downtime tracker
         LOG_INFO("SYSTEM", "WiFi connected. IP: " + WiFi.localIP().toString());
         updateMyUrl();
+        // Immediately try to refresh data upon reconnection if we were waiting
+        if (noDataLoaded ||  millis() > getNextDataUpdate()) {
+            nextDataUpdate = millis();
+        }
     }
 
+    /* 
+     * DEPRECATED: WiFi reconnection is now handled by the WifiManager state machine
+     * to prevent conflicts with testConnection() and other async network tasks.
+     * 
     if (WiFi.status() != WL_CONNECTED && millis() > lastWiFiReconnect + 10000) {
-        // Only attempt reconnection if NOT in AP (Captive Portal) mode
         if (!context->getWifiManager().getAPMode()) {
             LOG_INFO("SYSTEM", "Attempting WiFi reconnection...");
             WiFi.disconnect();
@@ -70,6 +79,7 @@ void systemManager::tick() {
             lastWiFiReconnect = millis();
         }
     }
+    */
 
     DisplayManager& displayMgr = context->getDisplayManager();
     const Config& config = context->getConfigManager().getConfig();
@@ -248,6 +258,15 @@ void systemManager::softResetBoard() {
 void systemManager::updateMyUrl() {
     IPAddress ip = WiFi.localIP();
     snprintf(myUrl, sizeof(myUrl), "http://%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+}
+
+/**
+ * @brief Returns true if WiFi has been disconnected for longer than the timeout period (3 minutes).
+ */
+bool systemManager::isWifiPersistentError() const {
+    if (wifiConnected) return false;
+    // Over 3 minutes of continuous disconnection
+    return (millis() - wifiDisconnectTimer > 180000);
 }
 
 /**

@@ -230,6 +230,9 @@ iDisplayBoard* DisplayManager::getSystemBoard(SystemBoardId id) {
             return &firmwareUpdateBoard;
         case SystemBoardId::SYS_SLEEP_CLOCK:
             return &sleepingBoard;
+        case SystemBoardId::SYS_ERROR_WIFI:
+            messageBoard.setContent("** WIFI ERROR **", "CONNECTION LOST", "PLEASE CHECK YOUR", "ROUTER/ACCESS POINT.");
+            return &messageBoard;
         default:
             return nullptr;
     }

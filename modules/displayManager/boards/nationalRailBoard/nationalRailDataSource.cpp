@@ -74,6 +74,7 @@ int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDa
     }
     if(retry >= 10) {
         LOG_ERROR("DATA", "NR Source: Failed to connect to WSDL host: " + String(wsdlHost));
+        snprintf(lastErrorMessage, sizeof(lastErrorMessage), "WSDL connection failed");
         delete httpsClient;
         return UPD_NO_RESPONSE;
     }
@@ -123,7 +124,7 @@ int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDa
 }
 
 int nationalRailDataSource::updateData() {
-    LOG_INFO("DATA", "NR Source: updateData() entry");
+    LOG_INFO("DATA", "NR Source: updateData() entry. Free heap: " + String(ESP.getFreeHeap()));
     unsigned long perfTimer = millis();
     bool bChunked = false;
     lastErrorMessage[0] = '\0';
@@ -144,14 +145,33 @@ int nationalRailDataSource::updateData() {
     
     id = -1; coaches = 0; addedStopLocation = false; keepRoute = false;
 
-    WiFiClientSecure httpsClient;
-    httpsClient.setInsecure();
-    httpsClient.setTimeout(5000);
-    httpsClient.setConnectionTimeout(5000);
+    WiFiClientSecure *httpsClient = new (std::nothrow) WiFiClientSecure();
+    if (!httpsClient) {
+        LOG_ERROR("DATA", "NR Source: Failed to allocate WiFiClientSecure for update!");
+        delete xStation;
+        delete oldStation;
+        return UPD_DATA_ERROR;
+    }
+    httpsClient->setInsecure();
+    httpsClient->setTimeout(5000);
+    httpsClient->setConnectionTimeout(5000);
 
-    LOG_INFO("DATA", "NR Source: Connecting to " + String(soapHost));
-    if(!httpsClient.connect(soapHost, 443)) {
-        LOG_ERROR("DATA", "NR Source: Connection failed!");
+    LOG_INFO("DATA", "NR Source: Connecting to [" + String(soapHost) + "] Path: [" + String(soapAPI) + "]");
+    int soapRetry = 0;
+    // Hardcode for test to rule out buffer issues
+    const char* connectHost = "lite.realtime.nationalrail.co.uk";
+    
+    while (!httpsClient->connect(connectHost, 443) && soapRetry < 5) {
+        LOG_WARN("DATA", String("NR Source: Connection attempt ") + soapRetry + " failed. Retrying...");
+        delay(200);
+        soapRetry++;
+    }
+
+    if(soapRetry >= 5) {
+        LOG_ERROR("DATA", "NR Source: Connection failed after retries!");
+        snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SOAP connection failed");
+        httpsClient->stop();
+        delete httpsClient;
         delete xStation;
         delete oldStation;
         return UPD_NO_RESPONSE;
@@ -167,13 +187,13 @@ int nationalRailDataSource::updateData() {
     if (nrTimeOffset) data += "<ns0:timeOffset>" + String(nrTimeOffset) + F("</ns0:timeOffset>");
     data += F("</ns0:GetDepBoardWithDetailsRequest></soap-env:Body></soap-env:Envelope>");
 
-    httpsClient.print("POST " + String(soapAPI) + " HTTP/1.1\r\nHost: " + String(soapHost) + "\r\nContent-Type: text/xml;charset=UTF-8\r\nConnection: close\r\nContent-Length: " + String(data.length()) + "\r\n\r\n" + data);
+    httpsClient->print("POST " + String(soapAPI) + " HTTP/1.1\r\nHost: " + String(soapHost) + "\r\nContent-Type: text/xml;charset=UTF-8\r\nConnection: close\r\nContent-Length: " + String(data.length()) + "\r\n\r\n" + data);
 
     if (callback) callback(1, 0);
     
     unsigned long ticker = millis() + 350;
     int retry = 0;
-    while(!httpsClient.available() && retry < 30) { delay(100); retry++; }
+    while(!httpsClient->available() && retry < 30) { delay(100); retry++; }
     if (retry >= 30) {
         LOG_ERROR("DATA", "NR Source: Request timeout!");
         delete xStation;
@@ -181,11 +201,12 @@ int nationalRailDataSource::updateData() {
         return UPD_TIMEOUT;
     }
 
-    while (httpsClient.connected() || httpsClient.available()) {
-        String line = httpsClient.readStringUntil('\n');
+    while (httpsClient->connected() || httpsClient->available()) {
+        String line = httpsClient->readStringUntil('\n');
         if (line.startsWith("HTTP") && line.indexOf("200 OK") == -1) {
             LOG_ERROR("DATA", "NR Source: HTTP Error: " + line);
-            httpsClient.stop();
+            httpsClient->stop();
+            delete httpsClient;
             delete xStation;
             delete oldStation;
             return UPD_HTTP_ERROR;
@@ -206,9 +227,9 @@ int nationalRailDataSource::updateData() {
     messagesData.clear();
 
     LOG_INFO("DATA", "NR Source: Starting XML parse...");
-    while(httpsClient.available() || httpsClient.connected()) {
-        while (httpsClient.available()) {
-            parser.parse(httpsClient.read());
+    while(httpsClient->available() || httpsClient->connected()) {
+        while (httpsClient->available()) {
+            parser.parse(httpsClient->read());
             bytesRecv++;
             if (millis() > ticker && stationData) {
                 if (callback) callback(2, stationData->numServices);
@@ -217,7 +238,8 @@ int nationalRailDataSource::updateData() {
         }
         delay(5);
     }
-    httpsClient.stop();
+    httpsClient->stop();
+    delete httpsClient;
     LOG_INFO("DATA", "NR Source: XML parse complete. Bytes: " + String(bytesRecv));
 
     // After parsing, sanitize and check changes

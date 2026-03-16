@@ -32,6 +32,7 @@ private:
     bool wifiConfigured;          ///< True if WiFiManager has valid credentials
     bool wifiConnected;           ///< True if active WiFi connection established
     unsigned long lastWiFiReconnect; ///< Last attempt timestamp (ms)
+    unsigned long wifiDisconnectTimer; ///< Continuous downtime counter (ms)
     char myUrl[24];               ///< Formatted string URL for local IP
 
     // --- Boot & Lifecycle State ---
@@ -92,6 +93,11 @@ public:
      * @brief Update the internal URL string for the Web GUI based on current IP.
      */
     void updateMyUrl();
+    
+    /**
+     * @brief Returns true if WiFi has been disconnected for a prolonged period (e.g. 3 mins).
+     */
+    bool isWifiPersistentError() const;
 
     /**
      * @brief Returns true if an alternate station is currently active based on schedule.

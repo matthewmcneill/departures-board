@@ -178,6 +178,14 @@
       margin-top: 0 !important;
     }
 
+    /* Secure placeholder dots spacing */
+    input.existing-password-mask::placeholder {
+      letter-spacing: 4px;
+      font-size: 1.2rem;
+      vertical-align: middle;
+      opacity: 0.6;
+    }
+
     .eye-btn {
       position: absolute;
       right: 10px;
@@ -648,6 +656,17 @@
 
     .key-status-dot.testing {
       animation: pulse 1s infinite alternate;
+      background: var(--primary);
+    }
+
+    .key-status-dot.green {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .key-status-dot.red {
+      background: var(--error);
+      box-shadow: 0 0 8px var(--error);
     }
 
     @keyframes pulse {
@@ -791,8 +810,9 @@
 
           <label>WiFi Password
             <div class="password-input-wrapper">
-              <input type="password" name="password" id="wifi-pass" placeholder="Password..." style="margin-top:0;" />
-              <button type="button" class="eye-btn" style="display:none" onclick="app.togglePass('wifi-pass', this)"
+              <input type="password" name="password" id="wifi-pass" placeholder="Password..." 
+                style="margin-top:0;" autocomplete="new-password" />
+              <button type="button" class="eye-btn" disabled onclick="app.togglePass('wifi-pass', this)"
                 title="Toggle Visibility">
                 <svg class="eye-on" viewBox="0 0 24 24">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -1006,8 +1026,9 @@
         <label>Key Label (e.g. "TfL Key for myemail@gmail.com")<input type="text" name="label" required /></label>
         <label>API Token / Key
           <div class="password-input-wrapper">
-            <input type="password" name="token" id="key-token-input" required style="margin-top:0;" />
-            <button type="button" class="eye-btn" style="display:none"
+            <input type="password" name="token" id="key-token-input" required style="margin-top:0;" 
+              autocomplete="new-password" />
+            <button type="button" class="eye-btn" disabled
               onclick="app.togglePass('key-token-input', this)">
               <svg class="eye-on" viewBox="0 0 24 24">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -1032,13 +1053,13 @@
 
   <script>
     // Handles state management, API communication, and dynamic rendering.
-    const DUMMY_PASS = "●●●●●●●●";
+    const PLACEHOLDER_DOTS = "••••••••";
     const MAX_KEYS = 8; // Matching platformio.ini
 
     const PROVIDER_LOGOS = {
       rail: '<svg viewBox="4.9 4.9 80.9 80.9" xmlns="http://www.w3.org/2000/svg"><path fill="#003366" d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z"/></svg>',
       tfl: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z" fill="#0019A8" /></svg>',
-      bus: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M18 11V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v5H5v7h1v2h2v-2h8v2h2v-2h1v-7h-1zM9 6h6v4H9V6zm-1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm8 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-4H7V6h10v5z"/></svg>',
+      bus: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="4" fill="#FCF69C"/><path d="M18 11V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v5H5v7h1v2h2v-2h8v2h2v-2h1v-7h-1zM9 6h6v4H9V6zm-1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm8 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-4H7V6h10v5z" fill="#000000"/></svg>',
       owm: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>',
       other: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>'
     };
@@ -1049,8 +1070,9 @@
         status: null,
         prev_ap_mode: false,
         keys: [],
-        newKeyType: null, // Context for adding a key from selection modal
-        inContextBoardFlow: false // true if adding key while editing a board
+        newKeyType: null,
+        inContextBoardFlow: false,
+        isTestingKeys: false
       },
 
       init: async function () {
@@ -1131,7 +1153,15 @@
         document.querySelector('[name="flip"]').checked = cfg.system.flip;
         if (cfg.wifi) {
           this.updateSSIDDropdown(cfg.wifi.ssid);
-          document.getElementById('wifi-pass').value = cfg.wifi.ssid ? DUMMY_PASS : "";
+          const passInput = document.getElementById('wifi-pass');
+          passInput.value = "";
+          if (cfg.wifi.passExists) {
+            passInput.placeholder = PLACEHOLDER_DOTS;
+            passInput.classList.add('existing-password-mask');
+          } else {
+            passInput.placeholder = "Create a password...";
+            passInput.classList.remove('existing-password-mask');
+          }
         }
         this.renderBoards();
         this.renderKeys();
@@ -1160,7 +1190,7 @@
             const logo = PROVIDER_LOGOS[key.type] || PROVIDER_LOGOS.other;
             slot.classList.add('filled');
             slot.innerHTML = `
-              <div class="key-status-dot active" id="slot-status-${key.id}"></div>
+              <div class="key-status-dot" id="slot-status-${key.id}"></div>
               <span class="provider-logo">${logo}</span>
               <label>${key.label}</label>
               <div class="type-badge">${key.type}</div>
@@ -1169,8 +1199,6 @@
                 <button class="secondary" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; color: var(--error);" onclick="app.deleteKey('${key.id}')">X</button>
               </div>
             `;
-            // Trigger async test for this slot
-            this.testKeyAsync(key.id, `slot-status-${key.id}`);
           } else {
             slot.innerHTML = `
               <div class="add-icon">+</div>
@@ -1208,7 +1236,7 @@
         this.closeModal('modal-key-selection');
         const form = document.getElementById('key-form');
         form.reset();
-        form.id.value = 'key_' + Math.random().toString(36).substr(2, 9);
+        form.id.value = 'k' + Math.random().toString(36).substr(2, 8); // Max 12 chars (k + 8 + padding)
         form.type.value = type;
         document.getElementById('key-editor-title').innerText = `Add ${type.toUpperCase()} Key`;
         document.getElementById('key-test-feedback').className = 'test-feedback';
@@ -1222,7 +1250,14 @@
         form.id.value = key.id;
         form.type.value = key.type;
         form.label.value = key.label;
-        form.token.value = key.token;
+        form.token.value = "";
+        if (key.tokenExists) {
+          form.token.placeholder = PLACEHOLDER_DOTS;
+          form.token.classList.add('existing-password-mask');
+        } else {
+          form.token.placeholder = "Enter API Key...";
+          form.token.classList.remove('existing-password-mask');
+        }
         document.getElementById('key-editor-title').innerText = `Edit ${key.type.toUpperCase()} Key`;
         document.getElementById('key-test-feedback').className = 'test-feedback';
         document.getElementById('modal-apikey').showModal();
@@ -1279,12 +1314,14 @@
         try {
           const res = await fetch('/api/keys/test', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id: form.id.value,
               type: form.type.value,
               token: form.token.value
             })
           });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
           const result = await res.json();
           if (result.status === 'ok') {
             feedback.className = 'test-feedback success';
@@ -1295,7 +1332,7 @@
           }
         } catch (e) {
           feedback.className = 'test-feedback error';
-          feedback.innerText = '❌ Request failed. Check network.';
+          feedback.innerText = '❌ Request failed: ' + (e.message || 'Check network');
         } finally {
           btn.disabled = false;
           btn.innerText = 'Test';
@@ -1305,7 +1342,8 @@
       testKeyAsync: async function (id, dotId) {
         const dot = document.getElementById(dotId);
         if (!dot) return;
-        dot.classList.add('testing');
+        dot.classList.add('active', 'testing');
+        dot.classList.remove('green', 'red');
 
         const key = this.state.keys.find(k => k.id === id);
         if (!key) return;
@@ -1313,14 +1351,31 @@
         try {
           const res = await fetch('/api/keys/test', {
             method: 'POST',
-            body: JSON.stringify({ id: key.id, type: key.type, token: DUMMY_PASS })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: key.id, type: key.type, token: "" })
           });
+          if (!res.ok) throw new Error();
           const result = await res.json();
           dot.classList.remove('testing');
-          dot.style.background = (result.status === 'ok') ? 'var(--success)' : 'var(--error)';
+          dot.classList.add(result.status === 'ok' ? 'green' : 'red');
         } catch (e) {
           dot.classList.remove('testing');
-          dot.style.background = 'var(--text-muted)';
+          dot.classList.remove('green', 'red');
+        }
+      },
+
+      runSequentialTests: async function () {
+        if (this.state.isTestingKeys) return;
+        console.log("Starting sequential API key tests...");
+        this.state.isTestingKeys = true;
+        try {
+          for (const key of this.state.keys) {
+            await this.testKeyAsync(key.id, `slot-status-${key.id}`);
+            await new Promise(r => setTimeout(r, 1000)); // 1s breather
+          }
+        } finally {
+          this.state.isTestingKeys = false;
+          console.log("Sequential tests finished.");
         }
       },
 
@@ -1383,8 +1438,7 @@
         const ssid = (selectVal === '__manual__') ? document.getElementById('manual-ssid-input').value : selectVal;
 
         const getVal = (id) => {
-          const val = document.getElementById(id)?.value;
-          return (val === DUMMY_PASS) ? undefined : val;
+          return document.getElementById(id)?.value || "";
         };
 
         const payload = {
@@ -1412,7 +1466,10 @@
         document.querySelectorAll('.tab-link, .tab-content').forEach(el => el.classList.remove('active'));
         document.querySelector(`[data-target="${targetId}"]`)?.classList.add('active');
         document.getElementById(targetId).classList.add('active');
-        if (targetId === 'tab-apikeys') this.renderKeys();
+        if (targetId === 'tab-apikeys') {
+          this.renderKeys();
+          this.runSequentialTests();
+        }
       },
 
       closeModal: id => document.getElementById(id).close(),
@@ -1421,7 +1478,13 @@
         document.addEventListener('input', (e) => {
           if (e.target.type === 'password') {
             const eye = e.target.closest('.password-input-wrapper')?.querySelector('.eye-btn');
-            if (eye) eye.style.display = (e.target.value === DUMMY_PASS || !e.target.value) ? 'none' : 'flex';
+            if (eye) {
+              eye.disabled = e.target.value.length === 0;
+              if (e.target.value.length === 0) {
+                e.target.type = 'password';
+                eye.classList.remove('active');
+              }
+            }
           }
         });
         document.querySelectorAll('.tab-link').forEach(link => { link.onclick = (e) => { e.preventDefault(); this.switchTab(link.dataset.target); }; });
@@ -1432,13 +1495,20 @@
       refreshEyes: function () {
         document.querySelectorAll('input[type="password"]').forEach(input => {
           const eye = input.closest('.password-input-wrapper')?.querySelector('.eye-btn');
-          if (eye) eye.style.display = (input.value === DUMMY_PASS || !input.value) ? 'none' : 'flex';
+          if (eye) {
+            const hasText = input.value.length > 0;
+            eye.disabled = !hasText;
+            if (!hasText) {
+              input.type = 'password';
+              eye.classList.remove('active');
+            }
+          }
         });
       },
 
       togglePass: function (id, btn) {
         const input = document.getElementById(id);
-        if (!input) return;
+        if (!input || input.value.length === 0) return;
         const isPass = input.type === 'password';
         input.type = isPass ? 'text' : 'password';
         btn.classList.toggle('active', isPass);
@@ -1507,7 +1577,10 @@
       handleSSIDChange: function (val) {
         document.getElementById('manual-ssid-group').style.display = (val === '__manual__') ? 'block' : 'none';
         if (val !== '__manual__' && val !== "") {
-          document.getElementById('wifi-pass').value = DUMMY_PASS;
+          const passInput = document.getElementById('wifi-pass');
+          passInput.value = "";
+          // Note: existence flag is usually true for scanned results if we assume background knowledge,
+          // but here we just follow the render logic from fetchConfig.
           this.refreshEyes();
         }
       },
@@ -1517,8 +1590,7 @@
         const log = document.getElementById('wifi-test-log');
         const selectVal = document.getElementById('wifi-ssid-select').value;
         const ssid = (selectVal === '__manual__') ? document.getElementById('manual-ssid-input').value : selectVal;
-        const passRaw = document.getElementById('wifi-pass').value;
-        const pass = (passRaw === DUMMY_PASS) ? undefined : passRaw;
+        const pass = document.getElementById('wifi-pass').value;
 
         if (!ssid) { alert('Please select or enter a network first'); return; }
 

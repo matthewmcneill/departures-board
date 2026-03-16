@@ -66,7 +66,8 @@ enum class SystemBoardId {
     SYS_ERROR_TOKEN,    // API key rejection
     SYS_ERROR_CRS,      // Invalid station code
     SYS_FIRMWARE_UPDATE, // OTA progress screen
-    SYS_SLEEP_CLOCK      // Snooze/Screensaver clock
+    SYS_SLEEP_CLOCK,     // Snooze/Screensaver clock
+    SYS_ERROR_WIFI       // Persistent WiFi disconnection
 };
 
 /**

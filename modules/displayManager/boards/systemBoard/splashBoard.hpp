@@ -23,7 +23,7 @@ class appContext;
 #include "../../widgets/progressBarWidget.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
 #include <string.h>
-#include "../../../../../include/gfx/xbmgfx.h"
+#include <gfx/xbmgfx.h>
 
 /**
  * @brief Board that renders the 5-second initial startup logo and copyright display.

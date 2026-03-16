@@ -119,8 +119,8 @@ void WebHandlerManager::handleGetConfig() {
         kObj["id"] = config.keys[i].id;
         kObj["label"] = config.keys[i].label;
         kObj["type"] = config.keys[i].type;
-        // Mask token for security
-        kObj["token"] = (strlen(config.keys[i].token) > 0) ? "●●●●●●●●" : "";
+        kObj["token"] = ""; // Strictly empty for security
+        kObj["tokenExists"] = (strlen(config.keys[i].token) > 0);
     }
 
     // --- Boards ---
@@ -138,12 +138,14 @@ void WebHandlerManager::handleGetConfig() {
         b["secName"] = bc.secondaryName;
         b["offset"] = bc.timeOffset;
         b["weather"] = bc.showWeather;
+        b["apiKeyId"] = bc.apiKeyId; // Added missing field
     }
 
     // --- WiFi Config (Secure) ---
     JsonObject wifi = doc["wifi"].to<JsonObject>();
     wifi["ssid"] = appContext.getWifiManager().getSSID();
-    wifi["pass"] = appContext.getWifiManager().getPassMasked();
+    wifi["pass"] = ""; 
+    wifi["passExists"] = appContext.getWifiManager().hasPassword();
 
     String output;
     serializeJson(doc, output);
@@ -152,14 +154,19 @@ void WebHandlerManager::handleGetConfig() {
 
 void WebHandlerManager::handleSaveAll() {
     LOG_INFO("WEB_API", "POST /api/saveall called - processing unified save");
-    if (_server.hasArg("plain")) {
-        LOG_DEBUG("WEB_API", String("Payload size: ") + _server.arg("plain").length() + " bytes");
-        JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, _server.arg("plain"));
-        if (error) {
-            _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid JSON\"}");
-            return;
-        }
+    String body = _server.hasArg("plain") ? _server.arg("plain") : _server.arg(0);
+    if (body.length() == 0) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
+        return;
+    }
+
+    LOG_DEBUG("WEB_API", String("Payload size: ") + body.length() + " bytes");
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, body);
+    if (error) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid JSON\"}");
+        return;
+    }
 
         Config& config = _config.getConfig();
         
@@ -219,9 +226,6 @@ void WebHandlerManager::handleSaveAll() {
             LOG_INFO("WEB_API", "System in AP mode. rebooting in 2 seconds to apply new connectivity...");
             delay(2000);
             ESP.restart();
-        }
-    } else {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
     }
 }
 
@@ -250,7 +254,8 @@ void WebHandlerManager::handleGetKeys() {
         kObj["id"] = config.keys[i].id;
         kObj["label"] = config.keys[i].label;
         kObj["type"] = config.keys[i].type;
-        kObj["token"] = (strlen(config.keys[i].token) > 0) ? "●●●●●●●●" : "";
+        kObj["token"] = "";
+        kObj["tokenExists"] = (strlen(config.keys[i].token) > 0);
     }
 
     String output;
@@ -259,13 +264,14 @@ void WebHandlerManager::handleGetKeys() {
 }
 
 void WebHandlerManager::handleSaveKey() {
-    if (!_server.hasArg("plain")) {
+    String body = _server.hasArg("plain") ? _server.arg("plain") : _server.arg(0);
+    if (body.length() == 0) {
         _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
         return;
     }
 
     JsonDocument doc;
-    deserializeJson(doc, _server.arg("plain"));
+    deserializeJson(doc, body);
     
     ApiKey key;
     strlcpy(key.id, doc["id"] | "", sizeof(key.id));
@@ -273,8 +279,8 @@ void WebHandlerManager::handleSaveKey() {
     strlcpy(key.type, doc["type"] | "", sizeof(key.type));
     
     const char* token = doc["token"] | "";
-    // Only update token if it's not the mask
-    if (strcmp(token, "●●●●●●●●") != 0) {
+    // Only update token if it's provided and not empty
+    if (strlen(token) > 0) {
         strlcpy(key.token, token, sizeof(key.token));
     } else {
         // Find existing key to preserve token
@@ -304,18 +310,24 @@ void WebHandlerManager::handleDeleteKey() {
 }
 
 void WebHandlerManager::handleTestKey() {
-    if (!_server.hasArg("plain")) {
+    LOG_DEBUG("WEB_API", String("Arguments received: ") + _server.args());
+    for (int i = 0; i < _server.args(); i++) {
+        LOG_DEBUG("WEB_API", "Arg [" + _server.argName(i) + "]: " + _server.arg(i));
+    }
+
+    String body = _server.hasArg("plain") ? _server.arg("plain") : (_server.args() > 0 ? _server.arg(0) : "");
+    if (body.length() == 0) {
         _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
         return;
     }
 
     JsonDocument doc;
-    deserializeJson(doc, _server.arg("plain"));
+    deserializeJson(doc, body);
     const char* type = doc["type"] | "";
     const char* token = doc["token"] | "";
     
-    // Resolve mask to real token if testing existing key
-    if (strcmp(token, "●●●●●●●●") == 0) {
+    // If token is empty, use the real stored token (test existing)
+    if (strlen(token) == 0) {
         ApiKey* existing = _config.getKeyById(doc["id"] | "");
         if (existing) token = existing->token;
     }
@@ -324,29 +336,54 @@ void WebHandlerManager::handleTestKey() {
     String errorMsg = "Unsupported test type";
 
     if (strcmp(type, "owm") == 0) {
+        LOG_INFO("WEB_API", "Testing OWM key...");
         WeatherStatus tempStatus;
         tempStatus.lat = 51.52;
         tempStatus.lon = -0.13;
         success = appContext.getWeather().updateWeather(tempStatus, nullptr, token);
         if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
     } else if (strcmp(type, "rail") == 0) {
+        LOG_INFO("WEB_API", "Testing National Rail key...");
         // National Rail test - try a simple request
         nationalRailDataSource ds;
-        ds.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
-        ds.configure(token, "EUS"); // Euston
-        success = (ds.updateData() == 0);
-        if (!success) errorMsg = ds.getLastErrorMsg();
+        // Skip init for testing to see if single connection works
+        // int initRes = ds.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
+        // if (initRes == 0) { ... }
+        
+        // Manual setup to bypass init connection
+        // ds.configure(token, "EUS", ""); // Euston
+        // These are normally set by init()
+        // extern void setSoapHostAPI(nationalRailDataSource& ds, const char* host, const char* api); 
+        // Wait, I can't access private members smoothly. 
+        // I'll just modify nationalRailDataSource to have a "skipWSDL" flag or similar.
+        
+        // Actually, let's just try ds.init and THEN ds.updateData but with a MUCH longer delay (3s).
+        int initRes = ds.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
+        if (initRes == 0) {
+            delay(3000); // 3 seconds breather
+            ds.configure(token, "HWD", ""); // Try Harrow & Wealdstone (smaller response)
+            int updRes = ds.updateData();
+            success = (updRes == 0 || updRes == 1);
+            if (!success) errorMsg = ds.getLastErrorMsg();
+        } else {
+            success = false;
+            errorMsg = "WSDL Init Failed";
+        }
     } else if (strcmp(type, "tfl") == 0) {
+        LOG_INFO("WEB_API", "Testing TfL key...");
         // TfL test
         tflDataSource ds;
         ds.configure("940GZZLUBND", token, nullptr); // Bond Street
-        success = (ds.updateData() == 0);
+        int updRes = ds.updateData();
+        success = (updRes == 0 || updRes == 1);
         if (!success) errorMsg = ds.getLastErrorMsg();
     } else if (strcmp(type, "bus") == 0) {
         // bustimes.org doesn't use a token for now, but we'll return ok for the UI
         success = true;
     }
 
+    LOG_INFO("WEB_API", String("Test result for ") + type + ": " + (success ? "SUCCESS" : "FAILED (" + errorMsg + ")"));
+    
     JsonDocument res;
     res["status"] = success ? "ok" : "fail";
     if (!success) res["msg"] = errorMsg;
@@ -381,13 +418,14 @@ void WebHandlerManager::handleWiFiScan() {
 void WebHandlerManager::handleWiFiTest() {
     LOG_INFO("WEB_API", "POST /api/wifi/test - Attempting async connection test...");
     
-    if (!_server.hasArg("plain")) {
+    String body = _server.hasArg("plain") ? _server.arg("plain") : _server.arg(0);
+    if (body.length() == 0) {
         _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing credentials\"}");
         return;
     }
 
     JsonDocument doc;
-    deserializeJson(doc, _server.arg("plain"));
+    deserializeJson(doc, body);
     const char* ssid = doc["ssid"] | "";
     const char* pass = doc["pass"] | "";
 

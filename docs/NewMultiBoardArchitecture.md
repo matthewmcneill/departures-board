@@ -151,7 +151,7 @@ This represents the logical conclusion of the Object-Oriented refactor, transfor
 If the device supports 5 boards, the Web GUI must allow users to configure all 5, which means significant changes to how settings are saved and presented.
 
 ### 4.1 Storage Changes (`config.json`)
-Currently, `loadConfig()` (in `include/gfx/DisplayEngine.hpp`) parses a flat JSON structure because the board only has one global mode:
+Currently, `loadConfig()` (in `modules/displayManager/displayManager.hpp`) parses a flat JSON structure because the board only has one global mode:
 ```json
 {
   "mode": 0,

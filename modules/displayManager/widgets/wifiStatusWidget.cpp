@@ -32,10 +32,24 @@ wifiStatusWidget::wifiStatusWidget(int _x, int _y)
 void wifiStatusWidget::tick(uint32_t currentMillis) {
     if (!isVisible) return;
     
-    // We only track the current and previous states during normal loop traversal
     bool currentlyConnected = (WiFi.status() == WL_CONNECTED);
     
-    // The renderAnimationUpdate will act upon differences
+    if (currentlyConnected) {
+        disconnectTime = 0;
+        blinkState = true;
+    } else {
+        if (disconnectTime == 0) disconnectTime = currentMillis;
+        
+        // Blink logic: after 30 seconds of disconnection
+        if (currentMillis - disconnectTime > 30000) {
+            if (currentMillis - lastBlinkMs > 1000) { // 1s toggle
+                blinkState = !blinkState;
+                lastBlinkMs = currentMillis;
+            }
+        } else {
+            blinkState = true;
+        }
+    }
 }
 
 /**
@@ -45,7 +59,7 @@ void wifiStatusWidget::tick(uint32_t currentMillis) {
 void wifiStatusWidget::render(U8G2& display) {
     if (!isVisible) return;
     
-    if (WiFi.status() != WL_CONNECTED) {
+    if (WiFi.status() != WL_CONNECTED && blinkState) {
         display.setFont(NatRailSmall9);
         display.drawStr(x, y, "\x7F");
     }
@@ -61,21 +75,36 @@ void wifiStatusWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMill
     
     bool currentlyConnected = (WiFi.status() == WL_CONNECTED);
 
-    // State changed from disconnected to connected
+    bool prevBlinkState = blinkState;
+    tick(currentMillis);
+
+    // If connection restored, or if blink state changed while disconnected
     if (currentlyConnected && !wasConnected) {
         wasConnected = true;
         // Erase the warning icon area
         display.setDrawColor(0);
-        display.drawBox(x, y-6, width, height); // Adjusting for font baseline
+        display.drawBox(x, y-6, width, height); 
         display.setDrawColor(1);
         display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
     } 
-    // State changed from connected to disconnected
-    else if (!currentlyConnected && wasConnected) {
-        wasConnected = false;
-        // Draw the warning icon
-        display.setFont(NatRailSmall9);
-        display.drawStr(x, y, "\x7F");
-        display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
+    else if (!currentlyConnected) {
+        if (wasConnected) {
+            wasConnected = false;
+            // Immediate draw on first disconnect
+            display.setFont(NatRailSmall9);
+            display.drawStr(x, y, "\x7F");
+            display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
+        } else if (blinkState != prevBlinkState) {
+            // Blink changed
+            if (blinkState) {
+                display.setFont(NatRailSmall9);
+                display.drawStr(x, y, "\x7F");
+            } else {
+                display.setDrawColor(0);
+                display.drawBox(x, y-6, width, height);
+                display.setDrawColor(1);
+            }
+            display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
+        }
     }
 }

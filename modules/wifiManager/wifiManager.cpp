@@ -138,7 +138,7 @@ void WifiManager::tick() {
                 transitionTo(WiFiState::WIFI_READY);
             } else if (millis() - stateTimer > 15000) { // 15 second timeout for STA
                 LOG_WARN("WIFI", "WiFi connection timed out. Falling back to AP.");
-                WiFi.disconnect();
+                WiFi.disconnect(true); // Ensure clean slate
                 transitionTo(WiFiState::WIFI_AP_STARTING);
             }
             break;
@@ -168,6 +168,18 @@ void WifiManager::tick() {
         case WiFiState::WIFI_READY:
             // Standard operational maintenance
             processDNS();
+            
+            // Reconnection logic: If we're in STA mode and lost connection
+            if (!isAPMode && WiFi.status() != WL_CONNECTED) {
+                // Wait 10 seconds before attempting to recycle the connection
+                if (millis() - stateTimer > 10000) {
+                    LOG_WARN("WIFI", "Primary connection lost. Retrying...");
+                    transitionTo(WiFiState::WIFI_INIT);
+                }
+            } else {
+                // Reset timer if we are connected or in AP mode
+                stateTimer = millis();
+            }
             break;
 
         case WiFiState::WIFI_SHUTDOWN:
@@ -189,8 +201,8 @@ void WifiManager::processDNS() {
  */
 void WifiManager::updateWiFi(const char* ssid, const char* pass) {
     if (ssid != nullptr) strlcpy(wifiSsid, ssid, sizeof(wifiSsid));
-    // Skip if password is the UI mask "●●●●●●●●"
-    if (pass != nullptr && strcmp(pass, "●●●●●●●●") != 0) {
+    // Only update if a NEW password is provided (non-empty)
+    if (pass != nullptr && strlen(pass) > 0) {
         strlcpy(wifiPass, pass, sizeof(wifiPass));
     }
     saveWiFiConfig();
@@ -200,8 +212,8 @@ bool WifiManager::testConnection(const char* ssid, const char* pass, String& ipO
     LOG_INFO("WIFI", "WIFI_TEST: Starting connection test...");
     
     const char* realPass = pass;
-    // If masked, use the real stored password
-    if (strcmp(pass, "●●●●●●●●") == 0) {
+    // If empty string provided, use the real stored password
+    if (pass != nullptr && strlen(pass) == 0) {
         LOG_INFO("WIFI", "WIFI_TEST: Using stored credentials for test.");
         realPass = wifiPass;
     }
@@ -213,6 +225,10 @@ bool WifiManager::testConnection(const char* ssid, const char* pass, String& ipO
         LOG_INFO("WIFI", "WIFI_TEST: Already connected to this network. IP: " + ipOut);
         return true;
     }
+
+    // Ensure we aren't already busy before starting a new begin
+    WiFi.disconnect(true);
+    delay(200); 
 
     WiFi.begin(ssid, realPass);
     
@@ -230,6 +246,8 @@ bool WifiManager::testConnection(const char* ssid, const char* pass, String& ipO
         LOG_WARN("WIFI", "WIFI_TEST: Failed. Reconnecting to primary credentials.");
         // Revert to known-good credentials immediately
         if (strlen(wifiSsid) > 0) {
+            WiFi.disconnect(true);
+            delay(100);
             WiFi.begin(wifiSsid, wifiPass);
         }
         return false;

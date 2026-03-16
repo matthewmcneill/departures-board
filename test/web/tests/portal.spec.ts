@@ -16,10 +16,11 @@ test.describe('Web Portal - Local Mocked Tests', () => {
           flip: false
         },
         wifi: {
-          ssid: "TestWiFi"
+          ssid: "TestWiFi",
+          passExists: true
         },
         keys: [
-          { id: "key_1", type: "rail", label: "My Rail Key", token: "●●●●●●●●" }
+          { id: "key_1", type: "rail", label: "My Rail Key", token: "", tokenExists: true }
         ],
         boards: [
           { name: "Waterloo", type: 0, id: "WAT", weather: true, apiKeyId: "key_1" }
@@ -70,7 +71,8 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     // Open edit modal
     await slot.getByRole('button', { name: 'Edit' }).click();
     await expect(page.locator('#modal-apikey')).toBeVisible();
-    await expect(page.locator('input[name="token"]')).toHaveValue('●●●●●●●●');
+    await expect(page.locator('input[name="token"]')).toHaveValue('');
+    await expect(page.locator('input[name="token"]')).toHaveAttribute('placeholder', '••••••••');
   });
 
   test('should handle adding a new API key', async ({ page }) => {
@@ -201,5 +203,20 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     await expect(page.locator('#modal-key-selection')).toBeVisible();
     const pickerLogos = page.locator('#modal-key-selection .icon svg');
     await expect(pickerLogos).toHaveCount(4); // Rail, TfL, Bus, OWM
+  });
+
+  test('should implement secure placeholder pattern for WiFi password', async ({ page }) => {
+    const passInput = page.locator('#wifi-pass');
+    await expect(passInput).toHaveValue('');
+    await expect(passInput).toHaveAttribute('placeholder', '••••••••');
+    await expect(passInput).toHaveClass(/existing-password-mask/);
+    
+    // Toggle button should be disabled when empty
+    const eyeBtn = page.locator('label:has-text("WiFi Password") .eye-btn');
+    await expect(eyeBtn).toBeDisabled();
+    
+    // Typing should enable eye button
+    await passInput.fill('newpassword');
+    await expect(eyeBtn).toBeEnabled();
   });
 });

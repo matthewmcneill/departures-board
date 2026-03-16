@@ -3,22 +3,25 @@
 This file tracks active and pending agent sessions to prevent hardware and build conflicts.
 
 ## Lock Status
-- **Locked By**: f59e3969-179b-425f-b4c1-977c3ffab9f6
-- **Reason**: Executing Implementation Plan
-- **Since**: 2026-03-16T07:36:41Z
+- **Locked By**: NONE
+- **Reason**: 
+- **Since**: 
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |
 | :--- | :--- | :--- | :--- |
-| 36b83bfe-d960-4008-95c5-1d5d2bc7b326 | Fixing Bootloop and UI for Keys | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/36b83bfe-d960-4008-95c5-1d5d2bc7b326/implementation_plan.md) | 2026-03-15T121:20:00Z |
-| 7253f91e-a7b9-4b21-8a21-357988484c5b | Investigate and fix API Key validation UI & backend logic | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/7253f91e-a7b9-4b21-8a21-357988484c5b/implementation_plan.md) | 2026-03-15T16:08:06Z |
 | 6ac93dc9-d478-4cf2-9a19-c40eef924938 | Implement Display Boards List with reordering, default star, and station search | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6ac93dc9-d478-4cf2-9a19-c40eef924938/implementation_plan.md) | 2026-03-15T16:40:47Z |
 | 4036f49f-6381-45b6-a8f1-9b972b454d64 | Planning Feeds UI | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/4036f49f-6381-45b6-a8f1-9b972b454d64/implementation_plan.md) | 2026-03-15T22:26:14Z |
-| 4f0d242c-6851-43f0-b4a8-9065a534315e | Adding Branded API Key Icons in the Web Portal | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/4f0d242c-6851-43f0-b4a8-9065a534315e/implementation_plan.md) | 2026-03-15T22:51:22Z |
+| a57da37d-5394-4798-84f2-791ef8118b40 | Update project house styles to add refactoring attribution line | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/a57da37d-5394-4798-84f2-791ef8118b40/implementation_plan.md) | 2026-03-16T12:53:58Z |
+| 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |
 | :--- | :--- | :--- | :--- |
+| 7253f91e-a7b9-4b21-8a21-357988484c5b | Investigate and fix API Key validation UI & backend logic | Success | 2026-03-16T11:45:00Z |
+| 4f0d242c-6851-43f0-b4a8-9065a534315e | Adding Branded API Key Icons in the Web Portal | Success | 2026-03-16T11:32:00Z |
+| f59e3969-179b-425f-b4c1-977c3ffab9f6 | Portal UI Polish: Eye Icons, NR & TfL Logos | Success | 2026-03-16T10:26:31Z |
+| 36b83bfe-d960-4008-95c5-1d5d2bc7b326 | Fixing Bootloop and UI for Keys | Success | 2026-03-15T16:46:00Z |
 | 36b83bfe-d960-4008-95c5-1d5d2bc7b326 | Add data provider logos to API Key Registry UI | Success | 2026-03-15T16:46:00Z |
 | 2c182619-b8f2-4fb3-94c5-26c1a77fd51a | Deep Portal UI Debugging: WiFi Dropdown & Connection Stability | Success | 2026-03-15T16:45:00Z |
 | d09180d0-b976-4ddf-858f-a977de894d05 | Web Portal Test Suite & API Key Verification | Success | 2026-03-15T15:55:42Z |

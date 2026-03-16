@@ -169,6 +169,14 @@ int NationalRailBoard::updateData() {
 }
 
 void NationalRailBoard::render(U8G2& display) {
+    if (context && context->getsystemManager().isWifiPersistentError()) {
+        iDisplayBoard* wifiError = context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_ERROR_WIFI);
+        if (wifiError) {
+            wifiError->render(display);
+            return;
+        }
+    }
+
     if (!config.complete) {
         // Delegate to system help boards
         SystemBoardId helpId = (config.errorType == 1) ? SystemBoardId::SYS_HELP_KEYS : SystemBoardId::SYS_HELP_CRS;
@@ -212,6 +220,7 @@ void NationalRailBoard::render(U8G2& display) {
 }
 
 void NationalRailBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
+    if (context && context->getsystemManager().isWifiPersistentError()) return;
     if (!config.complete) return;
     headWidget.renderAnimationUpdate(display, currentMillis);
     msgWidget.renderAnimationUpdate(display, currentMillis);

@@ -128,6 +128,14 @@ int BusBoard::updateData() {
  * @param display Primary graphics context.
  */
 void BusBoard::render(U8G2& display) {
+    if (context && context->getsystemManager().isWifiPersistentError()) {
+        iDisplayBoard* wifiError = context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_ERROR_WIFI);
+        if (wifiError) {
+            wifiError->render(display);
+            return;
+        }
+    }
+
     if (!config.complete) {
         // Delegate to system help boards
         // Bus boards only have "missing ID" state in current logic, as they don't have a unique key.
@@ -168,6 +176,7 @@ void BusBoard::render(U8G2& display) {
  * @param currentMillis Current time offset.
  */
 void BusBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
+    if (context && context->getsystemManager().isWifiPersistentError()) return;
     if (!config.complete) return;
     headWidget.renderAnimationUpdate(display, currentMillis);
     msgWidget.renderAnimationUpdate(display, currentMillis);

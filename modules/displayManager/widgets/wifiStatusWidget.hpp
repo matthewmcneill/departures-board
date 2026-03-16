@@ -28,6 +28,9 @@
 class wifiStatusWidget : public iGfxWidget {
 private:
     bool wasConnected = true; // Tracks previous connection state to detect changes
+    unsigned long disconnectTime = 0;
+    bool blinkState = true;
+    unsigned long lastBlinkMs = 0;
 
 public:
     /**

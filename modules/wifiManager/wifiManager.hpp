@@ -20,7 +20,7 @@
  *   - getAPMode(): Returns true if currently operating in Setup/AP Mode.
  *   - isReady(): Returns true if WiFi is ready (either STA connected or AP active).
  *   - getSSID(): Returns the current stored SSID.
- *   - getPassMasked(): Returns a masked version of the password if set.
+ *   - hasPassword(): Returns true if a password is set.
  *   - testConnection(): Connects to standard AP momentarily to validate credentials.
  */
 
@@ -116,9 +116,9 @@ public:
     const char* getSSID() const { return wifiSsid; }
 
     /**
-     * @brief Returns a masked version of the password if set.
+     * @brief Returns true if a password is set.
      */
-    const char* getPassMasked() const { return (strlen(wifiPass) > 0) ? "●●●●●●●●" : ""; }
+    bool hasPassword() const { return strlen(wifiPass) > 0; }
 
     /**
      * @brief Test a WiFi connection without permanently changing stored credentials.
