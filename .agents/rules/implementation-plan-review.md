@@ -16,11 +16,14 @@ Whenever you are drafting or finalizing an implementation plan:
     - Proper use of interfaces (i-prefixed).
 3.  **Resource Impact**: You MUST consult the `embedded-systems` skill (`.agents/skills/embedded-systems/SKILL.md`) to ensure:
     - Flash/ROM, RAM, Stack, and Heap memory impacts are evaluated and documented.
+    - ESP32-specific optimizations (const in Flash, PSRAM usage) are considered.
     - Power consumption and Duty Cycling profiles are evaluated.
     - Security posture, attack surfaces, and cryptography are evaluated.
 
 ## Enforcement
 The implementation plan MUST reflect that these reviews have taken place before it is presented to the user for final approval. Use GitHub alerts (IMPORTANT/WARNING) to highlight any compromises or critical decisions found during these reviews.
+
+Whenever an implementation plan is finalized (e.g. before `notify_user`), you MUST execute the `/review-ip` workflow to perform this audit.
 
 ## Audit
 A checklist should be placed at the top of every implementation plan by each skill to say that the files have been audited by each of them.

@@ -1,6 +1,7 @@
 ---
 name: house-style-documentation
-description: Consistently and thoroughly document C++ code following the project's "house style". Use this skill whenever documenting, refactoring, or creating new C++ modules to ensure they meet the specific header, method, and inline comment standards.
+description: Consistently and thoroughly document C++ code following the project's "house style". Use this skill whenever documenting, refactoring, or creating new C++ modules to ensure they meet the specific header, method, and inline comment standards. Also use this skill whenever drafting or reviewing an implementation plan to ensure it adheres to the project structure.
+triggers: implementation plan, drafting plan, documentation, refactoring, C++ modules, review-ip, ip-review
 ---
 
 # House Style Documentation

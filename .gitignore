@@ -21,5 +21,3 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Local/Temporary Files
-TODO.md

@@ -7,7 +7,7 @@ description: Forces the application or reapplication of the implementation-plan-
 3. Specifically, ensure that:
    - The `house-style-documentation` skill has audited the plan for naming conventions and section headers.
    - The `architectural-refactoring` skill has audited the plan for SRP, OCP, DIP, and injection patterns.
-   - The `embedded-memory-assessment` skill has audited the plan for Flash, RAM, Stack, and Heap impacts.
+   - The `embedded-systems` skill has audited the plan for Flash, RAM, Stack, and Heap impacts.
 4. Update the `implementation_plan.md` file to:
    - Reflect any findings or recommendations from these reviews using GitHub alerts (IMPORTANT/WARNING).
    - Update the status of the audit checklist at the top of the file for each skill.

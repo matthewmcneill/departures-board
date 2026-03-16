@@ -175,4 +175,27 @@ Corrected the inverted logic for the password visibility toggle and upgraded the
 - **Automated Validation Integration**: Verified all UI changes using both local simulation and live hardware subagent testing, ensuring that user-provided formatting changes did not introduce regressions.
 
 ### Git Commit
-Generated commit: b87eb06
+## 2026-03-16 - Sequential API Key Validation & Memory Optimization
+
+### Session Summary
+Implemented sequential API key validation in the web portal to prevent ESP32 network module saturation and handled stack overflow issues by offloading SSL clients to the heap. Improved visual feedback for API tests and network disconnection states.
+
+### Key Decisions
+- **Sequential Validation Logic**: Orchestrated API key tests to execute one-by-one with a 1-second delay. This ensures hardware stability during the intensive SSL handshake process and provides a predictable user experience with sequential status dot updates.
+- **Heap-Allocated SSL Clients**: Refactored `NationalRailDataSource` and `TfLDataSource` to use heap-allocated `WiFiClientSecure` objects. This prevents stack overflow crashes during complex TLS handshakes without introducing long-term fragmentation (short-lived allocations).
+- **Network Error Observability**: Integrated a `isWifiPersistentError` method and updated `wifiStatusWidget` with a blinking logic (after 30s) to clearly signal prolonged connectivity loss on the hardware display.
+- **Safe Password/Key Masking**: Implemented a "No Change" detection pattern for password and API key fields. The system now ignores placeholders (`••••••••`) during saves, preventing accidental erasure of existing secrets.
+
+### Git Commit
+## 2026-03-16 - Repository-wide House Style Update: Refactoring Attribution
+
+### Session Summary
+Applied the new refactoring attribution line to the standard module header across the entire C++ codebase. This involved updating 87 files across `src`, `modules`, and `lib`. The `house-style-documentation` skill was also updated to ensure all future headers include this line.
+
+### Key Decisions
+- **Automated Replacement**: Used `sed` with a repository-wide `find` search to ensure 100% consistency across all `.cpp` and `.hpp` files.
+- **Documentation Alignment**: Synchronized the project's "House Style" definition in the agent skills to prevent future agents from accidentally reverting or omitting the new attribution.
+- **Build Optimization**: Configured `default_envs` in `platformio.ini` to only build hardware targets by default. This resolves the false-positive failure in the `native` environment during a standard `pio run`, while maintaining functional unit tests via `pio test`.
+
+### Git Commit
+Generated commits: 10a9bbf, b185905
