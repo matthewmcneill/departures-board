@@ -103,7 +103,7 @@ int rssClient::loadFeed(String url) {
             tagLevel = 0;
             long dataReceived = 0;
             char c;
-            unsigned long dataSendTimeout = millis() + 3000UL;
+            unsigned long dataSendTimeout = millis() + 10000UL;
 
             // --- Step 3: Streaming Parse ---
             while((stream->available() || http->connected()) && millis() < dataSendTimeout && numRssTitles < MAX_RSS_TITLES) {
@@ -117,7 +117,7 @@ int rssClient::loadFeed(String url) {
             }
 
             http->end();
-            if (millis() >= dataSendTimeout) {
+            if (millis() >= dataSendTimeout && numRssTitles < MAX_RSS_TITLES) {
                 snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Timed out during data receive operation - %ld bytes received", dataReceived);
                 LOG_WARN("DATA", lastErrorMessage);
                 return UPD_TIMEOUT;

@@ -1301,10 +1301,10 @@
 
         <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 0.85rem; font-weight: 700;">Current Coordinates</span>
+            <span style="font-size: 0.85rem; font-weight: 700;">Test Coordinates</span>
             <span id="weather-coords" style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">Detecting...</span>
           </div>
-          <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Coordinates are pulled from active displays. Testing uses the historical location of Pen-y-darren Ironworks.</p>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Coordinates are pulled from active displays. Testing uses the historical location of Pen-y-darren Ironworks (51.7487° N, 3.3816° W).</p>
         </div>
 
         <div class="btn-row">
@@ -2840,6 +2840,12 @@
             select.value = currentFeed;
             document.getElementById('custom-feed-group').style.display = 'none';
           }
+
+          // Update initial status for RSS
+          if (!currentFeed) {
+            document.getElementById('feed-dot').className = 'dot grey';
+            document.getElementById('feed-status-text').innerText = 'NOT CONFIGURED';
+          }
         }
 
         // 2. Weather Logic
@@ -2850,10 +2856,10 @@
         // 3. Update Coordinates
         const firstBoard = cfg.boards?.[0];
         const coordsEl = document.getElementById('weather-coords');
-        if (firstBoard && firstBoard.id) {
-            coordsEl.innerText = firstBoard.id; 
+        if (firstBoard && firstBoard.id && firstBoard.lat !== 0) {
+            coordsEl.innerText = `${firstBoard.lat}, ${firstBoard.lon}`; 
         } else {
-            coordsEl.innerText = "51.7487° N, 3.3816° W (Historical)";
+            coordsEl.innerText = "51.7487° N, 3.3816° W";
         }
       },
 
@@ -2897,7 +2903,7 @@
 
         if (!url) {
           document.getElementById('feed-dot').className = 'dot grey';
-          document.getElementById('feed-status-text').innerText = 'Unconfigured';
+          document.getElementById('feed-status-text').innerText = 'NOT CONFIGURED';
           return;
         }
 

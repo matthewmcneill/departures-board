@@ -36,6 +36,7 @@ public:
 
 private:
     WebHandlerManager* _handlerManager = nullptr;
+    bool isHandlingClient = false; // Recursion lock preventing WebServer handleClient re-entrancy
 };
 
 extern WebServerManager webServer;

@@ -532,17 +532,20 @@ void WebHandlerManager::handleTestWeather() {
         _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing Key ID\"}");
         return;
     }
-    const char* keyId = _server.arg("keyId").c_str();
+    String keyIdStr = _server.arg("keyId");
+    const char* keyId = keyIdStr.c_str();
     String tokenStr = _server.arg("token");
     const char* token = _server.hasArg("token") ? tokenStr.c_str() : nullptr;
 
-    LOG_INFO("WEB_API", "Testing Weather Key: " + String(keyId) + (token ? " (with token override)" : " (stored)"));
+    LOG_INFO("WEB_API", "Testing Weather Key: " + keyIdStr + (token ? " (with token override)" : " (stored)"));
     
     weatherClient& weather = appContext.getWeather();
     
     WeatherStatus ws;
-    ws.lat = 51.7487; // Pen-y-darren Ironworks
+    ws.lat = 51.7487; // Pen-y-darren Ironworks (Hardcoded for testing)
     ws.lon = -3.3816;
+    
+    LOG_INFO("WEB_API", "Testing Weather using coordinates: 51.7487° N, 3.3816° W (Pen-y-darren)");
     
     // Pass both. WeatherClient handles the logic of which to use.
     bool success = weather.updateWeather(ws, keyId, token);
@@ -559,6 +562,7 @@ void WebHandlerManager::handleTestWeather() {
     
     String output;
     serializeJson(doc, output);
+    LOG_INFO("WEB_API", "Weather test complete. Success=" + String(success ? "YES" : "NO") + " Result=" + output);
     _server.send(200, "application/json", output);
 }
 
@@ -601,17 +605,17 @@ void WebHandlerManager::handleTestBoard() {
     if (type == 0) { // Rail
         nationalRailDataSource ds;
         int res = ds.testConnection(token, stationId);
-        success = (res == UPD_SUCCESS);
+        success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
         if (!success) errorMsg = ds.getLastErrorMsg();
     } else if (type == 1) { // TfL
         tflDataSource ds;
         int res = ds.testConnection(token, stationId);
-        success = (res == UPD_SUCCESS);
+        success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
         if (!success) errorMsg = ds.getLastErrorMsg();
     } else if (type == 2) { // Bus
         busDataSource ds;
         int res = ds.testConnection(token, stationId);
-        success = (res == UPD_SUCCESS);
+        success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
         if (!success) errorMsg = ds.getLastErrorMsg();
     } else if (type == 3) { // Clock
         success = true; // Clock always works

@@ -39,6 +39,7 @@ class weatherClient: public JsonListener, public iConfigurable {
         char weatherMsg[46] = "";
         
         bool weatherEnabled = false;
+        bool parsingComplete = false; // Indicates if the streaming parser has reached the end of the document
         unsigned long nextWeatherUpdate = 0;
 
     public:

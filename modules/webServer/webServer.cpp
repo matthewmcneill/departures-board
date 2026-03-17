@@ -108,6 +108,9 @@ void WebServerManager::init() {
 }
 
 void WebServerManager::handleClient() {
+    if (isHandlingClient) return;
+    isHandlingClient = true;
     server.handleClient();
+    isHandlingClient = false;
     yield();
 }

@@ -229,6 +229,9 @@ int tflDataSource::testConnection(const char* token, const char* stationId) {
     strlcpy(tflAppkey, prevKey, sizeof(tflAppkey));
     strlcpy(tubeId, prevTubeId, sizeof(tubeId));
     
+    // Convert UPD_NO_CHANGE (1) to UPD_SUCCESS (0) for test result consistency since we don't care about board state changing
+    if (result == UPD_NO_CHANGE) result = UPD_SUCCESS;
+
     return result;
 }
 

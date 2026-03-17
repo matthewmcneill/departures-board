@@ -56,6 +56,7 @@ weatherClient::weatherClient() {}
 bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, const char* overrideToken) {
     activeStatus = &status;
     activeStatus->status = WeatherUpdateStatus::DATA_ERROR; // Assume error until success
+    parsingComplete = false;
 
     String apiKey = "";
     if (overrideToken && strlen(overrideToken) > 0) {
@@ -170,8 +171,8 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     LOG_DEBUG("DATA", "Weather Client: Receiving streaming response...");
     
     // --- Step 5: Streaming Parse ---
-    while((httpClient->available() || httpClient->connected()) && (millis() < dataSendTimeout)) {
-        while(httpClient->available()) {
+    while((httpClient->available() || httpClient->connected()) && (millis() < dataSendTimeout) && !parsingComplete) {
+        while(httpClient->available() && !parsingComplete) {
             c = httpClient->read();
             #ifdef ENABLE_DEBUG_LOG
             Serial.print(c); // Raw dump to serial (Logger doesn't handle char-by-char)
@@ -269,7 +270,9 @@ void weatherClient::endObject() {
 /**
  * @brief JSON handler triggered at end of document.
  */
-void weatherClient::endDocument() {}
+void weatherClient::endDocument() {
+    parsingComplete = true;
+}
 
 /**
  * @brief JSON handler triggered when entering an array.

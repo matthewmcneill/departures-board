@@ -45,3 +45,5 @@
 - [x] remove the bus key button from the add keys dialog. No key is needed for bus times. (Resolved: Bustimes.org uses scrapers/unauthenticated APIs).
 - [ ] add a test class to `iDataSource` (e.g., `MockDataSource`) to keep data source code encapsulated and improve unit testability.
 - [ ] Migrate Sleep Schedule from v1 config to a unified 'Schedule' tab/module (currently handled in legacy System screens).
+- [ ] Add unit test or integration scenario for `WebServer::handleClient()` concurrent API requests during long data fetches to prevent re-entrancy bugs.
+- [ ] Add configuration option to set custom timeout durations for RSS feeds based on feed size, bypassing the hardcoded 10s default.

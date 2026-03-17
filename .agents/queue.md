@@ -3,15 +3,15 @@
 This file tracks active and pending agent sessions to prevent hardware and build conflicts.
 
 ## Lock Status
-- **Locked By**: None
-- **Reason**: None
-- **Since**: None
+- **Locked By**: 2ec805fd-2f7b-43bd-a86a-6d17347e6fe4
+- **Reason**: Archiving Legacy Web Infrastructure & Renaming Portal
+- **Since**: 2026-03-17T22:02:40Z
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |
 | :--- | :--- | :--- | :--- |
 | 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
-| 2ec805fd-2f7b-43bd-a86a-6d17347e6fe4 | Archiving Legacy Web Infrastructure & Renaming Portal | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/2ec805fd-2f7b-43bd-a86a-6d17347e6fe4/implementation_plan.md) | 2026-03-17T12:57:00Z |
+
 | 6cb48930-4216-44d0-b9d0-831a1683ea87 | Cleanup and Modernization: State Machine, Error Delegation & Layout Fixes | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6cb48930-4216-44d0-b9d0-831a1683ea87/implementation_plan.md) | 2026-03-17T15:47:56Z |
 | 2be270b5-2932-4a27-a371-d6bf2d93ebcd | Audit and Fix: TimeManager NTP sync initialization and strict DI refactoring for clockWidget | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/2be270b5-2932-4a27-a371-d6bf2d93ebcd/implementation_plan.md) | 2026-03-17T17:06:18Z |
 | e31425fd-6bc6-4d87-9438-d68336fd85b1 | System Tab Enhancements: Dynamic Diagnostics & Global Settings Consolidation | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/e31425fd-6bc6-4d87-9438-d68336fd85b1/implementation_plan.md) | 2026-03-17T17:26:19Z |
@@ -21,6 +21,7 @@ This file tracks active and pending agent sessions to prevent hardware and build
 ## Execution History
 | Session ID | Task | Result | Finished At |
 | :--- | :--- | :--- | :--- |
+| 855c3f99-f0c2-45bd-a3ec-6965fc983851 | Unified Test Queue & Display UI Unification | Success | 2026-03-17T21:52:03Z |
 | cf3f6db7-7ac3-4267-8341-fccc4937cf71 | Board Editor Refinements: Tube search, manual Bus ATCO verify, and split filter logic | Success | 2026-03-17T17:10:00Z |
 | 1e892e27-f765-4b90-b825-c611eed22094 | UI: Reorder portal navigation and add Schedule tab placeholder | Success | 2026-03-17T11:59:00Z |
 | 02d69dd3-1b75-448c-930d-3e14292b29fa | Remove bustimes.org button from API Key selection dialog | Success | 2026-03-17T11:39:04Z |
