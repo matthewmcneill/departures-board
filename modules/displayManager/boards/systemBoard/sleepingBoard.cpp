@@ -15,6 +15,7 @@
 #include <fonts/fonts.hpp>
 #include "../../widgets/drawingPrimitives.hpp"
 #include <timeManager.hpp>
+#include <appContext.hpp>
 
 SleepingBoard::SleepingBoard() 
     : showClock(true), dimmedBrightness(DIMMED_BRIGHTNESS), 
@@ -50,8 +51,8 @@ void SleepingBoard::tick(uint32_t ms) {
 void SleepingBoard::render(U8G2& display) {
     if (!showClock) return;
 
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo)) return;
+    context->getTimeManager().updateCurrentTime();
+    const struct tm& timeinfo = context->getTimeManager().getCurrentTime();
 
     char timeStr[6];
     char dateStr[20];

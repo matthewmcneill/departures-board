@@ -37,6 +37,7 @@
 #include <weatherClient.hpp>
 #include <rssClient.hpp>
 #include <wifiManager.hpp>
+#include <timeManager.hpp>
 #include "systemManager.hpp"
 #include <messaging/messagePool.hpp>
 
@@ -63,6 +64,7 @@ private:
     weatherClient weather;          ///< External weather conditions client
     rssClient rss;                  ///< News feed scroller client
     WifiManager wifiManager;        ///< WiFi configuration and connectivity manager
+    TimeManager timeManager;        ///< System clock and NTP manager
     MessagePool globalMessagePool;  ///< Shared pool for scrolling status messages
     AppState currentState;          ///< Current tracked system state
     bool webServerInitialized;      ///< Checks if webServer was safely started
@@ -84,15 +86,27 @@ public:
     void tick();
 
     // --- Service Accessors (DI Points) ---
+    /** @brief Get the configuration persistence manager. */
     ConfigManager& getConfigManager() { return configManager; }
+    /** @brief Get the display and rendering manager. */
     DisplayManager& getDisplayManager() { return displayManager; }
+    /** @brief Get the firmware OTA updater. */
     otaUpdater& getOtaUpdater() { return otaAssetUpdater; }
+    /** @brief Get the local web server and API manager. */
     WebServerManager& getWebServer() { return webServer; }
+    /** @brief Get the global application networking state manager. */
     systemManager& getsystemManager() { return sysManager; }
+    /** @brief Get the weather external API client. */
     weatherClient& getWeather() { return weather; }
+    /** @brief Get the WiFi connection manager. */
     WifiManager& getWifiManager() { return wifiManager; }
+    /** @brief Get the system clock and NTP manager. */
+    TimeManager& getTimeManager() { return timeManager; }
+    /** @brief Get the news feed external API client. */
     rssClient& getRss() { return rss; }
+    /** @brief Get the shared message pool for scrolling text. */
     MessagePool& getGlobalMessagePool() { return globalMessagePool; }
+    /** @brief Get the current high-level state of the application. */
     AppState getAppState() const { return currentState; }
 };
 

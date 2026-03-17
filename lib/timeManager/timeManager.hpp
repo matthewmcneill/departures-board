@@ -13,8 +13,6 @@
  *
  * Provides:
  * - TimeManager: The central class handling initialization of the system clock.
- * - timeManager: Global instantiated object.
- * - timeinfo: Standard libc `struct tm` updated globally during runs.
  */
 
 #pragma once
@@ -54,15 +52,27 @@ public:
 
     /**
      * @brief Setup NTP and sync time by polling the europe.pool.ntp.org servers over WiFi.
+     * @param cycleCallback Optional callback to run during polling delays.
      * @return True if sync succeeded, False if it failed after 10 attempts.
      */
-    bool initialize();
+    bool initialize(std::function<void()> cycleCallback = nullptr);
 
     /**
      * @brief Implements the iConfigurable interface.
      */
     void reapplyConfig(const Config& config) override;
-};
+    /**
+     * @brief Updates the internal current time struct from the ESP32 local time.
+     * @return True if time was successfully updated.
+     */
+    bool updateCurrentTime();
 
-extern TimeManager timeManager; // Global system clock manager
-extern struct tm timeinfo;      // Global synchronized time
+    /**
+     * @brief Returns the most recently updated current time.
+     * @return const struct tm reference containing local time.
+     */
+    const struct tm& getCurrentTime() const;
+
+private:
+    struct tm currentTime; ///< Internal tracking of the current synchronized time
+};

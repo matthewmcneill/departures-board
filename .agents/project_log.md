@@ -1,5 +1,19 @@
 # Project Log
 
+## 2026-03-17 - Archiving Legacy Web Infrastructure & Renaming Portal
+
+### Session Summary
+Archived the legacy web page infrastructure to an `archive` folder, removing them from the main compilation process. Renamed the modern portal from `portal/` to `web/`. Consolidated versioning across C++ and web layers.
+
+### Key Decisions
+- **Archive Legacy Assets**: Moved `web/` to `archive/web/` and `include/webgui/` to `archive/include/webgui/`.
+- **Portal Rename**: Renamed the modern SPA directory from `portal/` to `web/` and updated all C++ routing to serve from `/web`.
+- **Unified Versioning**: Removed `WEBAPPVER_MAJOR` and `WEBAPPVER_MINOR` in favor of a unified `VERSION_MAJOR` and `VERSION_MINOR` in `departuresBoard.hpp`.
+- **Cleaned Up Server Logic**: Removed legacy `handleNotFound` and unused route registrations from `webServer.cpp`, and added a 302 redirect from `/` to `/web`.
+
+### Git Commit
+Generated commit: e727ef3
+
 ## 2026-03-17 - Unified Test Queue & Display UI Unification
 
 ### Session Summary

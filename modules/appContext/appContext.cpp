@@ -20,7 +20,6 @@
 
 #include "appContext.hpp"
 #include "systemManager.hpp"
-#include <timeManager.hpp>
 #include <logger.hpp>
 #include <wifiManager.hpp>
 
@@ -148,6 +147,9 @@ void appContext::tick() {
                 LOG_INFO("SYSTEM", "Notifying consumers to apply initial configuration...");
                 configManager.notifyConsumersToReapplyConfig(); // This calls MDNS.begin!
                 
+                LOG_INFO("SYSTEM", "Initializing System Clock...");
+                timeManager.initialize();
+
                 webServerInitialized = true;
             }
 

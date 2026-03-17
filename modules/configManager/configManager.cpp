@@ -506,7 +506,7 @@ void ConfigManager::loadConfig() {
             strlcpy(config.busFilter, config.boards[2].filter, sizeof(config.busFilter));
         }
 
-        timeManager.setTimezone(String(config.timezone));
+        // TimeManager timezone will be updated via the Config Consumer pattern.
         LOG_INFO("CONFIG", "Configuration loaded. Board count: " + String(config.boardCount) + " Default board: " + String(config.defaultBoardIndex));
         
         // v2.1 Migration: Auto-save if version was upgraded

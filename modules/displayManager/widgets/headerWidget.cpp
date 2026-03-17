@@ -21,7 +21,7 @@ extern const char* weekdays[];
 
 headerWidget::headerWidget(int _x, int _y, int _w, int _h) 
     : iGfxWidget(_x, _y, _w, _h), timeOffset(0), showDate(false), needsLayout(true), scrollX(0), titleWidth(0), lastScrollMs(0), needsScroll(false),
-      clock((_w > 0 ? _x + _w - 56 : SCREEN_WIDTH - 56), _y, 56, _h) {
+      clock(&appContext.getTimeManager(), (_w > 0 ? _x + _w - 56 : SCREEN_WIDTH - 56), _y, 56, _h) {
     title[0] = '\0';
     callingPoint[0] = '\0';
     platform[0] = '\0';
@@ -181,15 +181,14 @@ void headerWidget::render(U8G2& display) {
         display.drawStr(rightBound, y + renderH - 4, tOffset);
     } else if (showDate && appContext.getConfigManager().getConfig().dateEnabled) {
         char date[30];
-        struct tm timeinfo;
-        if(getLocalTime(&timeinfo)) {
-            byte wDay = timeinfo.tm_wday;
-            byte mDay = timeinfo.tm_mday;
+        appContext.getTimeManager().updateCurrentTime();
+        const struct tm& timeinfo = appContext.getTimeManager().getCurrentTime();
+        byte wDay = timeinfo.tm_wday;
+        byte mDay = timeinfo.tm_mday;
             snprintf(date, sizeof(date), "%s %02d", weekdays[wDay], mDay);
             int w = display.getStrWidth(date);
             rightBound -= (w + 4);
             display.drawStr(rightBound, y + renderH - 4, date);
-        }
     }
 
     if (needsScroll) {

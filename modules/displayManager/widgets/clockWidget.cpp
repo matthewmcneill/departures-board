@@ -13,12 +13,11 @@
 
 #include "clockWidget.hpp"
 #include "drawingPrimitives.hpp"
+#include <timeManager.hpp>
 #include <time.h>
 
-extern struct tm timeinfo;
-
-clockWidget::clockWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
-    : iGfxWidget(_x, _y, _w, _h), showColon(true), blinkEnabled(true), lastBlinkMs(0), lastMinute(-1), font(_font) {
+clockWidget::clockWidget(TimeManager* _timeMgr, int _x, int _y, int _w, int _h, const uint8_t* _font)
+    : iGfxWidget(_x, _y, _w, _h), showColon(true), blinkEnabled(true), lastBlinkMs(0), lastMinute(-1), font(_font), timeMgr(_timeMgr) {
     if (font == nullptr) font = UndergroundClock8;
 }
 
@@ -41,11 +40,13 @@ void clockWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     bool oldColon = showColon;
     tick(currentMillis);
     
-    getLocalTime(&timeinfo);
-    bool minuteChanged = (timeinfo.tm_min != lastMinute);
+    if (!timeMgr) return;
+    
+    timeMgr->updateCurrentTime();
+    bool minuteChanged = (timeMgr->getCurrentTime().tm_min != lastMinute);
 
     if (oldColon != showColon || minuteChanged) {
-        lastMinute = timeinfo.tm_min;
+        lastMinute = timeMgr->getCurrentTime().tm_min;
         render(display);
         int renderW = (width > 0) ? width : 56;
         int renderH = (height > 0) ? height : 14;
@@ -61,11 +62,13 @@ void clockWidget::render(U8G2& display) {
 
     display.setFont(font);
 
+    if (!timeMgr) return;
+
     char timeStr[9];
     if (showColon) {
-        strftime(timeStr, sizeof(timeStr), "%H:%M", &timeinfo);
+        strftime(timeStr, sizeof(timeStr), "%H:%M", &timeMgr->getCurrentTime());
     } else {
-        strftime(timeStr, sizeof(timeStr), "%H %M", &timeinfo);
+        strftime(timeStr, sizeof(timeStr), "%H %M", &timeMgr->getCurrentTime());
     }
 
     int w = display.getStrWidth(timeStr);

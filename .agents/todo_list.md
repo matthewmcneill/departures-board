@@ -14,7 +14,7 @@
 - [x] Departures Board (systemManager) still has a bunch of specific data to the various boards which needs moving into the classes.
 - [x] check that the active display boards are maintained correctly when going through sub-loops of the main loop (e.g. OTA check flow handles this)
 - [x] there is a weird dependency on the fonts in the widgets - to calculate font size we set properties on the u8g2 board and pull a value which may upset actual board state.
-- [/] rationalise the include folder and get rid of it. (Renamed libraries and moved assets, legacy code removal queued in session 2ec805fd)
+- [x] rationalise the include folder and get rid of it. (Renamed libraries and moved assets, legacy code removal queued/completed in session 2ec805fd)
 - [x] House Style Refactor: libraries to camelCase and headers documented. (Completed: Audited repository, added Doxygen, renamed headers to .hpp)
 - [x] why do we haev an appContext class, it seems to just to add one layer of dereference from the departureboard.cpp. Is it superflouous? (Resolved: Clarified DI orchestration role and encapsulated in modules/appContext).
 - [x] need to check that the config is being upgraded and then rewritten - looks like the old one. (Rewritten to modernize on save and serve from memory)
@@ -47,3 +47,4 @@
 - [ ] Migrate Sleep Schedule from v1 config to a unified 'Schedule' tab/module (currently handled in legacy System screens).
 - [ ] Add unit test or integration scenario for `WebServer::handleClient()` concurrent API requests during long data fetches to prevent re-entrancy bugs.
 - [ ] Add configuration option to set custom timeout durations for RSS feeds based on feed size, bypassing the hardcoded 10s default.
+- [ ] Implement C++ unit tests for `TimeManager` to verify NTP sync logic and custom timezone offset calculations now that it is decoupled from the hardware globals.

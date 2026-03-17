@@ -12,6 +12,12 @@
  *
  * Exported Functions/Classes:
  * - TimeManager: Core class for system clock management.
+ *   - reapplyConfig(): Update timezone from system configuration.
+ *   - setTimezone(): Configure explicit timezone string.
+ *   - getTimezone(): Retrieve current timezone string.
+ *   - updateCurrentTime(): Sync internal time struct from hardware.
+ *   - getCurrentTime(): Fetch cached internal time struct.
+ *   - initialize(): Execute initial NTP sync during boot sequence.
  */
 
 #include "timeManager.hpp"
@@ -24,9 +30,9 @@
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <WebServer.h>
 #include <appContext.hpp>
+#include <functional>
 
-TimeManager timeManager; // Global system clock manager singleton
-struct tm timeinfo;      // Global synchronized time structure
+// Globals removed in favor of injected TimeManager instance
 const char* weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}; // Weekday labels
 
 const char TimeManager::ntpServer[] = "europe.pool.ntp.org";
@@ -44,38 +50,43 @@ String TimeManager::getTimezone() const {
     return customTimezone;
 }
 
-bool TimeManager::initialize() {
+bool TimeManager::updateCurrentTime() {
+    return getLocalTime(&currentTime);
+}
+
+const struct tm& TimeManager::getCurrentTime() const {
+    return currentTime;
+}
+
+
+bool TimeManager::initialize(std::function<void()> cycleCallback) {
+    // --- Step 1: Base Configuration ---
+    // Register the standard NTP pool and applying the fallback timezone
     configTime(0, 0, ntpServer);
     setenv("TZ", ukTimezone, 1);
     tzset();
     LOG_INFO("TIME", "Time zone configured as UK default.");
+    
+    // Override with custom timezone if provided by config
     if (customTimezone != "") {
         setenv("TZ", customTimezone.c_str(), 1);
         tzset();
         LOG_INFO("TIME", String("Custom Timezone configured: ") + customTimezone);
     }
 
-    int p = 50;
+    // --- Step 2: NTP Synchronization ---
+    // Poll the network until a valid time is received or we exhaust our 10 retries
     int ntpAttempts = 0;
     bool ntpResult = true;
-    LoadingBoard* load = (LoadingBoard*)context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_BOOT_LOADING);
-    load->setHeading("Departures Board");
     
-    // Use the proxy method in systemManager to get build time
-    load->setBuildTime(context->getsystemManager().getBuildTime().c_str());
-    
-    load->setProgress("Setting the system clock...", 50);
-    context->getDisplayManager().showBoard(load);
-    
-    if(!getLocalTime(&timeinfo)) {
+    if(!getLocalTime(&currentTime)) {
         do {
             delay(500);
-            ntpResult = getLocalTime(&timeinfo);
+            ntpResult = getLocalTime(&currentTime);
             ntpAttempts++;
-            p += 5;
-            load->setProgress("Setting the system clock...", p);
-            context->getDisplayManager().showBoard(load);
-            if (p > 80) p = 45;
+            if (cycleCallback) {
+                cycleCallback();
+            }
         } while ((!ntpResult) && (ntpAttempts < 10));
     }
 

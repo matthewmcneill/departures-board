@@ -215,8 +215,8 @@ void systemManager::softResetBoard() {
     displayMgr.applyConfig(config);
     
     // Timezone sync
-    if (timeManager.getTimezone() != "") {
-        setenv("TZ", timeManager.getTimezone().c_str(), 1);
+    if (context->getTimeManager().getTimezone() != "") {
+        setenv("TZ", context->getTimeManager().getTimezone().c_str(), 1);
     } else {
         setenv("TZ", TimeManager::ukTimezone, 1);
     }

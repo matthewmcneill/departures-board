@@ -28,8 +28,7 @@
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>
 #include <appContext.hpp>
 #include <departuresBoard.hpp>
-
-extern struct tm timeinfo;       // Global synchronized time struct
+#include <timeManager.hpp>
 
 otaUpdater ota;                       // Global OTA maintenance instance singleton
 github ghUpdate("gadec-uk/departures-board", ""); // Global GitHub client for updates
@@ -40,6 +39,10 @@ otaUpdater::otaUpdater() : context(nullptr), prevUpdateCheckDay(-1), fwUpdateChe
 void otaUpdater::tick() {
     if (dailyCheckEnabled && millis() > fwUpdateCheckTimer) {
         fwUpdateCheckTimer = millis() + 3300000 + random(600000); 
+        
+        context->getTimeManager().updateCurrentTime();
+        const struct tm& timeinfo = context->getTimeManager().getCurrentTime();
+        
         if (timeinfo.tm_mday != prevUpdateCheckDay) {
             if (ghUpdate.getLatestRelease()) {
                 checkForFirmwareUpdate();
