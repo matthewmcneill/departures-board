@@ -36,6 +36,7 @@ tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr
     tflAppkey[0] = '\0';
     tubeId[0] = '\0';
     maxResults = 0; // 0 means no limit
+    isTestMode = false;
 }
 
 void tflDataSource::configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb) {
@@ -68,8 +69,15 @@ int tflDataSource::updateData() {
 
     if (!httpsClient->connect(apiHost, 443)) return UPD_NO_RESPONSE;
 
-    String request = "GET /StopPoint/" + String(tubeId) + F("/Arrivals?app_key=") + String(tflAppkey);
-    if (maxResults > 0) request += "&top=" + String(maxResults);
+    String request;
+    if (isTestMode) {
+        LOG_INFO("DATA", "TfL Board: Performing lightweight Auth-only check (Victoria Line Status)");
+        request = "GET /Line/victoria/Status?app_key=" + String(tflAppkey);
+    } else {
+        request = "GET /StopPoint/" + String(tubeId) + F("/Arrivals?app_key=") + String(tflAppkey);
+        if (maxResults > 0) request += "&top=" + String(maxResults);
+    }
+    
     request += F(" HTTP/1.0\r\nHost: ");
     request += String(apiHost);
     request += F("\r\nConnection: close\r\n\r\n");
@@ -116,6 +124,11 @@ int tflDataSource::updateData() {
         delay(10);
     }
     httpsClient->stop();
+
+    if (isTestMode) {
+        snprintf(lastErrorMsg, sizeof(lastErrorMsg), "AUTH SUCCESS %lums", (unsigned long)(millis()-perfTimer));
+        return UPD_SUCCESS;
+    }
 
     // Fetch Disruption Msgs
     if (httpsClient->connect(apiHost, 443)) {
@@ -181,6 +194,35 @@ int tflDataSource::updateData() {
 #endif
     }
     return changed ? UPD_SUCCESS : UPD_NO_CHANGE;
+}
+
+/**
+ * @brief Performs a lightweight connection and authentication test.
+ * @param token Optional token to test (overrides stored configuration).
+ * @return int Update status code.
+ */
+int tflDataSource::testConnection(const char* token) {
+    LOG_INFO("DATA", "TfL Board: Performing lightweight Auth-only check via testConnection");
+    
+    // Save current state to avoid clobbering an active board's settings
+    bool prevTestMode = isTestMode;
+    char prevKey[50];
+    strlcpy(prevKey, tflAppkey, sizeof(prevKey));
+    
+    // Configure for test
+    isTestMode = true;
+    if (token) {
+        strlcpy(tflAppkey, token, sizeof(tflAppkey));
+    }
+    
+    // Execute update (in test mode it just checks the line status)
+    int result = updateData();
+    
+    // Restore state
+    isTestMode = prevTestMode;
+    strlcpy(tflAppkey, prevKey, sizeof(tflAppkey));
+    
+    return result;
 }
 
 bool tflDataSource::pruneFromPhrase(char* input, const char* target) {

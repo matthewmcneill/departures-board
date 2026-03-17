@@ -149,6 +149,13 @@ public:
      */
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
 
+    /**
+     * @brief Performs a lightweight connection and authentication test.
+     * @param token Optional token to test (overrides stored configuration). Can be nullptr for data sources that do not use keys.
+     * @return 0 for success (UPD_SUCCESS), non-zero for error (UPD_*).
+     */
+    int testConnection(const char* token = nullptr) override;
+
     // Bus specific methods
     /**
      * @brief Configures the data source with stop location and filters.

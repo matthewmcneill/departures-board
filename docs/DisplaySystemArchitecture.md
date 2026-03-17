@@ -132,6 +132,9 @@ public:
 
     // Retrieve global error states
     virtual const char* getLastErrorMsg() const = 0;
+
+    // Perform lightweight connection and auth tests
+    virtual int testConnection(const char* token = nullptr) = 0;
 };
 ```
 

@@ -14,10 +14,10 @@
  * - nationalRailDataSource: Data client for Darwin (National Rail SOAP API).
  *   - init(): Initializes the WSDL parser and SSL handshake.
  *   - updateData(): High-level trigger for polling departure info.
- *   - getStation(): Returns parsed station name and meta.
- *   - getServicesCount(): Returns current found services.
- *   - getService(): Accessor for individual service rows.
- *   - getMessagesCount(): Accessor for rail disruption messages.
+ *   - getStationData(): Returns parsed station name and meta.
+ *   - getMessagesData(): Accessor for rail disruption messages.
+ *   - setSoapAddress(): Manually set SOAP endpoint (bypasses WSDL).
+ *   - configure(): Set API token and station parameters.
  */
 
 #include "nationalRailDataSource.hpp"
@@ -29,7 +29,7 @@
 #include "../interfaces/iDataSource.hpp"
 
 nationalRailDataSource::nationalRailDataSource() 
-    : loadingWDSL(false), tagLevel(0), id(-1), coaches(0), addedStopLocation(false), 
+    : loadingWDSL(false), tagLevel(0), isTestMode(false), id(-1), coaches(0), addedStopLocation(false), 
       filterPlatforms(false), keepRoute(false), nrTimeOffset(0), callback(nullptr),
       messagesData(4) {
     stationData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
@@ -136,7 +136,8 @@ int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDa
 void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
     if (host) strlcpy(soapHost, host, sizeof(soapHost));
     if (api) strlcpy(soapAPI, api, sizeof(soapAPI));
-    LOG_INFO("DATA", "NR Source: Soap address manually set to " + String(soapHost) + String(soapAPI));
+    isTestMode = true;
+    LOG_INFO("DATA", "NR Source: Soap address manually set to " + String(soapHost) + String(soapAPI) + " (Test Mode enabled)");
 }
 
 int nationalRailDataSource::updateData() {
@@ -185,19 +186,33 @@ int nationalRailDataSource::updateData() {
     }
     memset(xStation, 0, sizeof(NationalRailStation));
 
-    int reqRows = NR_MAX_SERVICES;
-    if (platformFilter[0]) reqRows = 10;
-    
-    String data = F("<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"http://thalesgroup.com/RTTI/2013-11-28/Token/types\" xmlns:ns2=\"http://thalesgroup.com/RTTI/2021-11-01/ldb/\">");
-    data += F("<soap-env:Header><ns1:AccessToken><ns1:TokenValue>");
-    data += String(nrToken) + F("</ns1:TokenValue></ns1:AccessToken></soap-env:Header><soap-env:Body><ns2:GetDepBoardWithDetailsRequest><ns2:numRows>");
-    data += String(reqRows) + F("</ns2:numRows><ns2:crs>");
-    data += String(crsCode) + F("</ns2:crs>");
-    if (callingCrsCode[0]) data += "<ns2:filterCrs>" + String(callingCrsCode) + F("</ns2:filterCrs><ns2:filterType>to</ns2:filterType>");
-    if (nrTimeOffset) data += "<ns2:timeOffset>" + String(nrTimeOffset) + F("</ns2:timeOffset>");
-    data += F("</ns2:GetDepBoardWithDetailsRequest></soap-env:Body></soap-env:Envelope>");
+    String data;
+    String soapAction;
 
-    String soapAction = F("http://thalesgroup.com/RTTI/2012-01-13/ldb/GetDepBoardWithDetails");
+    if (isTestMode) {
+        // Minimal Darwin v12 payload for fast API key validation
+        data = F("<Envelope xmlns=\"http://schemas.xmlsoap.org/soap/envelope/\">");
+        data += F("<Header><AccessToken xmlns=\"http://thalesgroup.com/RTTI/2013-11-28/Token/types\"><TokenValue>");
+        data += String(nrToken) + F("</TokenValue></AccessToken></Header>");
+        data += F("<Body><GetDepartureBoardRequest xmlns=\"http://thalesgroup.com/RTTI/2021-11-01/ldb/\"><numRows>1</numRows><crs>");
+        data += String(crsCode) + F("</crs></GetDepartureBoardRequest></Body></Envelope>");
+        soapAction = F("http://thalesgroup.com/RTTI/2012-01-13/ldb/GetDepartureBoard");
+        LOG_INFO("DATA", "NR Source: Using lightweight v12 validation payload");
+    } else {
+        int reqRows = NR_MAX_SERVICES;
+        if (platformFilter[0]) reqRows = 10;
+        
+        data = F("<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"http://thalesgroup.com/RTTI/2013-11-28/Token/types\" xmlns:ns2=\"http://thalesgroup.com/RTTI/2021-11-01/ldb/\">");
+        data += F("<soap-env:Header><ns1:AccessToken><ns1:TokenValue>");
+        data += String(nrToken) + F("</ns1:TokenValue></ns1:AccessToken></soap-env:Header><soap-env:Body><ns2:GetDepBoardWithDetailsRequest><ns2:numRows>");
+        data += String(reqRows) + F("</ns2:numRows><ns2:crs>");
+        data += String(crsCode) + F("</ns2:crs>");
+        if (callingCrsCode[0]) data += "<ns2:filterCrs>" + String(callingCrsCode) + F("</ns2:filterCrs><ns2:filterType>to</ns2:filterType>");
+        if (nrTimeOffset) data += "<ns2:timeOffset>" + String(nrTimeOffset) + F("</ns2:timeOffset>");
+        data += F("</ns2:GetDepBoardWithDetailsRequest></soap-env:Body></soap-env:Envelope>");
+
+        soapAction = F("http://thalesgroup.com/RTTI/2012-01-13/ldb/GetDepBoardWithDetails");
+    }
     
     // Diagnostic logging for token
     if (strlen(nrToken) > 0) {
@@ -331,6 +346,53 @@ int nationalRailDataSource::updateData() {
 #endif
     }
     return UPD_SUCCESS;
+}
+
+/**
+ * @brief Performs a lightweight connection and authentication test using a minimal payload.
+ * @param token Optional token to test (overrides stored configuration).
+ * @return int Update status code.
+ */
+int nationalRailDataSource::testConnection(const char* token) {
+    LOG_INFO("DATA", "NR Source: Performing lightweight Auth-only check via testConnection");
+    
+    // Save current state to avoid clobbering an active board's settings
+    bool prevTestMode = isTestMode;
+    char prevKey[37];
+    char prevCrs[4];
+    char prevSoapHost[48];
+    char prevSoapApi[48];
+    
+    strlcpy(prevKey, nrToken, sizeof(prevKey));
+    strlcpy(prevCrs, crsCode, sizeof(prevCrs));
+    strlcpy(prevSoapHost, soapHost, sizeof(prevSoapHost));
+    strlcpy(prevSoapApi, soapAPI, sizeof(prevSoapApi));
+    
+    // Configure for test
+    isTestMode = true;
+    if (token) {
+        strlcpy(nrToken, token, sizeof(nrToken));
+    }
+    strlcpy(crsCode, "PAD", sizeof(crsCode)); // Paddington as default test station
+    
+    // Direct SOAP setup bypasses WSDL download.
+    // Using ldb12.asmx for the identified minimal payload compatibility.
+    setSoapAddress("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/ldb12.asmx");
+    
+    // Execute update (in test mode it uses minimal payload)
+    int result = updateData();
+    
+    // Restore state
+    isTestMode = prevTestMode;
+    strlcpy(nrToken, prevKey, sizeof(nrToken));
+    strlcpy(crsCode, prevCrs, sizeof(crsCode));
+    strlcpy(soapHost, prevSoapHost, sizeof(soapHost));
+    strlcpy(soapAPI, prevSoapApi, sizeof(soapAPI));
+    
+    // Convert UPD_NO_CHANGE (1) to UPD_SUCCESS (0) for test result consistency since we don't care about board state changing
+    if (result == UPD_NO_CHANGE) result = UPD_SUCCESS;
+    
+    return result;
 }
 
 void nationalRailDataSource::sanitiseData() {

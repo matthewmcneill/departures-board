@@ -7,8 +7,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/tflBoard/tflDataSource.hpp
+ * Module: modules/displayManager/boards/tflBoard/tflDataSource.hpp
  * Description: TfL data source implementing iDataSource.
+ *
+ * Exported Functions/Classes:
+ * - tflDataSource: Data client for TfL Unified API.
+ *   - configure(): Sets Naptan ID and optional API key.
+ *   - updateData(): Performs SSL GET request and parses JSON response.
+ *   - getStationData(): Accessor for parsed station metadata.
+ *   - getMessagesData(): Accessor for line disruption messages.
+ *   - setResultLimit(): Limit arrivals result count for performance.
+ *   - setTestMode(): Enable lightweight auth-only validation mode.
  */
 
 #ifndef TFL_DATA_SOURCE_HPP
@@ -60,8 +69,9 @@ private:
     String currentKey;
     String currentObject;
     int id; // Current index for parsing
-    bool maxServicesRead;
-    int maxResults;
+    bool maxServicesRead; // Flag to prevent multiple services parsing in one pass
+    bool isTestMode;      // When true, perform lightweight auth check only
+    int maxResults;       // User-defined limit for arrivals response size
 
     // Configuration
     char tflAppkey[50];
@@ -80,13 +90,27 @@ public:
     // iDataSource Implementation
     int updateData() override;
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
+    int testConnection(const char* token = nullptr) override;
 
     // Configuration & Data Access
-    void configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb = nullptr);
+    /**
+     * @brief Configure station ID and API key.
+     * @param naptanId The TfL Naptan ID (e.g. 940GZZLUBND)
+     * @param apiKey Your TfL API App Key
+     * @param cb Optional completion callback
+     */
+    void configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb);
+
     /**
      * @brief Limit the number of results returned. Used for lightweight testing.
+     * @param limit Maximum arrivals to fetch
      */
     void setResultLimit(int limit) { maxResults = limit; }
+    /**
+     * @brief Enable lightweight authentication-only mode (Line Status check).
+     * @param test True to enable test mode
+     */
+    void setTestMode(bool test) { isTestMode = test; }
     TflStation* getStationData() { return stationData.get(); }
     MessagePool* getMessagesData() { return &messagesData; }
 

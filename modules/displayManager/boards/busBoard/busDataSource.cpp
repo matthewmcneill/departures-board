@@ -248,7 +248,6 @@ int busDataSource::updateData() {
     xBusStop->numServices = id;
     for (int i=0; i<xBusStop->numServices; i++) replaceWord(xBusStop->service[i].destination, "&amp;", "&");
 
-    // Check for changes (boardChanged flag)
     if (stationData) {
         if (xBusStop->numServices != stationData->numServices) stationData->boardChanged = true;
         else {
@@ -281,6 +280,18 @@ int busDataSource::updateData() {
         return stationData->boardChanged ? UPD_SUCCESS : UPD_NO_CHANGE;
     }
     return UPD_DATA_ERROR;
+}
+
+/**
+ * @brief Performs a lightweight connection and authentication test.
+ *        Bus API currently does not require authentication.
+ * @param token Optional token to test (ignored for bus).
+ * @return int Update status code.
+ */
+int busDataSource::testConnection(const char* token) {
+    LOG_INFO("DATA", "Bus Board: testConnection called. Bypassing request as no auth required.");
+    snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS");
+    return UPD_SUCCESS; // bustimes.org doesn't use a token for now, return ok for the UI
 }
 
 /**

@@ -45,6 +45,13 @@ public:
      * @brief Retrieves the last error message from the data source.
      */
     virtual const char* getLastErrorMsg() const = 0;
+
+    /**
+     * @brief Performs a lightweight connection and authentication test.
+     * @param token Optional token to test (overrides stored configuration). Can be nullptr for data sources that do not use keys.
+     * @return 0 for success (UPD_SUCCESS), non-zero for error (UPD_*).
+     */
+    virtual int testConnection(const char* token = nullptr) = 0;
 };
 
 #endif // I_DATA_SOURCE_HPP

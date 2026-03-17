@@ -388,27 +388,25 @@ void WebHandlerManager::handleTestKey() {
         success = appContext.getWeather().updateWeather(tempStatus, nullptr, token);
         if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
     } else if (strcmp(type, "rail") == 0) {
-        LOG_INFO("WEB_API", "Testing National Rail key (Optimized)...");
+        LOG_INFO("WEB_API", "Testing National Rail key via unified test interface...");
         nationalRailDataSource ds;
-        // Direct SOAP setup bypasses 500KB WSDL download
-        ds.setSoapAddress("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/ldb12.asmx");
-        ds.configure(token, "HWD", ""); // Harrow & Wealdstone
-        int updRes = ds.updateData();
+        int updRes = ds.testConnection(token);
         LOG_INFO("WEB_API", "NR Test updRes: " + String(updRes));
-        success = (updRes == 0 || updRes == 1);
+        success = (updRes == UPD_SUCCESS);
         if (!success) errorMsg = ds.getLastErrorMsg();
     } else if (strcmp(type, "tfl") == 0) {
-        LOG_INFO("WEB_API", "Testing TfL key (Optimized)...");
+        LOG_INFO("WEB_API", "Testing TfL key via unified test interface...");
         tflDataSource ds;
-        ds.setResultLimit(1); // Only fetch 1 result for validation
-        ds.configure("940GZZLUBND", token, nullptr); // Bond Street
-        int updRes = ds.updateData();
+        int updRes = ds.testConnection(token);
         LOG_INFO("WEB_API", "TfL Test updRes: " + String(updRes));
-        success = (updRes == 0 || updRes == 1);
+        success = (updRes == UPD_SUCCESS);
         if (!success) errorMsg = ds.getLastErrorMsg();
     } else if (strcmp(type, "bus") == 0) {
-        // bustimes.org doesn't use a token for now, but we'll return ok for the UI
-        success = true;
+        LOG_INFO("WEB_API", "Testing Bus source via unified test interface...");
+        busDataSource ds;
+        int updRes = ds.testConnection(token);
+        success = (updRes == UPD_SUCCESS);
+        if (!success) errorMsg = ds.getLastErrorMsg();
     }
 
     LOG_INFO("WEB_API", String("Test result for ") + type + ": " + (success ? "SUCCESS" : "FAILED (" + errorMsg + ")"));

@@ -7,8 +7,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/nationalRailBoard/nationalRailDataSource.hpp
+ * Module: modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp
  * Description: National Rail data source implementing iDataSource.
+ *
+ * Exported Functions/Classes:
+ * - nationalRailDataSource: Data client for Darwin (National Rail SOAP API).
+ *   - init(): Initializes the WSDL parser and SSL handshake.
+ *   - updateData(): High-level trigger for polling departure info.
+ *   - getStationData(): Returns parsed station name and meta.
+ *   - getMessagesData(): Accessor for rail disruption messages.
+ *   - setSoapAddress(): Manually set SOAP endpoint (bypasses WSDL).
+ *   - configure(): Set API token and station parameters.
  */
 
 #ifndef NATIONAL_RAIL_DATA_SOURCE_HPP
@@ -82,8 +91,9 @@ private:
     String parentTagName;
     String tagName;
     String tagPath;
-    int tagLevel;
-    int id; // Current service index being parsed
+    int tagLevel;      // Depth in current XML tree
+    bool isTestMode;   // When true, use lightweight validation payload
+    int id;            // Current service index being parsed
     int coaches;
     bool addedStopLocation;
     bool filterPlatforms;
@@ -123,6 +133,7 @@ public:
     // iDataSource Implementation
     int updateData() override;
     const char* getLastErrorMsg() const override { return lastErrorMessage; }
+    int testConnection(const char* token = nullptr) override;
 
     // Configuration & Data Access
     int init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb);
