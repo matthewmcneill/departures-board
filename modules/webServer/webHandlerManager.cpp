@@ -13,6 +13,7 @@
  * Exported Functions/Classes:
  * - WebHandlerManager::WebHandlerManager: Constructor.
  * - WebHandlerManager::begin: Route registration.
+ * - WebHandlerManager::handleRSSJson: Serves the gzipped rss.json asset.
  */
 
 #include "webHandlerManager.hpp"
@@ -24,6 +25,8 @@
 #include <appContext.hpp>
 #include "../displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp"
 #include "../displayManager/boards/tflBoard/tflDataSource.hpp"
+#include "../../lib/rssClient/rssClient.hpp"
+#include "../weatherClient/weatherClient.hpp"
 
 extern class appContext appContext;
 
@@ -60,19 +63,30 @@ void WebHandlerManager::begin() {
     _server.on("/api/wifi/test", HTTP_POST, [this]() { this->handleWiFiTest(); });
     _server.on("/api/wifi/reset", HTTP_POST, [this]() { this->handleWiFiReset(); });
 
+    // API: Feeds & Weather Diagnostics
+    _server.on("/api/feeds/test", HTTP_GET, [this]() { this->handleTestFeed(); });
+    _server.on("/api/weather/test", HTTP_GET, [this]() { this->handleTestWeather(); });
+    _server.on("/rss.json", HTTP_GET, [this]() { this->handleRSSJson(); });
+
     // Captive Portal Redirect
     _server.onNotFound([this]() { this->handleCaptivePortalRedirect(); });
 
     LOG_INFO("WEB", "WebHandlerManager routes registered.");
 }
 
+/**
+ * @brief Serves the main portal index.html file (gzipped from flash).
+ */
 void WebHandlerManager::handlePortalRoot() {
     LOG_INFO("WEB_API", "Serving /portal/index.html (gzipped)");
     sendGzipFlash(index_html_gz, index_html_gz_len, "text/html");
 }
 
+/**
+ * @brief API Handler for GET /api/status. Returns system health and connectivity metrics.
+ */
 void WebHandlerManager::handleGetStatus() {
-    LOG_DEBUG("WEB_API", "GET /api/status called - returning system health");
+    // LOG_DEBUG("WEB_API", "GET /api/status called - returning system health");
     JsonDocument doc;
     doc["heap"] = ESP.getFreeHeap();
     doc["max_alloc"] = ESP.getMaxAllocHeap();
@@ -101,6 +115,9 @@ void WebHandlerManager::handleGetStatus() {
     _server.send(200, "application/json", output);
 }
 
+/**
+ * @brief API Handler for GET /api/config. Returns the unified project configuration as JSON.
+ */
 void WebHandlerManager::handleGetConfig() {
     LOG_INFO("WEB_API", "GET /api/config called - building unified JSON");
     const Config& config = _config.getConfig();
@@ -115,6 +132,11 @@ void WebHandlerManager::handleGetConfig() {
     system["dateEnabled"] = config.dateEnabled;
     system["rssUrl"] = config.rssUrl;
     system["rssName"] = config.rssName;
+
+    // --- Feeds (Modern UI) ---
+    JsonObject feeds = doc["feeds"].to<JsonObject>();
+    feeds["rss"] = config.rssUrl;
+    feeds["weatherKeyId"] = config.weatherKeyId;
 
     // --- API Key Registry ---
     JsonArray keysArr = doc["keys"].to<JsonArray>();
@@ -183,9 +205,6 @@ void WebHandlerManager::handleSaveAll() {
             if (sys["flip"].is<bool>()) config.flipScreen = sys["flip"];
         }
 
-        // Note: Keys are now managed via separate /api/keys endpoints.
-        // Board apiKeyId references are updated in the boards loop below.
-
         // Update Boards (Full replace strategy suggested by unified save)
         if (doc["boards"].is<JsonArray>()) {
             JsonArray boardsArr = doc["boards"];
@@ -204,6 +223,18 @@ void WebHandlerManager::handleSaveAll() {
                 bc.timeOffset = b["offset"] | 0;
                 bc.showWeather = b["weather"] | true;
                 strlcpy(bc.apiKeyId, b["apiKeyId"] | "", sizeof(bc.apiKeyId));
+            }
+        }
+
+        // --- Feeds (Modern UI) ---
+        if (doc["feeds"].is<JsonObject>()) {
+            JsonObject f = doc["feeds"];
+            if (f["rss"].is<const char*>()) {
+                strlcpy(config.rssUrl, f["rss"], sizeof(config.rssUrl));
+                config.rssEnabled = (strlen(config.rssUrl) > 0);
+            }
+            if (f["weatherKeyId"].is<const char*>()) {
+                strlcpy(config.weatherKeyId, f["weatherKeyId"], sizeof(config.weatherKeyId));
             }
         }
 
@@ -333,7 +364,17 @@ void WebHandlerManager::handleTestKey() {
     // If token is empty, use the real stored token (test existing)
     if (strlen(token) == 0) {
         ApiKey* existing = _config.getKeyById(doc["id"] | "");
-        if (existing) token = existing->token;
+        if (existing) {
+            token = existing->token;
+            LOG_DEBUG("WEB_API", "Using stored token for ID: " + String(doc["id"] | ""));
+        } else {
+            LOG_WARN("WEB_API", "Token empty and no key found for ID: " + String(doc["id"] | ""));
+        }
+    }
+
+    if (token && strlen(token) > 0) {
+        String tokenKey = String(token);
+        LOG_DEBUG("WEB_API", "Testing token length: " + String(tokenKey.length()) + " Starts with: " + tokenKey.substring(0, 5) + "...");
     }
 
     bool success = false;
@@ -347,38 +388,22 @@ void WebHandlerManager::handleTestKey() {
         success = appContext.getWeather().updateWeather(tempStatus, nullptr, token);
         if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
     } else if (strcmp(type, "rail") == 0) {
-        LOG_INFO("WEB_API", "Testing National Rail key...");
-        // National Rail test - try a simple request
+        LOG_INFO("WEB_API", "Testing National Rail key (Optimized)...");
         nationalRailDataSource ds;
-        // Skip init for testing to see if single connection works
-        // int initRes = ds.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
-        // if (initRes == 0) { ... }
-        
-        // Manual setup to bypass init connection
-        // ds.configure(token, "EUS", ""); // Euston
-        // These are normally set by init()
-        // extern void setSoapHostAPI(nationalRailDataSource& ds, const char* host, const char* api); 
-        // Wait, I can't access private members smoothly. 
-        // I'll just modify nationalRailDataSource to have a "skipWSDL" flag or similar.
-        
-        // Actually, let's just try ds.init and THEN ds.updateData but with a MUCH longer delay (3s).
-        int initRes = ds.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
-        if (initRes == 0) {
-            delay(3000); // 3 seconds breather
-            ds.configure(token, "HWD", ""); // Try Harrow & Wealdstone (smaller response)
-            int updRes = ds.updateData();
-            success = (updRes == 0 || updRes == 1);
-            if (!success) errorMsg = ds.getLastErrorMsg();
-        } else {
-            success = false;
-            errorMsg = "WSDL Init Failed";
-        }
+        // Direct SOAP setup bypasses 500KB WSDL download
+        ds.setSoapAddress("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/ldb12.asmx");
+        ds.configure(token, "HWD", ""); // Harrow & Wealdstone
+        int updRes = ds.updateData();
+        LOG_INFO("WEB_API", "NR Test updRes: " + String(updRes));
+        success = (updRes == 0 || updRes == 1);
+        if (!success) errorMsg = ds.getLastErrorMsg();
     } else if (strcmp(type, "tfl") == 0) {
-        LOG_INFO("WEB_API", "Testing TfL key...");
-        // TfL test
+        LOG_INFO("WEB_API", "Testing TfL key (Optimized)...");
         tflDataSource ds;
+        ds.setResultLimit(1); // Only fetch 1 result for validation
         ds.configure("940GZZLUBND", token, nullptr); // Bond Street
         int updRes = ds.updateData();
+        LOG_INFO("WEB_API", "TfL Test updRes: " + String(updRes));
         success = (updRes == 0 || updRes == 1);
         if (!success) errorMsg = ds.getLastErrorMsg();
     } else if (strcmp(type, "bus") == 0) {
@@ -477,6 +502,80 @@ void WebHandlerManager::handleCaptivePortalRedirect() {
     _server.send(302, "text/plain", "");
 }
 
+void WebHandlerManager::handleTestFeed() {
+    if (!_server.hasArg("url")) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing URL\"}");
+        return;
+    }
+    String url = _server.arg("url");
+    LOG_INFO("WEB_API", "Testing RSS Feed: " + url);
+    
+    rssClient& rss = appContext.getRss();
+    int res = rss.loadFeed(url);
+    
+    JsonDocument doc;
+    doc["status"] = (res == 0) ? "ok" : "fail";
+    if (res == 0) {
+        doc["count"] = rss.numRssTitles;
+        doc["title"] = rss.numRssTitles > 0 ? rss.rssTitle[0] : "No items found";
+    } else {
+        doc["msg"] = rss.getLastError();
+    }
+    
+    String output;
+    serializeJson(doc, output);
+    _server.send(200, "application/json", output);
+}
+
+void WebHandlerManager::handleTestWeather() {
+    if (!_server.hasArg("keyId")) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing Key ID\"}");
+        return;
+    }
+    const char* keyId = _server.arg("keyId").c_str();
+    String tokenStr = _server.arg("token");
+    const char* token = _server.hasArg("token") ? tokenStr.c_str() : nullptr;
+
+    LOG_INFO("WEB_API", "Testing Weather Key: " + String(keyId) + (token ? " (with token override)" : " (stored)"));
+    
+    weatherClient& weather = appContext.getWeather();
+    
+    WeatherStatus ws;
+    ws.lat = 51.7487; // Pen-y-darren Ironworks
+    ws.lon = -3.3816;
+    
+    // Pass both. WeatherClient handles the logic of which to use.
+    bool success = weather.updateWeather(ws, keyId, token);
+    
+    JsonDocument doc;
+    doc["status"] = success ? "ok" : "fail";
+    if (success) {
+        doc["temp"] = (int)ws.temp;
+        doc["condition"] = ws.description;
+        doc["name"] = "Pen-y-darren Ironworks";
+    } else {
+        doc["msg"] = weather.lastErrorMsg;
+    }
+    
+    String output;
+    serializeJson(doc, output);
+    _server.send(200, "application/json", output);
+}
+
+/**
+ * @brief API Handler for GET /rss.json. Serves the bundled RSS feed list.
+ */
+void WebHandlerManager::handleRSSJson() {
+    LOG_INFO("WEB_API", "Serving /rss.json (gzipped)");
+    sendGzipFlash(rss_json_gz, rss_json_gz_len, "application/json");
+}
+
+/**
+ * @brief Helper to send gzipped data from flash memory with correct headers.
+ * @param data Pointer to the gzipped data in flash.
+ * @param len Length of the data in bytes.
+ * @param contentType The MIME type to send.
+ */
 void WebHandlerManager::sendGzipFlash(const uint8_t* data, size_t len, const char* contentType) {
     _server.sendHeader("Content-Encoding", "gzip");
     _server.send_P(200, contentType, (const char*)data, len);

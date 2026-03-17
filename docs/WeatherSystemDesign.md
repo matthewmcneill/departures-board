@@ -54,4 +54,20 @@ This approach balances the storage efficiency of XBM with the ease of use of a s
 
 The `weatherClient` participates in the system-wide **Yield Mechanism**:
 - Long-running HTTP GET requests and JSON parsing loops periodically invoke a `yieldCallback`.
-- This callback is wired to `webServer.handleClient()`, ensuring the device remains responsive to the Web GUI even during slow weather updates (which can take several seconds due to SSL handshake or large response headers).
+## 5. API Key Management & Testing
+
+### 5.1 Multi-Key Selection Strategy
+To allow for flexible API key management:
+- **Registry Integration**: The system can now store multiple API keys in the Global Key Registry.
+- **Specific Assignment**: A `weatherKeyId` is stored in the system configuration to map the weather service to a specific key from the registry.
+- **Fallback Logic**: If no specific `weatherKeyId` is assigned, the client performs a scan of the registry for any key of type `owm`.
+
+### 5.2 Test Overrides (Real-time Validation)
+For the Web Portal "Test Feed" functionality, the `weatherClient` supports real-time overrides:
+- **In-Memory Testing**: Users can test a new key *before* saving it to the registry by passing an `overrideToken` to the `updateWeather()` method.
+- **Stateless Validation**: This allows the Web Handler to validate connectivity without mutating the flashed device configuration.
+
+### 5.3 Diagnostic Status (Unconfigured)
+A new state, `WS_UNCONFIGURED` (represented as a **GREY** dot in the UI), was added:
+- **Immediate Feedback**: Transitioning to this state happens immediately in the UI when "No key selected" is chosen.
+- **Semantic Clarity**: Distinguishes between a "failed" connection and a service that simply hasn't been set up yet.

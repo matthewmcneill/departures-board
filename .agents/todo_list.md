@@ -19,11 +19,11 @@
 - [x] Investigate and fix intermittent synchronization issues/delays in the Web GUI mode switching (Resolved: Implemented sequential validation to prevent ESP32 saturation).
 - [ ] Fix 'Rail Station' field population to resolve CRS to human-readable names on load (currently empty until manual input).
 - [ ] Investigate missing Latitude/Longitude fields in the 'Advanced Options' tab of the Web UI.
-- [ ] Add RSS feed configuration UI to the System tab.
+- [x] Add RSS feed configuration UI to the System tab (Implemented in FEEDS tab).
 - [ ] startup screens don't show and then the board display seems very static and is not laid out properly. need to work through this. Probably starting with the startup screens and then working through the system screens.
 - [x] the 'eye' visible icon for the passwords is stil misaligned - I asked the agent 3 times to fix it and it just could not understand. (Fixed: Logic corrected and alignment verified on hardware)
 - [x] the scan button is not aligned with the networks drop-down box and changes size when the scan icon is showing. (Verified: Stable alignment and sizing)
-- [x] just check that the key registry IS actually being used as a registry.  i.e. anything that references it uses an ID for the key that is served by the registry with the actual key. Similarly, in the storage, the configuration storage should reference the id of the key and the apiKeyManager should use that ID to serve the correct key.  (Verified: IDs correctly used across board mapping and save logic)
+- [x] just check that the key registry IS actually being used as a registry. i.e. anything that references it uses an ID for the key that is served by the registry with the actual key. Similarly, in the storage, the configuration storage should reference the id of the key and the apiKeyManager should use that ID to serve the correct key. (Verified: IDs correctly used across board mapping and save logic)
 - [ ] Add unit tests for `ConfigManager::hasConfiguredBoards()` to verify it correctly evaluates incomplete default boards as unconfigured, preventing the system from skipping the `BOARD_SETUP` sequence.
 - [ ] need to add in the footers containing credits and acknowledgements to the bottom of the portal screen
 - [ ] departuresBoard.hpp - does it have all the platformio.ini variables in it - what about max keys?  (btw we probably only need 4 max - 6 to be generous)
@@ -39,3 +39,4 @@
 - [ ] check if the key UI provides format validation when keys are entered.
 - [ ] include instructions and links on where to get keys in the key creation UI (replicate help strings from `web/keys.htm`).
 - [x] remove the bus key button from the add keys dialog. No key is needed for bus times. (Resolved: Bustimes.org uses scrapers/unauthenticated APIs).
+- [ ] add a test class to `iDataSource` (e.g., `MockDataSource`) to keep data source code encapsulated and improve unit testability.

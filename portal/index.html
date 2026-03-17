@@ -286,14 +286,16 @@
       transform: translateX(-50%);
       width: 100%;
       max-width: 480px;
-      height: 70px;
+      height: 65px;
       background: var(--nav-bg);
       border-top: 1px solid var(--border);
       display: flex;
-      justify-content: space-around;
+      justify-content: space-between;
       align-items: center;
       z-index: 1000;
       padding-bottom: env(safe-area-inset-bottom);
+      padding-left: 5px;
+      padding-right: 5px;
     }
 
     .tab-link {
@@ -303,13 +305,15 @@
       align-items: center;
       text-decoration: none;
       color: var(--text-muted);
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: 700;
       gap: 4px;
+      min-width: 0;
     }
 
     .tab-link .icon {
-      font-size: 1.5rem;
+      width: 24px;
+      height: 24px;
       transition: 0.2s;
     }
 
@@ -395,6 +399,11 @@
       background: var(--warning);
       box-shadow: 0 0 8px var(--warning);
     }
+    
+    .dot.grey {
+      background: #888;
+      box-shadow: 0 0 4px #888;
+    }
 
     .diag-table {
       width: 100%;
@@ -439,6 +448,25 @@
       overflow-y: auto;
       display: none;
       border: 1px solid #333;
+    }
+
+    .btn-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    .btn-test-action {
+      width: 120px;
+      min-width: 120px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      height: 44px;
+      padding-top: 0;
+      padding-bottom: 0;
     }
 
     .list-item {
@@ -997,9 +1025,9 @@
       </article>
     </section>
 
-    <section id="tab-boards" class="tab-content">
+    <section id="tab-displays" class="tab-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h3 style="margin:0;">Active Boards</h3><button class="outline"
+        <h3 style="margin:0;">Active Displays</h3><button class="outline"
           style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="app.editBoard(-1)">+ Add</button>
       </div>
       <div id="boards-list"></div>
@@ -1017,6 +1045,84 @@
         </form>
       </article>
     </section>
+
+    <section id="tab-feeds" class="tab-content">
+      <article>
+        <header>News Feed Service</header>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Configure the RSS feed displayed on the board.</p>
+        
+        <label>Select a News Feed (RSS)
+          <select id="feed-select" onchange="app.handleFeedChange(this.value)">
+            <option value="">Loading feeds...</option>
+          </select>
+        </label>
+
+        <div id="custom-feed-group" style="display: none; margin-bottom: 1rem;">
+          <label>Custom RSS URL
+            <input type="text" id="custom-feed-url" placeholder="https://..." oninput="app.validateFeedInput()" />
+          </label>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="outline btn-test-action" onclick="app.testFeed()" id="feed-test-btn">Test Feed</button>
+        </div>
+
+        <div class="drawer" id="feed-diag-drawer">
+          <div class="drawer-trigger" onclick="app.toggleFeedDiag()">
+            <span>Feed Diagnostics</span>
+            <div class="status-badge" id="feed-status-summary">
+              <div class="dot" id="feed-dot"></div>
+              <span id="feed-status-text" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Ready</span>
+            </div>
+          </div>
+          <div class="drawer-content">
+            <table class="diag-table" id="feed-diag-table">
+              <!-- Populated by JS -->
+            </table>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <header>Weather Service</header>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Configure the weather information displayed on the board.</p>
+
+        <label>OpenWeatherMap API Key
+          <div class="input-row">
+            <select id="weather-key-select" onchange="app.handleWeatherKeyChange(this.value)">
+              <option value="">No key selected</option>
+            </select>
+            <button type="button" class="outline" onclick="app.selectKeyType(true)" style="padding: 0.75rem; min-width: 50px;">+</button>
+          </div>
+        </label>
+
+        <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.85rem; font-weight: 700;">Current Coordinates</span>
+            <span id="weather-coords" style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">Detecting...</span>
+          </div>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Coordinates are pulled from active displays. Testing uses the historical location of Pen-y-darren Ironworks.</p>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="outline btn-test-action" onclick="app.testWeather()" id="weather-test-btn">Test Feed</button>
+        </div>
+
+        <div class="drawer" id="weather-diag-drawer">
+          <div class="drawer-trigger" onclick="app.toggleWeatherDiag()">
+            <span>Weather Diagnostics</span>
+            <div class="status-badge" id="weather-status-summary">
+              <div class="dot" id="weather-dot"></div>
+              <span id="weather-status-text" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Ready</span>
+            </div>
+          </div>
+          <div class="drawer-content">
+            <table class="diag-table" id="weather-diag-table">
+              <!-- Populated by JS -->
+            </table>
+          </div>
+        </div>
+      </article>
+    </section>
   </div>
 
   <nav class="bottom-nav">
@@ -1031,7 +1137,7 @@
       WIFI
     </a>
     <a href="#" class="tab-link" data-target="tab-apikeys">
-      <svg class="icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor">
+      <svg class="icon" viewBox="0 0 256 256" fill="currentColor">
         <g transform="translate(1.4 1.4) scale(2.81)">
           <path
             d="M 78.097 16.941 C 78.097 7.6 70.497 0 61.155 0 S 44.214 7.6 44.214 16.941 c 0 0.307 0.016 0.611 0.032 0.914 c -2.715 0.853 -5.272 2.341 -7.419 4.489 c -5.221 5.22 -6.757 12.996 -4.028 19.751 L 13.044 61.851 c -0.341 0.341 -0.547 0.793 -0.581 1.273 l -0.555 7.844 c -0.041 0.577 0.171 1.146 0.581 1.555 c 0.376 0.377 0.885 0.586 1.414 0.586 c 0.047 0 0.094 -0.002 0.141 -0.005 l 7.844 -0.555 c 0.48 -0.034 0.933 -0.24 1.273 -0.581 l 2.38 -2.38 c 0.304 -0.304 0.501 -0.696 0.564 -1.121 l 0.623 -4.212 l 4.201 -0.622 c 0.872 -0.129 1.556 -0.813 1.686 -1.686 l 0.622 -4.2 l 4.211 -0.623 c 0.425 -0.063 0.818 -0.261 1.122 -0.564 l 4.346 -4.347 c 2.71 1.096 5.583 1.493 8.39 1.253 c 0.446 0.236 0.899 0.46 1.364 0.657 v 27.938 c 0 0.481 0.174 0.947 0.489 1.311 l 5.153 5.938 C 58.692 89.749 59.243 90 59.823 90 c 0.579 0 1.131 -0.251 1.511 -0.689 l 5.154 -5.938 c 0.315 -0.363 0.489 -0.829 0.489 -1.311 v -3.367 c 0 -0.43 -0.139 -0.848 -0.395 -1.192 l -2.537 -3.417 l 2.531 -3.411 c 0.524 -0.707 0.524 -1.676 0 -2.383 l -2.531 -3.411 l 2.537 -3.417 c 0.256 -0.345 0.395 -0.763 0.395 -1.192 v -6.146 c 6.707 -2.847 11.119 -9.431 11.119 -16.814 c 0 -3.858 -1.209 -7.434 -3.257 -10.386 C 76.947 24.036 78.097 20.55 78.097 16.941 z M 48.214 16.941 C 48.214 9.806 54.02 4 61.155 4 s 12.941 5.806 12.941 12.941 c 0 2.454 -0.7 4.832 -1.989 6.881 c -3.249 -2.961 -7.552 -4.785 -12.284 -4.785 c -0.515 0 -1.03 0.029 -1.541 0.072 c -3.123 -1.648 -6.626 -2.322 -10.064 -2.036 C 48.218 17.029 48.214 16.986 48.214 16.941 z M 43.371 48.034 c -0.77 -0.385 -1.701 -0.233 -2.308 0.375 l -4.854 4.854 l -5.025 0.743 c -0.872 0.129 -1.557 0.813 -1.686 1.686 l -0.622 4.201 l -4.201 0.622 c -0.872 0.129 -1.557 0.814 -1.686 1.686 l -0.743 5.025 l -1.384 1.385 l -4.8 0.34 l 0.339 -4.801 l 20.202 -20.202 c 0.608 -0.608 0.76 -1.538 0.375 -2.308 c -2.748 -5.501 -1.672 -12.12 2.677 -16.468 c 1.541 -1.541 3.354 -2.639 5.281 -3.326 c 0.956 3.189 2.833 6.018 5.419 8.148 c -0.156 1.24 0.225 2.534 1.177 3.486 c 1.636 1.636 4.289 1.636 5.925 0 c 1.636 -1.636 1.636 -4.289 0 -5.925 c -1.286 -1.286 -3.193 -1.545 -4.748 -0.81 c -1.779 -1.526 -3.097 -3.494 -3.829 -5.705 c 3.938 -0.238 7.957 1.129 10.96 4.132 c 2.696 2.696 4.181 6.28 4.181 10.092 c 0 3.813 -1.484 7.396 -4.181 10.092 c 0 0 0 0 0 0 C 55.49 49.706 48.871 50.779 43.371 48.034 z" />
@@ -1039,21 +1145,28 @@
       </svg>
       KEYS
     </a>
-    <a href="#" class="tab-link" data-target="tab-boards">
-      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    <a href="#" class="tab-link" data-target="tab-displays">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
         <line x1="9" y1="3" x2="9" y2="21"></line>
       </svg>
-      BOARDS
+      DISPLAYS
+    </a>
+    <a href="#" class="tab-link" data-target="tab-feeds">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M4 11a9 9 0 0 1 9 9"></path>
+        <path d="M4 4a16 16 0 0 1 16 16"></path>
+        <circle cx="5" cy="19" r="1"></circle>
+      </svg>
+      FEEDS
     </a>
     <a href="#" class="tab-link" data-target="tab-system">
       <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
-        <path
-          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-        </path>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
       </svg>
       SYSTEM
     </a>
@@ -1061,7 +1174,7 @@
 
   <dialog id="modal-board">
     <article>
-      <header>Board Editor</header>
+      <header>Display Editor</header>
       <form id="board-form">
         <input type="hidden" name="index" />
         <label>Display Name<input type="text" name="name" required /></label>
@@ -1220,7 +1333,8 @@
         keys: [],
         newKeyType: null,
         inContextBoardFlow: false,
-        isTestingKeys: false
+        isTestingKeys: false,
+        curatedFeeds: []
       },
 
       init: async function () {
@@ -1231,7 +1345,7 @@
         } catch (e) {
           console.error('Initial fetch failed', e);
         }
-        setInterval(() => this.fetchStatus(), 5000);
+        setInterval(() => this.fetchStatus(), 15000);
         // Initial scan after a short delay to allow UI to settle
         setTimeout(() => this.scanWiFi(), 500);
       },
@@ -1253,6 +1367,13 @@
           const res = await fetch('/api/config');
           this.state.config = await res.json();
           this.state.keys = this.state.config.keys || [];
+          
+          // Fetch curated feeds
+          const rssRes = await fetch('/rss.json').catch(() => null);
+          if (rssRes && rssRes.ok) {
+            this.state.curatedFeeds = await rssRes.json();
+          }
+
           this.render();
           this.refreshEyes();
         } catch (e) { console.error('Config fetch failed'); }
@@ -1323,6 +1444,7 @@
         }
         this.renderBoards();
         this.renderKeys();
+        this.renderFeeds();
       },
 
       renderBoards: function () {
@@ -1372,6 +1494,7 @@
 
         // Also update any board key selectors
         this.updateBoardKeySelector();
+        this.updateWeatherKeySelector();
       },
 
       updateBoardKeySelector: function () {
@@ -1671,6 +1794,10 @@
             brightness: parseInt(document.querySelector('[name="brightness"]')?.value || 128),
             flip: document.querySelector('[name="flip"]')?.checked || false
           },
+          feeds: {
+            rss: (document.getElementById('feed-select').value === '__custom__') ? document.getElementById('custom-feed-url').value : document.getElementById('feed-select').value,
+            weatherKeyId: document.getElementById('weather-key-select').value
+          },
           // Keys are managed separately, but boards need their apiKeyId
           boards: this.state.config?.boards || [],
           wifi: { ssid, pass: getVal('wifi-pass') }
@@ -1692,6 +1819,10 @@
         if (targetId === 'tab-apikeys') {
           this.renderKeys();
           this.runSequentialTests();
+        }
+        if (targetId === 'tab-feeds') {
+          this.renderFeeds();
+          this.runFeedTests();
         }
       },
 
@@ -1853,6 +1984,208 @@
 
       updateBrightness: function (val) {
         // UI update for brightness slider
+      },
+
+      // --- Feeds Logic ---
+
+      renderFeeds: function () {
+        const cfg = this.state.config;
+        if (!cfg) return;
+
+        // 1. Populate RSS Dropdown
+        const select = document.getElementById('feed-select');
+        if (select) {
+          const currentFeed = cfg.feeds?.rss || "";
+          select.innerHTML = '<option value="">-- No Feed Selected --</option>';
+          this.state.curatedFeeds.forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.url;
+            opt.textContent = f.name;
+            select.appendChild(opt);
+          });
+          const optCustom = document.createElement('option');
+          optCustom.value = '__custom__';
+          optCustom.textContent = '-- Custom RSS URL --';
+          select.appendChild(optCustom);
+
+          // If current feed isn't in curated, it must be custom
+          const isCurated = this.state.curatedFeeds.some(f => f.url === currentFeed);
+          if (currentFeed && !isCurated) {
+            select.value = '__custom__';
+            document.getElementById('custom-feed-url').value = currentFeed;
+            document.getElementById('custom-feed-group').style.display = 'block';
+          } else {
+            select.value = currentFeed;
+            document.getElementById('custom-feed-group').style.display = 'none';
+          }
+        }
+
+        // 2. Weather Logic
+        this.updateWeatherKeySelector();
+        const weatherKeyId = cfg.feeds?.weatherKeyId || "";
+        document.getElementById('weather-key-select').value = weatherKeyId;
+
+        // 3. Update Coordinates
+        const firstBoard = cfg.boards?.[0];
+        const coordsEl = document.getElementById('weather-coords');
+        if (firstBoard && firstBoard.id) {
+            coordsEl.innerText = firstBoard.id; 
+        } else {
+            coordsEl.innerText = "51.7487° N, 3.3816° W (Historical)";
+        }
+      },
+
+      updateWeatherKeySelector: function () {
+        const select = document.getElementById('weather-key-select');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">No key selected</option>';
+        this.state.keys.filter(k => k.type === 'owm').forEach(k => {
+          const opt = document.createElement('option');
+          opt.value = k.id;
+          opt.textContent = k.label;
+          select.appendChild(opt);
+        });
+        select.value = currentVal;
+      },
+
+      handleFeedChange: function (val) {
+        document.getElementById('custom-feed-group').style.display = (val === '__custom__') ? 'block' : 'none';
+        this.validateFeedInput();
+      },
+
+      validateFeedInput: function () {
+        const select = document.getElementById('feed-select');
+        const customInput = document.getElementById('custom-feed-url');
+        const testBtn = document.getElementById('feed-test-btn');
+        const val = select.value;
+        
+        let isValid = val !== "";
+        if (val === '__custom__') {
+            isValid = customInput.value.length > 10 && customInput.value.startsWith('http');
+        }
+        testBtn.disabled = !isValid;
+      },
+
+      testFeed: async function (suppressDrawer = false) {
+        const btn = document.getElementById('feed-test-btn');
+        const select = document.getElementById('feed-select');
+        const customInput = document.getElementById('custom-feed-url');
+        const url = (select.value === '__custom__') ? customInput.value : select.value;
+
+        if (!url) {
+          document.getElementById('feed-dot').className = 'dot grey';
+          document.getElementById('feed-status-text').innerText = 'Unconfigured';
+          return;
+        }
+
+        const oldText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading-spinner"></div> Testing...';
+        
+        const dot = document.getElementById('feed-dot');
+        const stext = document.getElementById('feed-status-text');
+        dot.className = 'dot yellow';
+        stext.innerText = 'Testing...';
+
+        try {
+          const res = await fetch('/api/feeds/test?url=' + encodeURIComponent(url));
+          const result = await res.json();
+          
+          if (result.status === 'ok') {
+            dot.className = 'dot green';
+            stext.innerText = 'OK';
+            const rows = [
+                ['Last Fetch', new Date().toLocaleTimeString()],
+                ['Items', result.count || 0],
+                ['Title', result.title || 'Unknown']
+            ];
+            document.getElementById('feed-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+          } else {
+            dot.className = 'dot red';
+            stext.innerText = 'Error';
+            document.getElementById('feed-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">FAILED</td></tr>
+                                                                  <tr><td>Error</td><td>${result.msg || 'Unknown Error'}</td></tr>`;
+          }
+          if (!suppressDrawer) document.getElementById('feed-diag-drawer').classList.add('active');
+        } catch (e) {
+          dot.className = 'dot red';
+          stext.innerText = 'Failed';
+          document.getElementById('feed-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">HTTP ERROR</td></tr>`;
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = oldText;
+        }
+      },
+
+      testWeather: async function (suppressDrawer = false) {
+        const btn = document.getElementById('weather-test-btn');
+        const select = document.getElementById('weather-key-select');
+        const keyId = select.value;
+        
+        if (!keyId) {
+          document.getElementById('weather-dot').className = 'dot grey';
+          document.getElementById('weather-status-text').innerText = 'Unconfigured';
+          return;
+        }
+
+        const oldText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading-spinner"></div> Testing...';
+
+        // Support testing unsaved keys by finding the token in state
+        const keyData = this.state.keys.find(k => k.id === keyId);
+        const tokenParam = keyData ? `&token=${encodeURIComponent(keyData.token)}` : '';
+
+        const dot = document.getElementById('weather-dot');
+        const stext = document.getElementById('weather-status-text');
+        dot.className = 'dot yellow';
+        stext.innerText = 'Checking...';
+
+        try {
+          const res = await fetch(`/api/weather/test?keyId=${keyId}${tokenParam}`);
+          const result = await res.json();
+          if (result.status === 'ok') {
+            dot.className = 'dot green';
+            stext.innerText = 'OK';
+            const rows = [
+                ['Temp', `${result.temp}°C`],
+                ['Condition', result.condition],
+                ['Location', result.name]
+            ];
+            document.getElementById('weather-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+          } else {
+            dot.className = 'dot red';
+            stext.innerText = 'Invalid';
+            document.getElementById('weather-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">INVALID</td></tr>
+                                                                     <tr><td>Error</td><td>${result.msg || 'Key Rejected'}</td></tr>`;
+          }
+          if (!suppressDrawer) document.getElementById('weather-diag-drawer').classList.add('active');
+        } catch (e) {
+          dot.className = 'dot red';
+          stext.innerText = 'Failed';
+          document.getElementById('weather-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">HTTP ERROR</td></tr>`;
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = oldText;
+        }
+      },
+
+      runFeedTests: function() {
+        this.testWeather(true);
+        this.testFeed(true);
+      },
+
+      handleWeatherKeyChange: function (val) {
+        this.testWeather();
+      },
+
+      toggleFeedDiag: function () {
+        document.getElementById('feed-diag-drawer').classList.toggle('active');
+      },
+
+      toggleWeatherDiag: function () {
+        document.getElementById('weather-diag-drawer').classList.toggle('active');
       }
     };
     app.init();

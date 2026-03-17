@@ -44,10 +44,10 @@ nationalRailDataSource::nationalRailDataSource()
 }
 
 void nationalRailDataSource::configure(const char* token, const char* crs, const char* filter, const char* callingCrs, int offset) {
-    if (token) strncpy(nrToken, token, sizeof(nrToken)-1);
-    if (crs) strncpy(crsCode, crs, sizeof(crsCode)-1);
-    if (filter) strncpy(platformFilter, filter, sizeof(platformFilter)-1);
-    if (callingCrs) strncpy(callingCrsCode, callingCrs, sizeof(callingCrsCode)-1);
+    if (token) strlcpy(nrToken, token, sizeof(nrToken));
+    if (crs) strlcpy(crsCode, crs, sizeof(crsCode));
+    if (filter) strlcpy(platformFilter, filter, sizeof(platformFilter));
+    if (callingCrs) strlcpy(callingCrsCode, callingCrs, sizeof(callingCrsCode));
     nrTimeOffset = offset;
     filterPlatforms = (platformFilter[0] != '\0');
 }
@@ -133,47 +133,35 @@ int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDa
     return UPD_DATA_ERROR;
 }
 
+void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
+    if (host) strlcpy(soapHost, host, sizeof(soapHost));
+    if (api) strlcpy(soapAPI, api, sizeof(soapAPI));
+    LOG_INFO("DATA", "NR Source: Soap address manually set to " + String(soapHost) + String(soapAPI));
+}
+
 int nationalRailDataSource::updateData() {
     LOG_INFO("DATA", "NR Source: updateData() entry. Free heap: " + String(ESP.getFreeHeap()));
     unsigned long perfTimer = millis();
     bool bChunked = false;
     lastErrorMessage[0] = '\0';
 
-    // Allocate temporary stations on the heap to avoid stack overflow
-    NationalRailStation* xStation = new (std::nothrow) NationalRailStation();
-    NationalRailStation* oldStation = new (std::nothrow) NationalRailStation();
-
-    if (!xStation || !oldStation) {
-        LOG_ERROR("DATA", "NR Source: Failed to allocate memory for station data update!");
-        if (xStation) delete xStation;
-        if (oldStation) delete oldStation;
-        return UPD_DATA_ERROR;
-    }
-
-    memset(xStation, 0, sizeof(NationalRailStation));
-    if (stationData && oldStation) *oldStation = *stationData;
-    
     id = -1; coaches = 0; addedStopLocation = false; keepRoute = false;
 
     WiFiClientSecure *httpsClient = new (std::nothrow) WiFiClientSecure();
     if (!httpsClient) {
         LOG_ERROR("DATA", "NR Source: Failed to allocate WiFiClientSecure for update!");
-        delete xStation;
-        delete oldStation;
         return UPD_DATA_ERROR;
     }
     httpsClient->setInsecure();
-    httpsClient->setTimeout(5000);
-    httpsClient->setConnectionTimeout(5000);
+    httpsClient->setTimeout(8000); // Increased timeout
+    httpsClient->setConnectionTimeout(8000);
 
-    LOG_INFO("DATA", "NR Source: Connecting to [" + String(soapHost) + "] Path: [" + String(soapAPI) + "]");
-    int soapRetry = 0;
-    // Hardcode for test to rule out buffer issues
-    const char* connectHost = "lite.realtime.nationalrail.co.uk";
+    LOG_INFO("DATA", "NR Source: Connecting to [" + String(soapHost) + "] Path: [" + String(soapAPI) + "]. Heap: " + String(ESP.getFreeHeap()));
     
-    while (!httpsClient->connect(connectHost, 443) && soapRetry < 5) {
+    int soapRetry = 0;
+    while (!httpsClient->connect(soapHost, 443) && soapRetry < 5) {
         LOG_WARN("DATA", String("NR Source: Connection attempt ") + soapRetry + " failed. Retrying...");
-        delay(200);
+        delay(300);
         soapRetry++;
     }
 
@@ -182,22 +170,61 @@ int nationalRailDataSource::updateData() {
         snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SOAP connection failed");
         httpsClient->stop();
         delete httpsClient;
-        delete xStation;
-        delete oldStation;
         return UPD_NO_RESPONSE;
     }
+
+    LOG_INFO("DATA", "NR Source: Connection established. Free heap: " + String(ESP.getFreeHeap()));
+
+    // Allocate temporary stations on the heap AFTER SSL link is up to conserve peak heap
+    NationalRailStation* xStation = new (std::nothrow) NationalRailStation();
+    if (!xStation) {
+        LOG_ERROR("DATA", "NR Source: Failed to allocate memory for station data update!");
+        httpsClient->stop();
+        delete httpsClient;
+        return UPD_DATA_ERROR;
+    }
+    memset(xStation, 0, sizeof(NationalRailStation));
 
     int reqRows = NR_MAX_SERVICES;
     if (platformFilter[0]) reqRows = 10;
     
-    String data = F("<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap-env:Header><ns0:AccessToken xmlns:ns0=\"http://thalesgroup.com/RTTI/2013-11-28/Token/types\"><ns0:TokenValue>");
-    data += String(nrToken) + F("</ns0:TokenValue></ns0:AccessToken></soap-env:Header><soap-env:Body><ns0:GetDepBoardWithDetailsRequest xmlns:ns0=\"http://thalesgroup.com/RTTI/2021-11-01/ldb/\"><ns0:numRows>") + String(reqRows) + F("</ns0:numRows><ns0:crs>");
-    data += String(crsCode) + F("</ns0:crs>");
-    if (callingCrsCode[0]) data += "<ns0:filterCrs>" + String(callingCrsCode) + F("</ns0:filterCrs><ns0:filterType>to</ns0:filterType>");
-    if (nrTimeOffset) data += "<ns0:timeOffset>" + String(nrTimeOffset) + F("</ns0:timeOffset>");
-    data += F("</ns0:GetDepBoardWithDetailsRequest></soap-env:Body></soap-env:Envelope>");
+    String data = F("<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"http://thalesgroup.com/RTTI/2013-11-28/Token/types\" xmlns:ns2=\"http://thalesgroup.com/RTTI/2021-11-01/ldb/\">");
+    data += F("<soap-env:Header><ns1:AccessToken><ns1:TokenValue>");
+    data += String(nrToken) + F("</ns1:TokenValue></ns1:AccessToken></soap-env:Header><soap-env:Body><ns2:GetDepBoardWithDetailsRequest><ns2:numRows>");
+    data += String(reqRows) + F("</ns2:numRows><ns2:crs>");
+    data += String(crsCode) + F("</ns2:crs>");
+    if (callingCrsCode[0]) data += "<ns2:filterCrs>" + String(callingCrsCode) + F("</ns2:filterCrs><ns2:filterType>to</ns2:filterType>");
+    if (nrTimeOffset) data += "<ns2:timeOffset>" + String(nrTimeOffset) + F("</ns2:timeOffset>");
+    data += F("</ns2:GetDepBoardWithDetailsRequest></soap-env:Body></soap-env:Envelope>");
 
-    httpsClient->print("POST " + String(soapAPI) + " HTTP/1.1\r\nHost: " + String(soapHost) + "\r\nContent-Type: text/xml;charset=UTF-8\r\nConnection: close\r\nContent-Length: " + String(data.length()) + "\r\n\r\n" + data);
+    String soapAction = F("http://thalesgroup.com/RTTI/2012-01-13/ldb/GetDepBoardWithDetails");
+    
+    // Diagnostic logging for token
+    if (strlen(nrToken) > 0) {
+        String t = String(nrToken);
+        String preview = t.substring(0, 4) + "..." + t.substring(t.length() - 4);
+        LOG_INFO("DATA", "NR Source: Sending request with token: " + preview + " (Len: " + String(t.length()) + ")");
+    } else {
+        LOG_WARN("DATA", "NR Source: Token is EMPTY!");
+    }
+
+    String requestBody = "POST " + String(soapAPI) + " HTTP/1.1\r\n" +
+                         "Host: " + String(soapHost) + "\r\n" +
+                         "Content-Type: text/xml; charset=utf-8\r\n" +
+                         "SOAPAction: \"" + soapAction + "\"\r\n" +
+                         "User-Agent: ESP32/1.0\r\n" +
+                         "Connection: close\r\n" +
+                         "Content-Length: " + String(data.length()) + "\r\n\r\n" + data;
+
+    // Log the request for debugging (mask token)
+    String debugReq = requestBody;
+    int tokenIdx = debugReq.indexOf(nrToken);
+    if (tokenIdx >= 0) {
+        debugReq = debugReq.substring(0, tokenIdx) + "********" + debugReq.substring(tokenIdx + strlen(nrToken));
+    }
+    LOG_DEBUG("DATA", "NR Request:\n" + debugReq);
+
+    httpsClient->print(requestBody);
 
     if (callback) callback(1, 0);
     
@@ -207,21 +234,42 @@ int nationalRailDataSource::updateData() {
     if (retry >= 30) {
         LOG_ERROR("DATA", "NR Source: Request timeout!");
         delete xStation;
-        delete oldStation;
         return UPD_TIMEOUT;
     }
 
     while (httpsClient->connected() || httpsClient->available()) {
         String line = httpsClient->readStringUntil('\n');
-        if (line.startsWith("HTTP") && line.indexOf("200 OK") == -1) {
-            LOG_ERROR("DATA", "NR Source: HTTP Error: " + line);
-            httpsClient->stop();
-            delete httpsClient;
-            delete xStation;
-            delete oldStation;
-            return UPD_HTTP_ERROR;
-        } else if (line.startsWith("Transfer-Encoding:") && line.indexOf("chunked") >= 0) bChunked = true;
-        if (line == "\r") break;
+        line.trim();
+        if (line.startsWith("HTTP")) {
+            LOG_INFO("DATA", "NR Source: HTTP Response: " + line);
+            if (line.indexOf("200 OK") == -1) {
+                LOG_ERROR("DATA", "NR Source: HTTP Error detected: " + line);
+                snprintf(lastErrorMessage, sizeof(lastErrorMessage), "HTTP Error: %s", line.c_str());
+                
+                // Read and log ALL headers
+                while (httpsClient->connected() || httpsClient->available()) {
+                    String hLine = httpsClient->readStringUntil('\n');
+                    hLine.trim();
+                    if (hLine.length() == 0) break;
+                    LOG_ERROR("DATA", "NR Header: " + hLine);
+                }
+
+                // Now read the body (SOAP Fault)
+                String faultBody = "";
+                for(int i=0; i<15 && httpsClient->available(); i++) {
+                    faultBody += httpsClient->readStringUntil('\n');
+                }
+                LOG_ERROR("DATA", "NR Source: Error Body: " + faultBody.substring(0, 300));
+                
+                httpsClient->stop();
+                delete httpsClient;
+                delete xStation;
+                return UPD_HTTP_ERROR;
+            }
+        } else if (line.startsWith("Transfer-Encoding:") && line.indexOf("chunked") >= 0) {
+            bChunked = true;
+        }
+        if (line.length() == 0) break;
     }
 
     xmlStreamingParser parser;
@@ -255,20 +303,16 @@ int nationalRailDataSource::updateData() {
     // After parsing, sanitize and check changes
     sanitiseData();
     
-    // Check if station data changed. 
-    bool changed = (memcmp(stationData.get(), oldStation, sizeof(NationalRailStation)) != 0);
-
-    if (changed && stationData) {
+    // For now, always treat a successful parse as a change to trigger board refresh
+    // Simplifies memory and is generally what's needed for departures
+    if (stationData) {
         stationData->boardChanged = true;
-    } else if (stationData && oldStation) {
-        *stationData = *oldStation; // Restore old if no change
     }
 
     if (callback && stationData) callback(3, stationData->numServices);
     snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SUCCESS [%ld] %lums", bytesRecv, (unsigned long)(millis()-perfTimer));
     
     delete xStation;
-    delete oldStation;
     
     LOG_INFO("DATA", "NR Source: updateData() finished successfully.");
     if (stationData) {
@@ -286,7 +330,7 @@ int nationalRailDataSource::updateData() {
         LOG_DEBUG("DATA", "--------------------------");
 #endif
     }
-    return changed ? UPD_SUCCESS : UPD_NO_CHANGE;
+    return UPD_SUCCESS;
 }
 
 void nationalRailDataSource::sanitiseData() {

@@ -148,6 +148,7 @@ struct Config {
     char rssUrl[128] = ""; // XML feed URL
     char rssName[48] = ""; // Label for news source
     bool rssEnabled = false; // Enable headlines scroller
+    char weatherKeyId[13] = ""; // Global weather API key ID
 };
 
 /**

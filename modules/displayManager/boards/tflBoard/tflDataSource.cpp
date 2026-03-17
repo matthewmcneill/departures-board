@@ -35,11 +35,12 @@ tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr
     lastErrorMsg[0] = '\0';
     tflAppkey[0] = '\0';
     tubeId[0] = '\0';
+    maxResults = 0; // 0 means no limit
 }
 
 void tflDataSource::configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb) {
-    if (naptanId) strncpy(tubeId, naptanId, sizeof(tubeId)-1);
-    if (apiKey) strncpy(tflAppkey, apiKey, sizeof(tflAppkey)-1);
+    if (naptanId) strlcpy(tubeId, naptanId, sizeof(tubeId));
+    if (apiKey) strlcpy(tflAppkey, apiKey, sizeof(tflAppkey));
     callback = cb;
 }
 
@@ -67,7 +68,12 @@ int tflDataSource::updateData() {
 
     if (!httpsClient->connect(apiHost, 443)) return UPD_NO_RESPONSE;
 
-    String request = "GET /StopPoint/" + String(tubeId) + F("/Arrivals?app_key=") + String(tflAppkey) + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
+    String request = "GET /StopPoint/" + String(tubeId) + F("/Arrivals?app_key=") + String(tflAppkey);
+    if (maxResults > 0) request += "&top=" + String(maxResults);
+    request += F(" HTTP/1.0\r\nHost: ");
+    request += String(apiHost);
+    request += F("\r\nConnection: close\r\n\r\n");
+    
     httpsClient->print(request);
     if (callback) callback();
 

@@ -1,7 +1,6 @@
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  * Refactored for v3.0 by Matt McNeill 2026 CB Labs
- * Refactored for v3.0 by Matt McNeill 2026 CB Labs
  *
  * https://github.com/gadec-uk/departures-board
  *
@@ -90,8 +89,8 @@ appContext appContext;
 // -----------------------------------------------------------------------------
 
 // Versioning
-int VERSION_MAJOR = 2; // Major system version incremented for breaking features
-int VERSION_MINOR = 2; // Minor system version incremented for incremental updates
+int VERSION_MAJOR = 3; // Major system version incremented for breaking features
+int VERSION_MINOR = 0; // Minor system version incremented for incremental updates
 
 // API Credits and Attribution Text
 extern const char nrAttributionn[] = "Powered by National Rail Enquiries"; // Mandatory attribution for National Rail

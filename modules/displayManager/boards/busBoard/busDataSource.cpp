@@ -59,8 +59,8 @@ busDataSource::busDataSource() : callback(nullptr) {
  * @param cb Feedback callback for connection status.
  */
 void busDataSource::configure(const char* atco, const char* filter, busDataSourceCallback cb) {
-    if (atco) strncpy(busAtco, atco, sizeof(busAtco)-1);
-    if (filter) strncpy(busFilter, filter, sizeof(busFilter)-1);
+    if (atco) strlcpy(busAtco, atco, sizeof(busAtco));
+    if (filter) strlcpy(busFilter, filter, sizeof(busFilter));
     callback = cb;
     cleanFilter(busFilter, cleanBusFilter, sizeof(cleanBusFilter));
 }
@@ -123,7 +123,7 @@ int busDataSource::updateData() {
             strcpy(lastErrorMsg, "Not Authorized");
             return UPD_UNAUTHORISED;
         } else {
-            strncpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg)-1);
+            strlcpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg));
             return UPD_HTTP_ERROR;
         }
     }
@@ -188,16 +188,16 @@ int busDataSource::updateData() {
                             else if (line.substring(0,3) == "<td") serviceData = true;
                             else if (line.substring(0,7) == "<a href" && serviceData) {
                                 serviceId = stripTag(line);
-                                strncpy(xBusStop->service[id].routeNumber, serviceId.c_str(), BUS_MAX_LINE_NAME-1);
+                                strlcpy(xBusStop->service[id].routeNumber, serviceId.c_str(), sizeof(xBusStop->service[id].routeNumber));
                             } else {
                                 serviceId = line;
-                                strncpy(xBusStop->service[id].routeNumber, serviceId.c_str(), BUS_MAX_LINE_NAME-1);
+                                strlcpy(xBusStop->service[id].routeNumber, serviceId.c_str(), sizeof(xBusStop->service[id].routeNumber));
                             }
                             break;
                         case PBT_DESTINATION:
                             if (line.indexOf("</td>") >= 0) parseStep = PBT_SCHEDULED;
                             else if (line.substring(0,1) != "<") {
-                                strncpy(xBusStop->service[id].destination, line.c_str(), BUS_MAX_LOCATION-1);
+                                strlcpy(xBusStop->service[id].destination, line.c_str(), sizeof(xBusStop->service[id].destination));
                             } else if (line.indexOf("class=\"vehicle\"") >= 0) {
                                 String vehicle = stripTag(line);
                                 // The vehicle tag contains " - [NAME]", we only want the name
@@ -220,7 +220,7 @@ int busDataSource::updateData() {
                                     if (id >= BUS_MAX_SERVICES) maxServicesRead = true;
                                 }
                             } else if (line.substring(0,1) != "<") {
-                                strncpy(xBusStop->service[id].sTime, line.c_str(), 5);
+                                strlcpy(xBusStop->service[id].sTime, line.c_str(), sizeof(xBusStop->service[id].sTime));
                             }
                             break;
                         case PBT_EXPECTED:
@@ -230,7 +230,7 @@ int busDataSource::updateData() {
                                 if (id >= BUS_MAX_SERVICES) maxServicesRead = true;
                             }
                             else if (line.substring(0,1) != "<") {
-                                strncpy(xBusStop->service[id].expectedTime, line.c_str(), 10);
+                                strlcpy(xBusStop->service[id].expectedTime, line.c_str(), sizeof(xBusStop->service[id].expectedTime));
                             }
                             break;
                     }
@@ -421,6 +421,6 @@ int busDataSource::getStopLongName(const char *locationId, char *locationName) {
         else delay(10);
     }
     httpsClient->stop();
-    strncpy(locationName, longName.c_str(), 79);
+    strlcpy(locationName, longName.c_str(), 80); // locationName is size 80 usually
     return UPD_SUCCESS;
 }

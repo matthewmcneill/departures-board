@@ -61,6 +61,7 @@ private:
     String currentObject;
     int id; // Current index for parsing
     bool maxServicesRead;
+    int maxResults;
 
     // Configuration
     char tflAppkey[50];
@@ -82,6 +83,10 @@ public:
 
     // Configuration & Data Access
     void configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb = nullptr);
+    /**
+     * @brief Limit the number of results returned. Used for lightweight testing.
+     */
+    void setResultLimit(int limit) { maxResults = limit; }
     TflStation* getStationData() { return stationData.get(); }
     MessagePool* getMessagesData() { return &messagesData; }
 

@@ -291,6 +291,7 @@ bool ConfigManager::save() {
     doc[F("updateDaily")] = config.dailyUpdateCheckEnabled;
     doc[F("rssUrl")] = config.rssUrl;
     doc[F("rssName")] = config.rssName;
+    doc[F("weatherKeyId")] = config.weatherKeyId;
     doc[F("mode")] = config.defaultBoardIndex;
 
     JsonArray boards = doc[F("boards")].to<JsonArray>();
@@ -363,6 +364,7 @@ void ConfigManager::loadConfig() {
         // RSS
         if (settings[F("rssUrl")].is<const char*>())     strlcpy(config.rssUrl, settings[F("rssUrl")], sizeof(config.rssUrl));
         if (settings[F("rssName")].is<const char*>())    strlcpy(config.rssName, settings[F("rssName")], sizeof(config.rssName));
+        if (settings[F("weatherKeyId")].is<const char*>()) strlcpy(config.weatherKeyId, settings[F("weatherKeyId")], sizeof(config.weatherKeyId));
         config.rssEnabled = (config.rssUrl[0] != '\0');
 
         // --- Step 2: Provision Boards ---

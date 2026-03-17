@@ -105,6 +105,8 @@ private:
     void fixFullStop(char* input);
     void trim(char* &start, char* &end);
     bool equalsIgnoreCase(const char* a, int a_len, const char* b);
+    void setYieldCallback(nrDataSourceCallback cb) { callback = cb; }
+
     bool serviceMatchesFilter(const char* filter, const char* serviceId);
     void sanitiseData();
     void deleteService(int x);
@@ -112,6 +114,11 @@ private:
 public:
     nationalRailDataSource();
     virtual ~nationalRailDataSource() = default;
+
+    /**
+     * @brief Manually set the SOAP address. Used to bypass WSDL download in test mode.
+     */
+    void setSoapAddress(const char* host, const char* api);
 
     // iDataSource Implementation
     int updateData() override;

@@ -14,7 +14,7 @@
  *
  * Exported Functions/Classes:
  * - weatherClient::weatherClient: Constructor.
- * - weatherClient::updateWeather: Connects to OpenWeatherMap API and parses JSON.
+ * - weatherClient::updateWeather: Connects to OpenWeatherMap API and parses JSON with key and token support.
  * - weatherClient::reapplyConfig: Provisions setting from global configuration.
  */
 
@@ -41,11 +41,16 @@ void weatherClient::reapplyConfig(const Config& config) {
     setWeatherEnabled(hasOwmKey);
 }
 
+/**
+ * @brief Default constructor for weatherClient.
+ */
 weatherClient::weatherClient() {}
 
 /**
  * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
  * @param status Reference to the WeatherStatus object to update (must have valid lat/lon).
+ * @param apiKeyId Optional ID of a stored API key to use.
+ * @param overrideToken Optional raw token to override stored keys (used for testing).
  * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
 bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, const char* overrideToken) {
@@ -63,13 +68,24 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     }
 
     if (apiKey.length() == 0) {
+        // Final fallback: try to find ANY OWM key if no specific ID provided
+        const Config& cfg = appContext.getConfigManager().getConfig();
+        for (int i = 0; i < cfg.keyCount; i++) {
+            if (strcmp(cfg.keys[i].type, "owm") == 0) {
+                apiKey = String(cfg.keys[i].token);
+                break;
+            }
+        }
+    }
+
+    if (apiKey.length() == 0) {
         strcpy(lastErrorMsg, "No valid API Key");
         LOG_WARN("DATA", lastErrorMsg);
         return false;
     }
-    char latBuf[16], lonBuf[16];
-    dtostrf(status.lat, 4, 4, latBuf);
-    dtostrf(status.lon, 4, 4, lonBuf);
+    char latBuf[32], lonBuf[32];
+    dtostrf(status.lat, 1, 4, latBuf);
+    dtostrf(status.lon, 1, 4, lonBuf);
     String lat = String(latBuf);
     String lon = String(lonBuf);
 
@@ -99,8 +115,11 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     }
 
     // --- Step 2: GET Request ---
-    String request = "GET /data/2.5/weather?units=metric&lang=en&lat=" + lat + F("&lon=") + lon + F("&appid=") + apiKey + F(" HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
-    LOG_DEBUG("DATA", "Weather Client: Requesting " + request); // API Key will be redacted by Logger
+    String request = "GET /data/2.5/weather?units=metric&lang=en&lat=" + lat + "&lon=" + lon + "&appid=" + apiKey + " HTTP/1.1\r\n" +
+                     "Host: " + String(apiHost) + "\r\n" +
+                     "User-Agent: ESP32-Departures-Board\r\n" +
+                     "Connection: close\r\n\r\n";
+    LOG_DEBUG("DATA", "Weather Client: Requesting " + request); 
     httpClient->print(request);
     retryCounter=0;
     while(!httpClient->available() && retryCounter++ < 40) {

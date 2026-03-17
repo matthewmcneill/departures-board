@@ -20,6 +20,7 @@
  *   - handleWiFiScan(): Returns JSON list of local SSIDs/RSSI.
  *   - handleWiFiTest(): Asynchronous non-blocking connection verification.
  *   - handleWiFiReset(): Erases NVS/LittleFS credentials and reboots to AP.
+ *   - handleRSSJson(): Serves the bundled JSON list of RSS feeds.
  */
 
 #pragma once
@@ -127,7 +128,25 @@ private:
     void handleTestKey();
 
     /**
-     * @brief Captive portal redirect: Catch-all for unknown requests to redirect to /portal.
+     * @brief API: Test an RSS feed URL.
+     */
+    void handleTestFeed();
+
+    /**
+     * @brief API: Test a specific weather API key.
+     */
+    void handleTestWeather();
+
+    /**
+     * @brief API: Serve the curated RSS feeds JSON.
+     */
+    /**
+     * @brief Serves the bundled rss.json configuration file.
+     */
+    void handleRSSJson();
+
+    /**
+     * @brief Handles the captive portal redirect for unknown routes.
      */
     void handleCaptivePortalRedirect();
 
