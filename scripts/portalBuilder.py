@@ -10,6 +10,12 @@ To view a copy of this license, visit https://creativecommons.org/licenses/by-nc
 
 Module: scripts/portalBuilder.py
 Description: Aggressively minifies and gzips web portal assets for embedding into ESP32 firmware.
+             Ensures that index.html and rss.json are converted to C++ headers for compilation.
+
+Exported Functions/Classes:
+- should_rebuild(): Determines if assets need regeneration based on file timestamps.
+- minify_html(content): Strips comments and whitespace for aggressive size reduction.
+- generate_assets(): Main entry point to orchestrate minification, compression, and header generation.
 """
 import os
 import gzip
@@ -140,5 +146,9 @@ def generate_assets():
 
     print(f"Successfully generated {OUTPUT_FILE}")
 
+# Always run when this script is loaded/executed
+generate_assets()
+
 if __name__ == "__main__":
-    generate_assets()
+    # Also run if called directly (though generate_assets() above already handled it)
+    pass
