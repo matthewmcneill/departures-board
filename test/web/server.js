@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = 3000;
-const PORTAL_DIR = path.resolve(__dirname, '../../portal');
+const PORTAL_DIR = path.resolve(__dirname, '../../web');
 
 const server = http.createServer((req, res) => {
   let filePath = path.join(PORTAL_DIR, req.url === '/' ? 'index.html' : req.url);

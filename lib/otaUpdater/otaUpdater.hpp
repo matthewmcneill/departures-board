@@ -27,8 +27,7 @@
 #include <LittleFS.h>
 #include <boards/systemBoard/loadingBoard.hpp>
 
-extern int VERSION_MAJOR;
-extern int VERSION_MINOR;
+
 extern char myUrl[24];
 extern github ghUpdate;
 

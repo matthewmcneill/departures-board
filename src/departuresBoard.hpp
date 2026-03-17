@@ -24,6 +24,10 @@
 
 #pragma once
 
+// --- Versioning ---
+#define VERSION_MAJOR 3
+#define VERSION_MINOR 0
+
 // --- Hardware Constraints ---
 #ifndef MAX_BOARDS
 #define MAX_BOARDS 6

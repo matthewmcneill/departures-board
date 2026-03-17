@@ -38,10 +38,10 @@ WebHandlerManager::WebHandlerManager(WebServer& server, ConfigManager& config)
 void WebHandlerManager::begin() {
     LOG_INFO("WEB", "Initializing WebHandlerManager on /portal...");
 
-    // Main Portal Entry
-    _server.on("/portal", HTTP_GET, [this]() { this->handlePortalRoot(); });
-    _server.on("/portal/", HTTP_GET, [this]() { this->handlePortalRoot(); });
-    _server.on("/portal/index.html", HTTP_GET, [this]() { this->handlePortalRoot(); });
+    // Main Web Entry
+    _server.on("/web", HTTP_GET, [this]() { this->handlePortalRoot(); });
+    _server.on("/web/", HTTP_GET, [this]() { this->handlePortalRoot(); });
+    _server.on("/web/index.html", HTTP_GET, [this]() { this->handlePortalRoot(); });
 
     // API: System & Config (Unified)
     _server.on("/api/status", HTTP_GET, [this]() { this->handleGetStatus(); });
@@ -77,10 +77,10 @@ void WebHandlerManager::begin() {
 }
 
 /**
- * @brief Serves the main portal index.html file (gzipped from flash).
+ * @brief Serves the main web index.html file (gzipped from flash).
  */
 void WebHandlerManager::handlePortalRoot() {
-    LOG_INFO("WEB_API", "Serving /portal/index.html (gzipped)");
+    LOG_INFO("WEB_API", "Serving /web/index.html (gzipped)");
     sendGzipFlash(index_html_gz, index_html_gz_len, "text/html");
 }
 
@@ -495,10 +495,10 @@ void WebHandlerManager::handleWiFiReset() {
 
 void WebHandlerManager::handleCaptivePortalRedirect() {
     String host = _server.header("Host");
-    LOG_INFO("WEB", String("Captive Portal: Redirecting request from ") + host + " to /portal");
+    LOG_INFO("WEB", String("Captive Portal: Redirecting request from ") + host + " to /web");
     
-    // Redirect all requests that are NOT for our API/Portal to the portal root
-    _server.sendHeader("Location", "/portal", true);
+    // Redirect all requests that are NOT for our API/Portal to the web root
+    _server.sendHeader("Location", "/web", true);
     _server.send(302, "text/plain", "");
 }
 

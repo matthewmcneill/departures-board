@@ -88,10 +88,6 @@ appContext appContext;
 // Environment Variables & State Management 
 // -----------------------------------------------------------------------------
 
-// Versioning
-int VERSION_MAJOR = 3; // Major system version incremented for breaking features
-int VERSION_MINOR = 0; // Minor system version incremented for incremental updates
-
 // API Credits and Attribution Text
 extern const char nrAttributionn[] = "Powered by National Rail Enquiries"; // Mandatory attribution for National Rail
 extern const char tflAttribution[] = "Powered by TfL Open Data"; // Mandatory attribution for TfL

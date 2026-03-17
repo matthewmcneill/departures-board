@@ -33,7 +33,7 @@ except ImportError:
     env = MockEnv()
 
 ROOT_DIR = env.get("PROJECT_DIR", os.getcwd())
-PORTAL_DIR = os.path.join(ROOT_DIR, "portal")
+PORTAL_DIR = os.path.join(ROOT_DIR, "web")
 OUTPUT_FILE = os.path.join(ROOT_DIR, "include/webServer/portalAssets.h")
 ASSETS = ["index.html", "rss.json"] 
 

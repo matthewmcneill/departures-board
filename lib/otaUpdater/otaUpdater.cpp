@@ -27,7 +27,7 @@
 #include <memory>
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>
 #include <appContext.hpp>
-#include "../../include/webgui/index.h"
+#include <departuresBoard.hpp>
 
 extern struct tm timeinfo;       // Global synchronized time struct
 
@@ -154,7 +154,7 @@ void otaUpdater::checkPostWebUpgrade() {
   }
   prevGUI.trim();
   
-  String currentGUI = String(WEBAPPVER_MAJOR) + F(".") + String(WEBAPPVER_MINOR);
+  String currentGUI = String(VERSION_MAJOR) + F(".") + String(VERSION_MINOR);
   if (prevGUI != currentGUI) {
     LOG_INFO("OTA", "Web UI version mismatch detected. Cleaning up assets...");
     

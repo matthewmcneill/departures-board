@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // Use BASE_URL from environment or default to local index.html if not provided
-// Note: BASE_URL should include the full path to the portal on the ESP32, e.g., http://192.168.1.100/portal
+// Note: BASE_URL should include the full path to the portal on the ESP32, e.g., http://192.168.1.100/web
 const BASE_URL = process.env.BASE_URL;
 
 test.describe('Web Portal - Live Hardware Test', () => {
