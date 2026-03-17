@@ -25,6 +25,7 @@
 #include <appContext.hpp>
 #include "../displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp"
 #include "../displayManager/boards/tflBoard/tflDataSource.hpp"
+#include "../displayManager/boards/busBoard/busDataSource.hpp"
 #include "../../lib/rssClient/rssClient.hpp"
 #include "../weatherClient/weatherClient.hpp"
 
@@ -66,6 +67,7 @@ void WebHandlerManager::begin() {
     // API: Feeds & Weather Diagnostics
     _server.on("/api/feeds/test", HTTP_GET, [this]() { this->handleTestFeed(); });
     _server.on("/api/weather/test", HTTP_GET, [this]() { this->handleTestWeather(); });
+    _server.on("/api/boards/test", HTTP_POST, [this]() { this->handleTestBoard(); });
     _server.on("/rss.json", HTTP_GET, [this]() { this->handleRSSJson(); });
 
     // Captive Portal Redirect
@@ -557,6 +559,72 @@ void WebHandlerManager::handleTestWeather() {
     
     String output;
     serializeJson(doc, output);
+    _server.send(200, "application/json", output);
+}
+
+void WebHandlerManager::handleTestBoard() {
+    LOG_DEBUG("WEB_API", "POST /api/boards/test - Arguments received: " + String(_server.args()));
+    
+    String body = _server.hasArg("plain") ? _server.arg("plain") : (_server.args() > 0 ? _server.arg(0) : "");
+    if (body.length() == 0) {
+        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
+        return;
+    }
+
+    JsonDocument doc;
+    deserializeJson(doc, body);
+    const char* typeStr = doc["type"] | "";
+    const char* stationId = doc["id"] | "";
+    const char* keyId = doc["apiKeyId"] | "";
+    
+    // For testing a board, we need the token from the associated key
+    const char* token = nullptr;
+    String tokenStr;
+    if (strlen(keyId) > 0) {
+        ApiKey* key = _config.getKeyById(keyId);
+        if (key) {
+            token = key->token;
+        }
+    }
+
+    LOG_INFO("WEB_API", "Testing Board: Type=" + String(typeStr) + " Station=" + String(stationId) + " KeyID=" + String(keyId));
+
+    bool success = false;
+    String errorMsg = "Unsupported board type";
+    int type = -1;
+
+    if (strcmp(typeStr, "rail") == 0) type = 0;
+    else if (strcmp(typeStr, "tfl") == 0) type = 1;
+    else if (strcmp(typeStr, "bus") == 0) type = 2;
+    else if (strcmp(typeStr, "clock") == 0) type = 3;
+
+    if (type == 0) { // Rail
+        nationalRailDataSource ds;
+        int res = ds.testConnection(token, stationId);
+        success = (res == UPD_SUCCESS);
+        if (!success) errorMsg = ds.getLastErrorMsg();
+    } else if (type == 1) { // TfL
+        tflDataSource ds;
+        int res = ds.testConnection(token, stationId);
+        success = (res == UPD_SUCCESS);
+        if (!success) errorMsg = ds.getLastErrorMsg();
+    } else if (type == 2) { // Bus
+        busDataSource ds;
+        int res = ds.testConnection(token, stationId);
+        success = (res == UPD_SUCCESS);
+        if (!success) errorMsg = ds.getLastErrorMsg();
+    } else if (type == 3) { // Clock
+        success = true; // Clock always works
+    }
+
+    LOG_INFO("WEB_API", String("Board test result: ") + (success ? "SUCCESS" : "FAILED (" + errorMsg + ")"));
+    
+    JsonDocument res;
+    res["status"] = success ? "ok" : "fail";
+    if (!success) res["msg"] = errorMsg;
+    
+    String output;
+    serializeJson(res, output);
     _server.send(200, "application/json", output);
 }
 

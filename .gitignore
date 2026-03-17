@@ -21,3 +21,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Node.js
+node_modules/
+test/web/node_modules/
+
+# Test results
+test/web/test-results/
+test/web/playwright-report/
+test/web/blob-report/
+test/web/playwright/.cache/
+test-results/

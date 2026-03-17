@@ -201,26 +201,33 @@ int tflDataSource::updateData() {
  * @param token Optional token to test (overrides stored configuration).
  * @return int Update status code.
  */
-int tflDataSource::testConnection(const char* token) {
+int tflDataSource::testConnection(const char* token, const char* stationId) {
     LOG_INFO("DATA", "TfL Board: Performing lightweight Auth-only check via testConnection");
     
     // Save current state to avoid clobbering an active board's settings
     bool prevTestMode = isTestMode;
     char prevKey[50];
+    char prevTubeId[13];
     strlcpy(prevKey, tflAppkey, sizeof(prevKey));
+    strlcpy(prevTubeId, tubeId, sizeof(prevTubeId));
     
     // Configure for test
-    isTestMode = true;
+    isTestMode = (stationId == nullptr || strlen(stationId) == 0);
     if (token) {
         strlcpy(tflAppkey, token, sizeof(tflAppkey));
     }
     
-    // Execute update (in test mode it just checks the line status)
+    if (stationId && strlen(stationId) > 0) {
+        strlcpy(tubeId, stationId, sizeof(tubeId));
+    }
+    
+    // Execute update
     int result = updateData();
     
     // Restore state
     isTestMode = prevTestMode;
     strlcpy(tflAppkey, prevKey, sizeof(tflAppkey));
+    strlcpy(tubeId, prevTubeId, sizeof(tubeId));
     
     return result;
 }

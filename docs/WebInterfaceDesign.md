@@ -80,11 +80,12 @@ Focus: Managing secrets and identity for data sources.
 | **Status** | Diagnostic | Results from a "Test Connection" button. |
 | **Setup Help** | UI Component | **Instructional Cards**: Pop-up cards or links to help users find where to get their tokens (e.g. National Rail sign-up). |
 
-#### **5. Sequential Lifecycle Orchestration**
+#### 5. Sequential Lifecycle Orchestration
 To prevent saturating the ESP32's limited network stack (especially during complex SSL handshakes), the portal implements a **Sequential Validation** pattern. 
-- **Staggered Requests**: API tests are executed one-by-one with a 1-second delay between each.
-- **Visual Feedback**: The status dots reflect this orchestration by pulsing amber sequentially, providing a calm and predictable setup experience.
-- **Auto-Execution**: Sequential tests are triggered automatically whenever the 'API Keys' tab is loaded or refreshed to ensure the UI always displays fresh status.
+- **Unified Test Queue**: All diagnostic tests (Board Health, API Keys, Weather, and Feeds) are enqueued in a global `app.state.testQueue`.
+- **Staggered Requests**: Tests are executed strictly one-by-one with a **500ms breather** between each request to allow the ESP32's WiFi and LwIP stacks to process other background tasks.
+- **Auto-Execution**: Sequential tests are triggered automatically whenever a relevant tab (Displays, Keys, Feeds) is loaded or active data is modified.
+- **Automatic Abort**: Switching tabs immediately clears the test queue to focus hardware resources on the current user context.
 
 ### 4.3 Board Manager (CRUD List)
 Focus: Managing the virtual boards in the carousel.

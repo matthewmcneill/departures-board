@@ -14,7 +14,8 @@ Whenever you are drafting or finalizing an implementation plan:
     - Adherence to SRP, OCP, and DIP.
     - Minimal global state and use of Dependency Injection.
     - Proper use of interfaces (i-prefixed).
-3.  **Resource Impact**: You MUST consult the `embedded-systems` skill (`.agents/skills/embedded-systems/SKILL.md`) to ensure:
+3.  **UI Design**: If the implementation plan proposes any user interface (UI) changes, you MUST include an ASCII art mockup of the proposed design. Consult the `embedded-web-designer` skill (`.agents/skills/embedded-web-designer/SKILL.md`) for lightweight design standards.
+4.  **Resource Impact**: You MUST consult the `embedded-systems` skill (`.agents/skills/embedded-systems/SKILL.md`) to ensure:
     - Flash/ROM, RAM, Stack, and Heap memory impacts are evaluated and documented.
     - ESP32-specific optimizations (const in Flash, PSRAM usage) are considered.
     - Power consumption and Duty Cycling profiles are evaluated.

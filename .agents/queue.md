@@ -3,20 +3,27 @@
 This file tracks active and pending agent sessions to prevent hardware and build conflicts.
 
 ## Lock Status
-- **Locked By**: NONE
-- **Reason**: 
-- **Since**: 
+- **Locked By**: None
+- **Reason**: None
+- **Since**: None
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |
 | :--- | :--- | :--- | :--- |
-| 6ac93dc9-d478-4cf2-9a19-c40eef924938 | Implement Display Boards List with reordering, default star, and station search | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6ac93dc9-d478-4cf2-9a19-c40eef924938/implementation_plan.md) | 2026-03-15T16:40:47Z |
 | 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
-| 02d69dd3-1b75-448c-930d-3e14292b29fa | Remove bustimes.org button from API Key selection dialog | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/02d69dd3-1b75-448c-930d-3e14292b29fa/implementation_plan.md) | 2026-03-16T21:40:00Z |
+| 2ec805fd-2f7b-43bd-a86a-6d17347e6fe4 | Archiving Legacy Web Infrastructure & Renaming Portal | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/2ec805fd-2f7b-43bd-a86a-6d17347e6fe4/implementation_plan.md) | 2026-03-17T12:57:00Z |
+| 6cb48930-4216-44d0-b9d0-831a1683ea87 | Cleanup and Modernization: State Machine, Error Delegation & Layout Fixes | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6cb48930-4216-44d0-b9d0-831a1683ea87/implementation_plan.md) | 2026-03-17T15:47:56Z |
+| 2be270b5-2932-4a27-a371-d6bf2d93ebcd | Audit and Fix: TimeManager NTP sync initialization and strict DI refactoring for clockWidget | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/2be270b5-2932-4a27-a371-d6bf2d93ebcd/implementation_plan.md) | 2026-03-17T17:06:18Z |
+| e31425fd-6bc6-4d87-9438-d68336fd85b1 | System Tab Enhancements: Dynamic Diagnostics & Global Settings Consolidation | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/e31425fd-6bc6-4d87-9438-d68336fd85b1/implementation_plan.md) | 2026-03-17T17:26:19Z |
+| 23531fa4-dd20-4a3a-ab4d-6ae6ceb6589f | Clock Display Review: Add NTP/Time diagnostics and per-board brightness overrides with 'Use Global' toggle | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/23531fa4-dd20-4a3a-ab4d-6ae6ceb6589f/implementation_plan.md) | 2026-03-17T18:56:02Z |
+| 3a01e364-7839-42ce-bf75-7dc1a7930ed9 | UI Proposal for Up/Down Buttons | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/3a01e364-7839-42ce-bf75-7dc1a7930ed9/implementation_plan.md) | 2026-03-17T21:35:40Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |
 | :--- | :--- | :--- | :--- |
+| cf3f6db7-7ac3-4267-8341-fccc4937cf71 | Board Editor Refinements: Tube search, manual Bus ATCO verify, and split filter logic | Success | 2026-03-17T17:10:00Z |
+| 1e892e27-f765-4b90-b825-c611eed22094 | UI: Reorder portal navigation and add Schedule tab placeholder | Success | 2026-03-17T11:59:00Z |
+| 02d69dd3-1b75-448c-930d-3e14292b29fa | Remove bustimes.org button from API Key selection dialog | Success | 2026-03-17T11:39:04Z |
 | 1757534b-8e83-4ac3-9d12-bd1074fa2fbc | Implement unified iDataSourceTest interface | Success | 2026-03-17T11:31:00Z |
 | 33fec7a6-4bb3-4e24-9cf7-8e28a07679c5 | Optimization of TfL/NR API validation | Success | 2026-03-17T11:00:00Z |
 | 45557708-ca25-4ac0-9ef4-5424065f90c7 | Resolve National Rail API Test Failure | Success | 2026-03-17T10:32:00Z |

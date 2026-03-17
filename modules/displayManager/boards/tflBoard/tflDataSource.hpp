@@ -90,7 +90,7 @@ public:
     // iDataSource Implementation
     int updateData() override;
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
-    int testConnection(const char* token = nullptr) override;
+    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
     // Configuration & Data Access
     /**

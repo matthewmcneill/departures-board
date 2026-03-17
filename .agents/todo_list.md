@@ -1,16 +1,20 @@
 # Next Session TODO
 
+- [x] Implement a unified diagnostic test queue in the frontend to prevent ESP32 resource saturation and dropped connections.
+- [x] Unify the "Active Displays" diagnostic UI with the "API Keys" style (added status text labels next to dots).
+- [x] Auto-abort pending diagnostic tests when switching tabs to focus on the current context.
+
 - [x] move all the u8g2 setup and handling into the display manager. Add a displaymanager.Showboard( iDisplayBoard ) instead of calling render directly whcih injects the display hardware. Move all of the constants related to the display into the display manager
 - [x] clean up the drawing primitives. These routines should all take a u82g display as a paramaeter and not assume the global one exists.
 - [x] continue with the rationalisation of the data providers
-- [ ] finish the updates to the web configuration front end to enable better board configuration (Backend support for multi-board added, UI still needs multi-board components)
+- [/] finish the updates to the web configuration front end to enable better board configuration (Backend support for multi-board added, UI still needs multi-board components) (Queued in session 2ec805fd for legacy cleanup/rename)
 - [x] iStation and messageData - shoudl be obsolete
 - [ ] header widgets - I have a feeling this is not generalised, and is spacific to NatRail. (Still largely NR specific)
 - [x] systemBoard.cpp still has a lot of old straggling stuff that needs to go into displays, widgets or modules. (Cleanup complete, broken into separate classes)
 - [x] Departures Board (systemManager) still has a bunch of specific data to the various boards which needs moving into the classes.
 - [x] check that the active display boards are maintained correctly when going through sub-loops of the main loop (e.g. OTA check flow handles this)
 - [x] there is a weird dependency on the fonts in the widgets - to calculate font size we set properties on the u8g2 board and pull a value which may upset actual board state.
-- [x] rationalise the include folder and get rid of it. (Renamed libraries and moved assets)
+- [/] rationalise the include folder and get rid of it. (Renamed libraries and moved assets, legacy code removal queued in session 2ec805fd)
 - [x] House Style Refactor: libraries to camelCase and headers documented. (Completed: Audited repository, added Doxygen, renamed headers to .hpp)
 - [x] why do we haev an appContext class, it seems to just to add one layer of dereference from the departureboard.cpp. Is it superflouous? (Resolved: Clarified DI orchestration role and encapsulated in modules/appContext).
 - [x] need to check that the config is being upgraded and then rewritten - looks like the old one. (Rewritten to modernize on save and serve from memory)
@@ -20,7 +24,7 @@
 - [ ] Fix 'Rail Station' field population to resolve CRS to human-readable names on load (currently empty until manual input).
 - [ ] Investigate missing Latitude/Longitude fields in the 'Advanced Options' tab of the Web UI.
 - [x] Add RSS feed configuration UI to the System tab (Implemented in FEEDS tab).
-- [ ] startup screens don't show and then the board display seems very static and is not laid out properly. need to work through this. Probably starting with the startup screens and then working through the system screens.
+- [/] startup screens don't show and then the board display seems very static and is not laid out properly. need to work through this. Probably starting with the startup screens and then working through the system screens. (Queued in sessions 6cb48930, 9c4faedc, and active in cf3f6db7)
 - [x] the 'eye' visible icon for the passwords is stil misaligned - I asked the agent 3 times to fix it and it just could not understand. (Fixed: Logic corrected and alignment verified on hardware)
 - [x] the scan button is not aligned with the networks drop-down box and changes size when the scan icon is showing. (Verified: Stable alignment and sizing)
 - [x] just check that the key registry IS actually being used as a registry. i.e. anything that references it uses an ID for the key that is served by the registry with the actual key. Similarly, in the storage, the configuration storage should reference the id of the key and the apiKeyManager should use that ID to serve the correct key. (Verified: IDs correctly used across board mapping and save logic)
@@ -30,7 +34,7 @@
 - [ ] add a machine state to app context for OTA updates. If the ota update flag is checked it should go to UPDATING state before running.  In this state it should check for updates, and then do an OTA if there is one whilst displaying the OTA wizard or progress bar. Otherwise it just checks and then moves to RUNNING.  We also need to think about how a long running device periodically goes to UPDATING state to check.
 - [/] need to review all password masking. (Stage 1: Implemented logic to prevent overwriting keys/passwords if the placeholder is unchanged. Stage 2: Refining grey stars indicator UI).
 - [ ] make an ota widget and remove the OTA overlay board
-- [ ] Investigate persistent National Rail SOAP connection instability (success on WSDL boot, but frequent "SOAP connection failed" during data updates; requires retry logic evaluation).
+- [/] Investigate persistent National Rail SOAP connection instability (success on WSDL boot, but frequent "SOAP connection failed" during data updates; requires retry logic evaluation). (Active in session cf3f6db7)
 
 - [x] need to fix the national rail key and testing process in the portal. Currently it always fails. (Resolved: Implemented sequential testing to handle connection overhead).
 - [x] fix the 'Testing' button height in the keys detailed form to ensure it remains constant when text changes. (Resolved: Buttons now have consistent vertical rhythm in modern modal layout).
@@ -40,3 +44,4 @@
 - [ ] include instructions and links on where to get keys in the key creation UI (replicate help strings from `web/keys.htm`).
 - [x] remove the bus key button from the add keys dialog. No key is needed for bus times. (Resolved: Bustimes.org uses scrapers/unauthenticated APIs).
 - [ ] add a test class to `iDataSource` (e.g., `MockDataSource`) to keep data source code encapsulated and improve unit testability.
+- [ ] Migrate Sleep Schedule from v1 config to a unified 'Schedule' tab/module (currently handled in legacy System screens).

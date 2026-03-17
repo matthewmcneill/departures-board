@@ -47,16 +47,32 @@ test.describe('Web Portal - Local Mocked Tests', () => {
     // Give it a moment to initialize
     await page.waitForLoadState('networkidle');
   });
-
   test('should load the portal with mock data', async ({ page }) => {
     await expect(page.locator('h2')).toContainText('DEPARTURES');
     await expect(page.locator('input[name="hostname"]')).toHaveValue('departures-test');
   });
 
-  test('should display active boards', async ({ page }) => {
-    // Switch to Boards tab
-    await page.click('a[data-target="tab-boards"]');
-    await expect(page.locator('#boards-list')).toContainText('Waterloo');
+  test('should display active boards and trigger health checks on tab switch', async ({ page }) => {
+    let testCalls = 0;
+    // Mock board testing API
+    await page.route('**/api/boards/test', async route => {
+      testCalls++;
+      await route.fulfill({ json: { status: 'ok' } });
+    });
+
+    // Switch to Displays tab
+    await page.click('a[data-target="tab-displays"]');
+    const items = page.locator('#boards-list .board-slot:not(.empty)');
+    await expect(items).toContainText('Waterloo');
+    
+    // Wait for the health check to start (transition from grey)
+    const dot = page.locator('#board-dot-0');
+    await expect(dot).toBeVisible();
+    await expect(dot).not.toHaveClass(/grey/, { timeout: 10000 });
+    
+    // Verify health check was triggered
+    expect(testCalls).toBeGreaterThanOrEqual(1);
+    await expect(dot).toHaveClass(/green|dot green/);
   });
 
   test('should display API keys with correct masking', async ({ page }) => {

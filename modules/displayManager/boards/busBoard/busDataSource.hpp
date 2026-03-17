@@ -152,9 +152,10 @@ public:
     /**
      * @brief Performs a lightweight connection and authentication test.
      * @param token Optional token to test (overrides stored configuration). Can be nullptr for data sources that do not use keys.
+     * @param stationId Optional station/stop ID to test (overrides stored configuration).
      * @return 0 for success (UPD_SUCCESS), non-zero for error (UPD_*).
      */
-    int testConnection(const char* token = nullptr) override;
+    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
     // Bus specific methods
     /**

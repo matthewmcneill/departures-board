@@ -1,5 +1,33 @@
 # Project Log
 
+## 2026-03-17 - Unified Test Queue & Display UI Unification
+
+### Session Summary
+Implemented a centralized `app.state.testQueue` in the portal to serialize all diagnostic requests (Boards, Keys, Feeds, Weather). This prevents the ESP32 from being overwhelmed by concurrent SSL/API requests. Unified the diagnostic UI for the "Displays" tab to match the "API Keys" style, adding explicit status text labels.
+
+### Key Decisions
+- **Serialized Diagnostic Queue**: All diagnostic tests now run sequentially with a 500ms breather, resolving the "HTTP ERROR" and "Red Dot" failures caused by socket exhaustion.
+- **Tab Context Sensitivity**: Integrated `clearTestQueue` into the tab switcher to immediately cancel stale tests from previous views.
+- **Visual Feedback Unification**: Added status text labels ("Testing...", "Active", "Offline") to board slots, improving UX and consistency across system diagnostic views.
+- **Race Condition Resolution**: Moved health check triggers to execute after the DOM is fully rendered in `renderBoards` to ensure target element availability.
+
+### Git Commit
+Generated commit: [TBD]
+
+## 2026-03-17 - Portal Navigation Reorder & Build Script Fix
+
+### Session Summary
+Reordered the bottom navigation bar of the web portal to follow the user flow (WiFi, Keys, Feeds, Displays, Schedule, System). Added a placeholder for the "Schedule" feature and fixed a build script integration issue that was preventing the portal assets from being correctly embedded during compilation.
+
+### Key Decisions
+- **User Flow Reorder**: Moved the navigation links and their corresponding content sections in `index.html` to align with the logical setup sequence requested.
+- **Schedule Tab Placeholder**: Added a new "Schedule & Auto-Power" tab with a "Feature under development" message and icon, providing a UI hook for future development.
+- **`portalBuilder.py` Integration**: Corrected a logic error in the build script that only ran the asset generation if the script was executed as `__main__`. This fix ensures it runs correctly when invoked by PlatformIO as a `pre:` script, guaranteeing the latest portal changes are included in every firmware build.
+- **Serial Port Cleanup**: Implemented aggressive process termination for stale `pio` and `esptool` instances to resolve hardware upload conflicts.
+
+### Git Commit
+Generated commit: ba084c4
+
 ## 2026-03-17 - Unified iDataSourceTest Interface & API Key UI Refactoring
 
 ### Session Summary

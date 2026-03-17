@@ -211,7 +211,7 @@ int nationalRailDataSource::updateData() {
         if (nrTimeOffset) data += "<ns2:timeOffset>" + String(nrTimeOffset) + F("</ns2:timeOffset>");
         data += F("</ns2:GetDepBoardWithDetailsRequest></soap-env:Body></soap-env:Envelope>");
 
-        soapAction = F("http://thalesgroup.com/RTTI/2012-01-13/ldb/GetDepBoardWithDetails");
+        soapAction = F("http://thalesgroup.com/RTTI/2015-05-14/ldb/GetDepBoardWithDetails");
     }
     
     // Diagnostic logging for token
@@ -353,7 +353,7 @@ int nationalRailDataSource::updateData() {
  * @param token Optional token to test (overrides stored configuration).
  * @return int Update status code.
  */
-int nationalRailDataSource::testConnection(const char* token) {
+int nationalRailDataSource::testConnection(const char* token, const char* stationId) {
     LOG_INFO("DATA", "NR Source: Performing lightweight Auth-only check via testConnection");
     
     // Save current state to avoid clobbering an active board's settings
@@ -373,7 +373,12 @@ int nationalRailDataSource::testConnection(const char* token) {
     if (token) {
         strlcpy(nrToken, token, sizeof(nrToken));
     }
-    strlcpy(crsCode, "PAD", sizeof(crsCode)); // Paddington as default test station
+    
+    if (stationId && strlen(stationId) > 0) {
+        strlcpy(crsCode, stationId, sizeof(crsCode));
+    } else {
+        strlcpy(crsCode, "PAD", sizeof(crsCode)); // Paddington as default test station
+    }
     
     // Direct SOAP setup bypasses WSDL download.
     // Using ldb12.asmx for the identified minimal payload compatibility.

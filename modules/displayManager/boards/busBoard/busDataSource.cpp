@@ -288,8 +288,17 @@ int busDataSource::updateData() {
  * @param token Optional token to test (ignored for bus).
  * @return int Update status code.
  */
-int busDataSource::testConnection(const char* token) {
-    LOG_INFO("DATA", "Bus Board: testConnection called. Bypassing request as no auth required.");
+int busDataSource::testConnection(const char* token, const char* stationId) {
+    if (stationId && strlen(stationId) > 0) {
+        LOG_INFO("DATA", "Bus Board: Performing station-specific check for ATCO: " + String(stationId));
+        char prevAtco[13];
+        strlcpy(prevAtco, busAtco, sizeof(prevAtco));
+        strlcpy(busAtco, stationId, sizeof(busAtco));
+        int result = updateData();
+        strlcpy(busAtco, prevAtco, sizeof(busAtco));
+        return result;
+    }
+    LOG_INFO("DATA", "Bus Board: testConnection called without stationId. Bypassing request as no auth required.");
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS");
     return UPD_SUCCESS; // bustimes.org doesn't use a token for now, return ok for the UI
 }

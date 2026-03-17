@@ -144,6 +144,11 @@ private:
      * @brief Serves the bundled rss.json configuration file.
      */
     void handleRSSJson();
+    
+    /**
+     * @brief API: Test a specific board configuration.
+     */
+    void handleTestBoard();
 
     /**
      * @brief Handles the captive portal redirect for unknown routes.

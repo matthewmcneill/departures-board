@@ -1,5 +1,5 @@
 Font: UndergroundClock8
-Glyph count: 11
+Glyph count: 12
 b0: 3, b1: 3
 
 Character U+0030 (Char: '0')
@@ -120,3 +120,12 @@ Width: 2, Height: 6, X-Offset: 1, Y-Offset: 1, dX: 5
 ..
 ##
 ##
+
+Character U+0020 (Char: ' ')
+Width: 2, Height: 6, X-Offset: 1, Y-Offset: 1, dX: 5
+..
+..
+..
+..
+..
+..

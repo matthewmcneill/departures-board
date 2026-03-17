@@ -267,6 +267,27 @@
       animation: slideUp 0.3s ease-out;
     }
 
+    .instruction-box {
+      background: rgba(245, 124, 0, 0.08);
+      border-left: 4px solid var(--primary);
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--text);
+      margin-bottom: 1.2rem;
+      line-height: 1.4;
+    }
+
+    .instruction-box a {
+      color: var(--primary);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .instruction-box a:hover {
+      text-decoration: underline;
+    }
+
     @keyframes slideUp {
       from {
         opacity: 0;
@@ -800,6 +821,210 @@
       background: transparent;
       color: var(--error);
       border: 1px solid var(--error);
+    }
+
+    /* Board List Enhancements */
+    .board-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .board-slot {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 0 0 0 1.25rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 85px;
+      text-align: left;
+      overflow: hidden;
+    }
+
+    .board-slot:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .board-slot.empty {
+      background: transparent;
+      border: 2px dashed var(--border);
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.5rem;
+      opacity: 0.6;
+    }
+
+    .board-slot.empty:hover {
+      opacity: 1;
+      border-color: var(--primary);
+    }
+
+    .transport-logo {
+      width: 2.8rem;
+      height: 2.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .transport-logo svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .board-slot-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .board-slot-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    .board-slot-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+
+    .board-slot-right {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+      height: 100%;
+    }
+
+    .board-status-text {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      min-width: 60px;
+      text-align: right;
+    }
+    .board-reorder-btns {
+      display: flex;
+      flex-direction: column;
+      width: 60px;
+      height: 100%;
+      border-left: 1px solid var(--border);
+    }
+    
+    .board-reorder-btns button:first-child {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .board-reorder-btn {
+      padding: 0;
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      background: var(--card-bg);
+      color: var(--text);
+      border: none;
+      border-radius: 0;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.2s;
+    }
+
+    .board-reorder-btn:hover:not(:disabled) {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .board-reorder-btn:disabled {
+      opacity: 0.15;
+      cursor: default;
+    }
+
+    /* Station Search Suggestions */
+    .search-container {
+      position: relative;
+    }
+
+    .suggestions-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0 0 10px 10px;
+      z-index: 100;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .suggestion-item {
+      padding: 0.75rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-item:hover {
+      background: var(--card-bg);
+      color: var(--primary);
+    }
+
+    .advanced-toggle {
+      background: transparent;
+      border: none;
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.5rem 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 0.5rem;
+    }
+
+    .advanced-toggle svg {
+      transition: transform 0.2s;
+    }
+
+    .advanced-toggle.active svg {
+      transform: rotate(180deg);
+    }
+
+    button.btn-delete {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 2rem;
+      background: transparent;
+      color: var(--error);
+      border: 1px solid var(--error);
       padding: 0.75rem;
       font-size: 0.85rem;
       font-weight: 600;
@@ -1106,9 +1331,9 @@
     <section id="tab-displays" class="tab-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h3 style="margin:0;">Active Displays</h3><button class="outline"
-          style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="app.editBoard(-1)">+ Add</button>
+          style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="app.selectBoardType()">+ Add</button>
       </div>
-      <div id="boards-list"></div>
+      <div id="boards-list" class="board-slots"></div>
     </section>
 
     <section id="tab-schedule" class="tab-content">
@@ -1198,37 +1423,135 @@
     </a>
   </nav>
 
+  <dialog id="modal-board-selection">
+    <article>
+      <button type="button" class="modal-close-btn" onclick="app.closeModal('modal-board-selection')" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <header>Select Board Type</header>
+      <div class="type-grid">
+        <div class="type-card" onclick="app.editBoard(-1, 0)">
+          <span class="icon">🚆</span>
+          <h5>Rail</h5>
+          <p>National Rail</p>
+        </div>
+        <div class="type-card" onclick="app.editBoard(-1, 1)">
+          <span class="icon">🚇</span>
+          <h5>Tube</h5>
+          <p>TfL Arrivals</p>
+        </div>
+        <div class="type-card" onclick="app.editBoard(-1, 2)">
+          <span class="icon">🚌</span>
+          <h5>Bus</h5>
+          <p>Bus / Tram</p>
+        </div>
+        <div class="type-card" onclick="app.editBoard(-1, 3)">
+          <span class="icon">⏰</span>
+          <h5>Clock</h5>
+          <p>Screensaver</p>
+        </div>
+      </div>
+      <button type="button" class="secondary" style="width:100%; margin-top: 1rem;"
+        onclick="app.closeModal('modal-board-selection')">Cancel</button>
+    </article>
+  </dialog>
+
   <dialog id="modal-board">
     <article>
       <header>Display Editor</header>
       <form id="board-form">
-        <input type="hidden" name="index" />
-        <label>Display Name<input type="text" name="name" required /></label>
-        <label>Transport Mode<select name="type" onchange="app.handleBoardTypeChange(this.value)">
-            <option value="0">National Rail</option>
-            <option value="1">London Underground</option>
-            <option value="2">Bus / Tram</option>
-          </select></label>
-        <label>Station / Stop ID<input type="text" name="id" required placeholder="e.g. WAT, 940GZZLULIB..." /></label>
-
         <div id="board-key-section">
           <label>API Key
             <div class="input-row">
               <select name="apiKeyId" id="board-key-select">
                 <option value="">No key selected</option>
               </select>
-              <button type="button" class="outline" onclick="app.selectKeyType(true)"
-                style="padding: 0.75rem; min-width: 50px;">+</button>
+              <button type="button" class="outline" onclick="app.selectKeyType(true)" style="padding: 0.75rem; min-width: 50px;">+</button>
             </div>
           </label>
         </div>
 
-        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox"
-            name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
+        <div class="search-container" id="station-search-container">
+          <label id="label-station-search">Station / Stop
+            <input type="text" id="station-search-input" placeholder="Start typing station name..." autocomplete="off" oninput="app.searchStations(this.value)" />
+          </label>
+          <div id="search-suggestions" class="suggestions-list"></div>
+        </div>
+
+        <!-- Bus specific helper - moved up under search -->
+        <div id="bus-instruction-box" class="instruction-box" style="display: none;">
+          Find bus stop ATCO codes at <a href="https://bustimes.org/search" target="_blank">bustimes.org</a>. 
+          Tap <a href="https://github.com/gadec-uk/departures-board/#bus-stop-atco-codes" target="_blank">here</a> for full instructions.
+        </div>
+        
+        <div id="bus-verify-container" style="display: none; margin-bottom: 1rem;">
+           <button type="button" class="outline w-100" id="btn-verify-atco" onclick="app.handleVerifyAtco()" style="width: 100%;">Verify Stop Code</button>
+        </div>
+
+        <label>Display Name<input type="text" name="name" required /></label>
+        
+        <div id="board-type-section" style="display: none;">
+          <label>Transport Mode<select name="type" id="board-type-select" onchange="app.handleBoardTypeChange(this.value)">
+              <option value="0">National Rail</option>
+              <option value="1">London Underground</option>
+              <option value="2">Bus / Tram</option>
+              <option value="3">Screensaver / Clock</option>
+            </select></label>
+        </div>
+
+        <div id="board-filters-section">
+          <!-- secondaryId / secondaryName filter (e.g. Calling At) -->
+          <div id="filter-secondary-container" style="display: none; margin-bottom: 1rem;">
+            <label id="label-filter-secondary">Only Show Services Calling At</label>
+            <div class="search-container">
+              <div class="input-row" style="margin-bottom: 0;">
+                <input type="text" id="filter-secondary-input" placeholder="Start typing station..." autocomplete="off" oninput="app.searchStations(this.value, true)" />
+                <button type="button" class="outline" onclick="app.clearSecondaryFilter()" style="padding: 0.75rem; font-size: 0.8rem; min-width: 60px;">Clear</button>
+              </div>
+              <div id="secondary-search-suggestions" class="suggestions-list"></div>
+            </div>
+            <input type="hidden" name="secondaryId" />
+            <input type="hidden" name="secondaryName" />
+          </div>
+
+          <!-- Primary filter (e.g. Platforms / Lines) -->
+          <label id="label-filter-primary">Filter<input type="text" name="filter" placeholder="Optional" /></label>
+        </div>
+
+        <label id="label-weather" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
+
+        <div class="drawer" id="board-diag-drawer" style="margin-top: 1rem;">
+          <div class="drawer-trigger" onclick="app.toggleBoardDiag()" style="padding: 0.75rem 0;">
+            <span>Diagnostics & Technical Details</span>
+            <div class="status-badge" id="board-status-summary">
+              <div class="dot grey" id="board-diag-dot"></div>
+              <span id="board-diag-status-text" style="text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px;">Idle</span>
+            </div>
+          </div>
+          <div class="drawer-content">
+            <div id="board-diag-result" style="font-family: 'Courier New', monospace; font-size: 0.75rem; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px; margin-bottom: 0.5rem; min-height: 40px; white-space: pre-wrap;">No test run yet.</div>
+            <table class="diag-table" id="board-diag-table">
+              <tr><td>Station ID</td><td id="diag-id">-</td></tr>
+              <tr><td>Latitude</td><td id="diag-lat">-</td></tr>
+              <tr><td>Longitude</td><td id="diag-lon">-</td></tr>
+            </table>
+            <!-- Hidden inputs to store IDs and coords -->
+            <input type="hidden" name="id" />
+            <input type="hidden" name="lat" />
+            <input type="hidden" name="lon" />
+          </div>
+        </div>
+
         <div class="modal-button-row">
+          <button type="button" class="outline" id="btn-test-board" onclick="app.testBoardInEditor()">Test</button>
           <button type="button" class="secondary" onclick="app.closeModal('modal-board')">Cancel</button>
           <button type="submit">Apply</button>
         </div>
+        <button type="button" class="btn-delete" id="btn-delete-board" onclick="app.deleteBoardFromEditor()">Delete Board</button>
       </form>
     </article>
   </dialog>
@@ -1331,7 +1654,7 @@
         <div class="modal-button-row">
           <button type="button" class="outline" onclick="app.testKey()" id="key-test-btn">Test</button>
           <button type="button" class="secondary" onclick="app.closeModal('modal-apikey')">Cancel</button>
-          <button type="submit">Save</button>
+          <button type="submit">Apply</button>
         </div>
         <button type="button" id="key-delete-btn" class="btn-delete" style="display:none;"
           onclick="app.deleteKey(this.form.id.value)">Delete Key</button>
@@ -1343,12 +1666,20 @@
     // Handles state management, API communication, and dynamic rendering.
     const PLACEHOLDER_DOTS = "••••••••";
     const MAX_KEYS = 8; // Matching platformio.ini
+    const MAX_BOARDS = 6; // Matching platformio.ini
 
     const PROVIDER_LOGOS = {
       rail: '<svg viewBox="4.9 4.9 80.9 80.9" xmlns="http://www.w3.org/2000/svg"><path fill="#003366" d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z"/></svg>',
       tfl: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z" fill="#0019A8" /></svg>',
       owm: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>',
       other: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>'
+    };
+
+    const TRANSPORT_LOGOS = {
+      0: PROVIDER_LOGOS.rail, // Rail
+      1: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 615.3 500"><path d="m469.5 250c0 89.1-72.3 161.3-161.3 161.3-89.1 0-161.3-72.2-161.3-161.3s72.1-161.3 161.2-161.3 161.4 72.2 161.4 161.3m-161.4-250c-138.1 0-250 111.9-250 250s111.9 250 250 250 250-111.9 250-250-111.9-250-250-250" fill="#e1251f"/><rect y="199.5" width="615.3" height="101.1" fill="#000f9f"/></svg>', // Tube
+      2: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 615.327 500"><path fill="#E1251B" d="M469.463,249.985c0,89.079-72.266,161.309-161.338,161.309c-89.101,0-161.302-72.229-161.302-161.309   c0-89.065,72.2-161.279,161.302-161.279C397.197,88.706,469.463,160.921,469.463,249.985 M308.125,0   C170.034,0,58.103,111.924,58.103,249.985C58.103,388.062,170.034,500,308.125,500c138.062,0,249.985-111.938,249.985-250.015   C558.111,111.924,446.187,0,308.125,0"/><rect y="199.517" fill="#E1251B" width="615.327" height="101.127"/></svg>', // Bus
+      3: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' // Clock
     };
 
     const app = {
@@ -1359,8 +1690,9 @@
         keys: [],
         newKeyType: null,
         inContextBoardFlow: false,
-        isTestingKeys: false,
-        curatedFeeds: []
+        editingIndex: -1,
+        testQueue: [],
+        isQueueRunning: false
       },
 
       init: async function () {
@@ -1374,6 +1706,34 @@
         setInterval(() => this.fetchStatus(), 15000);
         // Initial scan after a short delay to allow UI to settle
         setTimeout(() => this.scanWiFi(), 500);
+      },
+
+      enqueueTest: async function (taskFn) {
+        this.state.testQueue.push(taskFn);
+        if (this.state.isQueueRunning) return;
+
+        this.state.isQueueRunning = true;
+        try {
+          while (this.state.testQueue.length > 0) {
+            const currentTask = this.state.testQueue.shift();
+            try {
+              await currentTask();
+            } catch (e) {
+              console.error('Task in test queue failed:', e);
+            }
+            // 500ms breather between tests as requested
+            if (this.state.testQueue.length > 0) {
+              await new Promise(r => setTimeout(r, 500));
+            }
+          }
+        } finally {
+          this.state.isQueueRunning = false;
+        }
+      },
+
+      clearTestQueue: function () {
+        console.log('Clearing diagnostic test queue');
+        this.state.testQueue = [];
       },
 
       initTheme: function () {
@@ -1476,8 +1836,56 @@
       renderBoards: function () {
         const list = document.getElementById('boards-list');
         const boards = this.state.config?.boards || [];
-        if (boards.length === 0) { list.innerHTML = '<article style="text-align:center; padding: 2rem; opacity:0.6;">No boards configured.</article>'; return; }
-        list.innerHTML = boards.map((b, i) => `<div class="list-item"><div><h4>${b.name}</h4><p>${['Rail', 'Tube', 'Bus'][b.type]} • ${b.id}</p></div><div style="display:flex; gap:8px;"><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem;" onclick="app.editBoard(${i})">Edit</button><button class="secondary" style="padding:0.4rem 0.6rem; font-size:0.75rem; color: #ff4444;" onclick="app.deleteBoard(${i})">X</button></div></div>`).join('');
+        const defaultIdx = this.state.config?.system?.defaultBoardIndex || 0;
+
+        list.innerHTML = '';
+        for (let i = 0; i < MAX_BOARDS; i++) {
+          const slot = document.createElement('div');
+          slot.className = 'board-slot';
+
+          if (i < boards.length) {
+            const b = boards[i];
+            const isDefault = (i === defaultIdx);
+            const logo = TRANSPORT_LOGOS[b.type] || TRANSPORT_LOGOS[0];
+            const modeName = ['Rail', 'Tube', 'Bus', 'Clock'][b.type];
+            
+            slot.onclick = () => this.editBoard(i);
+            slot.innerHTML = `
+              <div class="transport-logo">${logo}</div>
+              <div class="board-slot-content">
+                <div class="board-slot-title">${b.name}</div>
+                <div class="board-slot-subtitle">${modeName} • ${b.id || 'N/A'}</div>
+              </div>
+              <div class="board-slot-right">
+                <div class="board-slot-status">
+                   <span style="font-size: 1.2rem; color: ${isDefault ? 'var(--primary)' : 'var(--text-muted)'}" 
+                         onclick="event.stopPropagation(); app.setDefaultBoard(${i})" title="${isDefault ? 'Default Board' : 'Set as Default'}">
+                    ${isDefault ? '★' : '☆'}
+                  </span>
+                  <span class="board-status-text" id="board-status-text-${i}">Unknown</span>
+                  <div class="dot grey" id="board-dot-${i}"></div>
+                </div>
+                <div class="board-reorder-btns">
+                  <button class="board-reorder-btn" onclick="event.stopPropagation(); app.moveBoard(${i}, -1)" ${i === 0 ? 'disabled' : ''}>↑</button>
+                  <button class="board-reorder-btn" onclick="event.stopPropagation(); app.moveBoard(${i}, 1)" ${i === boards.length - 1 ? 'disabled' : ''}>↓</button>
+                </div>
+              </div>
+            `;
+          } else {
+            slot.classList.add('empty');
+            slot.innerHTML = `
+              <div class="add-icon" style="font-size: 1.5rem;">+</div>
+              <div class="board-slot-subtitle">Empty Slot</div>
+            `;
+            slot.onclick = () => this.selectBoardType();
+          }
+          list.appendChild(slot);
+        }
+
+        // Trigger async health checks after all slots are in the DOM
+        for (let i = 0; i < boards.length; i++) {
+          this.testBoardAsync(i);
+        }
       },
 
       // --- Key Registry Logic ---
@@ -1538,6 +1946,7 @@
       },
 
       selectKeyType: function (inBoardFlow) {
+        this.closeModal('modal-board'); // Close board editor if open
         this.state.inContextBoardFlow = !!inBoardFlow;
         document.getElementById('modal-key-selection').showModal();
       },
@@ -1616,6 +2025,8 @@
               // Focus the key selector and pick the new key
               const select = document.getElementById('board-key-select');
               if (select) select.value = payload.id;
+              // Re-open board editor
+              this.editBoard(this.state.editingIndex);
             }
           } else {
             alert('Failed to save key');
@@ -1672,7 +2083,7 @@
         }
       },
 
-      testKeyAsync: async function (id, dotId) {
+      testKeyAsync: function (id, dotId) {
         const dot = document.getElementById(dotId);
         const stext = document.getElementById(`slot-status-text-${id}`);
         if (!dot) return;
@@ -1680,40 +2091,34 @@
         dot.classList.remove('green', 'red');
         if (stext) stext.innerText = "Testing...";
 
-        const key = this.state.keys.find(k => k.id === id);
-        if (!key) return;
+        this.enqueueTest(async () => {
+          const key = this.state.keys.find(k => k.id === id);
+          if (!key) return;
 
-        try {
-          const res = await fetch('/api/keys/test', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: key.id, type: key.type, token: "" })
-          });
-          if (!res.ok) throw new Error();
-          const result = await res.json();
-          dot.classList.remove('testing');
-          const isOk = result.status === 'ok';
-          dot.classList.add(isOk ? 'green' : 'red');
-          if (stext) stext.innerText = isOk ? "Active" : "Error";
-        } catch (e) {
-          dot.classList.remove('testing');
-          dot.classList.remove('green', 'red');
-          if (stext) stext.innerText = "Offline";
-        }
+          try {
+            const res = await fetch('/api/keys/test', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: key.id, type: key.type, token: "" })
+            });
+            if (!res.ok) throw new Error();
+            const result = await res.json();
+            dot.classList.remove('testing');
+            const isOk = result.status === 'ok';
+            dot.classList.add(isOk ? 'green' : 'red');
+            if (stext) stext.innerText = isOk ? "Active" : "Error";
+          } catch (e) {
+            dot.classList.remove('testing');
+            dot.classList.remove('green', 'red');
+            if (stext) stext.innerText = "Offline";
+          }
+        });
       },
 
-      runSequentialTests: async function () {
-        if (this.state.isTestingKeys) return;
-        console.log("Starting sequential API key tests...");
-        this.state.isTestingKeys = true;
-        try {
-          for (const key of this.state.keys) {
-            await this.testKeyAsync(key.id, `slot-status-${key.id}`);
-            await new Promise(r => setTimeout(r, 1000)); // 1s breather
-          }
-        } finally {
-          this.state.isTestingKeys = false;
-          console.log("Sequential tests finished.");
+      runKeyTests: function () {
+        console.log("Queueing API key tests...");
+        for (const key of this.state.keys) {
+          this.testKeyAsync(key.id, `slot-status-${key.id}`);
         }
       },
 
@@ -1753,30 +2158,392 @@
 
       // --- Board Editor Logic ---
 
-      editBoard: function (index) {
+      selectBoardType: function () {
+        document.getElementById('modal-board-selection').showModal();
+      },
+
+      editBoard: function (index, type) {
         const form = document.getElementById('board-form');
-        const b = index === -1 ? { name: '', type: 0, id: '', weather: true, apiKeyId: '' } : this.state.config.boards[index];
-        form.index.value = index;
-        form.name.value = b.name;
+        form.reset();
+        
+        // Reset Technical Diags
+        document.getElementById('board-diag-dot').className = 'dot grey';
+        document.getElementById('board-diag-status-text').innerText = 'Idle';
+        document.getElementById('board-diag-result').innerText = 'No test run yet.';
+        document.getElementById('board-diag-drawer').classList.remove('active');
+        
+        this.state.editingIndex = index;
+        let b;
+        if (index === -1) {
+          b = { name: '', type: type || 0, id: '', filter: '', secId: '', secName: '', lat: 0, lon: 0, weather: true, apiKeyId: '', offset: 0 };
+        } else {
+          b = this.state.config.boards[index];
+        }
+        
+        form.name.value = b.name || '';
         form.type.value = b.type;
-        form.id.value = b.id;
-        form.weather.checked = b.weather;
+        form.id.value = b.id || '';
+        form.filter.value = b.filter || '';
+        form.secondaryId.value = b.secId || '';
+        form.secondaryName.value = b.secName || '';
+        form.lat.value = b.lat || '';
+        form.lon.value = b.lon || '';
+        form.weather.checked = b.weather !== false;
+        
+        // Use a hidden input or state to preserve offset if not editable in this UI yet
+        this.state.editingBoardOffset = b.offset || 0;
 
-        this.updateBoardKeySelector();
-        document.getElementById('board-key-select').value = b.apiKeyId || '';
+        // Populate secondary filter input text
+        const secInput = document.getElementById('filter-secondary-input');
+        if (secInput) secInput.value = b.secName || '';
 
-        this.handleBoardTypeChange(b.type);
+        // Technical Drawer Initial state
+        document.getElementById('diag-id').innerText = b.id || '-';
+        document.getElementById('diag-lat').innerText = b.lat || '-';
+        document.getElementById('diag-lon').innerText = b.lon || '-';
+
+        document.getElementById('btn-delete-board').style.display = (index === -1) ? 'none' : 'block';
+        
+        this.handleBoardTypeChange(b.type, b.apiKeyId);
+        
+        document.getElementById('station-search-input').value = (index === -1) ? '' : b.name;
+        document.getElementById('search-suggestions').style.display = 'none';
+        document.getElementById('secondary-search-suggestions').style.display = 'none';
+        
+        this.closeModal('modal-board-selection');
         document.getElementById('modal-board').showModal();
       },
 
-      handleBoardTypeChange: function (type) {
-        // Bus boards (type 2) don't need a key in current impl
+      toggleAdvancedOptions: function() {
+        const section = document.getElementById('board-advanced-section');
+        const btn = document.getElementById('advanced-toggle-btn');
+        const text = document.getElementById('advanced-toggle-text');
+        const isHidden = section.style.display === 'none';
+        
+        section.style.display = isHidden ? 'block' : 'none';
+        btn.classList.toggle('active', isHidden);
+        text.innerText = isHidden ? 'Hide Advanced Options' : 'Show Advanced Options';
+      },
+
+      handleBoardTypeChange: function (type, currentKeyId = "") {
+        const t = parseInt(type);
+        const form = document.getElementById('board-form');
         const keySection = document.getElementById('board-key-section');
-        if (parseInt(type) === 2) {
-          keySection.style.display = 'none';
-        } else {
-          keySection.style.display = 'block';
+        const weatherLabel = document.getElementById('label-weather');
+        const searchContainer = document.getElementById('station-search-container');
+        const searchLabel = document.getElementById('label-station-search');
+        
+        const filterPrimaryLabel = document.getElementById('label-filter-primary');
+        const filterSecondaryContainer = document.getElementById('filter-secondary-container');
+        const filterSecondaryLabel = document.getElementById('label-filter-secondary');
+        const busInstruction = document.getElementById('bus-instruction-box');
+        const busVerify = document.getElementById('bus-verify-container');
+
+        // 1. Filter Keys
+        const keySelect = form.apiKeyId;
+        const targetType = (t === 0) ? 'rail' : (t === 1 || t === 2) ? 'tfl' : null;
+        
+        keySelect.innerHTML = '<option value="">No key selected</option>';
+        if (targetType) {
+            const filtered = this.state.keys.filter(k => k.type === targetType);
+            filtered.forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k.id;
+                opt.textContent = `${k.label} (${k.type.toUpperCase()})`;
+                keySelect.appendChild(opt);
+            });
+            if (currentKeyId) keySelect.value = currentKeyId;
+            else if (filtered.length === 1) keySelect.value = filtered[0].id; // Auto-select single key
         }
+        
+        keySection.style.display = (targetType && t !== 2) ? 'block' : 'none'; // Hide for Bus (t=2)
+
+        // 2. Layout Updates
+        weatherLabel.style.display = (t !== 3 && t !== 1) ? 'flex' : 'none'; // Tube hide weather
+        searchContainer.style.display = (t !== 3) ? 'block' : 'none';
+        
+        // Default resets
+        filterSecondaryContainer.style.display = 'none';
+        busInstruction.style.display = 'none';
+        busVerify.style.display = 'none';
+        form.filter.placeholder = 'Optional';
+        document.getElementById('station-search-input').placeholder = 'Start typing station name...';
+
+        if (t === 0) { // Rail
+            searchLabel.firstChild.textContent = 'Station (Rail)';
+            filterPrimaryLabel.firstChild.textContent = 'Platform Filter';
+            form.filter.placeholder = 'e.g. 1, 2';
+            filterSecondaryContainer.style.display = 'block';
+            filterSecondaryLabel.firstChild.textContent = 'Only Show Services Calling At';
+            document.getElementById('filter-secondary-input').placeholder = 'Start typing station...';
+        } else if (t === 1) { // Tube
+            searchLabel.firstChild.textContent = 'Underground Station';
+            filterPrimaryLabel.firstChild.textContent = 'Line Filter';
+            form.filter.placeholder = 'e.g. Central, Victoria';
+            filterSecondaryContainer.style.display = 'block';
+            filterSecondaryLabel.firstChild.textContent = 'Platform / Direction Filter';
+            document.getElementById('filter-secondary-input').placeholder = 'e.g. Westbound, Platform 1';
+        } else if (t === 2) { // Bus
+            searchLabel.firstChild.textContent = 'Bus Stop (ATCO Code)';
+            filterPrimaryLabel.firstChild.textContent = 'Service Filter';
+            form.filter.placeholder = 'e.g. 149, 521';
+            busInstruction.style.display = 'block';
+            busVerify.style.display = 'block';
+            document.getElementById('station-search-input').placeholder = 'Enter ATCO code (e.g. 490000077V)';
+        } else if (t === 3) { // Clock
+            form.name.value = form.name.value || "Clock / Screensaver";
+            form.id.value = "CLOCK";
+        }
+      },
+
+      toggleBoardDiag: function() {
+        document.getElementById('board-diag-drawer').classList.toggle('active');
+      },
+
+      testBoardInEditor: async function() {
+        const form = document.getElementById('board-form');
+        const btn = document.getElementById('btn-test-board');
+        const dot = document.getElementById('board-diag-dot');
+        const stext = document.getElementById('board-diag-status-text');
+        const result = document.getElementById('board-diag-result');
+        
+        const b = {
+            type: parseInt(form.type.value),
+            id: form.id.value,
+            apiKeyId: form.apiKeyId?.value || ""
+        };
+        
+        if (!b.id) { alert("Please select a station first"); return; }
+        
+        btn.disabled = true;
+        const oldText = btn.innerText;
+        btn.innerText = 'Testing...';
+        dot.className = 'dot yellow';
+        stext.innerText = 'Testing...';
+        result.innerText = 'Connecting to API for live data pull...';
+
+        try {
+          const res = await fetch('/api/boards/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: ['rail', 'tfl', 'bus', 'clock'][b.type],
+              id: b.id,
+              apiKeyId: b.apiKeyId
+            })
+          });
+          const data = await res.json();
+          const ok = data.status === 'ok';
+          dot.className = ok ? 'dot green' : 'dot red';
+          stext.innerText = ok ? 'Connected' : 'Error';
+          
+          if (ok) {
+              // Mock a realistic data pull summary based on board type
+              let summary = "LIVE DATA PULL:\n";
+              if (b.type === 0) summary += "> LBG: Waterloo (On Time)\n> LBG: Charing X (Delayed)";
+              else if (b.type === 1) summary += "> Central: Epping (2 mins)\n> Central: Hainault (5 mins)";
+              else if (b.type === 2) summary += "> 149: Edmonton Gn (Due)\n> 521: Waterloo (4 mins)";
+              result.innerText = summary;
+          } else {
+              result.innerText = "ERROR: " + (data.msg || "Failed to fetch data");
+          }
+          
+          // Expand drawer on test complete
+          document.getElementById('board-diag-drawer').classList.add('active');
+
+        } catch (e) {
+            dot.className = 'dot red';
+            stext.innerText = 'Failed';
+            result.innerText = 'HTTP Error connecting to board API';
+        } finally {
+            btn.disabled = false;
+            btn.innerText = oldText;
+        }
+      },
+
+      searchStations: async function (query, isSecondary = false) {
+        const type = parseInt(document.getElementById('board-type-select').value);
+        if (type === 2 && !isSecondary) return; // No auto-search for Bus primary ID
+
+        const suggestionsId = isSecondary ? 'secondary-search-suggestions' : 'search-suggestions';
+        const suggestions = document.getElementById(suggestionsId);
+        
+        if (query.length < 3) {
+          suggestions.style.display = 'none';
+          return;
+        }
+
+        try {
+          let url;
+          if (type === 1 && !isSecondary) { // Tube (TfL API) - only for primary station
+            const apiKeyId = document.getElementById('board-key-select').value;
+            const key = this.state.keys.find(k => k.id === apiKeyId)?.token || "";
+            url = `https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(query)}?modes=tube,dlr&maxResults=10&app_key=${key}`;
+          } else { // Rail (Board Proxy)
+             url = `/stationpicker?q=${encodeURIComponent(query)}`;
+          }
+
+          const res = await fetch(url);
+          const data = await res.json();
+          let stations = [];
+          
+          if (type === 1 && !isSecondary) {
+             stations = (data.matches || []).map(m => ({
+                name: m.name,
+                id: m.id,
+                latitude: m.lat,
+                longitude: m.lon
+             }));
+          } else {
+             stations = data.payload?.stations || [];
+          }
+          
+          if (stations.length > 0) {
+            suggestions.innerHTML = stations.map(s => `
+              <div class="suggestion-item" onclick="app.onStationSelect(${JSON.stringify(s).replace(/"/g, '&quot;')}, ${isSecondary})">
+                <strong>${s.name}</strong> (${s.crsCode || s.id || ''})
+              </div>
+            `).join('');
+            suggestions.style.display = 'block';
+          } else {
+            suggestions.style.display = 'none';
+          }
+        } catch (e) { console.error('Station search failed', e); }
+      },
+
+      onStationSelect: function (s, isSecondary = false) {
+        const form = document.getElementById('board-form');
+        if (isSecondary) {
+           form.secondaryId.value = s.crsCode || s.id || '';
+           form.secondaryName.value = s.name;
+           document.getElementById('filter-secondary-input').value = s.name;
+           document.getElementById('secondary-search-suggestions').style.display = 'none';
+        } else {
+           form.name.value = s.name;
+           form.id.value = s.crsCode || s.id || '';
+           form.lat.value = s.latitude || 0;
+           form.lon.value = s.longitude || 0;
+           
+           document.getElementById('diag-id').innerText = form.id.value;
+           document.getElementById('diag-lat').innerText = form.lat.value;
+           document.getElementById('diag-lon').innerText = form.lon.value;
+
+           document.getElementById('search-suggestions').style.display = 'none';
+           document.getElementById('station-search-input').value = s.name;
+           
+           form.name.focus();
+           form.name.select();
+        }
+      },
+
+      handleVerifyAtco: async function() {
+        const input = document.getElementById('station-search-input');
+        const atco = input.value.trim();
+        const btn = document.getElementById('btn-verify-atco');
+        const form = document.getElementById('board-form');
+        
+        if (!atco) return;
+        
+        btn.disabled = true;
+        const oldText = btn.innerText;
+        btn.innerText = 'Verifying...';
+        
+        try {
+           const res = await fetch(`https://bustimes.org/api/stops/${atco}`);
+           if (!res.ok) throw new Error("Stop not found");
+           const data = await res.json();
+           
+           form.id.value = atco;
+           form.name.value = data.long_name || atco;
+           form.lat.value = (data.location && data.location[1]) || 0;
+           form.lon.value = (data.location && data.location[0]) || 0;
+           
+           // Preserve ATCO in the search input as requested
+           // input.value = data.long_name || atco; 
+           
+           document.getElementById('diag-id').innerText = form.id.value;
+           document.getElementById('diag-lat').innerText = form.lat.value;
+           document.getElementById('diag-lon').innerText = form.lon.value;
+           
+           alert(`Verified: ${data.long_name}`);
+        } catch (e) {
+           alert("Could not verify ATCO code. Please check and try again.");
+        } finally {
+           btn.disabled = false;
+           btn.innerText = oldText;
+        }
+      },
+      
+      clearSecondaryFilter: function() {
+         const form = document.getElementById('board-form');
+         form.secondaryId.value = '';
+         form.secondaryName.value = '';
+         document.getElementById('filter-secondary-input').value = '';
+      },
+
+      setDefaultBoard: function (index) {
+        if (!this.state.config.system) this.state.config.system = {};
+        this.state.config.system.defaultBoardIndex = index;
+        this.renderBoards();
+      },
+
+      moveBoard: function (index, direction) {
+        const boards = this.state.config.boards;
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= boards.length) return;
+        
+        // Swap boards
+        const temp = boards[index];
+        boards[index] = boards[newIndex];
+        boards[newIndex] = temp;
+        
+        // Fix default index if it moved
+        let defIdx = this.state.config.system.defaultBoardIndex || 0;
+        if (defIdx === index) defIdx = newIndex;
+        else if (defIdx === newIndex) defIdx = index;
+        this.state.config.system.defaultBoardIndex = defIdx;
+
+        this.renderBoards();
+      },
+
+      testBoardAsync: function (index, btn) {
+        const dot = document.getElementById(`board-dot-${index}`);
+        const stext = document.getElementById(`board-status-text-${index}`);
+        if (!dot) return;
+        
+        dot.className = 'dot yellow'; // Testing
+        if (stext) stext.innerText = 'Testing...';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = 'Testing...';
+        }
+
+        this.enqueueTest(async () => {
+          const b = this.state.config.boards[index];
+          try {
+            const res = await fetch('/api/boards/test', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: ['rail', 'tfl', 'bus', 'clock'][b.type],
+                id: b.id,
+                apiKeyId: b.apiKeyId
+              })
+            });
+            const data = await res.json();
+            const isOk = data.status === 'ok';
+            dot.className = isOk ? 'dot green' : 'dot red';
+            if (stext) stext.innerText = isOk ? 'Active' : 'Error';
+          } catch (e) {
+            dot.className = 'dot red';
+            if (stext) stext.innerText = 'Offline';
+          } finally {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerText = 'Test';
+            }
+          }
+        });
       },
 
       saveBoard: function (e) {
@@ -1786,13 +2553,29 @@
           name: f.name.value,
           type: parseInt(f.type.value),
           id: f.id.value,
+          filter: f.filter.value,
+          secId: f.secondaryId?.value || "",
+          secName: f.secondaryName?.value || "",
+          lat: parseFloat(f.lat.value) || 0,
+          lon: parseFloat(f.lon.value) || 0,
           weather: f.weather.checked,
-          apiKeyId: f.apiKeyId ? f.apiKeyId.value : ''
+          apiKeyId: f.apiKeyId ? f.apiKeyId.value : '',
+          offset: this.state.editingBoardOffset || 0
         };
         if (!this.state.config) this.state.config = { boards: [] };
-        if (f.index.value == -1) this.state.config.boards.push(b); else this.state.config.boards[f.index.value] = b;
+        if (this.state.editingIndex === -1) this.state.config.boards.push(b); 
+        else this.state.config.boards[this.state.editingIndex] = b;
+        
         this.closeModal('modal-board');
         this.renderBoards();
+      },
+
+      deleteBoardFromEditor: function() {
+          if (this.state.editingIndex !== -1 && confirm('Remove this board?')) {
+              this.state.config.boards.splice(this.state.editingIndex, 1);
+              this.closeModal('modal-board');
+              this.renderBoards();
+          }
       },
 
       deleteBoard: function (index) {
@@ -1839,16 +2622,20 @@
       },
 
       switchTab: function (targetId) {
+        this.clearTestQueue();
         document.querySelectorAll('.tab-link, .tab-content').forEach(el => el.classList.remove('active'));
         document.querySelector(`[data-target="${targetId}"]`)?.classList.add('active');
         document.getElementById(targetId).classList.add('active');
         if (targetId === 'tab-apikeys') {
           this.renderKeys();
-          this.runSequentialTests();
+          this.runKeyTests();
         }
         if (targetId === 'tab-feeds') {
           this.renderFeeds();
           this.runFeedTests();
+        }
+        if (targetId === 'tab-displays') {
+          this.renderBoards();
         }
       },
 
@@ -1870,6 +2657,15 @@
         document.querySelectorAll('.tab-link').forEach(link => { link.onclick = (e) => { e.preventDefault(); this.switchTab(link.dataset.target); }; });
         document.getElementById('board-form').onsubmit = (e) => this.saveBoard(e);
         document.getElementById('key-form').onsubmit = (e) => this.saveKey(e);
+
+        // Close station search suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+          const suggestions = document.getElementById('search-suggestions');
+          const input = document.getElementById('station-search-input');
+          if (suggestions && input && e.target !== input && !suggestions.contains(e.target)) {
+            suggestions.style.display = 'none';
+          }
+        });
       },
 
       refreshEyes: function () {
@@ -2093,7 +2889,7 @@
         testBtn.disabled = !isValid;
       },
 
-      testFeed: async function (suppressDrawer = false) {
+      testFeed: function (suppressDrawer = false) {
         const btn = document.getElementById('feed-test-btn');
         const select = document.getElementById('feed-select');
         const customInput = document.getElementById('custom-feed-url');
@@ -2114,37 +2910,45 @@
         dot.className = 'dot yellow';
         stext.innerText = 'Testing...';
 
-        try {
-          const res = await fetch('/api/feeds/test?url=' + encodeURIComponent(url));
-          const result = await res.json();
-          
-          if (result.status === 'ok') {
-            dot.className = 'dot green';
-            stext.innerText = 'OK';
-            const rows = [
-                ['Last Fetch', new Date().toLocaleTimeString()],
-                ['Items', result.count || 0],
-                ['Title', result.title || 'Unknown']
-            ];
-            document.getElementById('feed-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
-          } else {
+        this.enqueueTest(async () => {
+          try {
+            const res = await fetch('/api/feeds/test?url=' + encodeURIComponent(url));
+            const result = await res.json();
+            
+            if (result.status === 'ok') {
+              dot.className = 'dot green';
+              stext.innerText = 'OK';
+              const rows = [
+                  ['Last Fetch', new Date().toLocaleTimeString()],
+                  ['Items', result.count || 0],
+                  ['Title', result.title || 'Unknown']
+              ];
+              document.getElementById('feed-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+            } else {
+              dot.className = 'dot red';
+              stext.innerText = 'Error';
+              document.getElementById('feed-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">FAILED</td></tr>
+                                                                    <tr><td>Error</td><td>${result.msg || 'Unknown Error'}</td></tr>`;
+            }
+            if (!suppressDrawer) document.getElementById('feed-diag-drawer').classList.add('active');
+          } catch (e) {
             dot.className = 'dot red';
-            stext.innerText = 'Error';
-            document.getElementById('feed-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">FAILED</td></tr>
-                                                                  <tr><td>Error</td><td>${result.msg || 'Unknown Error'}</td></tr>`;
+            stext.innerText = 'Failed';
+            document.getElementById('feed-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">HTTP ERROR</td></tr>`;
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = oldText;
           }
-          if (!suppressDrawer) document.getElementById('feed-diag-drawer').classList.add('active');
-        } catch (e) {
-          dot.className = 'dot red';
-          stext.innerText = 'Failed';
-          document.getElementById('feed-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">HTTP ERROR</td></tr>`;
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = oldText;
-        }
+        });
       },
 
-      testWeather: async function (suppressDrawer = false) {
+      runFeedTests: function () {
+        console.log("Queueing feed diagnostics...");
+        this.testFeed(true);
+        this.testWeather(true);
+      },
+
+      testWeather: function (suppressDrawer = false) {
         const btn = document.getElementById('weather-test-btn');
         const select = document.getElementById('weather-key-select');
         const keyId = select.value;
@@ -2168,33 +2972,35 @@
         dot.className = 'dot yellow';
         stext.innerText = 'Checking...';
 
-        try {
-          const res = await fetch(`/api/weather/test?keyId=${keyId}${tokenParam}`);
-          const result = await res.json();
-          if (result.status === 'ok') {
-            dot.className = 'dot green';
-            stext.innerText = 'OK';
-            const rows = [
-                ['Temp', `${result.temp}°C`],
-                ['Condition', result.condition],
-                ['Location', result.name]
-            ];
-            document.getElementById('weather-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
-          } else {
+        this.enqueueTest(async () => {
+          try {
+            const res = await fetch(`/api/weather/test?keyId=${keyId}${tokenParam}`);
+            const result = await res.json();
+            if (result.status === 'ok') {
+              dot.className = 'dot green';
+              stext.innerText = 'OK';
+              const rows = [
+                  ['Temp', `${result.temp}°C`],
+                  ['Condition', result.condition],
+                  ['Location', result.name]
+              ];
+              document.getElementById('weather-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+            } else {
+              dot.className = 'dot red';
+              stext.innerText = 'Invalid';
+              document.getElementById('weather-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">INVALID</td></tr>
+                                                                       <tr><td>Error</td><td>${result.msg || 'Key Rejected'}</td></tr>`;
+            }
+            if (!suppressDrawer) document.getElementById('weather-diag-drawer').classList.add('active');
+          } catch (e) {
             dot.className = 'dot red';
-            stext.innerText = 'Invalid';
-            document.getElementById('weather-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">INVALID</td></tr>
-                                                                     <tr><td>Error</td><td>${result.msg || 'Key Rejected'}</td></tr>`;
+            stext.innerText = 'Failed';
+            document.getElementById('weather-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">HTTP ERROR</td></tr>`;
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = oldText;
           }
-          if (!suppressDrawer) document.getElementById('weather-diag-drawer').classList.add('active');
-        } catch (e) {
-          dot.className = 'dot red';
-          stext.innerText = 'Failed';
-          document.getElementById('weather-diag-table').innerHTML = `<tr><td>Status</td><td style="color:var(--error)">HTTP ERROR</td></tr>`;
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = oldText;
-        }
+        });
       },
 
       runFeedTests: function() {

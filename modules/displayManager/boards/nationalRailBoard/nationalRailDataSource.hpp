@@ -133,7 +133,7 @@ public:
     // iDataSource Implementation
     int updateData() override;
     const char* getLastErrorMsg() const override { return lastErrorMessage; }
-    int testConnection(const char* token = nullptr) override;
+    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
     // Configuration & Data Access
     int init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb);

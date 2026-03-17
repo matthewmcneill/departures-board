@@ -2,3 +2,7 @@ include/webServer/portalAssets.h
 include/webgui/index.h
 include/webgui/keys.h
 include/webgui/webgraphics.h
+
+.pio/
+.git/
+build/

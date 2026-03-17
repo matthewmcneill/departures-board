@@ -521,8 +521,12 @@ void DisplayManager::applyConfig(const Config& config) {
  * @brief Resets the display manager state. Wakes up the screen if it was snoozing.
  */
 void DisplayManager::resetState() {
-    // If we were sleeping, wake up immediately
-    if (getIsSleeping()) {
+    // Transition away from splash or sleep if we are now in the RUNNING state
+    bool isStillOnSplash = (currentBoard == &splashBoard);
+    bool isRunning = (context && context->getAppState() == AppState::RUNNING);
+
+    if (getIsSleeping() || (isStillOnSplash && isRunning)) {
+        LOG_INFO("DISPLAY", "System ready/awake. Activating default board.");
         showBoard(getDisplayBoard(activeSlotIndex));
         u8g2.setContrast(brightness);
     }
