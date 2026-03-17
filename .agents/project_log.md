@@ -1,6 +1,13 @@
 # Project Log
 
-## 2026-03-17 - Archiving Legacy Web Infrastructure & Renaming Portal
+## Execution History
+
+### 2026-03-17: TimeManager Strict DI Refactor (cceae27)
+- **Goal**: Refactor the global `timeinfo` structure and NTP synchronization into a fully encapsulated module.
+- **Key Decisions**: `TimeManager` is now injected centrally via `appContext`, enabling isolated time testing and preventing any race conditions from detached background time updates on floating struct globals.
+- **Outcomes**: Removed all `extern struct tm timeinfo` directives from UI components. Added comprehensive Doxygen documentation for all DI interfaces in `appContext` and displaying widgets per House Style. Added isolated TimeManager testing to the TODO list.
+
+### 2026-03-17: Archiving Legacy Web Infrastructure (c5b9ef6)
 
 ### Session Summary
 Archived the legacy web page infrastructure to an `archive` folder, removing them from the main compilation process. Renamed the modern portal from `portal/` to `web/`. Consolidated versioning across C++ and web layers.

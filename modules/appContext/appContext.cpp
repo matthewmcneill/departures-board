@@ -22,6 +22,8 @@
 #include "systemManager.hpp"
 #include <logger.hpp>
 #include <wifiManager.hpp>
+#include <boards/systemBoard/loadingBoard.hpp>
+#include <boards/systemBoard/splashBoard.hpp>
 
 appContext* _instance = nullptr; // Global static pointer for yield callback adaptor
 
@@ -148,7 +150,22 @@ void appContext::tick() {
                 configManager.notifyConsumersToReapplyConfig(); // This calls MDNS.begin!
                 
                 LOG_INFO("SYSTEM", "Initializing System Clock...");
-                timeManager.initialize();
+                if (auto* load = static_cast<LoadingBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
+                    load->setHeading("Departures Board");
+                    load->setBuildTime(sysManager.getBuildTime().c_str());
+                    int progress = 50;
+                    load->setProgress("Setting the system clock...", progress);
+                    displayManager.showBoard(load);
+
+                    timeManager.initialize([&]() {
+                        progress += 5;
+                        if (progress > 80) progress = 45; // loop the progress bar back to avoid overflow visually
+                        load->setProgress("Setting the system clock...", progress);
+                        displayManager.showBoard(load);
+                    });
+                } else {
+                    timeManager.initialize();
+                }
 
                 webServerInitialized = true;
             }
