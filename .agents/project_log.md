@@ -2,6 +2,20 @@
 
 ## Execution History
 
+## 2026-03-18 - Display Lifecycle Telemetry & Architecture Refactor (Session deb59b03)
+
+### Session Summary
+Audited the `DisplayManager` and `systemManager` coupling to ensure robust transition logic. Decoupled internal system handlers from explicit board classes by implementing the Observer Pattern in the `appContext` orchestrator. Enhanced the unified diagnostic logging pipeline to track exhaustive UI footprint events across all display modalities.
+
+### Key Decisions
+- **Orchestration Mediator**: Abstracted UI dependencies away from `systemManager` and `otaUpdater` using `std::function` callbacks. These callbacks are dynamically assigned within `appContext::begin()`.
+- **Semantic UI Telemetry**: Added a required `getBoardName()` string implementation to the `iDisplayBoard` contract, forcing all 11 display boards to self-identify.
+- **Contextual View Logs**: Extended `DisplayManager::showBoard(board, reason)` to accept and log the exact `reason` the viewing context changed (e.g., config save, carousel rotate, OTA interrupt).
+- **Compilation Validation**: Confirmed syntactical soundness and verified that zero overhead/errors were introduced to the `esp32dev` toolchain.
+
+### Git Commit
+Generated commit: [TBD - Captured in active workspace]
+
 ## 2026-03-18 - FreeRTOS Asynchronous Data Fetching Refactor
 
 ### Session Summary
@@ -14,7 +28,7 @@ Addressed system blocking and WDT (Watchdog Timer) resets on ESP32 single-core m
 - **Comprehensive Docs**: Verified all new headers and thread-safe member variables comply with Doxygen House Style.
 
 ### Git Commit
-Generated commit: Pending
+Generated commit: 8585fff
 
 ### 2026-03-17: TimeManager Strict DI Refactor (cceae27)
 - **Goal**: Refactor the global `timeinfo` structure and NTP synchronization into a fully encapsulated module.
