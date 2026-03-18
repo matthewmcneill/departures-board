@@ -51,3 +51,4 @@
 - [x] move the host-name back to wifi config. It will help the user to find the device on the network once the wifi is configured. It doesn't need to be in system settings.
 - [ ] Add tooltips or help text for "No Scrolling" and "Fast Refresh" settings in the System tab.
 - [ ] Audit `temperatureRead()` accuracy across ESP32 chip revisions (V1 vs V3) for more reliable diagnostic reporting.
+- [ ] Investigate moving the "Refresh Rate" configuration from a global system setting to a per-key property.

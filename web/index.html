@@ -1162,6 +1162,11 @@
   </style>
 </head>
 
+  <!-- ========================================================= -->
+  <!-- MAIN APPLICATION BODY                                       -->
+  <!-- Begins the global layout containing the top bar and         -->
+  <!-- all the tabbed sections of the SPA.                         -->
+  <!-- ========================================================= -->
 <body class="">
   <div class="container">
     <div class="ap-banner">Setup Mode: Access Point Active</div>
@@ -1204,6 +1209,11 @@
         onclick="app.saveAll()">Save & Apply Settings</button>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- TAB: WIFI CONFIGURATION                                   -->
+    <!-- Handles SSID connection, manual entry, password management-->
+    <!-- and displays the network diagnostics drawer.              -->
+    <!-- ========================================================= -->
     <section id="tab-wifi" class="tab-content active">
       <article>
         <header>WiFi Configuration</header>
@@ -1269,6 +1279,11 @@
       </article>
     </section>
 
+    <!-- ========================================================= -->
+    <!-- TAB: API KEYS REGISTRY                                    -->
+    <!-- Lists all configured API keys (National Rail, TfL, OWM).  -->
+    <!-- Keys are created here and referenced by ID in boards.     -->
+    <!-- ========================================================= -->
     <section id="tab-apikeys" class="tab-content">
       <article>
         <header>API Key Registry</header>
@@ -1358,6 +1373,11 @@
       </article>
     </section>
 
+    <!-- ========================================================= -->
+    <!-- TAB: DISPLAYS (BOARD MANAGER)                             -->
+    <!-- Manages the carousel of active boards. Users can reorder, -->
+    <!-- add, edit, or delete boards from this view.               -->
+    <!-- ========================================================= -->
     <section id="tab-displays" class="tab-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h3 style="margin:0;">Active Displays</h3><button class="outline"
@@ -1366,6 +1386,10 @@
       <div id="boards-list" class="board-slots"></div>
     </section>
 
+    <!-- ========================================================= -->
+    <!-- TAB: SCHEDULE (PLACEHOLDER)                               -->
+    <!-- Future feature to manage sleep schedules & auto-power.    -->
+    <!-- ========================================================= -->
     <section id="tab-schedule" class="tab-content">
       <article>
         <header>Schedule & Auto-Power</header>
@@ -1382,6 +1406,12 @@
       </article>
     </section>
 
+    <!-- ========================================================= -->
+    <!-- TAB: SYSTEM / GLOBAL SETTINGS                             -->
+    <!-- Hardware controls (brightness, flip screen), timezone,    -->
+    <!-- firmware update controls, and device factory reset.       -->
+    <!-- Contains the live hardware diagnostics bars.              -->
+    <!-- ========================================================= -->
     <section id="tab-system" class="tab-content">
       <article>
         <header>Global Settings</header>
@@ -1435,6 +1465,10 @@
     </section>
   </div>
 
+  <!-- ========================================================= -->
+  <!-- NAVIGATION BAR (BOTTOM)                                     -->
+  <!-- Persistent bottom tab bar for SPA view switching.           -->
+  <!-- ========================================================= -->
   <nav class="bottom-nav">
     <a href="#" class="tab-link active" data-target="tab-wifi">
       <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1492,6 +1526,10 @@
     </a>
   </nav>
 
+  <!-- ========================================================= -->
+  <!-- MODAL: BOARD TYPE SELECTION                                 -->
+  <!-- Step 1 of adding a new board: selecting Rail, Tube, etc.    -->
+  <!-- ========================================================= -->
   <dialog id="modal-board-selection">
     <article>
       <button type="button" class="modal-close-btn" onclick="app.closeModal('modal-board-selection')" title="Close">
@@ -1529,6 +1567,11 @@
     </article>
   </dialog>
 
+  <!-- ========================================================= -->
+  <!-- MODAL: BOARD EDITOR (CRUD FORM)                             -->
+  <!-- Main form for editing a specific board's settings.          -->
+  <!-- Includes station search, API key selection, and diagnostics.-->
+  <!-- ========================================================= -->
   <dialog id="modal-board">
     <article>
       <header>Display Editor</header>
@@ -1625,6 +1668,10 @@
     </article>
   </dialog>
 
+  <!-- ========================================================= -->
+  <!-- MODAL: API KEY TYPE SELECTION                               -->
+  <!-- Step 1 of adding a new API Key: selecting provider type.    -->
+  <!-- ========================================================= -->
   <dialog id="modal-key-selection">
     <article>
       <button type="button" class="modal-close-btn" onclick="app.closeModal('modal-key-selection')" title="Close">
@@ -1677,6 +1724,10 @@
     </article>
   </dialog>
 
+  <!-- ========================================================= -->
+  <!-- MODAL: API KEY EDITOR (CRUD FORM)                           -->
+  <!-- Form to input and test API credentials for a given provider.-->
+  <!-- ========================================================= -->
   <dialog id="modal-apikey">
     <article>
       <button type="button" class="modal-close-btn" onclick="app.closeModal('modal-apikey')" title="Close">
@@ -1731,6 +1782,11 @@
     </article>
   </dialog>
 
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT: APPLICATION LOGIC                               -->
+  <!-- Single Page Application architecture driven by the `app`    -->
+  <!-- object. Handles state, fetching, rendering, and API tests.  -->
+  <!-- ========================================================= -->
   <script>
     // Handles state management, API communication, and dynamic rendering.
     const PLACEHOLDER_DOTS = "••••••••";
@@ -1751,6 +1807,9 @@
       3: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' // Clock
     };
 
+    // ==========================================
+    // APP OBJECT & GLOBAL STATE
+    // ==========================================
     const app = {
       state: {
         config: null,
@@ -1764,6 +1823,10 @@
         isQueueRunning: false
       },
 
+      // ==========================================
+      // LIFECYCLE & POLLING
+      // Init function, background polling, and sequential test queue
+      // ==========================================
       init: async function () {
         this.initTheme();
         this.bindEvents();
@@ -1974,6 +2037,10 @@
         `).join('');
       },
 
+      // ==========================================
+      // RENDERING & UI UPDATES
+      // Functions to populate the DOM from state data
+      // ==========================================
       render: function () {
         const cfg = this.state.config;
         if (!cfg) return;
@@ -2061,6 +2128,10 @@
         }
       },
 
+      // ==========================================
+      // API KEYS MANAGEMENT
+      // CRUD operations and validation for provider API keys
+      // ==========================================
       // --- Key Registry Logic ---
 
       renderKeys: function () {
@@ -2329,6 +2400,10 @@
         }
       },
 
+      // ==========================================
+      // BOARD & DISPLAY EDITOR
+      // CRUD operations for active displays, station searching, and diagnostics
+      // ==========================================
       // --- Board Editor Logic ---
 
       selectBoardType: function () {
@@ -2755,6 +2830,10 @@
         if (confirm('Remove this board?')) { this.state.config.boards.splice(index, 1); this.renderBoards(); }
       },
 
+      // ==========================================
+      // SYSTEM GLOBAL ACTIONS
+      // Save all global config, factory resets, reboot, and OTA updates
+      // ==========================================
       saveAll: async function () {
         const btn = document.getElementById('save-btn');
         const oldText = btn.innerText;
@@ -2835,6 +2914,10 @@
           } catch (e) { console.error(e); }
       },
 
+      // ==========================================
+      // UI NAVIGATION & EVENT BINDINGS
+      // Tab switching, modal closing, theme init, and input bindings
+      // ==========================================
       switchTab: function (targetId) {
         this.clearTestQueue();
         document.querySelectorAll('.tab-link, .tab-content').forEach(el => el.classList.remove('active'));
@@ -2904,6 +2987,10 @@
         btn.classList.toggle('active', isPass);
       },
 
+      // ==========================================
+      // WIFI & NETWORK LOGIC
+      // Scanning, SSID selection, testing, and connection management
+      // ==========================================
       updateSSIDDropdown: function (currentSsid, scanResults = []) {
         const select = document.getElementById('wifi-ssid-select');
         if (!select) return;
@@ -3022,6 +3109,10 @@
         // UI update for brightness slider
       },
 
+      // ==========================================
+      // NEWS FEEDS & WEATHER LOGIC
+      // Custom RSS management and Weather API selection/validation
+      // ==========================================
       // --- Feeds Logic ---
 
       renderFeeds: function () {

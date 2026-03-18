@@ -294,3 +294,13 @@ Refined the API Key Registry UI for better layout stability and added branded st
 
 ### Git Commit
 Generated commit: ef23372
+
+## 2026-03-18: System Tab Enhancements (Session 7556e82)
+- **Goal**: Consolidate global settings and implement dynamic diagnostics.
+- **Accomplishments**: 
+    - Reorganized System tab with progressive hardware bars (Heap, Storage, Temp, Uptime).
+    - Optimized polling with Visibility API support and 5s active interval.
+    - Implemented 2-step factory reset and backend handlers for reboot/OTA.
+    - Relocated Hostname to WiFi tab for network discovery priority.
+- **Key Decisions**: Used Vanilla JS for diagnostics and 5s polling to balance responsiveness with ESP32 overhead.
+- **Commit**: 7556e82
