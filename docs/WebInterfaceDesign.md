@@ -57,7 +57,7 @@ The tab reacts to the current network state returned by `/api/status`:
 | **Network State** | Banner | `status.ap_mode` | Visual banner showing "Setup Mode" (Warning color) or "Connected to [SSID]" (Success color). |
 | **SSID** | Dropdown + Button | `wifiSsid` | Targeted WiFi network. Populated via `GET /api/wifi/scan`. The currently configured network is prioritized at the top, labeled with a lightning bolt (⚡) and "(Configured)". Includes an async "↻ Rescan" button next to the field. Includes an option for "Hidden Network" that reveals a standard text input. |
 | **Password** | Password + Toggle | `wifiPass` | WiFi network password. Includes a standard "eye" icon to unmask text for verification on mobile keyboards. |
-| **Hostname** | Text | `config.hostname` | mDNS name (e.g., `departures.local`). Used to generate the AP name (e.g., "Departures-Board") and network address. |
+| **Hostname** | Text | `config.hostname` | mDNS name (e.g., `departures.local`). Used to generate the AP name (e.g., "Departures-Board") and network address. Located here for immediate network discovery. |
 
 #### Action Buttons
 - **Test Connection**: (Visible mostly in AP Mode) Triggers a `POST /api/wifi/test` to attempt a connection to the selected SSID without rebooting. Success/Failure streams to the Diagnostic Drawer.
@@ -110,16 +110,15 @@ Focus: Hardware toggles and overall device maintenance.
 | **Hardware** | Brightness | `config.brightness` | PWM level (0-255). |
 | **Hardware** | Flip Screen | `config.flipScreen` | Rotate 180 degrees. |
 | **System** | Timezone | `config.timezone` | POSIX timezone string. |
-| **System** | Update Policy | `config.firmwareUpdatesEnabled` | Background OTA toggle. |
-| **Maintenance** | Factory Reset | API Call | Full wipe of `/config.json`, `/apikeys.json`, and `/wifi.json`. |
-| **Maintenance** | Reboot | API Call | Dedicated button to restart the board. |
+| **System** | No Scrolling | `config.noScrolling` | Disable scrolling animations globally. |
+| **System** | Fast Refresh | `config.apiRefreshRate` | Toggle between 30s and 60s polling for board data. |
 | **RSS Config** | RSS URL | `config.rssUrl` | XML news feed source. |
 
 **In-situ Diagnostics (The "Health Card"):**
-- **Memory**: Free Heap, Max Alloc.
-- **Storage**: LittleFS used/free space (Primary Health feature).
-- **Build Info**: MAC, Version, Config Ver.
-- **Diagnostics**: Uptime and advanced metrics tucked in health drawer.
+- **Memory**: Progressive bar showing Heap usage (Used vs Total).
+- **Storage**: Progressive bar showing LittleFS usage.
+- **CPU**: Real-time Chip Temperature from internal sensor.
+- **Uptime**: Formatted system uptime (Days/Hours/Mins).
 
 ---
 
@@ -128,9 +127,8 @@ Focus: Hardware toggles and overall device maintenance.
 To minimize risk and allow for iterative testing, we will follow a **Parallel Evolution** strategy.
 
 ### 5.1 The `portal/` Directory
-- **Concept**: A brand new root folder `/portal` will be created. 
-- **Blank Canvas**: All modern SPA assets (HTML, JS, CSS) will reside here, starting with the **uiproto** payload.
-- **Side-by-Side Operation**: The ESP32 will serve the legacy UI on `/` and the new UI on `/portal`.
+- **Concept**: The modern portal has been consolidated at the `/web` root, replacing legacy infrastructure.
+- **SPA Architecture**: All state and rendering are managed by a single `app` object in `index.html`.
 
 ---
 

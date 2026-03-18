@@ -7,7 +7,7 @@
 - [x] move all the u8g2 setup and handling into the display manager. Add a displaymanager.Showboard( iDisplayBoard ) instead of calling render directly whcih injects the display hardware. Move all of the constants related to the display into the display manager
 - [x] clean up the drawing primitives. These routines should all take a u82g display as a paramaeter and not assume the global one exists.
 - [x] continue with the rationalisation of the data providers
-- [/] finish the updates to the web configuration front end to enable better board configuration (Backend support for multi-board added, UI still needs multi-board components) (Queued in session 2ec805fd for legacy cleanup/rename)
+- [/] finish the updates to the web configuration front end to enable better board configuration (Backend support for multi-board added, System tab enhanced, Hostname relocated)
 - [x] iStation and messageData - shoudl be obsolete
 - [ ] header widgets - I have a feeling this is not generalised, and is spacific to NatRail. (Still largely NR specific)
 - [x] systemBoard.cpp still has a lot of old straggling stuff that needs to go into displays, widgets or modules. (Cleanup complete, broken into separate classes)
@@ -48,3 +48,6 @@
 - [ ] Add unit test or integration scenario for `WebServer::handleClient()` concurrent API requests during long data fetches to prevent re-entrancy bugs.
 - [ ] Add configuration option to set custom timeout durations for RSS feeds based on feed size, bypassing the hardcoded 10s default.
 - [ ] Implement C++ unit tests for `TimeManager` to verify NTP sync logic and custom timezone offset calculations now that it is decoupled from the hardware globals.
+- [x] move the host-name back to wifi config. It will help the user to find the device on the network once the wifi is configured. It doesn't need to be in system settings.
+- [ ] Add tooltips or help text for "No Scrolling" and "Fast Refresh" settings in the System tab.
+- [ ] Audit `temperatureRead()` accuracy across ESP32 chip revisions (V1 vs V3) for more reliable diagnostic reporting.

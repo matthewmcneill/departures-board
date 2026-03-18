@@ -799,6 +799,37 @@
       border: 1px solid var(--border);
     }
 
+    /* Hardware Diag Bars */
+    .diag-bar-container {
+      margin-bottom: 0.8rem;
+    }
+    .diag-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text-muted);
+    }
+    .diag-bar-bg {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .diag-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.5s ease-out;
+    }
+    .diag-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      display: block;
+    }
+
     .test-feedback.success {
       background: rgba(46, 125, 50, 0.1);
       border-color: var(--success);
@@ -1178,7 +1209,6 @@
         <header>WiFi Configuration</header>
         <form id="wifi-form">
           <label>Hostname (mDNS)<input type="text" name="hostname" value="departures" /></label>
-
           <label>Network (SSID)</label>
           <div class="input-row" style="margin-top: 0.4rem;">
             <select name="ssid" id="wifi-ssid-select" onchange="app.handleSSIDChange(this.value)"
@@ -1354,14 +1384,53 @@
 
     <section id="tab-system" class="tab-content">
       <article>
-        <header>Display & System</header>
+        <header>Global Settings</header>
         <form id="system-form">
           <label>Timezone<input type="text" name="timezone" /></label>
-          <label>Brightness<input type="range" name="brightness" min="0" max="255"
-              oninput="app.updateBrightness(this.value)" /></label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox"
-              name="flip" style="width: auto; margin:0;" /> Flip Screen (180°)</label>
+          
+          <div style="margin: 1.5rem 0 1rem 0; display:flex; flex-direction:column; gap:12px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="dateEnabled" style="width: auto; margin:0;" /> Show Date on Screen</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="noScrolling" style="width: auto; margin:0;" /> Suppress Scrolling & Info</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="fastRefresh" style="width: auto; margin:0;" /> Increase API Refresh Rate</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180&deg;)</label>
+          </div>
+
+          <label>Brightness
+            <input type="range" name="brightness" min="0" max="255" oninput="app.updateBrightness(this.value)" />
+          </label>
         </form>
+        <div class="btn-row">
+            <button type="button" onclick="app.saveAll()">Apply Settings</button>
+        </div>
+      </article>
+
+      <article>
+        <header>Hardware Status</header>
+        <div id="hardware-diagnostics">
+           <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem;">Fetching live metrics...</p>
+        </div>
+      </article>
+
+      <article>
+        <header>Firmware</header>
+        <div class="list-item">
+            <div>
+                <h4 id="fw-version-text" style="margin:0">Version: v3.0.x</h4>
+                <p id="fw-build-text">Build: 2026-03-17</p>
+            </div>
+            <button type="button" class="outline" onclick="app.checkUpdates()">Update</button>
+        </div>
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 1rem;">
+            <input type="checkbox" name="firmwareUpdatesEnabled" id="auto-update" style="width: auto; margin:0;" /> Automatically install updates
+        </label>
+      </article>
+
+      <article style="border-color: var(--error); background: rgba(198, 40, 40, 0.05);">
+        <header style="color: var(--error);">Danger Zone</header>
+        <div style="display: flex; gap: 10px; margin-top: 1rem;">
+            <button type="button" class="secondary" style="flex:1" onclick="app.reboot()">Reboot</button>
+            <button type="button" id="btn-factory-reset" class="secondary" style="flex:1; color: var(--error); border-color: var(--error);" onclick="app.factoryReset()">Factory Reset</button>
+        </div>
       </article>
     </section>
   </div>
@@ -1703,9 +1772,26 @@
         } catch (e) {
           console.error('Initial fetch failed', e);
         }
-        setInterval(() => this.fetchStatus(), 15000);
+        
+        // Polling Optimization: 5s when active, stop when hidden
+        this.startStatusPolling();
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) this.stopStatusPolling();
+          else this.startStatusPolling();
+        });
+
         // Initial scan after a short delay to allow UI to settle
         setTimeout(() => this.scanWiFi(), 500);
+      },
+
+      startStatusPolling: function() {
+        if (this.statusInterval) clearInterval(this.statusInterval);
+        this.statusInterval = setInterval(() => this.fetchStatus(), 5000);
+      },
+
+      stopStatusPolling: function() {
+        if (this.statusInterval) clearInterval(this.statusInterval);
+        this.statusInterval = null;
       },
 
       enqueueTest: async function (taskFn) {
@@ -1721,11 +1807,12 @@
             } catch (e) {
               console.error('Task in test queue failed:', e);
             }
-            // 500ms breather between tests as requested
+            // 1000ms breather between tests as requested
             if (this.state.testQueue.length > 0) {
-              await new Promise(r => setTimeout(r, 500));
+              await new Promise(r => setTimeout(r, 1000));
             }
           }
+          console.log('Sequential tests finished.');
         } finally {
           this.state.isQueueRunning = false;
         }
@@ -1807,15 +1894,101 @@
           ['Uptime', `${Math.round(s.uptime / 60)} min`]
         ];
         document.getElementById('wifi-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+
+        // Dynamic Hardware Diagnostics
+        this.renderHardwareStatus(s);
+      },
+
+      renderHardwareStatus: function(s) {
+        const container = document.getElementById('hardware-diagnostics');
+        if (!container) return;
+
+        const metrics = [];
+        
+        // Memory (Heap)
+        if (s.heap && s.total_heap) {
+            const perc = Math.round(((s.total_heap - s.heap) / s.total_heap) * 100);
+            metrics.push({
+                label: 'Memory (Heap)',
+                value: `${perc}%`,
+                perc: perc,
+                meta: `${Math.round((s.total_heap - s.heap) / 1024)}KB / ${Math.round(s.total_heap / 1024)}KB`
+            });
+        }
+
+        // Storage (LittleFS)
+        if (s.storage_total) {
+            const perc = Math.round((s.storage_used / s.storage_total) * 100);
+            metrics.push({
+                label: 'Storage (LittleFS)',
+                value: `${perc}%`,
+                perc: perc,
+                meta: `${Math.round(s.storage_used / 1024)}KB / ${Math.round(s.storage_total / 1024)}KB`
+            });
+        }
+
+        // Temperature (Internal Sensor)
+        if (s.temp) {
+            // ESP32 Internal temp is often high, let's normalize bar to 100C
+            const perc = Math.min(100, Math.max(0, s.temp));
+            metrics.push({
+                label: 'Chip Temperature',
+                value: `${s.temp.toFixed(1)}°C`,
+                perc: perc,
+                meta: 'Internal Core Sensor'
+            });
+        }
+
+        // Uptime
+        if (s.uptime) {
+            const mins = Math.floor(s.uptime / 60);
+            const hrs = Math.floor(mins / 60);
+            const days = Math.floor(hrs / 24);
+            const uptimeStr = days > 0 ? `${days}d ${hrs % 24}h ${mins % 60}m` : hrs > 0 ? `${hrs}h ${mins % 60}m` : `${mins} min`;
+            metrics.push({
+                label: 'System Uptime',
+                value: uptimeStr,
+                perc: 0, // No bar for uptime
+                meta: `Last Boot: ${new Date(Date.now() - s.uptime * 1000).toLocaleString()}`
+            });
+        }
+
+        if (metrics.length === 0) {
+            container.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem;">No hardware metrics available.</p>';
+            return;
+        }
+
+        container.innerHTML = metrics.map(m => `
+            <div class="diag-bar-container">
+                <div class="diag-bar-label">
+                    <span>${m.label}</span>
+                    <span>${m.value}</span>
+                </div>
+                ${m.perc > 0 ? `
+                    <div class="diag-bar-bg">
+                        <div class="diag-bar-fill" style="width: ${m.perc}%"></div>
+                    </div>
+                ` : ''}
+                <span class="diag-meta">${m.meta}</span>
+            </div>
+        `).join('');
       },
 
       render: function () {
         const cfg = this.state.config;
         if (!cfg) return;
-        document.querySelector('[name="hostname"]').value = cfg.system.hostname;
-        document.querySelector('[name="timezone"]').value = cfg.system.timezone;
-        document.querySelector('[name="brightness"]').value = cfg.system.brightness;
-        document.querySelector('[name="flip"]').checked = cfg.system.flip;
+        const sysForm = document.getElementById('system-form');
+        const wifiForm = document.getElementById('wifi-form');
+        wifiForm.hostname.value = cfg.system.hostname;
+        sysForm.timezone.value = cfg.system.timezone;
+        sysForm.brightness.value = cfg.system.brightness;
+        sysForm.flip.checked = cfg.system.flip;
+        sysForm.dateEnabled.checked = cfg.system.dateEnabled;
+        sysForm.noScrolling.checked = cfg.system.noScrolling;
+        sysForm.fastRefresh.checked = cfg.system.fastRefresh;
+        
+        document.getElementById('auto-update').checked = cfg.system.firmwareUpdatesEnabled;
+        document.getElementById('fw-version-text').innerText = `Version: B${cfg.system.configVersion || '3.0'}`;
         if (cfg.wifi) {
           this.updateSSIDDropdown(cfg.wifi.ssid);
           const passInput = document.getElementById('wifi-pass');
@@ -2596,12 +2769,18 @@
           return document.getElementById(id)?.value || "";
         };
 
+        const sysForm = document.getElementById('system-form');
+        const wifiForm = document.getElementById('wifi-form');
         const payload = {
           system: {
-            hostname: form.hostname.value,
-            timezone: document.querySelector('[name="timezone"]')?.value || "GMT0BST,M3.5.0/2,M10.5.0/3",
-            brightness: parseInt(document.querySelector('[name="brightness"]')?.value || 128),
-            flip: document.querySelector('[name="flip"]')?.checked || false
+            hostname: wifiForm.hostname.value,
+            timezone: sysForm.timezone.value,
+            brightness: parseInt(sysForm.brightness.value),
+            flip: sysForm.flip.checked,
+            dateEnabled: sysForm.dateEnabled.checked,
+            noScrolling: sysForm.noScrolling.checked,
+            fastRefresh: sysForm.fastRefresh.checked,
+            firmwareUpdatesEnabled: document.getElementById('auto-update').checked
           },
           feeds: {
             rss: (document.getElementById('feed-select').value === '__custom__') ? document.getElementById('custom-feed-url').value : document.getElementById('feed-select').value,
@@ -2619,6 +2798,41 @@
           else { alert("Settings updated successfully!"); }
         } catch (e) { alert("Save failed. Check connection."); }
         finally { btn.innerText = oldText; btn.disabled = false; }
+      },
+
+      reboot: async function () {
+        if (!confirm('Reboot the device?')) return;
+        try {
+            await fetch('/api/reboot', { method: 'POST' });
+            alert("Rebooting...");
+        } catch (e) { alert("Failed to trigger reboot."); }
+      },
+
+      factoryReset: async function () {
+        const btn = document.getElementById('btn-factory-reset');
+        if (!this.state.factoryResetArmed) {
+            btn.innerText = "Are you sure? Tap again.";
+            this.state.factoryResetArmed = true;
+            setTimeout(() => {
+                btn.innerText = "Factory Reset";
+                this.state.factoryResetArmed = false;
+            }, 3000);
+            return;
+        }
+
+        try {
+            await fetch('/api/wifi/reset', { method: 'POST' });
+            alert("Factory reset initiated. System is erasing all data and rebooting...");
+            location.reload();
+        } catch (e) { alert("Failed to trigger reset."); }
+      },
+
+      checkUpdates: async function() {
+          alert("Checking for updates via GitHub... Check the device display for progress.");
+          try {
+              // Note: endpoint might need verification in handlerManager
+              await fetch('/api/ota/check', { method: 'POST' });
+          } catch (e) { console.error(e); }
       },
 
       switchTab: function (targetId) {

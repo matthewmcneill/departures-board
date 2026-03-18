@@ -21,6 +21,8 @@
  *   - handleWiFiTest(): Asynchronous non-blocking connection verification.
  *   - handleWiFiReset(): Erases NVS/LittleFS credentials and reboots to AP.
  *   - handleRSSJson(): Serves the bundled JSON list of RSS feeds.
+ *   - handleReboot(): API handler to restart the physical device.
+ *   - handleOTACheck(): API handler to trigger a manual check for firmware updates.
  */
 
 #pragma once
@@ -140,9 +142,6 @@ private:
     /**
      * @brief API: Serve the curated RSS feeds JSON.
      */
-    /**
-     * @brief Serves the bundled rss.json configuration file.
-     */
     void handleRSSJson();
     
     /**
@@ -154,6 +153,16 @@ private:
      * @brief Handles the captive portal redirect for unknown routes.
      */
     void handleCaptivePortalRedirect();
+
+    /**
+     * @brief API: Trigger a system reboot.
+     */
+    void handleReboot();
+
+    /**
+     * @brief API: Trigger a manual firmware update check.
+     */
+    void handleOTACheck();
 
     // --- Helpers ---
     void sendGzipFlash(const uint8_t* data, size_t len, const char* contentType);

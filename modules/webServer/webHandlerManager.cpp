@@ -13,6 +13,12 @@
  * Exported Functions/Classes:
  * - WebHandlerManager::WebHandlerManager: Constructor.
  * - WebHandlerManager::begin: Route registration.
+ * - WebHandlerManager::handlePortalRoot: Serves the main web index.html.
+ * - WebHandlerManager::handleGetStatus: Returns system health and connectivity metrics.
+ * - WebHandlerManager::handleGetConfig: Returns the unified project configuration as JSON.
+ * - WebHandlerManager::handleSaveAll: Atomic validation and save of all portal settings.
+ * - WebHandlerManager::handleReboot: Restarts the ESP32 device.
+ * - WebHandlerManager::handleOTACheck: Triggers a manual firmware update check.
  * - WebHandlerManager::handleRSSJson: Serves the gzipped rss.json asset.
  */
 
@@ -47,6 +53,8 @@ void WebHandlerManager::begin() {
     _server.on("/api/status", HTTP_GET, [this]() { this->handleGetStatus(); });
     _server.on("/api/config", HTTP_GET, [this]() { this->handleGetConfig(); });
     _server.on("/api/saveall", HTTP_POST, [this]() { this->handleSaveAll(); });
+    _server.on("/api/reboot", HTTP_POST, [this]() { this->handleReboot(); });
+    _server.on("/api/ota/check", HTTP_POST, [this]() { this->handleOTACheck(); });
 
     // API: Individual CRUD (Legacy/Granular support)
     _server.on("/api/boards", HTTP_GET, [this]() { this->handleGetBoards(); });
@@ -91,7 +99,9 @@ void WebHandlerManager::handleGetStatus() {
     // LOG_DEBUG("WEB_API", "GET /api/status called - returning system health");
     JsonDocument doc;
     doc["heap"] = ESP.getFreeHeap();
+    doc["total_heap"] = ESP.getHeapSize();
     doc["max_alloc"] = ESP.getMaxAllocHeap();
+    doc["temp"] = temperatureRead();
     doc["uptime"] = millis() / 1000;
     doc["rssi"] = WiFi.RSSI();
     doc["ssid"] = WiFi.SSID();
@@ -132,6 +142,8 @@ void WebHandlerManager::handleGetConfig() {
     system["brightness"] = config.brightness;
     system["flip"] = config.flipScreen;
     system["dateEnabled"] = config.dateEnabled;
+    system["noScrolling"] = config.noScrolling;
+    system["fastRefresh"] = (config.apiRefreshRate == FASTDATAUPDATEINTERVAL);
     system["rssUrl"] = config.rssUrl;
     system["rssName"] = config.rssName;
 
@@ -198,16 +210,19 @@ void WebHandlerManager::handleSaveAll() {
 
         Config& config = _config.getConfig();
         
-        // Update System
+        // --- Step 1: Update Global System Settings ---
         if (doc["system"].is<JsonObject>()) {
             JsonObject sys = doc["system"];
             if (sys["hostname"].is<const char*>()) strlcpy(config.hostname, sys["hostname"], sizeof(config.hostname));
             if (sys["timezone"].is<const char*>()) strlcpy(config.timezone, sys["timezone"], sizeof(config.timezone));
             if (sys["brightness"].is<int>()) config.brightness = sys["brightness"];
             if (sys["flip"].is<bool>()) config.flipScreen = sys["flip"];
+            if (sys["dateEnabled"].is<bool>()) config.dateEnabled = sys["dateEnabled"];
+            if (sys["noScrolling"].is<bool>()) config.noScrolling = sys["noScrolling"];
+            if (sys["fastRefresh"].is<bool>()) config.apiRefreshRate = sys["fastRefresh"] ? FASTDATAUPDATEINTERVAL : DATAUPDATEINTERVAL;
         }
 
-        // Update Boards (Full replace strategy suggested by unified save)
+        // --- Step 2: Update Board Configurations (Full Replace) ---
         if (doc["boards"].is<JsonArray>()) {
             JsonArray boardsArr = doc["boards"];
             config.boardCount = 0;
@@ -228,7 +243,7 @@ void WebHandlerManager::handleSaveAll() {
             }
         }
 
-        // --- Feeds (Modern UI) ---
+        // --- Step 3: Update RSS and Weather Service Links ---
         if (doc["feeds"].is<JsonObject>()) {
             JsonObject f = doc["feeds"];
             if (f["rss"].is<const char*>()) {
@@ -240,7 +255,7 @@ void WebHandlerManager::handleSaveAll() {
             }
         }
 
-        // --- WiFi Credentials (Bespoke Captive Portal hand-off) ---
+        // --- Step 4: Process WiFi Connectivity Changes ---
         if (doc["wifi"].is<JsonObject>()) {
             JsonObject w = doc["wifi"];
             const char* ssid = w["ssid"] | "";
@@ -251,7 +266,7 @@ void WebHandlerManager::handleSaveAll() {
             }
         }
 
-        // Save System & Boards
+        // --- Step 5: Persist and Notify ---
         _config.save();
 
         _server.send(200, "application/json", "{\"status\":\"ok\"}");
@@ -638,6 +653,28 @@ void WebHandlerManager::handleTestBoard() {
 void WebHandlerManager::handleRSSJson() {
     LOG_INFO("WEB_API", "Serving /rss.json (gzipped)");
     sendGzipFlash(rss_json_gz, rss_json_gz_len, "application/json");
+}
+
+/**
+ * @brief API Handler for POST /api/reboot. Restarts the physical device.
+ */
+void WebHandlerManager::handleReboot() {
+    LOG_WARN("WEB_API", "Reboot requested via API.");
+    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+    delay(1000);
+    ESP.restart();
+}
+
+/**
+ * @brief API Handler for POST /api/ota/check. Triggers a background firmware update check.
+ */
+void WebHandlerManager::handleOTACheck() {
+    LOG_INFO("WEB_API", "Manual OTA update check requested.");
+    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+    
+    // Trigger the update check in the background
+    // We don't wait for it to finish before responding to the web UI
+    appContext.getOtaUpdater().checkForFirmwareUpdate();
 }
 
 /**
