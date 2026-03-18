@@ -13,4 +13,4 @@ description: Pick a specific session by ID and load its context and implementati
    - `Reason`: Executing implementation plan for [Target Session ID]
 6. Find the target session in the `Pending Queue` and remove it from the list.
 7. Notify the user: "Lock claimed. Context loaded. Starting implementation now."
-8. Begin executing the implementation plan.
+8. Present the implementation plan to the user for review and approval.

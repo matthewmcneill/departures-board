@@ -862,11 +862,40 @@
       margin-top: 1rem;
     }
 
+    .slot-label {
+      font-size: 0.65rem;
+      font-weight: 800;
+      background: var(--primary);
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.05rem;
+      padding: 0.25rem 0.75rem 1.5rem 0.75rem; /* Large bottom padding to go deep behind */
+      border-radius: 8px 8px 0 0; 
+      display: inline-flex;
+      align-self: flex-start;
+      align-items: center;
+      gap: 4px;
+      margin-left: 0;
+      margin-top: 0;
+      margin-bottom: -1.35rem; /* Match card radius/overlap */
+      z-index: 1;
+      position: relative;
+    }
+
+    .board-slot.primary-slot {
+      border: 2px solid var(--primary) !important;
+      border-style: solid !important;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      z-index: 2; /* Essential for covering the label bottom */
+      background: var(--card-bg) !important; /* Ensure it is filled/opaque */
+      opacity: 1 !important;
+    }
+
     .board-slot {
       display: flex;
-      align-items: center;
+      align-items: stretch;
       gap: 1.25rem;
-      padding: 0 0 0 1.25rem;
+      padding: 0;
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -885,15 +914,19 @@
     }
 
     .board-slot.empty {
-      background: transparent;
+      background: var(--card-bg);
       border: 2px dashed var(--border);
       justify-content: center;
       flex-direction: column;
+      align-items: center;
       gap: 0.5rem;
+    }
+
+    .board-slot.empty:not(.primary-slot) {
       opacity: 0.6;
     }
 
-    .board-slot.empty:hover {
+    .board-slot.empty:not(.primary-slot):hover {
       opacity: 1;
       border-color: var(--primary);
     }
@@ -905,6 +938,8 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      align-self: center;
+      margin-left: 1.25rem;
     }
 
     .transport-logo svg {
@@ -915,6 +950,8 @@
     .board-slot-content {
       flex: 1;
       min-width: 0;
+      align-self: center;
+      padding: 1.25rem 0;
     }
 
     .board-slot-title {
@@ -938,10 +975,16 @@
     .board-slot-right {
       display: flex;
       flex-direction: row;
-      align-items: center;
+      align-items: stretch;
       gap: 0.75rem;
       margin-left: auto;
-      height: 100%;
+    }
+
+    .board-slot-status {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding-right: 0.5rem;
     }
 
     .board-status-text {
@@ -954,9 +997,14 @@
     .board-reorder-btns {
       display: flex;
       flex-direction: column;
-      width: 60px;
+      width: 80px;
       height: 100%;
       border-left: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    [data-theme="dark"] .board-reorder-btns {
+      background: rgba(255, 255, 255, 0.03);
     }
     
     .board-reorder-btns button:first-child {
@@ -970,25 +1018,41 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
-      background: var(--card-bg);
+      background: transparent;
       color: var(--text);
       border: none;
       border-radius: 0;
+      transition: all 0.1s ease;
       cursor: pointer;
-      line-height: 1;
-      transition: all 0.2s;
     }
 
     .board-reorder-btn:hover:not(:disabled) {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
+    }
+
+    [data-theme="dark"] .board-reorder-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--primary);
+    }
+
+    .board-reorder-btn:active:not(:disabled) {
+      transform: scale(0.9);
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    [data-theme="dark"] .board-reorder-btn:active:not(:disabled) {
+      background: rgba(255, 255, 255, 0.08);
     }
 
     .board-reorder-btn:disabled {
       opacity: 0.15;
-      cursor: default;
+      cursor: not-allowed;
+    }
+
+    .board-reorder-btn svg {
+      width: 28px;
+      height: 28px;
     }
 
     /* Station Search Suggestions */
@@ -1217,6 +1281,9 @@
     <section id="tab-wifi" class="tab-content active">
       <article>
         <header>WiFi Configuration</header>
+        <div class="instruction-box" style="margin-bottom: 1rem;">
+          The <b>Hostname</b> is the name used to access this board on your local network (e.g., <code>http://departures.local</code>). Use only letters, numbers, and hyphens.
+        </div>
         <form id="wifi-form">
           <label>Hostname (mDNS)<input type="text" name="hostname" value="departures" /></label>
           <label>Network (SSID)</label>
@@ -1277,6 +1344,9 @@
           </div>
         </div>
       </article>
+          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+        &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
+      </div>
     </section>
 
     <!-- ========================================================= -->
@@ -1287,17 +1357,25 @@
     <section id="tab-apikeys" class="tab-content">
       <article>
         <header>API Key Registry</header>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Manage your API credentials. Click
-          a slot to add a new key.</p>
+        <div class="instruction-box" style="margin-bottom: 1rem;">
+          To display live data, you need to register for free API keys from <b>National Rail</b>, <b>TfL</b>, or <b>OpenWeatherMap</b>. Click a slot below to configure your keys.
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Manage your API credentials. Click a slot to add a new key.</p>
         <div id="keys-slots" class="key-slots">
           <!-- Slots generated by JS based on MAX_KEYS -->
         </div>
       </article>
+          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+        &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
+      </div>
     </section>
 
     <section id="tab-feeds" class="tab-content">
       <article>
         <header>News Feed Service</header>
+        <div class="instruction-box" style="margin-bottom: 1rem;">
+          Enter a valid <b>RSS Feed URL</b> to display news titles on your board. Most news websites provide these in their 'About' or 'Connect' sections.
+        </div>
         <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Configure the RSS feed displayed on the board.</p>
         
         <label>Select a News Feed (RSS)
@@ -1333,7 +1411,9 @@
 
       <article>
         <header>Weather Service</header>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Configure the weather information displayed on the board.</p>
+        <div class="instruction-box" style="margin-bottom: 1rem;">
+          Configure the weather information displayed on the board.
+        </div>
 
         <label>OpenWeatherMap API Key
           <div class="input-row">
@@ -1371,6 +1451,9 @@
           </div>
         </div>
       </article>
+          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+        &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
+      </div>
     </section>
 
     <!-- ========================================================= -->
@@ -1379,11 +1462,23 @@
     <!-- add, edit, or delete boards from this view.               -->
     <!-- ========================================================= -->
     <section id="tab-displays" class="tab-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h3 style="margin:0;">Active Displays</h3><button class="outline"
-          style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="app.selectBoardType()">+ Add</button>
+      <article>
+        <header>
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>Active Displays</span>
+            <button class="outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; text-transform: none;" onclick="app.selectBoardType()">+ Add</button>
+          </div>
+        </header>
+
+        <div class="instruction-box" style="margin-bottom: 1.5rem;">
+          Configure up to <b id="max-boards-count"></b> displays to cycle on your board. The <b>STARTUP</b> slot is shown first when the device is powered on. Use the arrows to reorder, or click an empty slot to add a new display.
+        </div>
+
+        <div id="boards-list" class="board-slots"></div>
+      </article>
+      <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+        &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
       </div>
-      <div id="boards-list" class="board-slots"></div>
     </section>
 
     <!-- ========================================================= -->
@@ -1404,6 +1499,9 @@
           <p style="font-weight: 700; color: var(--text);">Feature under development</p>
         </div>
       </article>
+          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+        &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
+      </div>
     </section>
 
     <!-- ========================================================= -->
@@ -1416,15 +1514,24 @@
       <article>
         <header>Global Settings</header>
         <form id="system-form">
+          <div class="instruction-box" style="margin-bottom: 0.5rem;">
+            Enter the <b>POSIX TZ string</b> for your location. This ensures the board handles Daylight Saving Time correctly. <a href="https://github.com/gadec-uk/departures-board/#custom-time-zones" target="_blank">Find your TZ string here</a>.
+          </div>
           <label>Timezone<input type="text" name="timezone" /></label>
           
           <div style="margin: 1.5rem 0 1rem 0; display:flex; flex-direction:column; gap:12px;">
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="dateEnabled" style="width: auto; margin:0;" /> Show Date on Screen</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="noScrolling" style="width: auto; margin:0;" /> Suppress Scrolling & Info</label>
+            <div class="instruction-box" style="margin: 0.5rem 0; padding: 0.75rem;">
+              <b>Fast Refresh</b> increases the frequency of API calls. Use with caution as some providers may temporarily block your API key if limits are exceeded.
+            </div>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="fastRefresh" style="width: auto; margin:0;" /> Increase API Refresh Rate</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180&deg;)</label>
           </div>
 
+          <div class="instruction-box" style="margin-bottom: 0.5rem; margin-top: 1rem;">
+            Lowering the brightness will help prevent display <b>burn-in</b> and extend the life of your screen.
+          </div>
           <label>Brightness
             <input type="range" name="brightness" min="0" max="255" oninput="app.updateBrightness(this.value)" />
           </label>
@@ -1462,6 +1569,17 @@
             <button type="button" id="btn-factory-reset" class="secondary" style="flex:1; color: var(--error); border-color: var(--error);" onclick="app.factoryReset()">Factory Reset</button>
         </div>
       </article>
+
+      <article>
+        <header>About</header>
+        <div class="instruction-box">
+          &copy; 2026 Gadec Software. Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a>.<br><br>
+          For documentation, issues, and updates, visit the <a href="https://github.com/gadec-uk/departures-board" target="_blank">GitHub Repository</a>.
+        </div>
+      </article>
+          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+        &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
+      </div>
     </section>
   </div>
 
@@ -1757,16 +1875,16 @@
             </button>
           </div>
         </label>
-        <div id="key-help-rail" class="help-section">
+        <div id="key-help-rail" class="instruction-box key-help-section" style="display: none; margin-top: 1rem;">
           You will need a National Rail Enquiries Darwin Lite Webservice token for National Rail departures. You can
           register for a token free of charge <a href="https://realtime.nationalrail.co.uk/OpenLDBWSRegistration"
             target="_blank">here</a>.
         </div>
-        <div id="key-help-tfl" class="help-section">
+        <div id="key-help-tfl" class="instruction-box key-help-section" style="display: none; margin-top: 1rem;">
           Enter your Transport for London api key (app_key). You can register for a free api key <a
             href="https://api-portal.tfl.gov.uk/signup" target="_blank">here</a>.
         </div>
-        <div id="key-help-owm" class="help-section">
+        <div id="key-help-owm" class="instruction-box key-help-section" style="display: none; margin-top: 1rem;">
           Enter your openweathermap.org api key for station weather information. You can register for a free api key <a
             href="https://home.openweathermap.org/users/sign_up" target="_blank">here</a>.
         </div>
@@ -1820,7 +1938,8 @@
         inContextBoardFlow: false,
         editingIndex: -1,
         testQueue: [],
-        isQueueRunning: false
+        isQueueRunning: false,
+        initialTabSet: false // Tracks if the smart initial tab selection has been performed
       },
 
       // ==========================================
@@ -1832,6 +1951,7 @@
         this.bindEvents();
         try {
           await Promise.all([this.fetchStatus(), this.fetchConfig()]);
+          this.determineInitialTab();
         } catch (e) {
           console.error('Initial fetch failed', e);
         }
@@ -1886,6 +2006,36 @@
         this.state.testQueue = [];
       },
 
+      /**
+       * @brief Assesses device state and configuration to select the most relevant initial tab.
+       * 
+       * Priority:
+       * 1. WiFi (if disconnected or in AP mode)
+       * 2. API Keys (if WiFi is OK but no keys and no boards are configured)
+       * 3. Displays (otherwise)
+       */
+      determineInitialTab: function () {
+        const s = this.state.status;
+        const c = this.state.config;
+        if (!s || !c || this.state.initialTabSet) return;
+
+        let target = 'tab-displays';
+
+        if (s.ap_mode || !s.connected) {
+          target = 'tab-wifi';
+        } else {
+          const hasKeys = c.keys && c.keys.some(k => k.tokenExists);
+          const hasBoards = c.boards && c.boards.length > 0;
+          if (!hasKeys && !hasBoards) {
+            target = 'tab-apikeys';
+          }
+        }
+
+        console.log('Determining initial tab:', target);
+        this.switchTab(target);
+        this.state.initialTabSet = true;
+      },
+
       initTheme: function () {
         let theme = localStorage.getItem('theme') || 'auto';
         const apply = (t) => {
@@ -1928,7 +2078,11 @@
         if (!s) return;
         if (s.ap_mode) {
           document.body.classList.add('ap-mode');
-          if (!this.prev_ap_mode) { this.switchTab('tab-wifi'); document.getElementById('diag-drawer').classList.add('active'); }
+          // Only force switch if we literally just entered AP mode after the initial tab was already established
+          if (this.state.initialTabSet && !this.prev_ap_mode) { 
+            this.switchTab('tab-wifi'); 
+            document.getElementById('diag-drawer').classList.add('active'); 
+          }
         } else {
           document.body.classList.remove('ap-mode');
         }
@@ -2074,14 +2228,26 @@
       },
 
       renderBoards: function () {
-        const list = document.getElementById('boards-list');
+      document.getElementById('max-boards-count').textContent = MAX_BOARDS;
+      const container = document.getElementById('boards-list');
         const boards = this.state.config?.boards || [];
         const defaultIdx = this.state.config?.system?.defaultBoardIndex || 0;
 
-        list.innerHTML = '';
+        container.innerHTML = '';
         for (let i = 0; i < MAX_BOARDS; i++) {
+          const wrapper = document.createElement('div');
+          wrapper.style.display = 'flex';
+          wrapper.style.flexDirection = 'column';
+          
+          if (i === 0) {
+            const label = document.createElement('div');
+            label.className = 'slot-label';
+            label.innerHTML = `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Startup`;
+            wrapper.appendChild(label);
+          }
+
           const slot = document.createElement('div');
-          slot.className = 'board-slot';
+          slot.className = 'board-slot' + (i === 0 ? ' primary-slot' : '');
 
           if (i < boards.length) {
             const b = boards[i];
@@ -2098,16 +2264,16 @@
               </div>
               <div class="board-slot-right">
                 <div class="board-slot-status">
-                   <span style="font-size: 1.2rem; color: ${isDefault ? 'var(--primary)' : 'var(--text-muted)'}" 
-                         onclick="event.stopPropagation(); app.setDefaultBoard(${i})" title="${isDefault ? 'Default Board' : 'Set as Default'}">
-                    ${isDefault ? '★' : '☆'}
-                  </span>
                   <span class="board-status-text" id="board-status-text-${i}">Unknown</span>
                   <div class="dot grey" id="board-dot-${i}"></div>
                 </div>
                 <div class="board-reorder-btns">
-                  <button class="board-reorder-btn" onclick="event.stopPropagation(); app.moveBoard(${i}, -1)" ${i === 0 ? 'disabled' : ''}>↑</button>
-                  <button class="board-reorder-btn" onclick="event.stopPropagation(); app.moveBoard(${i}, 1)" ${i === boards.length - 1 ? 'disabled' : ''}>↓</button>
+                  <button class="board-reorder-btn" onclick="event.stopPropagation(); app.moveBoard(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Move Up">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                  </button>
+                  <button class="board-reorder-btn" onclick="event.stopPropagation(); app.moveBoard(${i}, 1)" ${i === boards.length - 1 ? 'disabled' : ''} title="Move Down">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
                 </div>
               </div>
             `;
@@ -2119,7 +2285,8 @@
             `;
             slot.onclick = () => this.selectBoardType();
           }
-          list.appendChild(slot);
+          wrapper.appendChild(slot);
+          container.appendChild(wrapper);
         }
 
         // Trigger async health checks after all slots are in the DOM
@@ -2210,7 +2377,7 @@
         document.getElementById('key-delete-btn').style.display = 'none';
 
         // Show correct help section
-        document.querySelectorAll('.help-section').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.key-help-section').forEach(s => s.style.display = 'none');
         const helpEl = document.getElementById(`key-help-${type}`);
         if (helpEl) helpEl.style.display = 'block';
 
@@ -2238,7 +2405,7 @@
         document.getElementById('key-delete-btn').style.display = 'block';
 
         // Show correct help section
-        document.querySelectorAll('.help-section').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.key-help-section').forEach(s => s.style.display = 'none');
         const helpEl = document.getElementById(`key-help-${key.type}`);
         if (helpEl) helpEl.style.display = 'block';
 

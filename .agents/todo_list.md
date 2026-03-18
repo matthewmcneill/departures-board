@@ -7,7 +7,7 @@
 - [x] move all the u8g2 setup and handling into the display manager. Add a displaymanager.Showboard( iDisplayBoard ) instead of calling render directly whcih injects the display hardware. Move all of the constants related to the display into the display manager
 - [x] clean up the drawing primitives. These routines should all take a u82g display as a paramaeter and not assume the global one exists.
 - [x] continue with the rationalisation of the data providers
-- [/] finish the updates to the web configuration front end to enable better board configuration (Backend support for multi-board added, System tab enhanced, Hostname relocated)
+- [x] finish the updates to the web configuration front end to enable better board configuration (Overhauled Displays tab: Startup highlight, reorder buttons, dynamic instructions, and smart initial tab selection)
 - [x] iStation and messageData - shoudl be obsolete
 - [ ] header widgets - I have a feeling this is not generalised, and is spacific to NatRail. (Still largely NR specific)
 - [x] systemBoard.cpp still has a lot of old straggling stuff that needs to go into displays, widgets or modules. (Cleanup complete, broken into separate classes)
@@ -29,7 +29,7 @@
 - [x] the scan button is not aligned with the networks drop-down box and changes size when the scan icon is showing. (Verified: Stable alignment and sizing)
 - [x] just check that the key registry IS actually being used as a registry. i.e. anything that references it uses an ID for the key that is served by the registry with the actual key. Similarly, in the storage, the configuration storage should reference the id of the key and the apiKeyManager should use that ID to serve the correct key. (Verified: IDs correctly used across board mapping and save logic)
 - [ ] Add unit tests for `ConfigManager::hasConfiguredBoards()` to verify it correctly evaluates incomplete default boards as unconfigured, preventing the system from skipping the `BOARD_SETUP` sequence.
-- [ ] need to add in the footers containing credits and acknowledgements to the bottom of the portal screen
+- [x] need to add in the footers containing credits and acknowledgements to the bottom of the portal screen (Implemented in all tabs)
 - [ ] departuresBoard.hpp - does it have all the platformio.ini variables in it - what about max keys?  (btw we probably only need 4 max - 6 to be generous)
 - [ ] add a machine state to app context for OTA updates. If the ota update flag is checked it should go to UPDATING state before running.  In this state it should check for updates, and then do an OTA if there is one whilst displaying the OTA wizard or progress bar. Otherwise it just checks and then moves to RUNNING.  We also need to think about how a long running device periodically goes to UPDATING state to check.
 - [/] need to review all password masking. (Stage 1: Implemented logic to prevent overwriting keys/passwords if the placeholder is unchanged. Stage 2: Refining grey stars indicator UI).
@@ -52,3 +52,4 @@
 - [ ] Add tooltips or help text for "No Scrolling" and "Fast Refresh" settings in the System tab.
 - [ ] Audit `temperatureRead()` accuracy across ESP32 chip revisions (V1 vs V3) for more reliable diagnostic reporting.
 - [ ] Investigate moving the "Refresh Rate" configuration from a global system setting to a per-key property.
+- [ ] Add unit test or manual verification suite for `determineInitialTab` across all state transitions to ensure long-term stability as more tabs are added.
