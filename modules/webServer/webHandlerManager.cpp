@@ -14,7 +14,7 @@
  * - WebHandlerManager::WebHandlerManager: Constructor.
  * - WebHandlerManager::begin: Route registration.
  * - WebHandlerManager::handlePortalRoot: Serves the main web index.html.
- * - WebHandlerManager::handleGetStatus: Returns system health and connectivity metrics.
+ * - WebHandlerManager::handleGetStatus: Returns system health, connectivity metrics, time and timezone.
  * - WebHandlerManager::handleGetConfig: Returns the unified project configuration as JSON.
  * - WebHandlerManager::handleSaveAll: Atomic validation and save of all portal settings.
  * - WebHandlerManager::handleReboot: Restarts the ESP32 device.
@@ -109,6 +109,13 @@ void WebHandlerManager::handleGetStatus() {
     doc["ap_mode"] = appContext.getWifiManager().getAPMode();
     doc["connected"] = (WiFi.status() == WL_CONNECTED);
     
+    // Add Time Details
+    char timeBuf[32];
+    struct tm timeinfo = appContext.getTimeManager().getCurrentTime();
+    strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &timeinfo);
+    doc["local_time"] = timeBuf;
+    doc["timezone"] = _config.getConfig().timezone;
+    
     // Add Network Details
     doc["gateway"] = WiFi.gatewayIP().toString();
     doc["subnet"] = WiFi.subnetMask().toString();
@@ -178,6 +185,7 @@ void WebHandlerManager::handleGetConfig() {
         b["secName"] = bc.secondaryName;
         b["offset"] = bc.timeOffset;
         b["weather"] = bc.showWeather;
+        b["brightness"] = bc.brightness;
         b["apiKeyId"] = bc.apiKeyId; // Added missing field
     }
 
@@ -239,6 +247,7 @@ void WebHandlerManager::handleSaveAll() {
                 strlcpy(bc.secondaryName, b["secName"] | "", sizeof(bc.secondaryName));
                 bc.timeOffset = b["offset"] | 0;
                 bc.showWeather = b["weather"] | true;
+                bc.brightness = b["brightness"] | -1;
                 strlcpy(bc.apiKeyId, b["apiKeyId"] | "", sizeof(bc.apiKeyId));
             }
         }

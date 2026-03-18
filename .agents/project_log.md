@@ -304,3 +304,35 @@ Generated commit: ef23372
     - Relocated Hostname to WiFi tab for network discovery priority.
 - **Key Decisions**: Used Vanilla JS for diagnostics and 5s polling to balance responsiveness with ESP32 overhead.
 - **Commit**: 7556e82
+ 
+ ## 2026-03-18 - Dynamic Default Tab Selection (Session 16b784a)
+ 
+ ### Session Summary
+ Implemented "smart" initial tab selection for the web portal. The application now assesses device connectivity, API keys, and board configuration on load to guide the user to the most relevant tab (WiFi, Keys, or Displays).
+ 
+ ### Key Decisions
+ - **One-Time Selection**: Used an `initialTabSet` flag to ensure the automatic logic only runs once on load, preventing background status polls from overriding manual user navigation.
+ - **Priority Logic**: WiFi takes ultimate priority (if disconnected/AP mode), followed by Keys (if setup is missing), defaulting to Displays for existing configurations.
+ - **Deferred AP Mode Switch**: Updated `updateStatusUI` to only force the WiFi tab if a connection loss occurs *after* the initial portal load.
+ - **House Style Refinement**: Added Doxygen-style documentation to the new frontend logic to maintain consistency with the C++ codebase.
+ 
+ ### Git Commit
+ Generated commit: 2780ca9
+ 
+ ### Build Statistics
+ - **RAM Usage**: 24.3% (79.7 KB)
+ - **Flash Usage**: 69.9% (1.37 MB)
+
+## 2026-03-18 - Screensaver Clock Enhancements (Session 685a3ce)
+
+### Session Summary
+Enhanced the Screensaver Clock configuration and the overall portal aesthetic. Implemented per-board brightness overrides, refined the board modal to hide redundant fields for clocks, and updated the diagnostics system to show real-time device time and timezone.
+
+### Key Decisions
+- **Orange Sliders**: Applied `accent-color: var(--primary)` globally to range inputs to match the brand's orange color.
+- **Clock Diagnostics Override**: Replaced Latitude/Longitude with Local Time and Timezone in the diagnostics drawer specifically for Clock boards.
+- **Per-Board Brightness**: Added an `int brightness` field to `BoardConfig` (defaulting to -1 for global sync) to allow per-board display levels.
+- **Enhanced Status API**: Updated `/api/status` to return the formatted local time and timezone from the ESP32's `TimeManager`.
+
+### Git Commit
+Generated commit:

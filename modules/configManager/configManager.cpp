@@ -7,7 +7,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/configManager/configManager.cpp
+ * Module: modules/configManager/configManager.cpp
  * Description: Implementation of configuration lifecycle methods including LittleFS 
  *              persistence and JSON serialization/deserialization.
  *
@@ -308,6 +308,7 @@ bool ConfigManager::save() {
         b[F("secName")] = bc.secondaryName;
         b[F("offset")] = bc.timeOffset;
         b[F("weather")] = bc.showWeather;
+        b[F("brightness")] = bc.brightness;
         b[F("apiKeyId")] = bc.apiKeyId;
     }
 
@@ -391,6 +392,7 @@ void ConfigManager::loadConfig() {
                 strlcpy(bc.secondaryId, b[F("secId")] | "", sizeof(bc.secondaryId));
                 strlcpy(bc.secondaryName, b[F("secName")] | "", sizeof(bc.secondaryName));
                 bc.timeOffset = b[F("offset")] | 0;
+                bc.brightness = b[F("brightness")] | -1;
                 strlcpy(bc.apiKeyId, b[F("apiKeyId")] | "", sizeof(bc.apiKeyId));
                 
                 // Weather Toggle: Default to true unless it's a Tube board (legacy behavior)
@@ -556,6 +558,9 @@ void ConfigManager::validate() {
                 } else {
                     bc.complete = true;
                 }
+                break;
+            case MODE_CLOCK:
+                bc.complete = true; // Clock is always valid
                 break;
         }
 

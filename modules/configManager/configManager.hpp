@@ -7,12 +7,12 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/configManager/configManager.hpp
+ * Module: modules/configManager/configManager.hpp
  * Description: Manages the loading, saving, and parsing of application configurations 
  *              and API keys stored in JSON format on LittleFS.
  *
  * Exported Functions/Classes:
- * - BoardModes: Enum defining supported operational modes (Rail, Tube, Bus).
+ * - BoardTypes: Enum defining supported operational modes (Rail, Tube, Bus, Clock).
  * - Config: Struct containing all system and user application settings.
  * - ConfigManager: Class for handling configuration persistence and access.
  * - configManager: Global singleton for configuration management.
@@ -33,7 +33,8 @@
 enum BoardTypes {
     MODE_RAIL = 0,
     MODE_TUBE = 1,
-    MODE_BUS = 2
+    MODE_BUS = 2,
+    MODE_CLOCK = 3
 };
 
 /**
@@ -59,6 +60,7 @@ struct BoardConfig {
 
     // --- Features ---
     bool showWeather = true;     // Enable/Disable weather overlay for this board
+    int brightness = -1;         // Per-board brightness override (-1 = use global)
 
     // --- Runtime Readiness (Computed by ConfigManager) ---
     bool complete = false;       // True if all mandatory fields are present

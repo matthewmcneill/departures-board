@@ -17,3 +17,4 @@ description: Session wrap-up: House style check, doc updates, validation, git co
     - The Git commit ID generated in the previous step.
 8.  **Session Walkthrough**: Finalize the `walkthrough.md` for this session, ensuring it captures the final state and verification results.
 9.  **Queue Release**: Check if the current session ID is holding the lock in `.agents/queue.md`. If it is, forcefully release the lock by setting `Locked By` to `NONE` and clearing `Reason` and `Since`, following the `queue-release` workflow.
+10. Offer to flash the latest build to the device, and await user input.

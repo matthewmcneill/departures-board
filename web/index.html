@@ -166,6 +166,7 @@
       color: var(--text);
       font-size: 1rem;
       margin-top: 0.4rem;
+      accent-color: var(--primary);
     }
 
     .password-input-wrapper {
@@ -1732,6 +1733,10 @@
               <option value="3">Screensaver / Clock</option>
             </select></label>
         </div>
+        <label id="label-board-brightness" style="display: none;">Brightness Override (Clock)
+          <input type="range" name="brightness" min="-1" max="255" oninput="app.updateBoardBrightness(this.value)" />
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Set to minimum (-1) to use the <b>Global System Brightness</b>.</p>
+        </label>
 
         <div id="board-filters-section">
           <!-- secondaryId / secondaryName filter (e.g. Calling At) -->
@@ -1766,8 +1771,10 @@
             <div id="board-diag-result" style="font-family: 'Courier New', monospace; font-size: 0.75rem; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px; margin-bottom: 0.5rem; min-height: 40px; white-space: pre-wrap;">No test run yet.</div>
             <table class="diag-table" id="board-diag-table">
               <tr><td>Station ID</td><td id="diag-id">-</td></tr>
-              <tr><td>Latitude</td><td id="diag-lat">-</td></tr>
-              <tr><td>Longitude</td><td id="diag-lon">-</td></tr>
+              <tr id="diag-row-lat"><td>Latitude</td><td id="diag-lat">-</td></tr>
+              <tr id="diag-row-lon"><td>Longitude</td><td id="diag-lon">-</td></tr>
+              <tr id="diag-row-time" style="display: none;"><td>Device Time</td><td id="diag-time">-</td></tr>
+              <tr id="diag-row-tz" style="display: none;"><td>Timezone</td><td id="diag-tz">-</td></tr>
             </table>
             <!-- Hidden inputs to store IDs and coords -->
             <input type="hidden" name="id" />
@@ -2108,12 +2115,20 @@
           ['MAC Address', s.mac], ['BSSID', s.bssid], ['WiFi Channel', s.channel],
           ['System Heap', `${Math.round(s.heap / 1024)} KB`],
           ['Storage', `${Math.round(s.storage_used / 1024)} / ${Math.round(s.storage_total / 1024)} KB`],
-          ['Uptime', `${Math.round(s.uptime / 60)} min`]
+          ['Uptime', `${Math.round(s.uptime / 60)} min`],
+          ['Local Time', s.local_time || 'N/A'],
+          ['Timezone', s.timezone || 'N/A']
         ];
         document.getElementById('wifi-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
 
         // Dynamic Hardware Diagnostics
         this.renderHardwareStatus(s);
+
+        // Update technical drawer in board modal if open
+        const diagTime = document.getElementById('diag-time');
+        const diagTz = document.getElementById('diag-tz');
+        if (diagTime) diagTime.innerText = s.local_time || '-';
+        if (diagTz) diagTz.innerText = s.timezone || '-';
       },
 
       renderHardwareStatus: function(s) {
@@ -2604,6 +2619,7 @@
         form.lat.value = b.lat || '';
         form.lon.value = b.lon || '';
         form.weather.checked = b.weather !== false;
+        form.brightness.value = b.brightness || -1;
         
         // Use a hidden input or state to preserve offset if not editable in this UI yet
         this.state.editingBoardOffset = b.offset || 0;
@@ -2627,6 +2643,11 @@
         
         this.closeModal('modal-board-selection');
         document.getElementById('modal-board').showModal();
+      },
+      
+      updateBoardBrightness: function (val) {
+        // Just a UI helper to show immediate effect if needed, but usually just for state
+        // this.state.config.boards[this.state.editingIndex].brightness = parseInt(val);
       },
 
       toggleAdvancedOptions: function() {
@@ -2676,6 +2697,22 @@
         // 2. Layout Updates
         weatherLabel.style.display = (t !== 3 && t !== 1) ? 'flex' : 'none'; // Tube hide weather
         searchContainer.style.display = (t !== 3) ? 'block' : 'none';
+        
+        // Screensaver / Clock specific
+        const brightnessLabel = document.getElementById('label-board-brightness');
+        const filtersSection = document.getElementById('board-filters-section');
+        const diagRowLat = document.getElementById('diag-row-lat');
+        const diagRowLon = document.getElementById('diag-row-lon');
+        const diagRowTime = document.getElementById('diag-row-time');
+        const diagRowTz = document.getElementById('diag-row-tz');
+
+        if (brightnessLabel) brightnessLabel.style.display = (t === 3) ? 'block' : 'none';
+        if (filtersSection) filtersSection.style.display = (t === 3) ? 'none' : 'block';
+        
+        if (diagRowLat) diagRowLat.style.display = (t === 3) ? 'none' : 'table-row';
+        if (diagRowLon) diagRowLon.style.display = (t === 3) ? 'none' : 'table-row';
+        if (diagRowTime) diagRowTime.style.display = (t === 3) ? 'table-row' : 'none';
+        if (diagRowTz) diagRowTz.style.display = (t === 3) ? 'table-row' : 'none';
         
         // Default resets
         filterSecondaryContainer.style.display = 'none';
@@ -2738,6 +2775,8 @@
         result.innerText = 'Connecting to API for live data pull...';
 
         try {
+          // If clock, we can skip the actual API call or just let it return success
+          // But let's fetch anyway to get the server time/tz if we add it to the API
           const res = await fetch('/api/boards/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2974,6 +3013,7 @@
           lat: parseFloat(f.lat.value) || 0,
           lon: parseFloat(f.lon.value) || 0,
           weather: f.weather.checked,
+          brightness: parseInt(f.brightness.value),
           apiKeyId: f.apiKeyId ? f.apiKeyId.value : '',
           offset: this.state.editingBoardOffset || 0
         };
