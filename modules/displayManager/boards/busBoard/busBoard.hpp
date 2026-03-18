@@ -21,6 +21,7 @@ class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
 #include "busDataSource.hpp"
+#include <configManager.hpp>
 #include "../../widgets/headerWidget.hpp"
 #include "../../widgets/clockWidget.hpp"
 #include "../../widgets/serviceListWidget.hpp"
@@ -57,6 +58,7 @@ private:
     WeatherStatus weatherStatus;
 
 public:
+    const char* getBoardName() const override { return "DATA: Bus Board"; }
     /**
      * @brief Constructs a new BusBoard instance.
      */

@@ -83,7 +83,7 @@ void DisplayManager::begin(appContext* contextPtr) {
     u8g2.setFontPosTop();
     u8g2.setFont(NatRailTall12);
     
-    showBoard(&splashBoard);
+    showBoard(&splashBoard, "DisplayManager::begin() Hardware Initialization");
     
     lastActivity = millis();
 }
@@ -100,11 +100,11 @@ void DisplayManager::tick(unsigned long currentMillis) {
 
     if (shouldSnooze && currentBoard != sleepBoard) {
         // Transition TO Sleep (Dimming and switching to clock)
-        showBoard(sleepBoard);
+        showBoard(sleepBoard, "Screensaver sleep schedule triggered");
         u8g2.setContrast(((SleepingBoard*)sleepBoard)->getDimmedBrightness());
     } else if (!shouldSnooze && currentBoard == sleepBoard) {
         // Transition FROM Sleep (Restoring brightness and active carousel board)
-        showBoard(getDisplayBoard(activeSlotIndex));
+        showBoard(getDisplayBoard(activeSlotIndex), "Waking up from screensaver");
         u8g2.setContrast(brightness);
         u8g2.clearDisplay(); // Ensure a clean wake-up surface
     }
@@ -147,8 +147,11 @@ iDisplayBoard* DisplayManager::getCurrentBoard() { return currentBoard; }
  * @param board Pointer to the board implementation to render.
  * @param durationMs Optional duration in ms to block and animate.
  */
-void DisplayManager::showBoard(iDisplayBoard* board, uint32_t durationMs) {
+void DisplayManager::showBoard(iDisplayBoard* board, const char* reason, uint32_t durationMs) {
     if (currentBoard == board) return;
+
+    String msg = "showBoard() invoked for: [" + String(board ? board->getBoardName() : "NULL") + "] | Reason: " + String(reason);
+    LOG_INFO("DISPLAY", msg.c_str());
 
     if (currentBoard != nullptr) {
         currentBoard->onDeactivate();
@@ -201,18 +204,13 @@ iDisplayBoard* DisplayManager::getSystemBoard(SystemBoardId id) {
         case SystemBoardId::SYS_WIFI_WIZARD:
             wizardBoard.setWizardIp(WiFi.softAPIP());
             return &wizardBoard;
-        case SystemBoardId::SYS_HELP_KEYS: {
+        case SystemBoardId::SYS_SETUP_HELP: {
+            char ipStr[32];
+            snprintf(ipStr, sizeof(ipStr), "Browse: http://%s", WiFi.localIP().toString().c_str());
             const char* lines[] = {
-                "Check National Rail", "Website -> My Account ->", "OpenLDBWS -> get token.", "TfL: API Portal -> keys.", "Connect to config AP."
+                "To configure this display,", "connect to the same WiFi", "and navigate to:", ipStr, "Settings -> Displays"
             };
-            helpBoard.setHelpContent("First Boot Keys Help", lines, 5);
-            return &helpBoard;
-        }
-        case SystemBoardId::SYS_HELP_CRS: {
-            const char* lines[] = {
-                "National Rail specific.", "This is the 3 letter", "code for a station.", "Eg EUS=Euston VIC=Victoria", "Connect to config AP."
-            };
-            helpBoard.setHelpContent("CRS Help", lines, 5);
+            helpBoard.setHelpContent("Setup Guide", lines, 5);
             return &helpBoard;
         }
         case SystemBoardId::SYS_ERROR_NO_DATA:
@@ -231,11 +229,34 @@ iDisplayBoard* DisplayManager::getSystemBoard(SystemBoardId id) {
             return &firmwareUpdateBoard;
         case SystemBoardId::SYS_SLEEP_CLOCK:
             return &sleepingBoard;
-        case SystemBoardId::SYS_ERROR_WIFI:
-            messageBoard.setContent("** WIFI ERROR **", "CONNECTION LOST", "PLEASE CHECK YOUR", "ROUTER/ACCESS POINT.");
+        case SystemBoardId::SYS_ERROR_WIFI: {
+            char ipStr[32];
+            snprintf(ipStr, sizeof(ipStr), "RETRY: http://%s", WiFi.localIP().toString().c_str());
+            messageBoard.setContent("** WIFI ERROR **", "CONNECTION LOST", ipStr, "CHECK YOUR ROUTER.");
             return &messageBoard;
+        }
         default:
             return nullptr;
+    }
+}
+
+/**
+ * @brief Maps an interface error status (UPD_*) to a functional SystemBoardId.
+ */
+SystemBoardId DisplayManager::mapErrorToId(int status) {
+    switch (status) {
+        case UPD_UNAUTHORISED: // 6
+            return SystemBoardId::SYS_ERROR_TOKEN;
+        case UPD_DATA_ERROR:   // 5
+        case UPD_TIMEOUT:      // 3
+        case UPD_HTTP_ERROR:   // 4
+            return SystemBoardId::SYS_ERROR_NO_DATA;
+        case UPD_NO_RESPONSE:  // 7
+            return SystemBoardId::SYS_ERROR_WSDL;
+        case UPD_INCOMPLETE:   // 8
+            return SystemBoardId::SYS_ERROR_CRS;
+        default:
+            return SystemBoardId::SYS_ERROR_NO_DATA;
     }
 }
 
@@ -371,7 +392,7 @@ int DisplayManager::cycleNext() {
         activeSlotIndex = (activeSlotIndex + 1) % MAX_BOARDS;
         iDisplayBoard* board = getDisplayBoard(activeSlotIndex);
         if (board != nullptr) {
-            showBoard(board);
+            showBoard(board, "Carousel Auto-Rotation or Manual Skip");
             return activeSlotIndex;
         }
     } while (activeSlotIndex != start);
@@ -481,9 +502,9 @@ void DisplayManager::applyConfig(const Config& config) {
         // Do not activate configured display boards if we aren't in RUNNING state yet.
         // Restore whatever system board was overriding the screen.
         if (previousBoard != nullptr) {
-            showBoard(previousBoard);
+            showBoard(previousBoard, "Context Restore: Reverting to previous slot");
         } else {
-            showBoard(&splashBoard);
+            showBoard(&splashBoard, "Context Restore fallback: No boards left in carousel");
         }
     } else if (previousBoard != getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK)) {
         // Use defaultBoardIndex if valid, otherwise fallback to first available board
@@ -507,13 +528,13 @@ void DisplayManager::applyConfig(const Config& config) {
 
         if (targetSlot != -1) {
            activeSlotIndex = targetSlot;
-           showBoard(getDisplayBoard(activeSlotIndex));
+           showBoard(getDisplayBoard(activeSlotIndex), "Config Reload: Slot Re-enabled or Swapped");
         } else {
            activeSlotIndex = 0; // fallback if no boards were populated
         }
     } else {
         // It was sleeping, restore the sleep screen
-        showBoard(previousBoard);
+        showBoard(previousBoard, "Config Reload: Restoring Sleep Screen");
     }
 }
 
@@ -527,7 +548,7 @@ void DisplayManager::resetState() {
 
     if (getIsSleeping() || (isStillOnSplash && isRunning)) {
         LOG_INFO("DISPLAY", "System ready/awake. Activating default board.");
-        showBoard(getDisplayBoard(activeSlotIndex));
+        showBoard(getDisplayBoard(activeSlotIndex), "System Ready: Activating default board");
         u8g2.setContrast(brightness);
     }
 }

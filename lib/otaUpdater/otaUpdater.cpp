@@ -21,11 +21,9 @@
 #include <hTTPUpdateGitHub.hpp>
 #include <githubClient.hpp>
 #include <time.h>
-#include <displayManager.hpp>
 #include <logger.hpp>
 #include <configManager.hpp>
 #include <memory>
-#include <boards/systemBoard/firmwareUpdateBoard.hpp>
 #include <appContext.hpp>
 #include <departuresBoard.hpp>
 #include <timeManager.hpp>
@@ -54,11 +52,8 @@ void otaUpdater::tick() {
 
 void update_progress(int cur, int total) {
   int percent = (cur*100)/total;
-  FirmwareUpdateBoard* fwBoard = (FirmwareUpdateBoard*)ota.getContext()->getDisplayManager().getSystemBoard(SystemBoardId::SYS_FIRMWARE_UPDATE);
-  if (fwBoard) {
-    fwBoard->setUpdateState(FwUpdateState::DOWNLOADING);
-    fwBoard->setDownloadPercent(percent);
-    ota.getContext()->getDisplayManager().render();
+  if (ota.onProgress) {
+      ota.onProgress(percent);
   }
 }
 
@@ -83,18 +78,11 @@ bool otaUpdater::checkForFirmwareUpdate() {
   }
   if (updatePath.length()==0) return result;
 
-  FirmwareUpdateBoard* fwBoard = (FirmwareUpdateBoard*)context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_FIRMWARE_UPDATE);
-  if (!fwBoard) return result;
-
-  context->getDisplayManager().showBoard(fwBoard);
-
   unsigned long tmr=millis()+1000;
   for (int i=30;i>=0;i--) {
-    fwBoard->setUpdateState(FwUpdateState::WARNING);
-    fwBoard->setCountdownSeconds(i);
-    fwBoard->setReleaseVersion(ghUpdate.releaseDescription.c_str());
-    context->getDisplayManager().showBoard(fwBoard);
-
+    if (onWarning) {
+        onWarning(ghUpdate.releaseDescription.c_str(), i);
+    }
     while (tmr>millis()) {
       yield();
     }
@@ -117,34 +105,27 @@ bool otaUpdater::checkForFirmwareUpdate() {
     case HTTP_UPDATE_FAILED:
       result=false;
       for (int i=20;i>=0;i--) {
-        fwBoard->setUpdateState(FwUpdateState::FAILED);
-        fwBoard->setErrorMessage(httpUpdate.getLastErrorString().c_str());
-        context->getDisplayManager().showBoard(fwBoard);
+        if (onStateChange) onStateChange(FwUpdateState::FAILED, httpUpdate.getLastErrorString().c_str(), i);
         delay(1000);
       }
       break;
 
     case HTTP_UPDATE_NO_UPDATES:
       for (int i=10;i>=0;i--) {
-        fwBoard->setUpdateState(FwUpdateState::NO_UPDATES);
-        context->getDisplayManager().showBoard(fwBoard);
+        if (onStateChange) onStateChange(FwUpdateState::NO_UPDATES, "", i);
         delay(1000);
       }
       break;
 
     case HTTP_UPDATE_OK:
       for (int i=20;i>=0;i--) {
-        fwBoard->setUpdateState(FwUpdateState::SUCCESS);
-        fwBoard->setCountdownSeconds(i);
-        context->getDisplayManager().showBoard(fwBoard);
+        if (onStateChange) onStateChange(FwUpdateState::SUCCESS, "", i);
         delay(1000);
       }
-      context->getDisplayManager().resetState();
       ESP.restart();
       break;
   }
   
-  context->getDisplayManager().resetState();
   return result;
 }
 
@@ -159,11 +140,11 @@ void otaUpdater::checkPostWebUpgrade() {
   
   String currentGUI = String(VERSION_MAJOR) + F(".") + String(VERSION_MINOR);
   if (prevGUI != currentGUI) {
-    LOG_INFO("OTA", "Web UI version mismatch detected. Cleaning up assets...");
+    // Logging implies we cleaned up
     
-    LoadingBoard* loadingBoard = (LoadingBoard*)context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_BOOT_LOADING);
-    loadingBoard->setProgress("Cleaning up following upgrade", 45);
-    context->getDisplayManager().showBoard(loadingBoard);
+    if (onPostUpgradeProgress) {
+        onPostUpgradeProgress("Cleaning up following upgrade", 45);
+    }
     
     LittleFS.remove(F("/index_d.htm"));
     LittleFS.remove(F("/index.htm"));

@@ -43,6 +43,7 @@ protected:
     friend class FirmwareUpdateBoard;
 
 public:
+    const char* getBoardName() const override { return "SYS: Loading"; }
     
     // Configures the displayed text and progress bar level
     void setProgress(const char* message, int percent);

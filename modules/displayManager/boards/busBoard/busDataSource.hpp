@@ -21,6 +21,8 @@
  * - busDataSource::getStationData: Returns the current station data.
  * - busDataSource::getStopLongName: Retrieves the long name of a bus stop.
  * - busDataSource::cleanFilter: Cleans a raw filter string.
+ *   - executeFetch(): Internal synchronous HTTPS scraping pipeline.
+ *   - fetchTask(): FreeRTOS static entry point for pinning HTML scraping.
  */
 
 #ifndef BUS_DATA_SOURCE_HPP
@@ -30,6 +32,9 @@
 #include "../../messaging/messagePool.hpp"
 #include <JsonListener.h>
 #include <JsonStreamingParser.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/semphr.h>
 #include <memory>
 
 #define BUS_MAX_LOCATION 45   // Maximum length of a location string
@@ -67,9 +72,15 @@ typedef void (*busDataSourceCallback) ();
  */
 class busDataSource : public iDataSource, public JsonListener {
 private:
-    std::unique_ptr<BusStop> stationData; // Current stop data
-    MessagePool messagesData;          // Local message pool
-    char lastErrorMsg[128];            // Most recent error message
+    std::unique_ptr<BusStop> stationData; // Background parse buffer for Double Buffering
+    std::unique_ptr<BusStop> renderData;  // Active UI buffer containing validated results
+    MessagePool messagesData;             // Local message pool for background processing
+    MessagePool renderMessages;           // Safe message pool for the UI
+    char lastErrorMsg[128];               // Most recent error message
+    
+    SemaphoreHandle_t dataMutex;          // Thread-safe lock protecting data transfers
+    TaskHandle_t fetchTaskHandle;         // Tracking handle for the FreeRTOS background task
+    volatile int taskStatus;              // Cross-thread execution status tracking (e.g., UPD_PENDING)
     
     // Internal parser state (migrated from busDataClient)
     const char* apiHost = "bustimes.org";   // API host address
@@ -142,6 +153,7 @@ public:
      * @return int Success status or error code.
      */
     int updateData() override;
+    int getLastUpdateStatus() const { return taskStatus; }
 
     /**
      * @brief Returns the last error message.
@@ -170,8 +182,8 @@ public:
      * @brief Returns the current station data.
      * @return BusStop* Pointer to the station data structure.
      */
-    BusStop* getStationData() { return stationData.get(); }
-    MessagePool* getMessagesData() { return &messagesData; }
+    BusStop* getStationData() { return renderData.get(); }
+    MessagePool* getMessagesData() { return &renderMessages; }
 
     /**
      * @brief Retrieves the long name of a bus stop.
@@ -190,24 +202,27 @@ public:
     void cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen);
 
     // JsonListener implementation
-    /** @brief Called on whitespace characters in JSON. */
     void whitespace(char c) override;
-    /** @brief Called at start of JSON document. */
     void startDocument() override;
-    /** @brief Called on JSON keys. */
     void key(String key) override;
-    /** @brief Called on JSON values. */
     void value(String value) override;
-    /** @brief Called at end of JSON array. */
     void endArray() override;
-    /** @brief Called at end of JSON object. */
     void endObject() override;
-    /** @brief Called at end of JSON document. */
     void endDocument() override;
-    /** @brief Called at start of JSON array. */
     void startArray() override;
-    /** @brief Called at start of JSON object. */
     void startObject() override;
+
+private:
+    /**
+     * @brief Internal blocking method that executes the HTTPS protocol and coordinates HTML scraping.
+     */
+    void executeFetch();
+    
+    /**
+     * @brief Static FreeRTOS Entry Point for background data processing.
+     * @param pvParameters Pointer to the executing busDataSource instance.
+     */
+    static void fetchTask(void* pvParameters);
 };
 
 #endif // BUS_DATA_SOURCE_HPP

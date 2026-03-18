@@ -11,6 +11,7 @@
  * Description: Implementation of the Wizard config board.
  */
 
+#include <appContext.hpp>
 #include "wizardBoard.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
 
@@ -59,16 +60,31 @@ void WizardBoard::tick(uint32_t ms) {
 
 void WizardBoard::render(U8G2& display) {
     display.setFont(NatRailTall12);
-    centreText(display, "Setup Wizard", 0);
+    centreText(display, "WiFi Setup Mode", 0);
     
     display.setFont(NatRailSmall9);
-    if (currentIp[0] != 0) {
-        char address[26];
-        snprintf(address, sizeof(address), "%d.%d.%d.%d", currentIp[0], currentIp[1], currentIp[2], currentIp[3]);
-        drawTruncatedText(display, address, 44);
-    } else {
-        drawTruncatedText(display, "Connecting...", 44);
-    }
     
-    drawTruncatedText(display, "(Hold D3 for help)", 54);
+    // Line 1: SSID instructions
+    char ssidMsg[64] = "Join WiFi: ";
+    if (context) {
+        strlcat(ssidMsg, context->getWifiManager().getSSID(), sizeof(ssidMsg));
+        if (strlen(context->getWifiManager().getSSID()) == 0) {
+            strlcat(ssidMsg, "Departures-Board", sizeof(ssidMsg));
+        }
+    } else {
+        strlcat(ssidMsg, "Departures-Board", sizeof(ssidMsg));
+    }
+    centreText(display, ssidMsg, 24);
+
+    // Line 2: URL instructions
+    char address[48];
+    if (currentIp[0] != 0) {
+        snprintf(address, sizeof(address), "Browse: http://%d.%d.%d.%d", currentIp[0], currentIp[1], currentIp[2], currentIp[3]);
+    } else {
+        snprintf(address, sizeof(address), "Connect to configure...");
+    }
+    centreText(display, address, 40);
+    
+    display.setFont(NatRailSmall9);
+    drawTruncatedText(display, "Follow instructions on your phone", 54);
 }

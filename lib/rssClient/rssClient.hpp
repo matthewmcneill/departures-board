@@ -17,12 +17,17 @@
  * - rssClient::loadFeed: Fetches and parses an RSS feed from a URL.
  * - rssClient::setYieldCallback: Registers a callback for non-blocking I/O.
  * - rssClient::reapplyConfig: Updates RSS settings from central configuration.
+ *   - executeFetch(): Internal synchronous HTTP pipeline.
+ *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
  */
 
 #pragma once
 #include <xmlListener.hpp>
 #include <xmlStreamingParser.hpp>
 #include "iConfigurable.hpp"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/semphr.h>
 
 #include <boards/interfaces/iDataSource.hpp>
 
@@ -45,9 +50,17 @@ class rssClient: public xmlListener, public iConfigurable {
         bool rssEnabled = false;
         bool rssAddedtoMsgs = false;
         unsigned long nextRssUpdate = 0;
-        int lastRssUpdateResult = 0;
+        volatile int lastRssUpdateResult = 0;
         char rssURL[128] = "";
         char rssName[48] = "";
+
+        char bgRssTitle[MAX_RSS_TITLES][MAX_RSS_TITLE_SIZE]; // Background storage for active XML extraction
+        int bgNumRssTitles = 0; // Length counter for background array
+        
+        TaskHandle_t fetchTaskHandle = nullptr; // Track the active FreeRTOS thread
+        SemaphoreHandle_t rssMutex; // Thread-safe memory copy protection lock
+        
+        String activeUrl = ""; // Thread-local scoped copy of target URL
 
 /**
  * @brief Trims leading and trailing whitespace from a character array in-place.
@@ -129,6 +142,18 @@ class rssClient: public xmlListener, public iConfigurable {
          * @brief Implements the iConfigurable interface.
          */
         virtual void reapplyConfig(const Config& config) override;
+
+    private:
+        /**
+         * @brief Internal blocking method that executes the HTTP protocol and coordinates XML parse.
+         */
+        void executeFetch();
+        
+        /**
+         * @brief Static FreeRTOS Entry Point for background data processing.
+         * @param pvParameters Pointer to the executing rssClient instance.
+         */
+        static void fetchTask(void* pvParameters);
 };
 
 extern rssClient* rss;

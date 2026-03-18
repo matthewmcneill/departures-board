@@ -11,11 +11,11 @@
  * Description: Implementation of the sleep mode screensaver board.
  */
 
+#include <appContext.hpp>
 #include "sleepingBoard.hpp"
 #include <fonts/fonts.hpp>
 #include "../../widgets/drawingPrimitives.hpp"
 #include <timeManager.hpp>
-#include <appContext.hpp>
 
 SleepingBoard::SleepingBoard() 
     : showClock(true), dimmedBrightness(DIMMED_BRIGHTNESS), 

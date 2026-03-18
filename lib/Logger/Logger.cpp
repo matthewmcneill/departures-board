@@ -36,7 +36,7 @@ void Logger::begin(unsigned long baud) {
  * @param message The text to be framed.
  */
 void Logger::logSplashMessage(const char* message) {
-#ifdef ENABLE_DEBUG_LOG
+#if CORE_DEBUG_LEVEL > 0
   if (message == nullptr) return;
   size_t len = strlen(message);
   
@@ -85,7 +85,7 @@ String Logger::redact(const String& message) {
  * @param message The raw message to be logged.
  */
 void Logger::printRedacted(const String& icon, const char* category, const String& message) {
-#ifdef ENABLE_DEBUG_LOG
+#if CORE_DEBUG_LEVEL > 0
   Serial.print(icon);
   Serial.print(" [");
   Serial.print(category);
@@ -102,7 +102,7 @@ void Logger::printRedacted(const String& icon, const char* category, const Strin
  * @param message The raw literal string to be logged.
  */
 void Logger::printRedacted(const String& icon, const char* category, const char* message) {
-#ifdef ENABLE_DEBUG_LOG
+#if CORE_DEBUG_LEVEL > 0
   Serial.print(icon);
   Serial.print(" [");
   Serial.print(category);

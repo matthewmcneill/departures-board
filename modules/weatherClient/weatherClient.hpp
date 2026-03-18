@@ -18,12 +18,17 @@
  * - weatherClient::updateWeather: Fetches and parses weather data for a status object.
  * - weatherClient::setYieldCallback: Registers a callback for non-blocking I/O.
  * - weatherClient::reapplyConfig: Updates API keys from central configuration.
+ *   - executeFetch(): Internal synchronous HTTP pipeline.
+ *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
  */
 #pragma once
 #include <JsonStreamingParser.h>
 #include "iConfigurable.hpp"
 #include "weatherStatus.hpp"
 #include "configManager.hpp"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/semphr.h>
 
 class weatherClient: public JsonListener, public iConfigurable {
 
@@ -34,7 +39,12 @@ class weatherClient: public JsonListener, public iConfigurable {
         int weatherItem = 0;
         void (*yieldCallback)() = nullptr;
 
-        WeatherStatus* activeStatus = nullptr; // Pointer to the status object being updated by the parser
+        WeatherStatus bgStatus; // Background Double Buffer used during active HTTP parsing
+        WeatherStatus* activeStatus = nullptr; // Pointer to the UI-facing active status structure
+        String activeApiKey = ""; // Thread-local copy of the API key for background fetch
+        
+        TaskHandle_t fetchTaskHandle = nullptr; // Handle to track the background FreeRTOS task status
+        SemaphoreHandle_t weatherMutex; // Mutex protecting the memory copy from bgStatus to activeStatus
         
         char weatherMsg[46] = "";
         
@@ -123,6 +133,18 @@ class weatherClient: public JsonListener, public iConfigurable {
          * @brief Implements the iConfigurable interface.
          */
         virtual void reapplyConfig(const Config& config) override;
+
+    private:
+        /**
+         * @brief Internal blocking method that executes the HTTP protocol and coordinates streaming parse.
+         */
+        void executeFetch();
+        
+        /**
+         * @brief Static FreeRTOS Entry Point for background data processing.
+         * @param pvParameters Pointer to the executing weatherClient instance.
+         */
+        static void fetchTask(void* pvParameters);
 };
 
 extern weatherClient* currentWeather;

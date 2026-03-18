@@ -24,6 +24,7 @@
 #include <wifiManager.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
+#include <boards/systemBoard/firmwareUpdateBoard.hpp>
 
 appContext* _instance = nullptr; // Global static pointer for yield callback adaptor
 
@@ -116,6 +117,60 @@ void appContext::begin() {
     weather.setYieldCallback(yieldCallbackWrapper);
     rss.setYieldCallback(yieldCallbackWrapper);
 
+    // 9. Connect Observer Callbacks for UI Decoupling
+    sysManager.setBootProgressCallback([this](const char* msg, int percent) {
+        if (auto* load = static_cast<LoadingBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
+            load->setProgress(msg, percent);
+            displayManager.showBoard(load, "systemManager Boot Progress Hook");
+            displayManager.resetState();
+        }
+    });
+
+    sysManager.setSoftResetCallback([this]() {
+        currentState = AppState::BOOTING;
+        if (auto* splash = static_cast<SplashBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_SPLASH))) {
+            displayManager.showBoard(splash, "systemManager Soft Reset Pipeline");
+        }
+    });
+
+    otaAssetUpdater.setProgressCallback([this](int percent) {
+        if (auto* fwBoard = static_cast<FirmwareUpdateBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_FIRMWARE_UPDATE))) {
+            fwBoard->setUpdateState(FwUpdateState::DOWNLOADING);
+            fwBoard->setDownloadPercent(percent);
+            displayManager.render();
+        }
+    });
+
+    otaAssetUpdater.setWarningCallback([this](const char* version, int secondsRemaining) {
+        if (auto* fwBoard = static_cast<FirmwareUpdateBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_FIRMWARE_UPDATE))) {
+            fwBoard->setUpdateState(FwUpdateState::WARNING);
+            fwBoard->setCountdownSeconds(secondsRemaining);
+            fwBoard->setReleaseVersion(version);
+            displayManager.showBoard(fwBoard, "OTA Firmware Update Delegate (Warning)");
+            displayManager.render();
+        }
+    });
+
+    otaAssetUpdater.setStateCallback([this](FwUpdateState state, const char* msg, int secondsRemaining) {
+        if (auto* fwBoard = static_cast<FirmwareUpdateBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_FIRMWARE_UPDATE))) {
+            fwBoard->setUpdateState(state);
+            fwBoard->setCountdownSeconds(secondsRemaining);
+            if (msg && msg[0] != '\0') {
+                fwBoard->setErrorMessage(msg);
+            }
+            displayManager.showBoard(fwBoard, "OTA Firmware Update Delegate (State)");
+            displayManager.render();
+        }
+    });
+
+    otaAssetUpdater.setPostUpgradeCallback([this](const char* msg, int percent) {
+        if (auto* load = static_cast<LoadingBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
+            load->setProgress(msg, percent);
+            displayManager.showBoard(load, "OTA Firmware Update Delegate (Post-Upgrade)");
+            displayManager.render();
+        }
+    });
+
     LOG_INFO("SYSTEM", "appContext initialization complete. Waiting for WiFi to start web components...");
 }
 
@@ -178,7 +233,7 @@ void appContext::tick() {
                 } else if (!configManager.hasConfiguredBoards()) {
                     currentState = AppState::BOARD_SETUP;
                     LOG_SPLASH("APP STATE: BOARD_SETUP");
-                    displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_HELP_CRS));
+                    displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_SETUP_HELP));
                 } else {
                     currentState = AppState::RUNNING;
                     LOG_SPLASH("APP STATE: RUNNING");
@@ -194,7 +249,7 @@ void appContext::tick() {
         if (!configManager.hasConfiguredBoards() && currentState != AppState::BOARD_SETUP) {
             currentState = AppState::BOARD_SETUP;
             LOG_SPLASH("APP STATE: BOARD_SETUP");
-            displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_HELP_CRS));
+            displayManager.showBoard(displayManager.getSystemBoard(SystemBoardId::SYS_SETUP_HELP));
         } else if (configManager.hasConfiguredBoards() && currentState != AppState::RUNNING) {
             currentState = AppState::RUNNING;
             LOG_SPLASH("APP STATE: RUNNING");

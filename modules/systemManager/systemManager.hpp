@@ -19,6 +19,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <functional>
 
 class appContext; // Forward declaration
 
@@ -41,6 +42,9 @@ private:
     int startupProgressPercent;   ///< Aggregated boot progress (0-100)
     int prevProgressBarPosition;  ///< Cached UI value to avoid redraw flicker
 
+    std::function<void(const char* msg, int percent)> onBootProgress;
+    std::function<void()> onSoftReset;
+
     // --- Data Polling State ---
     unsigned long nextDataUpdate;     ///< Calculated next poll timestamp (ms)
     unsigned long lastDataLoadTime;   ///< Timestamp of last successful data load (ms)
@@ -62,6 +66,9 @@ public:
      * @param contextPtr Pointer to the parent context.
      */
     void begin(appContext* contextPtr);
+
+    void setBootProgressCallback(std::function<void(const char* msg, int percent)> cb) { onBootProgress = cb; }
+    void setSoftResetCallback(std::function<void()> cb) { onSoftReset = cb; }
 
     /**
      * @brief Main logic maintenance tick.
@@ -99,17 +106,6 @@ public:
      * @brief Returns true if WiFi has been disconnected for a prolonged period (e.g. 3 mins).
      */
     bool isWifiPersistentError() const;
-
-    /**
-     * @brief Returns true if an alternate station is currently active based on schedule.
-     */
-    bool isAltActive();
-
-    /**
-     * @brief Check schedule and set alternate station variables if in time range.
-     * @return True if station was changed.
-     */
-    bool setAlternateStation();
 
     /**
      * @brief Callback from data clients to update UI progress during boot.

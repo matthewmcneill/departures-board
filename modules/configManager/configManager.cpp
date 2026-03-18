@@ -215,7 +215,7 @@ void ConfigManager::writeDefaultConfig() {
     JsonDocument doc;
     
     doc[F("hostname")] = "DeparturesBoard";
-    doc[F("version")] = 2.1; // Current config format version
+    doc[F("version")] = 2.2; // Current config format version
     doc[F("brightness")] = 20;
     doc[F("sleep")] = false;
     doc[F("clock")] = true;
@@ -260,10 +260,6 @@ void ConfigManager::writeDefaultConfig() {
     serializeJson(doc, output);
     saveFile(F("/config.json"), output);
     
-    // Clear in-memory stubs
-    config.crsCode[0] = '\0';
-    config.tubeId[0] = '\0';
-    config.busId[0] = '\0';
     config.boardCount = (MAX_BOARDS < 6) ? MAX_BOARDS : 6;
 }
 
@@ -275,7 +271,7 @@ bool ConfigManager::save() {
     LOG_INFO("CONFIG", "Saving configuration to /config.json...");
     JsonDocument doc;
     
-    doc[F("version")] = 2.1;
+    doc[F("version")] = 2.2;
     doc[F("hostname")] = config.hostname;
     doc[F("noScroll")] = config.noScrolling;
     doc[F("flip")] = config.flipScreen;
@@ -319,7 +315,7 @@ bool ConfigManager::save() {
 
 /**
  * @brief Load all user preferences and module settings from `/config.json`.
- *        Supports migration from legacy flat format and provides stubs for legacy UI.
+ *        Supports migration from legacy flat format.
  */
 void ConfigManager::loadConfig() {
   LOG_INFO("CONFIG", "Loading configuration from /config.json...");
@@ -345,8 +341,9 @@ void ConfigManager::loadConfig() {
         }
 
         // System settings
-        if (settings[F("version")].is<float>())          loadedVersion = settings[F("version")];
+        if (settings[F("version")].is<float>()) loadedVersion = settings[F("version")];
         config.configVersion = loadedVersion; // Store what we found (or the default)
+        
         if (settings[F("hostname")].is<const char*>()) strlcpy(config.hostname, settings[F("hostname")], sizeof(config.hostname));
         if (settings[F("noScroll")].is<bool>())          config.noScrolling = settings[F("noScroll")];
         if (settings[F("flip")].is<bool>())              config.flipScreen = settings[F("flip")];
@@ -395,128 +392,84 @@ void ConfigManager::loadConfig() {
                 bc.brightness = b[F("brightness")] | -1;
                 strlcpy(bc.apiKeyId, b[F("apiKeyId")] | "", sizeof(bc.apiKeyId));
                 
-                // Weather Toggle: Default to true unless it's a Tube board (legacy behavior)
+                // Weather Toggle
                 if (b[F("weather")].is<bool>()) {
                     bc.showWeather = b[F("weather")];
                 } else {
                     bc.showWeather = (bc.type != MODE_TUBE);
                 }
                 
-                LOG_INFO("SYSTEM", "Loaded Config: Board " + String(config.boardCount-1) + " Type=" + String((int)bc.type) + " ID=" + String(bc.id) + " Weather=" + String(bc.showWeather ? "ON" : "OFF"));
+                LOG_INFO("SYSTEM", "Loaded Config: Board " + String(config.boardCount-1) + " Type=" + String((int)bc.type) + " ID=" + String(bc.id));
             }
-            LOG_INFO("CONFIG", "Loaded " + String(config.boardCount) + " boards from modern config format.");
-        } else {
-            // --- Legacy Migration ---
-            LOG_INFO("CONFIG", "Migrating legacy config format...");
-            // Slot 0: Main Rail
-            if (config.boardCount < MAX_BOARDS) {
-                BoardConfig& br = config.boards[config.boardCount++];
-                br.type = MODE_RAIL;
-                strlcpy(br.id, settings[F("crs")] | "", sizeof(br.id));
-                // Try multiple legacy keys for coordinates
-                br.lat = settings[F("lat")] | settings[F("stationLat")] | 0.0f;
-                br.lon = settings[F("lon")] | settings[F("stationLon")] | 0.0f;
-                strlcpy(br.secondaryId, settings[F("callingCrs")] | "", sizeof(br.secondaryId));
-                strlcpy(br.secondaryName, settings[F("callingStation")] | "", sizeof(br.secondaryName));
-                strlcpy(br.filter, settings[F("platformFilter")] | "", sizeof(br.filter));
-                br.timeOffset = settings[F("nrTimeOffset")] | 0;
-            }
-
-            // Slot 1: Tube
-            if (config.boardCount < MAX_BOARDS) {
-                BoardConfig& bt = config.boards[config.boardCount++];
-                bt.type = MODE_TUBE;
-                strlcpy(bt.id, settings[F("tubeId")] | "", sizeof(bt.id));
-                strlcpy(bt.name, settings[F("tubeName")] | "", sizeof(bt.name));
-            }
-
-            // Slot 2: Bus
-            if (config.boardCount < MAX_BOARDS) {
-                BoardConfig& bb = config.boards[config.boardCount++];
-                bb.type = MODE_BUS;
-                strlcpy(bb.id, settings[F("busId")] | "", sizeof(bb.id));
-                strlcpy(bb.name, settings[F("busName")] | "", sizeof(bb.name));
-                bb.lat = settings[F("busLat")] | 0.0f;
-                bb.lon = settings[F("busLon")] | 0.0f;
-                strlcpy(bb.filter, settings[F("busFilter")] | "", sizeof(bb.filter));
-            }
-
-            // Slot 3: Alt Rail
-            if (settings[F("altCrs")].is<const char*>() && config.boardCount < MAX_BOARDS) {
-                BoardConfig& ba = config.boards[config.boardCount++];
-                ba.type = MODE_RAIL;
-                strlcpy(ba.id, settings[F("altCrs")], sizeof(ba.id));
-                ba.lat = settings[F("altLat")] | 0.0f;
-                ba.lon = settings[F("altLon")] | 0.0f;
-                strlcpy(ba.secondaryId, settings[F("altCallingCrs")] | "", sizeof(ba.secondaryId));
-                strlcpy(ba.secondaryName, settings[F("altCallingStation")] | "", sizeof(ba.secondaryName));
-                strlcpy(ba.filter, settings[F("altPlatformFilter")] | "", sizeof(ba.filter));
-                
-                // Also sync to legacy stubs
-                config.altStationEnabled = true;
-                strlcpy(config.altCrsCode, settings[F("altCrs")], sizeof(config.altCrsCode));
-                config.altLat = ba.lat;
-                config.altLon = ba.lon;
-                strlcpy(config.altCallingCrsCode, ba.secondaryId, sizeof(config.altCallingCrsCode));
-                strlcpy(config.altCallingStation, ba.secondaryName, sizeof(config.altCallingStation));
-                strlcpy(config.altPlatformFilter, ba.filter, sizeof(config.altPlatformFilter));
-            }
-        }
-
-        // --- Step 3: Sync Legacy Stubs (Compatibility) ---
-        // Post-load, we populate the legacy flat fields from Slot 0-2 to ensure
-        // existing code (e.g. status pages, web UI) still sees data.
-        if (config.boardCount > 0) {
-            const BoardConfig& b0 = config.boards[0];
-            config.boardType = b0.type;
-            strlcpy(config.crsCode, b0.id, sizeof(config.crsCode));
-            config.stationLat = b0.lat;
-            config.stationLon = b0.lon;
-            strlcpy(config.callingCrsCode, b0.secondaryId, sizeof(config.callingCrsCode));
-            strlcpy(config.callingStation, b0.secondaryName, sizeof(config.callingStation));
-            strlcpy(config.platformFilter, b0.filter, sizeof(config.platformFilter));
-            config.nrTimeOffset = b0.timeOffset;
-        }
-
-        // Logic for identifying if one of the boards is the legacy "Alt Station"
-        config.altStationEnabled = false;
-        for (int i = 1; i < config.boardCount; i++) {
-            if (config.boards[i].type == MODE_RAIL) {
-                config.altStationEnabled = true;
-                strlcpy(config.altCrsCode, config.boards[i].id, sizeof(config.altCrsCode));
-                config.altLat = config.boards[i].lat;
-                config.altLon = config.boards[i].lon;
-                strlcpy(config.altCallingCrsCode, config.boards[i].secondaryId, sizeof(config.altCallingCrsCode));
-                strlcpy(config.altCallingStation, config.boards[i].secondaryName, sizeof(config.altCallingStation));
-                strlcpy(config.altPlatformFilter, config.boards[i].filter, sizeof(config.altPlatformFilter));
-                break; 
-            }
-        }
-
-        // TfL Stub (Slot 1 by convention in migration/default)
-        if (config.boardCount > 1) {
-            strlcpy(config.tubeId, config.boards[1].id, sizeof(config.tubeId));
-            strlcpy(config.tubeName, config.boards[1].name, sizeof(config.tubeName));
-        }
-
-        // Bus Stub (Slot 2 by convention)
-        if (config.boardCount > 2) {
-            strlcpy(config.busId, config.boards[2].id, sizeof(config.busId));
-            strlcpy(config.busName, config.boards[2].name, sizeof(config.busName));
-            config.busLat = config.boards[2].lat;
-            config.busLon = config.boards[2].lon;
-            strlcpy(config.busFilter, config.boards[2].filter, sizeof(config.busFilter));
-        }
-
-        // TimeManager timezone will be updated via the Config Consumer pattern.
-        LOG_INFO("CONFIG", "Configuration loaded. Board count: " + String(config.boardCount) + " Default board: " + String(config.defaultBoardIndex));
+        } 
         
-        // v2.1 Migration: Auto-save if version was upgraded
-        if (loadedVersion < 2.1f) {
-            LOG_INFO("CONFIG", "Auto-saving updated configuration (v2.1)...");
+        // --- Step 3: Migration Paths ---
+        if (loadedVersion < 2.2f) {
+            LOG_INFO("CONFIG", "Performing v2.2 multi-board migration...");
+            
+            // Legacy Migration (Flat to Array) if boards array was missing
+            if (!settings[F("boards")].is<JsonArray>()) {
+                // Slot 0: Main Rail
+                if (config.boardCount < MAX_BOARDS) {
+                    BoardConfig& br = config.boards[config.boardCount++];
+                    br.type = MODE_RAIL;
+                    strlcpy(br.id, settings[F("crs")] | "", sizeof(br.id));
+                    br.lat = settings[F("lat")] | settings[F("stationLat")] | 0.0f;
+                    br.lon = settings[F("lon")] | settings[F("stationLon")] | 0.0f;
+                    strlcpy(br.secondaryId, settings[F("callingCrs")] | "", sizeof(br.secondaryId));
+                    strlcpy(br.secondaryName, settings[F("callingStation")] | "", sizeof(br.secondaryName));
+                    strlcpy(br.filter, settings[F("platformFilter")] | "", sizeof(br.filter));
+                    br.timeOffset = settings[F("nrTimeOffset")] | 0;
+                }
+                // Slot 1: Tube
+                if (config.boardCount < MAX_BOARDS) {
+                    BoardConfig& bt = config.boards[config.boardCount++];
+                    bt.type = MODE_TUBE;
+                    strlcpy(bt.id, settings[F("tubeId")] | "", sizeof(bt.id));
+                    strlcpy(bt.name, settings[F("tubeName")] | "", sizeof(bt.name));
+                }
+                // Slot 2: Bus
+                if (config.boardCount < MAX_BOARDS) {
+                    BoardConfig& bb = config.boards[config.boardCount++];
+                    bb.type = MODE_BUS;
+                    strlcpy(bb.id, settings[F("busId")] | "", sizeof(bb.id));
+                    strlcpy(bb.name, settings[F("busName")] | "", sizeof(bb.name));
+                    bb.lat = settings[F("busLat")] | 0.0f;
+                    bb.lon = settings[F("busLon")] | 0.0f;
+                    strlcpy(bb.filter, settings[F("busFilter")] | "", sizeof(bb.filter));
+                }
+            }
+
+            // High-priority: Alt Rail Migration (v2.2)
+            // If altCrs exists and is not already in the boards array as a Rail board, add it.
+            if (settings[F("altCrs")].is<const char*>() && config.boardCount < MAX_BOARDS) {
+                const char* altCrs = settings[F("altCrs")];
+                bool alreadyIn = false;
+                for (int i=0; i<config.boardCount; i++) {
+                    if (config.boards[i].type == MODE_RAIL && strcmp(config.boards[i].id, altCrs) == 0) {
+                        alreadyIn = true;
+                        break;
+                    }
+                }
+                if (!alreadyIn) {
+                    LOG_INFO("CONFIG", "Migrating legacy Alt Station to dedicated Carousel board.");
+                    BoardConfig& ba = config.boards[config.boardCount++];
+                    ba.type = MODE_RAIL;
+                    strlcpy(ba.id, altCrs, sizeof(ba.id));
+                    ba.lat = settings[F("altLat")] | 0.0f;
+                    ba.lon = settings[F("altLon")] | 0.0f;
+                    strlcpy(ba.secondaryId, settings[F("altCallingCrs")] | "", sizeof(ba.secondaryId));
+                    strlcpy(ba.secondaryName, settings[F("altCallingStation")] | "", sizeof(ba.secondaryName));
+                    strlcpy(ba.filter, settings[F("altPlatformFilter")] | "", sizeof(ba.filter));
+                }
+            }
+
+            LOG_INFO("CONFIG", "Auto-saving upgraded configuration (v2.2)...");
+            config.configVersion = 2.2f;
             save();
         }
 
+        LOG_INFO("CONFIG", "Configuration loaded. Board count: " + String(config.boardCount));
         validate(); // Recalculate board readiness
       } else {
         LOG_ERROR("CONFIG", String("Failed to parse /config.json: ") + error.c_str());

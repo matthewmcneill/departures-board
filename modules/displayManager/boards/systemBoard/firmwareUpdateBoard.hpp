@@ -23,17 +23,7 @@ class appContext;
 #include "../interfaces/iDisplayBoard.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
 #include <string.h>
-
-/**
- * @brief Represents the current UI lifecycle state of a Firmware Update check or installation.
- */
-enum class FwUpdateState {
-    WARNING,
-    DOWNLOADING,
-    SUCCESS,
-    FAILED,
-    NO_UPDATES
-};
+#include <otaUpdater.hpp>
 
 #include "messageBoard.hpp"
 #include "loadingBoard.hpp"
@@ -59,6 +49,7 @@ protected:
     friend class DisplayManager;
 
 public:
+    const char* getBoardName() const override { return "SYS: Firmware Update"; }
 
     /**
      * @brief Set the current firmware update state

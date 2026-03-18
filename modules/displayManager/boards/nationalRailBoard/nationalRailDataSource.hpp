@@ -18,6 +18,8 @@
  *   - getMessagesData(): Accessor for rail disruption messages.
  *   - setSoapAddress(): Manually set SOAP endpoint (bypasses WSDL).
  *   - configure(): Set API token and station parameters.
+ *   - executeFetch(): Internal synchronous SOAP fetching pipeline.
+ *   - fetchTask(): FreeRTOS static entry point for pinning SOAP processing.
  */
 
 #ifndef NATIONAL_RAIL_DATA_SOURCE_HPP
@@ -27,6 +29,10 @@
 #include "../xmlListener/xmlListener.hpp"
 #include "../../messaging/messagePool.hpp"
 #include <memory>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/semphr.h>
 
 #include <Arduino.h>
 
@@ -76,8 +82,15 @@ typedef void (*nrDataSourceCallback) (int state, int id);
 
 class nationalRailDataSource : public iDataSource, public xmlListener {
 private:
-    std::unique_ptr<NationalRailStation> stationData;
-    MessagePool messagesData;
+    std::unique_ptr<NationalRailStation> stationData; // Background parse buffer for Double Buffering
+    std::unique_ptr<NationalRailStation> renderData;  // Active UI buffer containing validated results
+    MessagePool messagesData; // Background pool for disruption strings
+    MessagePool renderMessages; // Safe local copy for UI rendering
+
+    SemaphoreHandle_t dataMutex; // Thread-safe lock protecting data transfers
+    TaskHandle_t fetchTaskHandle; // Tracking handle for the FreeRTOS background task
+    volatile int taskStatus; // Cross-thread execution status tracking (e.g., UPD_PENDING)
+
     char lastErrorMessage[128];
 
     // Darwin API / SOAP details
@@ -132,6 +145,7 @@ public:
 
     // iDataSource Implementation
     int updateData() override;
+    int getLastUpdateStatus() const { return taskStatus; }
     const char* getLastErrorMsg() const override { return lastErrorMessage; }
     int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
@@ -140,8 +154,8 @@ public:
     bool isInitialized() const { return soapHost[0] != '\0'; }
     void configure(const char* token, const char* crs, const char* filter = "", const char* callingCrs = "", int offset = 0);
     
-    NationalRailStation* getStationData() { return stationData.get(); }
-    MessagePool* getMessagesData() { return &messagesData; }
+    NationalRailStation* getStationData() { return renderData.get(); }
+    MessagePool* getMessagesData() { return &renderMessages; }
     void cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen);
 
     // xmlListener Implementation
@@ -150,6 +164,18 @@ public:
     void parameter(const char *param) override;
     void value(const char *value) override;
     void attribute(const char *attribute) override;
+
+private:
+    /**
+     * @brief Internal blocking method that executes the SOAP protocol and coordinates XML streaming parse.
+     */
+    void executeFetch();
+    
+    /**
+     * @brief Static FreeRTOS Entry Point for background data processing.
+     * @param pvParameters Pointer to the executing nationalRailDataSource instance.
+     */
+    static void fetchTask(void* pvParameters);
 };
 
 #endif // NATIONAL_RAIL_DATA_SOURCE_HPP

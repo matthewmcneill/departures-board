@@ -42,6 +42,7 @@ protected:
     friend class DisplayManager;
 
 public:
+    const char* getBoardName() const override { return "SYS: Sleep Clock"; }
 
     /**
      * @brief Handle the bouncing logic for screensaver positioning.

@@ -45,38 +45,32 @@ test.describe('Web Portal - Enhanced Boards Management', () => {
     await page.click('a[data-target="tab-displays"]');
   });
 
-  test('should display boards with reorder buttons and default stars', async ({ page }) => {
+  test('should display boards with reorder buttons and primary slot', async ({ page }) => {
     const items = page.locator('.board-slot:not(.empty)');
     await expect(items).toHaveCount(2);
-    
-    // First board should be default (star)
-    await expect(items.first().locator('.board-slot-status')).toContainText('★');
+
+    // First board should be the startup board
+    await expect(items.first()).toHaveClass(/primary-slot/);
     await expect(items.first().locator('.board-slot-title')).toContainText('Waterloo');
-    
-    // Second board should not be default
-    await expect(items.nth(1).locator('.board-slot-status')).toContainText('☆');
-    
+
+    // Second board should not be primary-slot
+    await expect(items.nth(1)).not.toHaveClass(/primary-slot/);
+
     // Reorder buttons
-    await expect(items.first().locator('.board-reorder-btn:has-text("↑")')).toBeDisabled();
-    await expect(items.first().locator('.board-reorder-btn:has-text("↓")')).toBeEnabled();
-    await expect(items.nth(1).locator('.board-reorder-btn:has-text("↑")')).toBeEnabled();
-    await expect(items.nth(1).locator('.board-reorder-btn:has-text("↓")')).toBeDisabled();
+    await expect(items.first().locator('.board-reorder-btn[title="Move Up"]')).toBeDisabled();
+    await expect(items.first().locator('.board-reorder-btn[title="Move Down"]')).toBeEnabled();
+    await expect(items.nth(1).locator('.board-reorder-btn[title="Move Up"]')).toBeEnabled();
+    await expect(items.nth(1).locator('.board-reorder-btn[title="Move Down"]')).toBeDisabled();
   });
 
-  test('should allow setting a new default board', async ({ page }) => {
-    const items = page.locator('.board-slot:not(.empty)');
-    await items.nth(1).locator('.board-slot-status span').click();
-    
-    await expect(items.first().locator('.board-slot-status span')).toContainText('☆');
-    await expect(items.nth(1).locator('.board-slot-status span')).toContainText('★');
-  });
+
 
   test('should allow reordering boards', async ({ page }) => {
     const items = page.locator('.board-slot:not(.empty)');
     await expect(items.first()).toContainText('Waterloo');
     
     // Move second board UP
-    await items.nth(1).locator('.board-reorder-btn:has-text("↑")').click();
+    await items.nth(1).locator('.board-reorder-btn[title="Move Up"]').click();
     
     await expect(items.first()).toContainText('Victoria');
     await expect(items.nth(1)).toContainText('Waterloo');

@@ -44,7 +44,9 @@ void weatherClient::reapplyConfig(const Config& config) {
 /**
  * @brief Default constructor for weatherClient.
  */
-weatherClient::weatherClient() {}
+weatherClient::weatherClient() {
+    weatherMutex = xSemaphoreCreateMutex();
+}
 
 /**
  * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
@@ -54,9 +56,10 @@ weatherClient::weatherClient() {}
  * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
 bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, const char* overrideToken) {
-    activeStatus = &status;
-    activeStatus->status = WeatherUpdateStatus::DATA_ERROR; // Assume error until success
-    parsingComplete = false;
+    if (fetchTaskHandle != nullptr) {
+        LOG_INFO("DATA", "Weather Client: Task already running");
+        return true; 
+    }
 
     String apiKey = "";
     if (overrideToken && strlen(overrideToken) > 0) {
@@ -69,7 +72,6 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     }
 
     if (apiKey.length() == 0) {
-        // Final fallback: try to find ANY OWM key if no specific ID provided
         const Config& cfg = appContext.getConfigManager().getConfig();
         for (int i = 0; i < cfg.keyCount; i++) {
             if (strcmp(cfg.keys[i].type, "owm") == 0) {
@@ -82,23 +84,61 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     if (apiKey.length() == 0) {
         strcpy(lastErrorMsg, "No valid API Key");
         LOG_WARN("DATA", lastErrorMsg);
+        status.status = WeatherUpdateStatus::NOT_CONFIGURED;
         return false;
     }
-    char latBuf[32], lonBuf[32];
-    dtostrf(status.lat, 1, 4, latBuf);
-    dtostrf(status.lon, 1, 4, lonBuf);
-    String lat = String(latBuf);
-    String lon = String(lonBuf);
 
+    activeApiKey = apiKey;
+    activeStatus = &status;
+    bgStatus.lat = status.lat;
+    bgStatus.lon = status.lon;
+    bgStatus.status = WeatherUpdateStatus::NO_DATA;
+    parsingComplete = false;
+
+    LOG_INFO("DATA", "Weather Client: Spawning FreeRTOS task on Core 0");
+    xTaskCreatePinnedToCore(fetchTask, "Weather_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    return true;
+}
+
+/**
+ * @brief Static FreeRTOS Entry Point for background data processing.
+ * @param pvParameters Pointer to the executing weatherClient instance.
+ */
+void weatherClient::fetchTask(void* pvParameters) {
+    weatherClient* client = static_cast<weatherClient*>(pvParameters);
+    client->executeFetch();
+    client->fetchTaskHandle = nullptr;
+    vTaskDelete(NULL);
+}
+
+/**
+ * @brief Internal blocking method that executes the HTTP protocol and coordinates streaming parse.
+ */
+void weatherClient::executeFetch() {
     unsigned long perfTimer = millis();
     strcpy(lastErrorMsg, "");
+    
+    char latBuf[32], lonBuf[32];
+    dtostrf(bgStatus.lat, 1, 4, latBuf);
+    dtostrf(bgStatus.lon, 1, 4, lonBuf);
+    String lat = String(latBuf);
+    String lon = String(lonBuf);
 
     std::unique_ptr<JsonStreamingParser> parser(new (std::nothrow) JsonStreamingParser());
     std::unique_ptr<WiFiClient> httpClient(new (std::nothrow) WiFiClient());
 
+    #define WRAP_UP_ERROR() { \
+        setNextWeatherUpdate(millis() + (1000 * 60)); \
+        xSemaphoreTake(weatherMutex, portMAX_DELAY); \
+        if (activeStatus) *activeStatus = bgStatus; \
+        xSemaphoreGive(weatherMutex); \
+        return; \
+    }
+
     if (!parser || !httpClient) {
         LOG_ERROR("DATA", "Weather Client: Memory allocation failed!");
-        return false;
+        bgStatus.status = WeatherUpdateStatus::DATA_ERROR;
+        WRAP_UP_ERROR();
     }
 
     parser->setListener(this);
@@ -106,26 +146,27 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     // --- Step 1: Protocol Handshake ---
     int retryCounter=0;
     while (!httpClient->connect(apiHost, 80) && (retryCounter++ < 15)){
-        if (yieldCallback) yieldCallback();
-        delay(200);
+        vTaskDelay(pdMS_TO_TICKS(200));
     }
     if (retryCounter>=15) {
         strcpy(lastErrorMsg, "Connection timeout");
         LOG_WARN("DATA", lastErrorMsg);
-        return false;
+        bgStatus.status = WeatherUpdateStatus::DATA_ERROR;
+        WRAP_UP_ERROR();
     }
 
     // --- Step 2: GET Request ---
-    String request = "GET /data/2.5/weather?units=metric&lang=en&lat=" + lat + "&lon=" + lon + "&appid=" + apiKey + " HTTP/1.1\r\n" +
-                     "Host: " + String(apiHost) + "\r\n" +
-                     "User-Agent: ESP32-Departures-Board\r\n" +
-                     "Connection: close\r\n\r\n";
-    LOG_DEBUG("DATA", "Weather Client: Requesting " + request); 
-    httpClient->print(request);
+    {
+        String request = "GET /data/2.5/weather?units=metric&lang=en&lat=" + lat + "&lon=" + lon + "&appid=" + activeApiKey + " HTTP/1.1\r\n" +
+                         "Host: " + String(apiHost) + "\r\n" +
+                         "User-Agent: ESP32-Departures-Board\r\n" +
+                         "Connection: close\r\n\r\n";
+        LOG_DEBUG("DATA", "Weather Client: Requesting URL"); 
+        httpClient->print(request);
+    }
     retryCounter=0;
     while(!httpClient->available() && retryCounter++ < 40) {
-        if (yieldCallback) yieldCallback();
-        delay(200);
+        vTaskDelay(pdMS_TO_TICKS(200));
     }
 
     if (!httpClient->available()) {
@@ -133,7 +174,8 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
         httpClient->stop();
         strcpy(lastErrorMsg, "Response timeout (GET)");
         LOG_WARN("DATA", lastErrorMsg);
-        return false;
+        bgStatus.status = WeatherUpdateStatus::DATA_ERROR;
+        WRAP_UP_ERROR();
     }
 
     // --- Step 3: Status Check ---
@@ -153,7 +195,8 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
             lastErrorMsg[sizeof(lastErrorMsg)-1] = '\0';
             LOG_WARN("DATA", lastErrorMsg);
         }
-        return false;
+        bgStatus.status = WeatherUpdateStatus::DATA_ERROR;
+        WRAP_UP_ERROR();
     }
 
     // --- Step 4: Skip Headers ---
@@ -171,17 +214,25 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     LOG_DEBUG("DATA", "Weather Client: Receiving streaming response...");
     
     // --- Step 5: Streaming Parse ---
+    int parseYield = 0;
     while((httpClient->available() || httpClient->connected()) && (millis() < dataSendTimeout) && !parsingComplete) {
         while(httpClient->available() && !parsingComplete) {
             c = httpClient->read();
             #ifdef ENABLE_DEBUG_LOG
-            Serial.print(c); // Raw dump to serial (Logger doesn't handle char-by-char)
+            // Serial.print(c); // Raw dump blocked to avoid thread collision
             #endif
             if (c == '{' || c == '[') isBody = true;
             if (isBody) parser->parse(c);
+            
+            // --- Arcane Logic ---
+            // On single-core ESP32 variants (e.g. ESP32-C3), the Wi-Fi stack and user application
+            // share the exact same processor core tightly via the RTOS scheduler. By explicitly
+            // yielding execution context via vTaskDelay(1) every 500 byte blocks, we guarantee
+            // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
+            parseYield++;
+            if (parseYield % 500 == 0) vTaskDelay(1);
         }
-        if (yieldCallback) yieldCallback();
-        delay(5);
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
     #ifdef ENABLE_DEBUG_LOG
     Serial.println(); // Newline after dump
@@ -190,13 +241,25 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     if (millis() >= dataSendTimeout) {
         strcpy(lastErrorMsg, "Data timeout");
         LOG_WARN("DATA", lastErrorMsg);
-        return false;
+        bgStatus.status = WeatherUpdateStatus::DATA_ERROR;
+        WRAP_UP_ERROR();
     }
 
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "Success - took %lums", static_cast<unsigned long>(millis()-perfTimer));
-    activeStatus->status = WeatherUpdateStatus::READY;
-
-    return true;
+    bgStatus.status = WeatherUpdateStatus::READY;
+    setNextWeatherUpdate(millis() + (1000 * 60 * 15)); // Update every 15 mins on success
+    
+    xSemaphoreTake(weatherMutex, portMAX_DELAY);
+    if (activeStatus) {
+        *activeStatus = bgStatus;
+    }
+    xSemaphoreGive(weatherMutex);
+    
+#ifdef ENABLE_DEBUG_LOG
+    UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
+    LOG_DEBUG("DATA", "Weather Task Stack High Water Mark: " + String(hwm) + " words");
+#endif
+    return;
 }
 
 /**
@@ -223,34 +286,32 @@ void weatherClient::key(String key) {
  * @param value The scalar string value.
  */
 void weatherClient::value(String value) {
-    if (!activeStatus) return;
-
     if (currentObject == F("weather") && weatherItem==0) {
         // Only read the first weather entry in the array
         if (currentKey == F("description")) {
-            strlcpy(activeStatus->description, value.c_str(), sizeof(activeStatus->description));
+            strlcpy(bgStatus.description, value.c_str(), sizeof(bgStatus.description));
             LOG_DEBUG("DATA", "Weather Parser: Description=" + value);
         }
         else if (currentKey == F("id")) {
-            activeStatus->conditionId = value.toInt();
+            bgStatus.conditionId = value.toInt();
             LOG_DEBUG("DATA", "Weather Parser: ID=" + value);
         }
         else if (currentKey == F("icon")) {
             // OWM icon codes like "01d" or "01n". If ends with 'n', it's night.
             if (value.length() >= 3) {
-                activeStatus->isNight = (value.charAt(2) == 'n');
-                LOG_DEBUG("DATA", "Weather Parser: Icon=" + value + " (isNight=" + String(activeStatus->isNight ? "true" : "false") + ")");
+                bgStatus.isNight = (value.charAt(2) == 'n');
+                LOG_DEBUG("DATA", "Weather Parser: Icon=" + value + " (isNight=" + String(bgStatus.isNight ? "true" : "false") + ")");
             }
         }
     }
     else if (currentKey == F("temp")) {
-        activeStatus->temp = value.toFloat();
+        bgStatus.temp = value.toFloat();
         LOG_DEBUG("DATA", "Weather Parser: Temp=" + value);
     }
     // Windspeed reported in mps, converting to knots (1 m/s ≈ 1.94384 knots)
     else if (currentKey == F("speed")) {
-        activeStatus->windSpeed = value.toFloat() * 1.94384;
-        LOG_DEBUG("DATA", "Weather Parser: Wind=" + value + " (" + String(activeStatus->windSpeed) + " knots)");
+        bgStatus.windSpeed = value.toFloat() * 1.94384;
+        LOG_DEBUG("DATA", "Weather Parser: Wind=" + value + " (" + String(bgStatus.windSpeed) + " knots)");
     }
 }
 

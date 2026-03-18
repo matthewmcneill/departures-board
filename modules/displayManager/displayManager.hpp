@@ -60,8 +60,7 @@ enum class SystemBoardId {
     SYS_BOOT_SPLASH,    // Gadec logo screen
     SYS_BOOT_LOADING,   // Progress indicator during init
     SYS_WIFI_WIZARD,    // QR and connection guide
-    SYS_HELP_KEYS,      // Keyboard shortcut help
-    SYS_HELP_CRS,       // CRS lookup guide
+    SYS_SETUP_HELP,     // Station setup instructions with IP
     SYS_ERROR_NO_DATA,  // Failure to pull JSON
     SYS_ERROR_WSDL,     // NRE WSDL server failure
     SYS_ERROR_TOKEN,    // API key rejection
@@ -132,9 +131,10 @@ public:
     /**
      * @brief Switch to a new board and optionally block for an animation duration.
      * @param board Pointer to the board implementation to render.
+     * @param reason The semantic trigger or event causing this board to be explicitly shown.
      * @param durationMs Optional duration in ms to block and animate.
      */
-    void showBoard(iDisplayBoard* board, uint32_t durationMs = 0);
+    void showBoard(iDisplayBoard* board, const char* reason = "Unknown Lifecycle Event", uint32_t durationMs = 0);
 
     /**
      * @brief Get the currently active rendering target.
@@ -148,6 +148,13 @@ public:
      * @return iDisplayBoard* Pointer to the configured singleton.
      */
     iDisplayBoard* getSystemBoard(SystemBoardId id);
+
+    /**
+     * @brief Maps an interface error status (UPD_*) to a functional SystemBoardId.
+     * @param status The error code from a data source.
+     * @return The corresponding system board ID for delegation.
+     */
+    SystemBoardId mapErrorToId(int status);
 
     /**
      * @brief Trigger a synchronized render of the current board.

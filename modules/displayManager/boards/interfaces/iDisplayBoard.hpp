@@ -24,6 +24,10 @@
  */
 class iDisplayBoard {
 public:
+    /**
+     * @brief Self-identifying semantic name for lifecycle logging telemetry.
+     */
+    virtual const char* getBoardName() const = 0;
     virtual ~iDisplayBoard() = default;
 
     /**

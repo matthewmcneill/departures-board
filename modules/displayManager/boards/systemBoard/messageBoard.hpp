@@ -45,6 +45,7 @@ protected:
     friend class FirmwareUpdateBoard;
 
 public:
+    const char* getBoardName() const override { return "SYS: Generic Message"; }
 
     /**
      * @brief Configure the text currently displayed on the warning screen.

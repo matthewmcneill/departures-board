@@ -36,7 +36,9 @@ void rssClient::reapplyConfig(const Config& config) {
     LOG_INFO("CONFIG", "RSS Config: Enabled=" + String(config.rssEnabled ? "true" : "false") + ", URL=" + String(config.rssUrl));
 }
 
-rssClient::rssClient() {}
+rssClient::rssClient() {
+    rssMutex = xSemaphoreCreateMutex();
+}
 
 /**
  * @brief Trims leading and trailing whitespace from a character array in-place.
@@ -63,13 +65,45 @@ void rssClient::trim(char* str) {
  * @return Connection status constant.
  */
 int rssClient::loadFeed(String url) {
+    if (fetchTaskHandle != nullptr) {
+        LOG_INFO("DATA", "RSS Client: Task already running");
+        return 9; // UPD_PENDING
+    }
+
+    activeUrl = url;
+    lastRssUpdateResult = 9; // UPD_PENDING
+    bgNumRssTitles = 0;
+
+    LOG_INFO("DATA", "RSS Client: Spawning FreeRTOS task on Core 0");
+    xTaskCreatePinnedToCore(fetchTask, "RSS_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    return 9; // UPD_PENDING
+}
+
+/**
+ * @brief Static FreeRTOS Entry Point for background data processing.
+ * @param pvParameters Pointer to the executing rssClient instance.
+ */
+void rssClient::fetchTask(void* pvParameters) {
+    rssClient* client = static_cast<rssClient*>(pvParameters);
+    client->executeFetch();
+    client->fetchTaskHandle = nullptr;
+    vTaskDelete(NULL);
+}
+
+/**
+ * @brief Internal blocking method that executes the HTTP protocol and coordinates XML parse.
+ */
+void rssClient::executeFetch() {
+    String url = activeUrl;
     std::unique_ptr<HTTPClient> http(new (std::nothrow) HTTPClient());
     std::unique_ptr<WiFiClient> client(new (std::nothrow) WiFiClient());
     std::unique_ptr<WiFiClientSecure> clientSecure(new (std::nothrow) WiFiClientSecure());
 
     if (!http || !client || !clientSecure) {
         LOG_ERROR("DATA", "RSS Client: Memory allocation failed for clients!");
-        return UPD_DATA_ERROR;
+        lastRssUpdateResult = 3; // UPD_DATA_ERROR
+        nextRssUpdate = millis() + 300000;
+        return;
     }
 
     unsigned long perfTimer = millis();
@@ -80,7 +114,7 @@ int rssClient::loadFeed(String url) {
     strcpy(lastErrorMessage, "Success");
     clientSecure->setInsecure();
     http->setReuse(false);
-    numRssTitles = 0;
+    bgNumRssTitles = 0;
     LOG_INFO("DATA", "RSS Client: Loading feed from " + url);
 
     while (redirectCount < maxRedirects) {
@@ -93,7 +127,9 @@ int rssClient::loadFeed(String url) {
             std::unique_ptr<xmlStreamingParser> parser(new (std::nothrow) xmlStreamingParser());
             if (!parser) {
                 LOG_ERROR("DATA", "RSS Client: Memory allocation failed for parser!");
-                return UPD_DATA_ERROR;
+                lastRssUpdateResult = 3; // UPD_DATA_ERROR
+                nextRssUpdate = millis() + 300000;
+                return;
             }
             parser->setListener(this);
             parser->reset();
@@ -105,26 +141,48 @@ int rssClient::loadFeed(String url) {
             char c;
             unsigned long dataSendTimeout = millis() + 10000UL;
 
+            int parseYield = 0;
             // --- Step 3: Streaming Parse ---
-            while((stream->available() || http->connected()) && millis() < dataSendTimeout && numRssTitles < MAX_RSS_TITLES) {
-                while (stream->available() && numRssTitles < MAX_RSS_TITLES) {
+            while((stream->available() || http->connected()) && millis() < dataSendTimeout && bgNumRssTitles < MAX_RSS_TITLES) {
+                while (stream->available() && bgNumRssTitles < MAX_RSS_TITLES) {
                     c = stream->read();
                     parser->parse(c);
                     dataReceived++;
+                    // --- Arcane Logic ---
+                    // On single-core ESP32 variants (e.g. ESP32-C3), the Wi-Fi stack and user application
+                    // share the exact same processor core tightly via the RTOS scheduler. By explicitly
+                    // yielding execution context via vTaskDelay(1) every 500 byte blocks, we guarantee
+                    // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
+                    parseYield++;
+                    if (parseYield % 500 == 0) vTaskDelay(1);
                 }
-                if (yieldCallback) yieldCallback();
-                delay(1);
+                vTaskDelay(pdMS_TO_TICKS(10));
             }
 
             http->end();
-            if (millis() >= dataSendTimeout && numRssTitles < MAX_RSS_TITLES) {
+            if (millis() >= dataSendTimeout && bgNumRssTitles < MAX_RSS_TITLES) {
                 snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Timed out during data receive operation - %ld bytes received", dataReceived);
                 LOG_WARN("DATA", lastErrorMessage);
-                return UPD_TIMEOUT;
+                lastRssUpdateResult = 6; // UPD_TIMEOUT
+                nextRssUpdate = millis() + 300000;
+                return;
             }
             snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Success: %ld bytes took %lums with %d redirects", dataReceived, static_cast<unsigned long>(millis()-perfTimer), redirectCount);
-            LOG_INFO("DATA", "RSS Feed: Successfully fetched " + String(dataReceived) + " bytes. Found " + String(numRssTitles) + " titles.");
-            return UPD_SUCCESS;
+            LOG_INFO("DATA", "RSS Feed: Successfully fetched " + String(dataReceived) + " bytes. Found " + String(bgNumRssTitles) + " titles.");
+            
+            xSemaphoreTake(rssMutex, portMAX_DELAY);
+            numRssTitles = bgNumRssTitles;
+            for (int i=0; i<bgNumRssTitles; i++) {
+                strlcpy(rssTitle[i], bgRssTitle[i], MAX_RSS_TITLE_SIZE);
+            }
+            lastRssUpdateResult = 0; // UPD_SUCCESS
+            nextRssUpdate = millis() + 600000;
+            xSemaphoreGive(rssMutex);
+#ifdef ENABLE_DEBUG_LOG
+            UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
+            LOG_DEBUG("DATA", "RSS Task Stack High Water Mark: " + String(hwm) + " words");
+#endif
+            return;
             break;
         } else if (httpCode == HTTP_CODE_MOVED_PERMANENTLY ||
                    httpCode == HTTP_CODE_FOUND ||
@@ -136,7 +194,9 @@ int rssClient::loadFeed(String url) {
             if (newUrl.length() == 0) {
                 strcpy(lastErrorMessage, "HTTP Redirect without Location header!");
                 LOG_WARN("DATA", lastErrorMessage);
-                return UPD_HTTP_ERROR;
+                lastRssUpdateResult = 4; // UPD_HTTP_ERROR
+                nextRssUpdate = millis() + 300000;
+                return;
                 break;
             }
             url = newUrl;
@@ -145,12 +205,16 @@ int rssClient::loadFeed(String url) {
             snprintf(lastErrorMessage, sizeof(lastErrorMessage), "GET failed, error: %d %s", httpCode, http->errorToString(httpCode).c_str());
             LOG_WARN("DATA", lastErrorMessage);
             http->end();
-            return UPD_HTTP_ERROR;
+            lastRssUpdateResult = 4; // UPD_HTTP_ERROR
+            nextRssUpdate = millis() + 300000;
+            return;
             break;
         }
     }
     // never get here
-    return UPD_SUCCESS;
+    lastRssUpdateResult = 4;
+    nextRssUpdate = millis() + 300000;
+    return;
 }
 
 /**
@@ -201,11 +265,11 @@ void rssClient::parameter(const char *param)
 void rssClient::value(const char *value)
 {
     if (tagPath.endsWith("/item/title")) {
-        strncpy(rssTitle[numRssTitles],value,MAX_RSS_TITLE_SIZE-1);
-        rssTitle[numRssTitles][MAX_RSS_TITLE_SIZE-1] = '\0';
-        trim(rssTitle[numRssTitles]);
-        LOG_DEBUG("DATA", "RSS Item: " + String(rssTitle[numRssTitles]));
-        numRssTitles++;
+        strncpy(bgRssTitle[bgNumRssTitles],value,MAX_RSS_TITLE_SIZE-1);
+        bgRssTitle[bgNumRssTitles][MAX_RSS_TITLE_SIZE-1] = '\0';
+        trim(bgRssTitle[bgNumRssTitles]);
+        LOG_DEBUG("DATA", "RSS Item: " + String(bgRssTitle[bgNumRssTitles]));
+        bgNumRssTitles++;
     }
 }
 

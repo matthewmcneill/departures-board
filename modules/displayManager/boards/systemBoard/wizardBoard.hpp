@@ -39,6 +39,7 @@ protected:
     friend class DisplayManager;
 
 public:
+    const char* getBoardName() const override { return "SYS: Setup Wizard"; }
 
     /**
      * @brief Injects the IP address string that the user should navigate to.

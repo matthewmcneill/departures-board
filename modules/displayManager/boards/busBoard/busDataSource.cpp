@@ -43,9 +43,16 @@
 /**
  * @brief Constructs a new busDataSource object.
  */
-busDataSource::busDataSource() : callback(nullptr) {
+busDataSource::busDataSource() : callback(nullptr), messagesData(4), renderMessages(4) {
     stationData = std::unique_ptr<BusStop>(new (std::nothrow) BusStop());
+    renderData = std::unique_ptr<BusStop>(new (std::nothrow) BusStop());
     if (stationData) memset(stationData.get(), 0, sizeof(BusStop));
+    if (renderData) memset(renderData.get(), 0, sizeof(BusStop));
+    
+    dataMutex = xSemaphoreCreateMutex();
+    fetchTaskHandle = nullptr;
+    taskStatus = UPD_NO_DATA;
+
     lastErrorMsg[0] = '\0';
     busAtco[0] = '\0';
     busFilter[0] = '\0';
@@ -70,6 +77,31 @@ void busDataSource::configure(const char* atco, const char* filter, busDataSourc
  * @return int Update status code (e.g., UPD_SUCCESS or UPD_NO_CHANGE).
  */
 int busDataSource::updateData() {
+    if (fetchTaskHandle != nullptr) {
+        return UPD_PENDING;
+    }
+    
+    LOG_INFO("DATA", "Bus Source: Spawning FreeRTOS task on Core 0");
+    taskStatus = UPD_PENDING;
+    xTaskCreatePinnedToCore(fetchTask, "Bus_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    return UPD_PENDING;
+}
+
+/**
+ * @brief Static FreeRTOS Entry Point for background data processing.
+ * @param pvParameters Pointer to the executing busDataSource instance.
+ */
+void busDataSource::fetchTask(void* pvParameters) {
+    busDataSource* source = static_cast<busDataSource*>(pvParameters);
+    source->executeFetch();
+    source->fetchTaskHandle = nullptr;
+    vTaskDelete(NULL);
+}
+
+/**
+ * @brief Internal blocking method that executes the HTTPS protocol and coordinates HTML scraping.
+ */
+void busDataSource::executeFetch() {
     // --- Step 1: Initialize connection ---
     unsigned long perfTimer = millis();
     long dataReceived = 0;
@@ -79,7 +111,8 @@ int busDataSource::updateData() {
     std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
     if (!httpsClient) {
         LOG_ERROR("DATA", "Bus Board: Memory allocation failed for client!");
-        return UPD_DATA_ERROR;
+        taskStatus = UPD_DATA_ERROR;
+        return;
     }
 
     httpsClient->setInsecure(); // No cert validation for simplicity on ESP32
@@ -94,7 +127,8 @@ int busDataSource::updateData() {
     if (retryCounter >= 10) {
         strcpy(lastErrorMsg, "Connection timeout");
         LOG_WARN("DATA", lastErrorMsg);
-        return UPD_NO_RESPONSE;
+        taskStatus = UPD_NO_RESPONSE;
+        return;
     }
 
     // --- Step 2: Send HTTP Request ---
@@ -112,7 +146,8 @@ int busDataSource::updateData() {
         httpsClient->stop();
         strcpy(lastErrorMsg, "Response timeout");
         LOG_WARN("DATA", lastErrorMsg);
-        return UPD_TIMEOUT;
+        taskStatus = UPD_TIMEOUT;
+        return;
     }
 
     // --- Step 3: Parse HTTP Headers ---
@@ -121,10 +156,12 @@ int busDataSource::updateData() {
         httpsClient->stop();
         if (statusLine.indexOf(F("401")) > 0 || statusLine.indexOf(F("429")) > 0) {
             strcpy(lastErrorMsg, "Not Authorized");
-            return UPD_UNAUTHORISED;
+            taskStatus = UPD_UNAUTHORISED;
+            return;
         } else {
             strlcpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg));
-            return UPD_HTTP_ERROR;
+            taskStatus = UPD_HTTP_ERROR;
+            return;
         }
     }
 
@@ -143,7 +180,8 @@ int busDataSource::updateData() {
     std::unique_ptr<BusStop> xBusStop(new (std::nothrow) BusStop());
     if (!xBusStop) {
         LOG_ERROR("DATA", "Bus Board: Memory allocation failed for xBusStop!");
-        return UPD_DATA_ERROR;
+        taskStatus = UPD_DATA_ERROR;
+        return;
     }
 
     xBusStop->numServices = 0;
@@ -157,11 +195,21 @@ int busDataSource::updateData() {
     int dataColumns = 0;
     bool serviceData = false;
     String serviceId;
+    int yieldCounter = 0;
 
     while((httpsClient->available() || httpsClient->connected()) && (millis() < dataSendTimeout) && (!maxServicesRead)) {
         while(httpsClient->available() && !maxServicesRead) {
             String line = httpsClient->readStringUntil('\n');
             dataReceived += line.length() + 1;
+            
+            // --- Arcane Logic ---
+            // On single-core ESP32 variants (e.g. ESP32-C3), the Wi-Fi stack and user application
+            // share the exact same processor core tightly via the RTOS scheduler. By explicitly
+            // yielding execution context via vTaskDelay(1) every 50 iterations, we guarantee
+            // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
+            yieldCounter++;
+            if (yieldCounter % 50 == 0) vTaskDelay(1); // Yield when scraping large HTML tables
+            
             line.trim();
             if (line.length()) {
                 if (line.indexOf("</body>") >= 0) {
@@ -241,6 +289,7 @@ int busDataSource::updateData() {
                 ticker = millis() + 800;
             }
         }
+        vTaskDelay(pdMS_TO_TICKS(10)); // Prevent wild spinning if connection is starved
     }
 
     // --- Step 5: Finalize and compare results ---
@@ -260,26 +309,39 @@ int busDataSource::updateData() {
             }
         }
 
-        // Apply new data
+        // Apply new data safely
+        xSemaphoreTake(dataMutex, portMAX_DELAY);
         stationData->numServices = xBusStop->numServices;
         memcpy(stationData->service, xBusStop->service, sizeof(BusService) * BUS_MAX_SERVICES);
+        if (renderData) {
+            memcpy(renderData.get(), stationData.get(), sizeof(BusStop));
+        }
+        renderMessages.clear();
+        for (int i = 0; i < messagesData.getCount(); i++) {
+            renderMessages.addMessage(messagesData.getMessage(i));
+        }
+        taskStatus = stationData->boardChanged ? UPD_SUCCESS : UPD_NO_CHANGE;
+        xSemaphoreGive(dataMutex);
 
         snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS %ums [%ld]", (uint32_t)(millis() - perfTimer), dataReceived);
         LOG_INFO("DATA", "Bus (ATCO: " + String(busAtco) + "): Found " + String(stationData->numServices) + " services.");
 #ifdef ENABLE_DEBUG_LOG
+        UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
+        LOG_DEBUG("DATA", "Bus Task Stack High Water Mark: " + String(hwm) + " words");
         LOG_DEBUG("DATA", "--- Bus Data ---");
-        for (int i = 0; i < stationData->numServices; i++) {
+        for (int i = 0; i < renderData->numServices; i++) {
             char debugMsg[256];
             snprintf(debugMsg, sizeof(debugMsg), "Service %d: [%s] to %s (Sch: %s, Exp: %s)", 
-                     i, stationData->service[i].routeNumber, stationData->service[i].destination, 
-                     stationData->service[i].sTime, stationData->service[i].expectedTime);
+                     i, renderData->service[i].routeNumber, renderData->service[i].destination, 
+                     renderData->service[i].sTime, renderData->service[i].expectedTime);
             LOG_DEBUG("DATA", debugMsg);
         }
         LOG_DEBUG("DATA", "----------------");
 #endif
-        return stationData->boardChanged ? UPD_SUCCESS : UPD_NO_CHANGE;
+        return;
     }
-    return UPD_DATA_ERROR;
+    taskStatus = UPD_DATA_ERROR;
+    return;
 }
 
 /**
@@ -294,7 +356,8 @@ int busDataSource::testConnection(const char* token, const char* stationId) {
         char prevAtco[13];
         strlcpy(prevAtco, busAtco, sizeof(prevAtco));
         strlcpy(busAtco, stationId, sizeof(busAtco));
-        int result = updateData();
+        executeFetch();
+        int result = taskStatus;
         strlcpy(busAtco, prevAtco, sizeof(busAtco));
         return result;
     }

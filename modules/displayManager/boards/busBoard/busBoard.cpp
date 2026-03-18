@@ -99,15 +99,33 @@ void BusBoard::tick(uint32_t ms) {
 }
 
 int BusBoard::updateData() {
-    if (!config.complete) {
-        LOG_WARN("DISPLAY", "Bus Board: Skipping updateData() - Configuration incomplete.");
-        return 7;
+    if (lastUpdateStatus == UPD_PENDING) {
+        lastUpdateStatus = dataSource.getLastUpdateStatus();
+        if (lastUpdateStatus == UPD_PENDING) {
+            return UPD_PENDING;
+        }
+    } else {
+        if (!config.complete) {
+            LOG_WARN("DISPLAY", "Bus Board: Skipping updateData() - Configuration incomplete.");
+            return 7;
+        }
+        
+        LOG_INFO("DISPLAY", "Bus Board: Starting data update...");
+        lastUpdateStatus = dataSource.updateData();
+        if (lastUpdateStatus == UPD_PENDING) {
+            return UPD_PENDING;
+        }
     }
-    int status = dataSource.updateData();
-    lastUpdateStatus = status;
+    
     needsRefresh = true;
     
-    if (status == 0) { // UPD_SUCCESS
+    if (lastUpdateStatus != 0) {
+        LOG_WARN("DISPLAY", "Bus Board: Data update failed with status: " + String(lastUpdateStatus));
+    } else {
+        LOG_INFO("DISPLAY", "Bus Board: Data update finished successfully.");
+    }
+    
+    if (lastUpdateStatus == 0) { // UPD_SUCCESS
         BusStop* data = dataSource.getStationData();
         servicesWidget.clearRows();
         if (data->numServices > 0) {
@@ -121,7 +139,7 @@ int BusBoard::updateData() {
             }
         }
     }
-    return status;
+    return lastUpdateStatus;
 }
 
 /**
@@ -138,11 +156,8 @@ void BusBoard::render(U8G2& display) {
     }
 
     if (!config.complete) {
-        // Delegate to system help boards
-        // Bus boards only have "missing ID" state in current logic, as they don't have a unique key.
-        SystemBoardId helpId = SystemBoardId::SYS_HELP_CRS; // Reuse CRS help for generic ID help
         if (context) {
-            iDisplayBoard* help = context->getDisplayManager().getSystemBoard(helpId);
+            iDisplayBoard* help = context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_SETUP_HELP);
             if (help) help->render(display);
         }
         return;
@@ -150,12 +165,15 @@ void BusBoard::render(U8G2& display) {
 
     headWidget.render(display);
     
-    if (lastUpdateStatus == 5) { // UPD_UNAUTHORISED
-        display.setFont(Underground10);
-        display.drawStr(10, 35, "API Token Invalid");
-        display.setFont(NatRailSmall9);
-        display.drawStr(10, 50, "Check portal settings.");
-        return;
+    if (lastUpdateStatus >= 2) {
+        if (context) {
+            SystemBoardId id = context->getDisplayManager().mapErrorToId(lastUpdateStatus);
+            iDisplayBoard* errBoard = context->getDisplayManager().getSystemBoard(id);
+            if (errBoard) {
+                errBoard->render(display);
+                return;
+            }
+        }
     }
 
     // Render the departures

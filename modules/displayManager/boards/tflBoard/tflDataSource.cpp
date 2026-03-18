@@ -29,9 +29,16 @@
 // Status codes mapping
 #include "../interfaces/iDataSource.hpp"
 
-tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4) {
+tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4), renderMessages(4) {
     stationData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
+    renderData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     if (stationData) memset(stationData.get(), 0, sizeof(TflStation));
+    if (renderData) memset(renderData.get(), 0, sizeof(TflStation));
+    
+    dataMutex = xSemaphoreCreateMutex();
+    fetchTaskHandle = nullptr;
+    taskStatus = UPD_NO_DATA;
+
     lastErrorMsg[0] = '\0';
     tflAppkey[0] = '\0';
     tubeId[0] = '\0';
@@ -46,6 +53,31 @@ void tflDataSource::configure(const char* naptanId, const char* apiKey, tflDataS
 }
 
 int tflDataSource::updateData() {
+    if (fetchTaskHandle != nullptr) {
+        return UPD_PENDING;
+    }
+    
+    LOG_INFO("DATA", "TfL Source: Spawning FreeRTOS task on Core 0");
+    taskStatus = UPD_PENDING;
+    xTaskCreatePinnedToCore(fetchTask, "TfL_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    return UPD_PENDING;
+}
+
+/**
+ * @brief Static FreeRTOS Entry Point for background data processing.
+ * @param pvParameters Pointer to the executing tflDataSource instance.
+ */
+void tflDataSource::fetchTask(void* pvParameters) {
+    tflDataSource* source = static_cast<tflDataSource*>(pvParameters);
+    source->executeFetch();
+    source->fetchTaskHandle = nullptr;
+    vTaskDelete(NULL);
+}
+
+/**
+ * @brief Internal blocking method that executes the API protocol and coordinates JSON parse.
+ */
+void tflDataSource::executeFetch() {
     unsigned long perfTimer = millis();
     long dataReceived = 0;
     bool bChunked = false;
@@ -58,7 +90,8 @@ int tflDataSource::updateData() {
 
     if (!xStation || !parser || !httpsClient) {
         LOG_ERROR("DATA", "TfL Board: Memory allocation failed!");
-        return UPD_DATA_ERROR;
+        taskStatus = UPD_DATA_ERROR;
+        return;
     }
 
     memset(xStation.get(), 0, sizeof(TflStation));
@@ -67,7 +100,10 @@ int tflDataSource::updateData() {
     httpsClient->setTimeout(5000);
     httpsClient->setConnectionTimeout(5000);
 
-    if (!httpsClient->connect(apiHost, 443)) return UPD_NO_RESPONSE;
+    if (!httpsClient->connect(apiHost, 443)) {
+        taskStatus = UPD_NO_RESPONSE;
+        return;
+    }
 
     String request;
     if (isTestMode) {
@@ -88,12 +124,16 @@ int tflDataSource::updateData() {
     unsigned long ticker = millis() + 350;
     int retry = 0;
     while(!httpsClient->available() && retry < 40) { delay(200); retry++; }
-    if (retry >= 40) return UPD_TIMEOUT;
+    if (retry >= 40) {
+        taskStatus = UPD_TIMEOUT;
+        return;
+    }
 
     String statusLine = httpsClient->readStringUntil('\n');
     if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
         httpsClient->stop();
-        return UPD_HTTP_ERROR;
+        taskStatus = UPD_HTTP_ERROR;
+        return;
     }
 
     while (httpsClient->connected() || httpsClient->available()) {
@@ -115,19 +155,28 @@ int tflDataSource::updateData() {
     messagesData.clear();
     
     id = 0; maxServicesRead = false;
+    int yieldCounter = 0;
     while((httpsClient->available() || httpsClient->connected()) && !maxServicesRead) {
         while(httpsClient->available() && !maxServicesRead) {
             parser->parse(httpsClient->read());
             dataReceived++;
+            // --- Arcane Logic ---
+            // On single-core ESP32 variants (e.g. ESP32-C3), the Wi-Fi stack and user application
+            // share the exact same processor core tightly via the RTOS scheduler. By explicitly
+            // yielding execution context via vTaskDelay(1) every 500 byte blocks, we guarantee
+            // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
+            yieldCounter++;
+            if (yieldCounter % 500 == 0) vTaskDelay(1);
             if (millis() > ticker) { if (callback) callback(); ticker = millis() + 350; }
         }
-        delay(10);
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
     httpsClient->stop();
 
     if (isTestMode) {
         snprintf(lastErrorMsg, sizeof(lastErrorMsg), "AUTH SUCCESS %lums", (unsigned long)(millis()-perfTimer));
-        return UPD_SUCCESS;
+        taskStatus = UPD_SUCCESS;
+        return;
     }
 
     // Fetch Disruption Msgs
@@ -140,14 +189,16 @@ int tflDataSource::updateData() {
             statusLine = httpsClient->readStringUntil('\n');
             if (statusLine.indexOf(F("200 OK")) != -1) {
                 while (httpsClient->connected() || httpsClient->available()) { if (httpsClient->readStringUntil('\n') == F("\r")) break; }
-                parser->reset(); id = 0; maxServicesRead = false;
+                parser->reset(); id = 0; maxServicesRead = false; yieldCounter = 0;
                 while((httpsClient->available() || httpsClient->connected()) && !maxServicesRead) {
                     while(httpsClient->available() && !maxServicesRead) {
                         parser->parse(httpsClient->read());
                         dataReceived++;
+                        yieldCounter++;
+                        if (yieldCounter % 500 == 0) vTaskDelay(1);
                         if (millis() > ticker) { if (callback) callback(); ticker = millis() + 350; }
                     }
-                    delay(10);
+                    vTaskDelay(pdMS_TO_TICKS(10));
                 }
             }
         }
@@ -178,22 +229,35 @@ int tflDataSource::updateData() {
         memcpy(stationData.get(), oldStation.get(), sizeof(TflStation));
     }
 
+    xSemaphoreTake(dataMutex, portMAX_DELAY);
+    if (stationData && renderData) {
+        memcpy(renderData.get(), stationData.get(), sizeof(TflStation));
+    }
+    renderMessages.clear();
+    for (int i = 0; i < messagesData.getCount(); i++) {
+        renderMessages.addMessage(messagesData.getMessage(i));
+    }
+    taskStatus = changed ? UPD_SUCCESS : UPD_NO_CHANGE;
+    xSemaphoreGive(dataMutex);
+
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS %lums [%ld]", (unsigned long)(millis()-perfTimer), dataReceived);
-    if (stationData) {
-        LOG_INFO("DATA", "TfL (ID: " + String(tubeId) + "): Found " + String(stationData->numServices) + " services.");
+    if (renderData) {
+        LOG_INFO("DATA", "TfL (ID: " + String(tubeId) + "): Found " + String(renderData->numServices) + " services.");
 #ifdef ENABLE_DEBUG_LOG
+        UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
+        LOG_DEBUG("DATA", "TfL Task Stack High Water Mark: " + String(hwm) + " words");
         LOG_DEBUG("DATA", "--- TfL Data ---");
-        for (int i = 0; i < stationData->numServices; i++) {
+        for (int i = 0; i < renderData->numServices; i++) {
             char debugMsg[256];
             snprintf(debugMsg, sizeof(debugMsg), "Service %d: %s - %s (Exp: %s, %d s)", 
-                     i, stationData->service[i].lineName, stationData->service[i].destination, 
-                     stationData->service[i].expectedTime, stationData->service[i].timeToStation);
+                     i, renderData->service[i].lineName, renderData->service[i].destination, 
+                     renderData->service[i].expectedTime, renderData->service[i].timeToStation);
             LOG_DEBUG("DATA", debugMsg);
         }
         LOG_DEBUG("DATA", "----------------");
 #endif
     }
-    return changed ? UPD_SUCCESS : UPD_NO_CHANGE;
+    return;
 }
 
 /**
@@ -222,7 +286,9 @@ int tflDataSource::testConnection(const char* token, const char* stationId) {
     }
     
     // Execute update
-    int result = updateData();
+    // Synchronously execute it for testConnection
+    executeFetch();
+    int result = taskStatus;
     
     // Restore state
     isTestMode = prevTestMode;

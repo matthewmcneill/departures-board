@@ -43,11 +43,11 @@
         - **System Heap**: Reserved for transient **Network Clients** (`WiFiClientSecure`), **JSON Documents**, and **SSL Buffers**.
         - **Task Stack**: Limited to ~8KB; large local variables are strictly avoided to prevent kernel corruption.
 - **Data Flow**:
-    1. **Trigger**: `SystemManager` or `Carousel` triggers `updateData()` on the active board's data source.
+    1. **Trigger**: `SystemManager` or `Carousel` triggers `updateData()` on the active board's data source, instantly returning a `UPD_PENDING` (9) state while a FreeRTOS background task is spawned.
     2. **Coordinate Recovery**: For National Rail boards, if coordinates are missing from the primary OJP autocomplete picker (which lost spatial data in March 2026), the system performs a fallback lookup via the **TfL Search API** (`api.tfl.gov.uk/StopPoint/Search`) to ensure the weather system remains functional.
-    3. **Fetch**: `iDataSource` performs non-blocking HTTP GET/POST (REST or SOAP). **Buffers** are managed as fixed-size `char[]` to avoid heap "swiss-cheesing".
-    4. **Parse**: `ArduinoJson` (TfL/Weather) or custom XML listeners (National Rail Darwin SOAP at `lite.realtime.nationalrail.co.uk`) populate memory-mapped structs.
-    5. **Render**: `iDisplayBoard` consumes the data and delegates to `iGfxWidget`s for screen output.
+    3. **Background Fetch & Parse**: A FreeRTOS task running exclusively on Core 0 performs the non-blocking HTTP GET/POST (REST or SOAP). Streaming parsers populate isolated background variables (`bgStatus`, etc.).
+    4. **Mutex Synchronization**: Upon parse completion, the task acquires a `SemaphoreMutex`, safely `memcpy`s the verified structures into the UI-facing active memory blocks (`renderData`), sets `UPD_SUCCESS`, and immediately releases the lock to prevent memory tearing.
+    5. **Render**: On the next `tick()`, `iDisplayBoard` reads the valid state and consumes the fresh data via `iGfxWidget`s for final hardware output.
 - **Data Retention & Archiving**: Configuration is persistent across reboots; real-time transport and weather data are purged on power loss or board deactivation.
 
 ## 5. Detailed Component/Module Design
@@ -70,13 +70,20 @@
     - Validates mandatory fields (`CRS`, `Naptan`) before marking a board as `complete`.
 
 ### 5.3 `displayManager` (Rendering & Carousel)
-- **Role**: Manages the hardware display instance and the rotation of active departures boards.
-- **Architecture**: 
-    - **Static Memory Pool**: Uses `std::variant<...>[MAX_BOARDS]` to pre-allocate memory for board objects, ensuring zero heap fragmentation during runtime.
-    - **System Board Registry**: Maintains singletons for functional screens (Splash, WiFi Wizard, Help, Error, Sleeping).
-- **Key Features**: 
-    - **Carousel Logic**: Automatically cycles through "completed" boards in the pool.
-    - **Yield Mechanism**: Intercepts parser callbacks to trigger ~60fps localized UI updates (clocks/tickers) while the main thread is blocked.
+- **Role**: Hardware display orchestrator, power manager, and board lifecycle controller.
+- **Displays Model (Board Persistent Storage)**:
+    - **Static Memory Pool**: Utilizes a type-safe memory pool `std::variant<std::monostate, NationalRailBoard, TfLBoard, BusBoard> slots[MAX_BOARDS]` to pre-allocate memory for all possible board instances. This strictly avoids runtime heap fragmentation and ensures long-term stability.
+    - **Polymorphism**: Implements the `iDisplayBoard` interface supporting `onActivate()`, `onDeactivate()`, and `tick()` lifecycle hooks.
+    - **System Board Registry**: Maintains singletons for functional screens (Splash, WiFi Wizard, Help, Message, Sleeping).
+- **Animation & Rendering Approaches**:
+    - **Dual-Path Strategy**:
+        - **Logic Path**: Standard 10ms-100ms logic updates via `tick()` preceding a full synchronized `render()` pass.
+        - **Yield Path**: High-priority `renderAnimationUpdate()` (60fps target) acting as an "escape hatch" during long-running network operations (e.g., SOAP/WSDL fetches). This path is triggered via a yield wrapper to keep UI elements like scrollers and clocks responsive during blocking I/O.
+    - **Hardware Optimization**: Implements direct hardware buffer updates for overlays (e.g., WiFi warnings) using `u8g2.updateDisplayArea()`.
+- **Widget-Based Composition**:
+    - **Architecture**: Graphical components implement the `iGfxWidget` base class. Complex boards are composed of multiple widgets (e.g., `HeaderWidget`, `ServiceListWidget`, `ScrollingTextWidget`).
+    - **Deduplication Pattern**: Widgets calculate state changes during `tick()`, but only trigger expensive hardware SPI transfers if the visual state has actually moved, minimizing SPI bus saturation.
+- **Font Integration**: Rendering logic utilizes custom RLE-compressed fonts (Section 11) such as `NatRailTall12` and `NatRailSmall9`, optimizing for both legibility and memory footprint on the ESP32.
 
 ### 5.4 `systemManager` (Global Logic & Polling)
 - **Role**: Manages non-display tasks including network status monitoring, data refresh timers, and boot progress.
@@ -122,9 +129,10 @@
 ### 5.10 `iDataSource` (The Data Contract)
 - **Role**: Abstraction for external API connectivity, separating parsing from presentation.
 - **Methods**:
-    - `updateData()`: Triggered to fetch and parse fresh data.
+    - `updateData()`: Instantly returns `UPD_PENDING` (9) while delegating network calls to a FreeRTOS background task.
+    - `getLastUpdateStatus()`: Polled by Board controllers to track background fetching task progress.
     - `testConnection()`: Lightweight credential validation.
-- **Strategy**: Each board owns a specific datasource (e.g., `NationalRailDataSource`) which populates the board's internal data structures.
+- **Strategy**: Each board owns a specific datasource (e.g., `NationalRailDataSource`) which parses data into an isolated background buffer before yielding across a Thread-Safe Mutex to the active render structure.
 
 ### 5.11 `BoardVariant` (Memory Optimization)
 - **Role**: A `std::variant`-based static memory pool managed by `DisplayManager`.
@@ -167,7 +175,7 @@
 ## 9. Non-Functional Requirements
 - **Performance & Scalability**:
     - **UI Fluidity**: Achieved via a 60Hz loop with localized `animationTick()` updates for smooth scrolling and clock blinking.
-    - **Task Concurrency**: Non-blocking **Yield Callbacks** during network I/O ensure the UI remains responsive while handling large payloads (e.g., National Rail SOAP).
+    - **Task Concurrency**: All heavy networking and XML/JSON parsing execute entirely within decoupled **FreeRTOS Background Tasks** (`xTaskCreatePinnedToCore`) pinned to Core 0. This guarantees zero blocking on the UI rendering context (Core 1). Native RTOS `vTaskDelay` chunking permits single-core MCUs (ESP32-C3) to seamlessly interweave Wi-Fi interrupts and display updates without processor starvation or Watchdog Timer (WDT) panics.
 - **Reliability & Availability**:
     - **Fragmentation Prevention**: The system strictly avoids the `String` class in the "hot path" (API parsing), preferring fixed-size **C-style character arrays**. This ensures the **Max Free Block** size remains sufficient for TLS/SSL handshakes (requiring up to 32KB contiguous RAM).
     - **Stack Protection**: To prevent overflows on the limited 8KB task stack, all heavy network dependencies (Clients, Parsers) are isolated on the heap using **Smart Pointers** (`std::unique_ptr`).
@@ -179,9 +187,21 @@
     - Use `snprintf` for all string formatting to ensure null termination and prevent buffer overflows.
     - Avoid `strcpy` in favor of `strncpy` with explicit boundary checks.
 
-## 10. Appendices & References
-- **Historical Session Mapping**: [Detailed Mapping of 100+ Sessions](file:///Users/mcneillm/Documents/Projects/departures-board/docs/HistoricalSessionMapping.md)
-- **State Machine Reference**: [AppContextStateMachine.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/AppContextStateMachine.md)
+## 11. Font Architecture & Build Pipeline
+- **Overview**: The project utilizes custom, authentic UK railway and TfL station board fonts, optimized for low-memory OLED displays.
+- **The "Round Trip" Pipeline**:
+    - **Source**: Authentic font data is stored in `fonts_recovered.h`.
+    - **Decompilation**: `font_decompiler.c` extracts binary arrays into `.txt` dumps.
+    - **BDF Generation**: `txt_to_bdf.py` converts dumps into standard BDF source files.
+    - **C++ Compilation**: `build_fonts.py` uses the `bdfconv` utility to generate the final `fonts.cpp` linked in the firmware.
+- **U8G2 Compression Format**:
+    - **Global Header**: 23-byte header defining glyph count, bounding box mode, and bit-level RLE run lengths (`b0`, `b1`).
+    - **RLE Encoding**: Uses Run-Length Encoding with a Least Significant Bit (LSB) first bitstream. Decoding involves reading `b0` bits for background and `b1` bits for foreground, followed by a stop bit.
+- **Editing Workflow**: Developers can modify fonts using **FontForge** or **Fony** by editing the `.bdf` files in `modules/displayManager/fonts/source/` and running the build script to regenerate `fonts.cpp`.
+
+## 12. Appendices & References
+- **Async Data Architecture**: [AsyncDataRetrieval.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/reference/AsyncDataRetrieval.md)
+- **State Machine Reference**: [AppContextStateMachine.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/reference/AppContextStateMachine.md)
 - **Memory Strategy**: [MemoryArchitecture.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/MemoryArchitecture.md)
 - **External Documentation**: 
     - [National Rail OpenLDBWS API Wiki](file:///Users/mcneillm/Documents/Projects/departures-board/docs/NationalRailAPIHistory.md)

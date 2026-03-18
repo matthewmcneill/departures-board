@@ -31,9 +31,16 @@
 nationalRailDataSource::nationalRailDataSource() 
     : loadingWDSL(false), tagLevel(0), isTestMode(false), id(-1), coaches(0), addedStopLocation(false), 
       filterPlatforms(false), keepRoute(false), nrTimeOffset(0), callback(nullptr),
-      messagesData(4) {
+      messagesData(4), renderMessages(4) {
     stationData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
+    renderData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
     if (stationData) memset(stationData.get(), 0, sizeof(NationalRailStation));
+    if (renderData) memset(renderData.get(), 0, sizeof(NationalRailStation));
+    
+    dataMutex = xSemaphoreCreateMutex();
+    fetchTaskHandle = nullptr;
+    taskStatus = UPD_NO_DATA;
+    
     lastErrorMessage[0] = '\0';
     soapHost[0] = '\0';
     soapAPI[0] = '\0';
@@ -141,7 +148,32 @@ void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
 }
 
 int nationalRailDataSource::updateData() {
-    LOG_INFO("DATA", "NR Source: updateData() entry. Free heap: " + String(ESP.getFreeHeap()));
+    if (fetchTaskHandle != nullptr) {
+        return UPD_PENDING;
+    }
+    
+    LOG_INFO("DATA", "NR Source: Spawning FreeRTOS task on Core 0");
+    taskStatus = UPD_PENDING;
+    xTaskCreatePinnedToCore(fetchTask, "NR_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    return UPD_PENDING;
+}
+
+/**
+ * @brief Static FreeRTOS Entry Point for background data processing.
+ * @param pvParameters Pointer to the executing nationalRailDataSource instance.
+ */
+void nationalRailDataSource::fetchTask(void* pvParameters) {
+    nationalRailDataSource* source = static_cast<nationalRailDataSource*>(pvParameters);
+    source->executeFetch();
+    source->fetchTaskHandle = nullptr;
+    vTaskDelete(NULL);
+}
+
+/**
+ * @brief Internal blocking method that executes the SOAP protocol and coordinates XML streaming parse.
+ */
+void nationalRailDataSource::executeFetch() {
+    LOG_INFO("DATA", "NR Source: executeFetch() entry. Free heap: " + String(ESP.getFreeHeap()));
     unsigned long perfTimer = millis();
     bool bChunked = false;
     lastErrorMessage[0] = '\0';
@@ -151,7 +183,8 @@ int nationalRailDataSource::updateData() {
     WiFiClientSecure *httpsClient = new (std::nothrow) WiFiClientSecure();
     if (!httpsClient) {
         LOG_ERROR("DATA", "NR Source: Failed to allocate WiFiClientSecure for update!");
-        return UPD_DATA_ERROR;
+        taskStatus = UPD_DATA_ERROR;
+        return;
     }
     httpsClient->setInsecure();
     httpsClient->setTimeout(8000); // Increased timeout
@@ -171,7 +204,8 @@ int nationalRailDataSource::updateData() {
         snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SOAP connection failed");
         httpsClient->stop();
         delete httpsClient;
-        return UPD_NO_RESPONSE;
+        taskStatus = UPD_NO_RESPONSE;
+        return;
     }
 
     LOG_INFO("DATA", "NR Source: Connection established. Free heap: " + String(ESP.getFreeHeap()));
@@ -182,7 +216,8 @@ int nationalRailDataSource::updateData() {
         LOG_ERROR("DATA", "NR Source: Failed to allocate memory for station data update!");
         httpsClient->stop();
         delete httpsClient;
-        return UPD_DATA_ERROR;
+        taskStatus = UPD_DATA_ERROR;
+        return;
     }
     memset(xStation, 0, sizeof(NationalRailStation));
 
@@ -249,7 +284,8 @@ int nationalRailDataSource::updateData() {
     if (retry >= 30) {
         LOG_ERROR("DATA", "NR Source: Request timeout!");
         delete xStation;
-        return UPD_TIMEOUT;
+        taskStatus = UPD_TIMEOUT;
+        return;
     }
 
     while (httpsClient->connected() || httpsClient->available()) {
@@ -279,7 +315,8 @@ int nationalRailDataSource::updateData() {
                 httpsClient->stop();
                 delete httpsClient;
                 delete xStation;
-                return UPD_HTTP_ERROR;
+                taskStatus = UPD_HTTP_ERROR;
+                return;
             }
         } else if (line.startsWith("Transfer-Encoding:") && line.indexOf("chunked") >= 0) {
             bChunked = true;
@@ -300,16 +337,26 @@ int nationalRailDataSource::updateData() {
     messagesData.clear();
 
     LOG_INFO("DATA", "NR Source: Starting XML parse...");
+    int yieldCounter = 0;
     while(httpsClient->available() || httpsClient->connected()) {
         while (httpsClient->available()) {
             parser.parse(httpsClient->read());
             bytesRecv++;
+            
+            // --- Arcane Logic ---
+            // On single-core ESP32 variants (e.g. ESP32-C3), the Wi-Fi stack and user application
+            // share the exact same processor core tightly via the RTOS scheduler. By explicitly
+            // yielding execution context via vTaskDelay(1) every 500 byte blocks, we guarantee
+            // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
+            yieldCounter++;
+            if (yieldCounter % 500 == 0) vTaskDelay(1); // Single-core compatibility yield
+            
             if (millis() > ticker && stationData) {
                 if (callback) callback(2, stationData->numServices);
                 ticker = millis() + 350;
             }
         }
-        delay(5);
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
     httpsClient->stop();
     delete httpsClient;
@@ -324,28 +371,41 @@ int nationalRailDataSource::updateData() {
         stationData->boardChanged = true;
     }
 
-    if (callback && stationData) callback(3, stationData->numServices);
+    // Critical Double Buffering Swap
+    xSemaphoreTake(dataMutex, portMAX_DELAY);
+    if (stationData && renderData) {
+        *renderData = *stationData;
+    }
+    renderMessages.clear();
+    for (int i = 0; i < messagesData.getCount(); i++) {
+        renderMessages.addMessage(messagesData.getMessage(i));
+    }
+    taskStatus = UPD_SUCCESS;
+    xSemaphoreGive(dataMutex);
+
+    if (callback && renderData) callback(3, renderData->numServices);
     snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SUCCESS [%ld] %lums", bytesRecv, (unsigned long)(millis()-perfTimer));
     
     delete xStation;
     
-    LOG_INFO("DATA", "NR Source: updateData() finished successfully.");
-    if (stationData) {
-        LOG_INFO("DATA", "NR (CRS: " + String(crsCode) + "): Found " + String(stationData->numServices) + " services.");
+    LOG_INFO("DATA", "NR Source: executeFetch() finished successfully.");
 #ifdef ENABLE_DEBUG_LOG
+    UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
+    LOG_DEBUG("DATA", "NR Task Stack High Water Mark: " + String(hwm) + " words");
+    if (renderData) {
         LOG_DEBUG("DATA", "--- National Rail Data ---");
-        LOG_DEBUG("DATA", String("Location: ") + stationData->location);
-        for (int i = 0; i < stationData->numServices; i++) {
+        LOG_DEBUG("DATA", String("Location: ") + renderData->location);
+        for (int i = 0; i < renderData->numServices; i++) {
             char debugMsg[256];
             snprintf(debugMsg, sizeof(debugMsg), "Service %d: %s to %s (Exp: %s, Plat: %s)", 
-                     i, stationData->service[i].sTime, stationData->service[i].destination, 
-                     stationData->service[i].etd, stationData->service[i].platform);
+                     i, renderData->service[i].sTime, renderData->service[i].destination, 
+                     renderData->service[i].etd, renderData->service[i].platform);
             LOG_DEBUG("DATA", debugMsg);
         }
         LOG_DEBUG("DATA", "--------------------------");
-#endif
     }
-    return UPD_SUCCESS;
+#endif
+    return;
 }
 
 /**
@@ -385,7 +445,9 @@ int nationalRailDataSource::testConnection(const char* token, const char* statio
     setSoapAddress("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/ldb12.asmx");
     
     // Execute update (in test mode it uses minimal payload)
-    int result = updateData();
+    // Synchronously execute it for testConnection
+    executeFetch();
+    int result = taskStatus;
     
     // Restore state
     isTestMode = prevTestMode;

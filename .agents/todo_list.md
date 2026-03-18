@@ -34,7 +34,8 @@
 - [ ] add a machine state to app context for OTA updates. If the ota update flag is checked it should go to UPDATING state before running.  In this state it should check for updates, and then do an OTA if there is one whilst displaying the OTA wizard or progress bar. Otherwise it just checks and then moves to RUNNING.  We also need to think about how a long running device periodically goes to UPDATING state to check.
 - [/] need to review all password masking. (Stage 1: Implemented logic to prevent overwriting keys/passwords if the placeholder is unchanged. Stage 2: Refining grey stars indicator UI).
 - [ ] make an ota widget and remove the OTA overlay board
-- [/] Investigate persistent National Rail SOAP connection instability (success on WSDL boot, but frequent "SOAP connection failed" during data updates; requires retry logic evaluation). (Active in session cf3f6db7)
+- [x] Investigate persistent National Rail SOAP connection instability (success on WSDL boot, but frequent "SOAP connection failed" during data updates; requires retry logic evaluation). (Resolved: Implemented FreeRTOS asynchronous yielding).
+- [ ] Add diagnostic UI to expose real-time FreeRTOS TWDT (Watchdog) metrics and background task states for each data fetcher.
 
 - [x] need to fix the national rail key and testing process in the portal. Currently it always fails. (Resolved: Implemented sequential testing to handle connection overhead).
 - [x] fix the 'Testing' button height in the keys detailed form to ensure it remains constant when text changes. (Resolved: Buttons now have consistent vertical rhythm in modern modal layout).

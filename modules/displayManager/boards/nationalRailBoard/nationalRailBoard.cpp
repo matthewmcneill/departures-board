@@ -35,16 +35,6 @@ NationalRailBoard::NationalRailBoard(appContext* contextPtr)
     nrTimeOffset = 0;
     stationLat = 0;
     stationLon = 0;
-    altStationEnabled = false;
-    altStarts = 0;
-    altEnds = 0;
-    altCrsCode[0] = '\0';
-    altLat = 0;
-    altLon = 0;
-    altCallingCrsCode[0] = '\0';
-    altCallingStation[0] = '\0';
-    altPlatformFilter[0] = '\0';
-    altStationActive = false;
 
     // Configure secondary service list columns
     ColumnDef cols[4] = {
@@ -115,19 +105,29 @@ void NationalRailBoard::tick(uint32_t ms) {
 }
 
 int NationalRailBoard::updateData() {
-    if (!config.complete) {
-        LOG_WARN("DISPLAY", "NR Board: Skipping updateData() - Configuration incomplete.");
-        return 7; // Use a dedicated "Unconfigured" code if defined, or just return an error
+    if (lastUpdateStatus == UPD_PENDING) {
+        lastUpdateStatus = dataSource.getLastUpdateStatus();
+        if (lastUpdateStatus == UPD_PENDING) {
+            return UPD_PENDING;
+        }
+    } else {
+        if (!config.complete) {
+            LOG_WARN("DISPLAY", "NR Board: Skipping updateData() - Configuration incomplete.");
+            return 7; // Use a dedicated "Unconfigured" code if defined
+        }
+
+        if (WiFi.status() == WL_CONNECTED && !dataSource.isInitialized()) {
+            LOG_INFO("DISPLAY", "NR Board: Performing deferred dataSource.init()...");
+            dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
+        }
+
+        LOG_INFO("DISPLAY", "NR Board: Starting data update...");
+        lastUpdateStatus = dataSource.updateData();
+        if (lastUpdateStatus == UPD_PENDING) {
+            return UPD_PENDING;
+        }
     }
 
-    // Check if we need to perform deferred initialization
-    if (WiFi.status() == WL_CONNECTED && !dataSource.isInitialized()) {
-        LOG_INFO("DISPLAY", "NR Board: Performing deferred dataSource.init()...");
-        dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", raildataYieldWrapper);
-    }
-
-    LOG_INFO("DISPLAY", "NR Board: Starting data update...");
-    lastUpdateStatus = dataSource.updateData();
     if (lastUpdateStatus != 0) {
         LOG_WARN("DISPLAY", "NR Board: Data update failed with status: " + String(lastUpdateStatus));
     } else {
@@ -179,10 +179,8 @@ void NationalRailBoard::render(U8G2& display) {
     }
 
     if (!config.complete) {
-        // Delegate to system help boards
-        SystemBoardId helpId = (config.errorType == 1) ? SystemBoardId::SYS_HELP_KEYS : SystemBoardId::SYS_HELP_CRS;
         if (context) {
-            iDisplayBoard* help = context->getDisplayManager().getSystemBoard(helpId);
+            iDisplayBoard* help = context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_SETUP_HELP);
             if (help) help->render(display);
         }
         return;
@@ -190,12 +188,15 @@ void NationalRailBoard::render(U8G2& display) {
 
     headWidget.render(display);
     
-    if (lastUpdateStatus == 5) { // UPD_UNAUTHORISED
-        display.setFont(NatRailTall12);
-        display.drawStr(5, 30, "API Token Invalid");
-        display.setFont(NatRailSmall9);
-        display.drawStr(5, 45, "Check portal settings.");
-        return;
+    if (lastUpdateStatus >= 2) {
+        if (context) {
+            SystemBoardId id = context->getDisplayManager().mapErrorToId(lastUpdateStatus);
+            iDisplayBoard* errBoard = context->getDisplayManager().getSystemBoard(id);
+            if (errBoard) {
+                errBoard->render(display);
+                return;
+            }
+        }
     }
 
     NationalRailStation* data = dataSource.getStationData();

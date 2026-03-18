@@ -18,6 +18,7 @@ class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
 #include "tflDataSource.hpp"
+#include <configManager.hpp>
 #include "../../widgets/headerWidget.hpp"
 #include "../../widgets/clockWidget.hpp"
 #include "../../widgets/serviceListWidget.hpp"
@@ -45,6 +46,7 @@ private:
     WeatherStatus weatherStatus;
 
 public:
+    const char* getBoardName() const override { return "DATA: TfL Board"; }
     TfLBoard(appContext* contextPtr = nullptr);
     virtual ~TfLBoard() = default;
 

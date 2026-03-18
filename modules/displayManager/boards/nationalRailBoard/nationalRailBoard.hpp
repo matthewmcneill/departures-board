@@ -18,6 +18,7 @@ class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
 #include "nationalRailDataSource.hpp"
+#include <configManager.hpp>
 #include "../../widgets/headerWidget.hpp"
 #include "../../widgets/clockWidget.hpp"
 #include "../../widgets/serviceListWidget.hpp"
@@ -45,16 +46,6 @@ private:
     // Centralized Configuration
     BoardConfig config;
 
-    // Alt station support 
-    bool altStationEnabled;
-    byte altStarts, altEnds;
-    char altCrsCode[4];
-    float altLat, altLon;
-    char altCallingCrsCode[4];
-    char altCallingStation[45];
-    char altPlatformFilter[54];
-    bool altStationActive;
-
     uint32_t lastUpdate;
     bool viaToggle;
     uint32_t nextViaToggle;
@@ -63,6 +54,7 @@ private:
     WeatherStatus weatherStatus;
 
 public:
+    const char* getBoardName() const override { return "DATA: National Rail"; }
     NationalRailBoard(appContext* contextPtr = nullptr);
     virtual ~NationalRailBoard() = default;
 
@@ -89,29 +81,6 @@ public:
     const char* getCallingCrsCode() const { return callingCrsCode; }
     float getStationLat() const { return stationLat; }
     float getStationLon() const { return stationLon; }
-
-    // Alt station support
-    void setAltStationEnabled(bool enabled) { altStationEnabled = enabled; }
-    void setAltStarts(byte starts) { altStarts = starts; }
-    void setAltEnds(byte ends) { altEnds = ends; }
-    void setAltCrsCode(const char* code) { strlcpy(altCrsCode, code, sizeof(altCrsCode)); }
-    void setAltLat(float lat) { altLat = lat; }
-    void setAltLon(float lon) { altLon = lon; }
-    void setAltCallingCrsCode(const char* code) { strlcpy(altCallingCrsCode, code, sizeof(altCallingCrsCode)); }
-    void setAltCallingStation(const char* station) { strlcpy(altCallingStation, station, sizeof(altCallingStation)); }
-    void setAltPlatformFilter(const char* filter) { strlcpy(altPlatformFilter, filter, sizeof(altPlatformFilter)); }
-    void setAltStationActive(bool active) { altStationActive = active; }
-
-    bool getAltStationEnabled() const { return altStationEnabled; }
-    byte getAltStarts() const { return altStarts; }
-    byte getAltEnds() const { return altEnds; }
-    const char* getAltCrsCode() const { return altCrsCode; }
-    float getAltLat() const { return altLat; }
-    float getAltLon() const { return altLon; }
-    const char* getAltCallingCrsCode() const { return altCallingCrsCode; }
-    const char* getAltCallingStation() const { return altCallingStation; }
-    const char* getAltPlatformFilter() const { return altPlatformFilter; }
-    bool getAltStationActive() const { return altStationActive; }
 
     int updateData() override;
     const char* getLastErrorMsg() override { return dataSource.getLastErrorMsg(); }

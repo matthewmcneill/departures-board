@@ -52,7 +52,7 @@ test.describe('System Tab Enhancements', () => {
     await page.click('[data-target="tab-system"]');
     await expect(page.locator('input[name="fastRefresh"]')).toBeChecked();
     await expect(page.locator('input[name="flip"]')).toBeChecked();
-    await expect(page.locator('input[name="brightness"]')).toHaveValue('150');
+    await expect(page.locator('#system-form input[name="brightness"]')).toHaveValue('150');
   });
 
   test('should render dynamic hardware diagnostic bars', async ({ page }) => {

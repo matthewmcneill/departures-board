@@ -20,12 +20,22 @@
 #pragma once
 
 #include <Arduino.h>
-#include <widgets/drawingPrimitives.hpp>
 #include <WiFiClientSecure.h>
 #include <githubClient.hpp>
 #include "iConfigurable.hpp"
 #include <LittleFS.h>
-#include <boards/systemBoard/loadingBoard.hpp>
+#include <functional>
+
+/**
+ * @brief Represents the current UI lifecycle state of a Firmware Update check or installation.
+ */
+enum class FwUpdateState {
+    WARNING,
+    DOWNLOADING,
+    SUCCESS,
+    FAILED,
+    NO_UPDATES
+};
 
 
 extern char myUrl[24];
@@ -49,6 +59,11 @@ private:
     bool dailyCheckEnabled;            // Cached flag from config
 
 public:
+    std::function<void(int percent)> onProgress;
+    std::function<void(const char* version, int secondsRemaining)> onWarning;
+    std::function<void(FwUpdateState state, const char* msg, int secondsRemaining)> onStateChange;
+    std::function<void(const char* msg, int percent)> onPostUpgradeProgress;
+
     /**
      * @brief Initialize with the current application context.
      * @param contextPtr Pointer to the parent context.
@@ -60,6 +75,11 @@ public:
      * @return appContext* Pointer to context.
      */
     appContext* getContext() const { return context; }
+
+    void setProgressCallback(std::function<void(int percent)> cb) { onProgress = cb; }
+    void setWarningCallback(std::function<void(const char* version, int secondsRemaining)> cb) { onWarning = cb; }
+    void setStateCallback(std::function<void(FwUpdateState state, const char* msg, int secondsRemaining)> cb) { onStateChange = cb; }
+    void setPostUpgradeCallback(std::function<void(const char* msg, int percent)> cb) { onPostUpgradeProgress = cb; }
 
     /**
      * @brief Default constructor.

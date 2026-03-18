@@ -91,7 +91,7 @@ struct Config {
     char wsdlHost[48] = "lite.realtime.nationalrail.co.uk"; // WSDL service host
     char wsdlAPI[48] = "/OpenLDBWS/wsdl.aspx?ver=2021-11-01"; // WSDL path
     char timezone[64] = "Europe/London"; // POSIX timezone string
-    float configVersion = 2.1f; // Configuration format version number (v2.1 includes type/lat/lon standardization)
+    float configVersion = 2.2f; // Configuration format version number (v2.2 includes multiboard migration)
     
     // --- Display Preferences ---
     bool dateEnabled = false; // Show date in header
@@ -115,37 +115,6 @@ struct Config {
     BoardConfig boards[MAX_BOARDS]; // Array of configured display boards
     int boardCount = 0;             // Number of active boards in the carousel
     int defaultBoardIndex = 0;      // Index of the board to show on startup
-
-    // --- Legacy Stubs (Compatibility with Web UI) ---
-    // These fields are synchronized with the boards array for backward compatibility
-    BoardTypes boardType = MODE_RAIL; // Legacy: Maps to boards[0].type
-    char crsCode[4] = "";            // Legacy: Maps to boards[0].id
-    float stationLat = 0.0f;         // Legacy: Maps to boards[0].lat
-    float stationLon = 0.0f;         // Legacy: Maps to boards[0].lon
-    char callingCrsCode[4] = "";     // Legacy: Maps to boards[0].secondaryId
-    char callingStation[45] = "";    // Legacy: Maps to boards[0].secondaryName
-    char platformFilter[54] = "";    // Legacy: Maps to boards[0].filter
-    int nrTimeOffset = 0;            // Legacy: Maps to boards[0].timeOffset
-
-    bool altStationEnabled = false;  // Legacy: Managed via array presence
-    char altCrsCode[4] = "";         // Legacy: Maps to an additional NR board
-    float altLat = 0.0f;             // Legacy
-    float altLon = 0.0f;             // Legacy
-    char altCallingCrsCode[4] = "";  // Legacy
-    char altCallingStation[45] = ""; // Legacy
-    char altPlatformFilter[54] = ""; // Legacy
-    int altStarts = 0;               // Legacy: Unsupported in new format (yet)
-    int altEnds = 0;                 // Legacy: Unsupported in new format (yet)
-
-    char tubeId[13] = "";            // Legacy: Maps to a TFL board in array
-    char tubeName[80] = "";          // Legacy: Maps to a TFL board in array
-
-    bool showBus = false;            // Legacy: Managed via array presence
-    char busId[13] = "";             // Legacy: Maps to a BUS board in array
-    char busName[80] = "";           // Legacy: Maps to a BUS board in array
-    float busLat = 0.0f;             // Legacy
-    float busLon = 0.0f;             // Legacy
-    char busFilter[54] = "";         // Legacy
 
     char rssUrl[128] = ""; // XML feed URL
     char rssName[48] = ""; // Label for news source

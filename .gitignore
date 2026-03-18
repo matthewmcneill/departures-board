@@ -31,3 +31,7 @@ test/web/playwright-report/
 test/web/blob-report/
 test/web/playwright/.cache/
 test-results/
+
+# Debugging
+*build_log*.txt
+*build_log*.log

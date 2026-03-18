@@ -38,6 +38,7 @@ protected:
     friend class DisplayManager;
 
 public:
+    const char* getBoardName() const override { return "SYS: Setup Help"; }
 
     /**
      * @brief Injects the stacked string array.

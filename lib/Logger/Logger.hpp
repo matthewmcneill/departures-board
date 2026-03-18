@@ -23,18 +23,34 @@
 #include <Arduino.h>
 #include <vector>
 
-#ifdef ENABLE_DEBUG_LOG
-  #define LOG_INFO(sub, msg)  Logger::_info(sub, msg)
-  #define LOG_WARN(sub, msg)  Logger::_warn(sub, msg)
+#ifndef CORE_DEBUG_LEVEL
+#define CORE_DEBUG_LEVEL 0
+#endif
+
+#if CORE_DEBUG_LEVEL >= 1
   #define LOG_ERROR(sub, msg) Logger::_error(sub, msg)
-  #define LOG_DEBUG(sub, msg) Logger::_debug(sub, msg)
+#else
+  #define LOG_ERROR(sub, msg)
+#endif
+
+#if CORE_DEBUG_LEVEL >= 2
+  #define LOG_WARN(sub, msg)  Logger::_warn(sub, msg)
+#else
+  #define LOG_WARN(sub, msg)
+#endif
+
+#if CORE_DEBUG_LEVEL >= 3
+  #define LOG_INFO(sub, msg)  Logger::_info(sub, msg)
   #define LOG_SPLASH(msg)     Logger::logSplashMessage(msg)
 #else
   #define LOG_INFO(sub, msg)
-  #define LOG_WARN(sub, msg)
-  #define LOG_ERROR(sub, msg)
-  #define LOG_DEBUG(sub, msg)
   #define LOG_SPLASH(msg)
+#endif
+
+#if CORE_DEBUG_LEVEL >= 4
+  #define LOG_DEBUG(sub, msg) Logger::_debug(sub, msg)
+#else
+  #define LOG_DEBUG(sub, msg)
 #endif
 
 /**

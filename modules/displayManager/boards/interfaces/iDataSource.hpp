@@ -26,6 +26,7 @@
 #define UPD_UNAUTHORISED 6
 #define UPD_NO_RESPONSE 7
 #define UPD_INCOMPLETE 8
+#define UPD_PENDING 9
 
 /**
  * @brief Pure virtual interface representing a source of transport data.

@@ -11,6 +11,34 @@
   Module: portal/index.html
   Description: Unified Configuration Portal for the ESP32 Departures Board.
 
+  =============================================================================
+  FILE STRUCTURE MAP
+  =============================================================================
+  1. CSS Styles (Line ~34)
+     - Variables & Themes
+     - Base Layout & Typography
+     - Form Elements & Buttons
+     - UI Components (Tabs, Drawers, Badges)
+     - Modals & Utility Classes
+  
+  2. HTML Structure (Line ~1228)
+     - Top Bar & Global Elements
+     - Main Tab System (<article> wrappers)
+       - Displays Tab (Slot Configs)
+       - Settings Tab (System & ScreenSaver)
+       - Keys Tab (API Key Config)
+       - WiFi Tab (Network setup)
+       - System Tab (Diagnostics & Actions)
+     - Modals (Type Selection, Key Addition, Display Add, Update)
+     - Bottom Navigation Bar
+
+  3. JavaScript Logic (Line ~1915)
+     - Global Variables & State
+     - Initialization (`init()`, Event Binding)
+     - Network Requests (`fetchConfig()`, `saveAll()`, etc.)
+     - UI Rendering (`render()`, `renderBoards()`, `renderKeys()`)
+     - User Interactions (WiFi Tests, Drag & Drop, Drawer toggles)
+
   Exported Functions/Classes:
   - app: Main application object containing state and logic
     - init(): Initialize theme, bind events, and fetch initial data
@@ -32,6 +60,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Departures Board Config</title>
   <style>
+    /* ==========================================================================
+       1. VARIABLES & THEMES
+       ========================================================================== */
     /* --- Design System & CSS Variables --- */
     :root {
       --primary: #f57c00;
@@ -58,6 +89,9 @@
       --nav-bg: #1e1e1e;
     }
 
+    /* ==========================================================================
+       2. BASE LAYOUT & TYPOGRAPHY
+       ========================================================================== */
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
@@ -125,6 +159,9 @@
       display: none;
     }
 
+    /* ==========================================================================
+       3. FORM ELEMENTS & BUTTONS
+       ========================================================================== */
     article {
       background: var(--card-bg);
       border-radius: 16px;
@@ -259,6 +296,9 @@
       border: 1px solid var(--border);
     }
 
+    /* ==========================================================================
+       4. UI COMPONENTS (Tabs, Drawers, Badges)
+       ========================================================================== */
     .tab-content {
       display: none;
     }
@@ -347,7 +387,7 @@
       transform: translateY(-2px);
     }
 
-    /* Drawer Styles */
+    /* --- Drawer Styles --- */
     .drawer {
       border-top: 1px solid var(--border);
       margin-top: 1.5rem;
@@ -421,7 +461,7 @@
       background: var(--warning);
       box-shadow: 0 0 8px var(--warning);
     }
-    
+
     .dot.grey {
       background: #888;
       box-shadow: 0 0 4px #888;
@@ -750,7 +790,10 @@
       }
     }
 
-    /* Selection Modal Styles */
+    /* ==========================================================================
+       5. MODALS & SPECIFIC UTILITIES
+       ========================================================================== */
+    /* --- Selection Modal Styles --- */
     .type-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -800,10 +843,14 @@
       border: 1px solid var(--border);
     }
 
-    /* Hardware Diag Bars */
+    /* ==========================================================================
+       6. DIAGNOSTICS & SYSTEM UI
+       ========================================================================== */
+    /* --- Hardware Diag Bars --- */
     .diag-bar-container {
       margin-bottom: 0.8rem;
     }
+
     .diag-bar-label {
       display: flex;
       justify-content: space-between;
@@ -812,18 +859,21 @@
       margin-bottom: 4px;
       color: var(--text-muted);
     }
+
     .diag-bar-bg {
       height: 6px;
       background: var(--border);
       border-radius: 3px;
       overflow: hidden;
     }
+
     .diag-bar-fill {
       height: 100%;
       background: var(--primary);
       width: 0%;
       transition: width 0.5s ease-out;
     }
+
     .diag-meta {
       font-size: 0.75rem;
       color: var(--text-muted);
@@ -855,7 +905,10 @@
       border: 1px solid var(--error);
     }
 
-    /* Board List Enhancements */
+    /* ==========================================================================
+       7. BOARD LIST & SLOTS
+       ========================================================================== */
+    /* --- Board List Enhancements --- */
     .board-slots {
       display: flex;
       flex-direction: column;
@@ -870,15 +923,17 @@
       color: white;
       text-transform: uppercase;
       letter-spacing: 0.05rem;
-      padding: 0.25rem 0.75rem 1.5rem 0.75rem; /* Large bottom padding to go deep behind */
-      border-radius: 8px 8px 0 0; 
+      padding: 0.25rem 0.75rem 1.5rem 0.75rem;
+      /* Large bottom padding to go deep behind */
+      border-radius: 8px 8px 0 0;
       display: inline-flex;
       align-self: flex-start;
       align-items: center;
       gap: 4px;
       margin-left: 0;
       margin-top: 0;
-      margin-bottom: -1.35rem; /* Match card radius/overlap */
+      margin-bottom: -1.35rem;
+      /* Match card radius/overlap */
       z-index: 1;
       position: relative;
     }
@@ -886,9 +941,11 @@
     .board-slot.primary-slot {
       border: 2px solid var(--primary) !important;
       border-style: solid !important;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      z-index: 2; /* Essential for covering the label bottom */
-      background: var(--card-bg) !important; /* Ensure it is filled/opaque */
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      z-index: 2;
+      /* Essential for covering the label bottom */
+      background: var(--card-bg) !important;
+      /* Ensure it is filled/opaque */
       opacity: 1 !important;
     }
 
@@ -911,7 +968,7 @@
     .board-slot:hover {
       border-color: var(--primary);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .board-slot.empty {
@@ -995,6 +1052,7 @@
       min-width: 60px;
       text-align: right;
     }
+
     .board-reorder-btns {
       display: flex;
       flex-direction: column;
@@ -1007,7 +1065,7 @@
     [data-theme="dark"] .board-reorder-btns {
       background: rgba(255, 255, 255, 0.03);
     }
-    
+
     .board-reorder-btns button:first-child {
       border-bottom: 1px solid var(--border);
     }
@@ -1056,7 +1114,10 @@
       height: 28px;
     }
 
-    /* Station Search Suggestions */
+    /* ==========================================================================
+       8. SEARCH & ADVANCED TOGGLES
+       ========================================================================== */
+    /* --- Station Search Suggestions --- */
     .search-container {
       position: relative;
     }
@@ -1227,18 +1288,19 @@
   </style>
 </head>
 
-  <!-- ========================================================= -->
-  <!-- MAIN APPLICATION BODY                                       -->
-  <!-- Begins the global layout containing the top bar and         -->
-  <!-- all the tabbed sections of the SPA.                         -->
-  <!-- ========================================================= -->
+<!-- ========================================================= -->
+<!-- MAIN APPLICATION BODY                                       -->
+<!-- Begins the global layout containing the top bar and         -->
+<!-- all the tabbed sections of the SPA.                         -->
+<!-- ========================================================= -->
+
 <body class="">
   <div class="container">
     <div class="ap-banner">Setup Mode: Access Point Active</div>
     <div class="top-bar">
       <div>
-        <h2>DEPARTURES</h2>
-        <div class="subtitle">Unified Portal</div>
+        <h2>DEPARTURES BOARD</h2>
+        <div class="subtitle">Configuration Portal</div>
       </div>
       <div class="theme-toggle">
         <button class="theme-btn" data-theme="auto" title="Auto Mode">
@@ -1283,9 +1345,12 @@
       <article>
         <header>WiFi Configuration</header>
         <div class="instruction-box" style="margin-bottom: 1rem;">
-          The <b>Hostname</b> is the name used to access this board on your local network (e.g., <code>http://departures.local</code>). Use only letters, numbers, and hyphens.
+          The <b>Hostname</b> is the name used to access this board on your local network (e.g.,
+          <code>http://departures.local</code>). Use only letters, numbers, and hyphens.
         </div>
+        <!-- WiFi Setup Form: Used to connect the board to the network via SSID and mDNS -->
         <form id="wifi-form">
+          <!-- Text Input: Determines the mDNS / local network hostname -->
           <label>Hostname (mDNS)<input type="text" name="hostname" value="departures" /></label>
           <label>Network (SSID)</label>
           <div class="input-row" style="margin-top: 0.4rem;">
@@ -1345,7 +1410,7 @@
           </div>
         </div>
       </article>
-          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+      <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
         &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
       </div>
     </section>
@@ -1359,26 +1424,34 @@
       <article>
         <header>API Key Registry</header>
         <div class="instruction-box" style="margin-bottom: 1rem;">
-          To display live data, you need to register for free API keys from <b>National Rail</b>, <b>TfL</b>, or <b>OpenWeatherMap</b>. Click a slot below to configure your keys.
+          To display live data, you need to register for free API keys from <b>National Rail</b>, <b>TfL</b>, or
+          <b>OpenWeatherMap</b>. Click a slot below to configure your keys.
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Manage your API credentials. Click a slot to add a new key.</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Manage your API credentials. Click
+          a slot to add a new key.</p>
         <div id="keys-slots" class="key-slots">
           <!-- Slots generated by JS based on MAX_KEYS -->
         </div>
       </article>
-          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+      <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
         &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
       </div>
     </section>
 
+    <!-- ========================================================= -->
+    <!-- TAB: FEEDS & WEATHER                                      -->
+    <!-- Select RSS feeds and configure OpenWeatherMap coordinates -->
+    <!-- ========================================================= -->
     <section id="tab-feeds" class="tab-content">
       <article>
         <header>News Feed Service</header>
         <div class="instruction-box" style="margin-bottom: 1rem;">
-          Enter a valid <b>RSS Feed URL</b> to display news titles on your board. Most news websites provide these in their 'About' or 'Connect' sections.
+          Enter a valid <b>RSS Feed URL</b> to display news titles on your board. Most news websites provide these in
+          their 'About' or 'Connect' sections.
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Configure the RSS feed displayed on the board.</p>
-        
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Configure the RSS feed displayed on
+          the board.</p>
+
         <label>Select a News Feed (RSS)
           <select id="feed-select" onchange="app.handleFeedChange(this.value)">
             <option value="">Loading feeds...</option>
@@ -1391,7 +1464,8 @@
           </label>
         </div>
         <div class="btn-row">
-          <button type="button" class="outline btn-test-action" onclick="app.testFeed()" id="feed-test-btn">Test Feed</button>
+          <button type="button" class="outline btn-test-action" onclick="app.testFeed()" id="feed-test-btn">Test
+            Feed</button>
         </div>
 
         <div class="drawer" id="feed-diag-drawer">
@@ -1399,7 +1473,8 @@
             <span>Feed Diagnostics</span>
             <div class="status-badge" id="feed-status-summary">
               <div class="dot" id="feed-dot"></div>
-              <span id="feed-status-text" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Ready</span>
+              <span id="feed-status-text"
+                style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Ready</span>
             </div>
           </div>
           <div class="drawer-content">
@@ -1421,20 +1496,24 @@
             <select id="weather-key-select" onchange="app.handleWeatherKeyChange(this.value)">
               <option value="">No key selected</option>
             </select>
-            <button type="button" class="outline" onclick="app.selectKeyType(true)" style="padding: 0.75rem; min-width: 50px;">+</button>
+            <button type="button" class="outline" onclick="app.selectKeyType(true)"
+              style="padding: 0.75rem; min-width: 50px;">+</button>
           </div>
         </label>
 
         <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <span style="font-size: 0.85rem; font-weight: 700;">Test Coordinates</span>
-            <span id="weather-coords" style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">Detecting...</span>
+            <span id="weather-coords"
+              style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">Detecting...</span>
           </div>
-          <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Coordinates are pulled from active displays. Testing uses the historical location of Pen-y-darren Ironworks (51.7487° N, 3.3816° W).</p>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Coordinates are pulled from active
+            displays. Testing uses the historical location of Pen-y-darren Ironworks (51.7487° N, 3.3816° W).</p>
         </div>
 
         <div class="btn-row">
-          <button type="button" class="outline btn-test-action" onclick="app.testWeather()" id="weather-test-btn">Test Feed</button>
+          <button type="button" class="outline btn-test-action" onclick="app.testWeather()" id="weather-test-btn">Test
+            Feed</button>
         </div>
 
         <div class="drawer" id="weather-diag-drawer">
@@ -1442,7 +1521,8 @@
             <span>Weather Diagnostics</span>
             <div class="status-badge" id="weather-status-summary">
               <div class="dot" id="weather-dot"></div>
-              <span id="weather-status-text" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Ready</span>
+              <span id="weather-status-text"
+                style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Ready</span>
             </div>
           </div>
           <div class="drawer-content">
@@ -1452,7 +1532,7 @@
           </div>
         </div>
       </article>
-          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+      <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
         &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
       </div>
     </section>
@@ -1467,12 +1547,15 @@
         <header>
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <span>Active Displays</span>
-            <button class="outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; text-transform: none;" onclick="app.selectBoardType()">+ Add</button>
+            <button class="outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; text-transform: none;"
+              onclick="app.selectBoardType()">+ Add</button>
           </div>
         </header>
 
         <div class="instruction-box" style="margin-bottom: 1.5rem;">
-          Configure up to <b id="max-boards-count"></b> displays to cycle on your board. The <b>STARTUP</b> slot is shown first when the device is powered on. Use the arrows to reorder, or click an empty slot to add a new display.
+          Configure up to <b id="max-boards-count"></b> displays to cycle on your board. The <b>STARTUP</b> slot is
+          shown first when the device is powered on. Use the arrows to reorder, or click an empty slot to add a new
+          display.
         </div>
 
         <div id="boards-list" class="board-slots"></div>
@@ -1489,9 +1572,12 @@
     <section id="tab-schedule" class="tab-content">
       <article>
         <header>Schedule & Auto-Power</header>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Coming soon: Manage display sleep schedules and automatic power-off times.</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Coming soon: Manage display sleep
+          schedules and automatic power-off times.</p>
         <div style="text-align: center; padding: 2.5rem; opacity: 0.5;">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--primary);">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"
+            style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--primary);">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -1500,7 +1586,7 @@
           <p style="font-weight: 700; color: var(--text);">Feature under development</p>
         </div>
       </article>
-          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+      <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
         &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
       </div>
     </section>
@@ -1514,20 +1600,29 @@
     <section id="tab-system" class="tab-content">
       <article>
         <header>Global Settings</header>
+        <!-- System Settings Form: Handles timezone, layout toggles, software updates, etc. -->
         <form id="system-form">
           <div class="instruction-box" style="margin-bottom: 0.5rem;">
-            Enter the <b>POSIX TZ string</b> for your location. This ensures the board handles Daylight Saving Time correctly. <a href="https://github.com/gadec-uk/departures-board/#custom-time-zones" target="_blank">Find your TZ string here</a>.
+            Enter the <b>POSIX TZ string</b> for your location. This ensures the board handles Daylight Saving Time
+            correctly. <a href="https://github.com/gadec-uk/departures-board/#custom-time-zones" target="_blank">Find
+              your TZ string here</a>.
           </div>
+          <!-- Text Input: POSIX timezone string for the device clock -->
           <label>Timezone<input type="text" name="timezone" /></label>
-          
+
           <div style="margin: 1.5rem 0 1rem 0; display:flex; flex-direction:column; gap:12px;">
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="dateEnabled" style="width: auto; margin:0;" /> Show Date on Screen</label>
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="noScrolling" style="width: auto; margin:0;" /> Suppress Scrolling & Info</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
+                type="checkbox" name="dateEnabled" style="width: auto; margin:0;" /> Show Date on Screen</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
+                type="checkbox" name="noScrolling" style="width: auto; margin:0;" /> Suppress Scrolling & Info</label>
             <div class="instruction-box" style="margin: 0.5rem 0; padding: 0.75rem;">
-              <b>Fast Refresh</b> increases the frequency of API calls. Use with caution as some providers may temporarily block your API key if limits are exceeded.
+              <b>Fast Refresh</b> increases the frequency of API calls. Use with caution as some providers may
+              temporarily block your API key if limits are exceeded.
             </div>
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="fastRefresh" style="width: auto; margin:0;" /> Increase API Refresh Rate</label>
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180&deg;)</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
+                type="checkbox" name="fastRefresh" style="width: auto; margin:0;" /> Increase API Refresh Rate</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
+                type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180&deg;)</label>
           </div>
 
           <div class="instruction-box" style="margin-bottom: 0.5rem; margin-top: 1rem;">
@@ -1538,47 +1633,53 @@
           </label>
         </form>
         <div class="btn-row">
-            <button type="button" onclick="app.saveAll()">Apply Settings</button>
+          <button type="button" onclick="app.saveAll()">Apply Settings</button>
         </div>
       </article>
 
       <article>
         <header>Hardware Status</header>
         <div id="hardware-diagnostics">
-           <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem;">Fetching live metrics...</p>
+          <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem;">Fetching live
+            metrics...</p>
         </div>
       </article>
 
       <article>
         <header>Firmware</header>
         <div class="list-item">
-            <div>
-                <h4 id="fw-version-text" style="margin:0">Version: v3.0.x</h4>
-                <p id="fw-build-text">Build: 2026-03-17</p>
-            </div>
-            <button type="button" class="outline" onclick="app.checkUpdates()">Update</button>
+          <div>
+            <h4 id="fw-version-text" style="margin:0">Version: v3.0.x</h4>
+            <p id="fw-build-text">Build: 2026-03-17</p>
+          </div>
+          <button type="button" class="outline" onclick="app.checkUpdates()">Update</button>
         </div>
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 1rem;">
-            <input type="checkbox" name="firmwareUpdatesEnabled" id="auto-update" style="width: auto; margin:0;" /> Automatically install updates
+          <input type="checkbox" name="firmwareUpdatesEnabled" id="auto-update" style="width: auto; margin:0;" />
+          Automatically install updates
         </label>
       </article>
 
       <article style="border-color: var(--error); background: rgba(198, 40, 40, 0.05);">
         <header style="color: var(--error);">Danger Zone</header>
         <div style="display: flex; gap: 10px; margin-top: 1rem;">
-            <button type="button" class="secondary" style="flex:1" onclick="app.reboot()">Reboot</button>
-            <button type="button" id="btn-factory-reset" class="secondary" style="flex:1; color: var(--error); border-color: var(--error);" onclick="app.factoryReset()">Factory Reset</button>
+          <button type="button" class="secondary" style="flex:1" onclick="app.reboot()">Reboot</button>
+          <button type="button" id="btn-factory-reset" class="secondary"
+            style="flex:1; color: var(--error); border-color: var(--error);" onclick="app.factoryReset()">Factory
+            Reset</button>
         </div>
       </article>
 
       <article>
         <header>About</header>
         <div class="instruction-box">
-          &copy; 2026 Gadec Software. Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a>.<br><br>
-          For documentation, issues, and updates, visit the <a href="https://github.com/gadec-uk/departures-board" target="_blank">GitHub Repository</a>.
+          &copy; 2026 Gadec Software. Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+            target="_blank">CC BY-NC-SA 4.0</a>.<br><br>
+          For documentation, issues, and updates, visit the <a href="https://github.com/gadec-uk/departures-board"
+            target="_blank">GitHub Repository</a>.
         </div>
       </article>
-          <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
+      <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
         &copy; 2026 Gadec Software. Licensed under CC BY-NC-SA 4.0.
       </div>
     </section>
@@ -1618,8 +1719,8 @@
       FEEDS
     </a>
     <a href="#" class="tab-link" data-target="tab-displays">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
         <line x1="9" y1="3" x2="9" y2="21"></line>
       </svg>
@@ -1639,7 +1740,9 @@
       <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+        </path>
       </svg>
       SYSTEM
     </a>
@@ -1694,48 +1797,57 @@
   <dialog id="modal-board">
     <article>
       <header>Display Editor</header>
+      <!-- Board Configuration Form: Settings for an individual carousel slot -->
       <form id="board-form">
         <div id="board-key-section">
+          <!-- Select Dropdown: Bind an API key from the registry to this specific board -->
           <label>API Key
             <div class="input-row">
               <select name="apiKeyId" id="board-key-select">
                 <option value="">No key selected</option>
               </select>
-              <button type="button" class="outline" onclick="app.selectKeyType(true)" style="padding: 0.75rem; min-width: 50px;">+</button>
+              <button type="button" class="outline" onclick="app.selectKeyType(true)"
+                style="padding: 0.75rem; min-width: 50px;">+</button>
             </div>
           </label>
         </div>
 
         <div class="search-container" id="station-search-container">
           <label id="label-station-search">Station / Stop
-            <input type="text" id="station-search-input" placeholder="Start typing station name..." autocomplete="off" oninput="app.searchStations(this.value)" />
+            <input type="text" id="station-search-input" placeholder="Start typing station name..." autocomplete="off"
+              oninput="app.searchStations(this.value)" />
           </label>
           <div id="search-suggestions" class="suggestions-list"></div>
         </div>
 
         <!-- Bus specific helper - moved up under search -->
         <div id="bus-instruction-box" class="instruction-box" style="display: none;">
-          Find bus stop ATCO codes at <a href="https://bustimes.org/search" target="_blank">bustimes.org</a>. 
-          Tap <a href="https://github.com/gadec-uk/departures-board/#bus-stop-atco-codes" target="_blank">here</a> for full instructions.
+          Find bus stop ATCO codes at <a href="https://bustimes.org/search" target="_blank">bustimes.org</a>.
+          Tap <a href="https://github.com/gadec-uk/departures-board/#bus-stop-atco-codes" target="_blank">here</a> for
+          full instructions.
         </div>
-        
+
         <div id="bus-verify-container" style="display: none; margin-bottom: 1rem;">
-           <button type="button" class="outline w-100" id="btn-verify-atco" onclick="app.handleVerifyAtco()" style="width: 100%;">Verify Stop Code</button>
+          <button type="button" class="outline w-100" id="btn-verify-atco" onclick="app.handleVerifyAtco()"
+            style="width: 100%;">Verify Stop Code</button>
         </div>
 
         <label>Display Name<input type="text" name="name" required /></label>
-        
+
         <div id="board-type-section" style="display: none;">
-          <label>Transport Mode<select name="type" id="board-type-select" onchange="app.handleBoardTypeChange(this.value)">
+          <label>Transport Mode<select name="type" id="board-type-select"
+              onchange="app.handleBoardTypeChange(this.value)">
               <option value="0">National Rail</option>
               <option value="1">London Underground</option>
               <option value="2">Bus / Tram</option>
               <option value="3">Screensaver / Clock</option>
             </select></label>
         </div>
-        <label id="label-board-brightness" style="display: none;">Brightness Override (Clock)
+
+        <label id="label-board-brightness" style="display: none;">Brightness Override (Clock)
           <input type="range" name="brightness" min="-1" max="255" oninput="app.updateBoardBrightness(this.value)" />
-          <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Set to minimum (-1) to use the <b>Global System Brightness</b>.</p>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Set to minimum (-1) to use the
+            <b>Global System Brightness</b>.</p>
         </label>
 
         <div id="board-filters-section">
@@ -1744,8 +1856,10 @@
             <label id="label-filter-secondary">Only Show Services Calling At</label>
             <div class="search-container">
               <div class="input-row" style="margin-bottom: 0;">
-                <input type="text" id="filter-secondary-input" placeholder="Start typing station..." autocomplete="off" oninput="app.searchStations(this.value, true)" />
-                <button type="button" class="outline" onclick="app.clearSecondaryFilter()" style="padding: 0.75rem; font-size: 0.8rem; min-width: 60px;">Clear</button>
+                <input type="text" id="filter-secondary-input" placeholder="Start typing station..." autocomplete="off"
+                  oninput="app.searchStations(this.value, true)" />
+                <button type="button" class="outline" onclick="app.clearSecondaryFilter()"
+                  style="padding: 0.75rem; font-size: 0.8rem; min-width: 60px;">Clear</button>
               </div>
               <div id="secondary-search-suggestions" class="suggestions-list"></div>
             </div>
@@ -1757,24 +1871,43 @@
           <label id="label-filter-primary">Filter<input type="text" name="filter" placeholder="Optional" /></label>
         </div>
 
-        <label id="label-weather" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
+        <label id="label-weather" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
+            type="checkbox" name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
 
         <div class="drawer" id="board-diag-drawer" style="margin-top: 1rem;">
           <div class="drawer-trigger" onclick="app.toggleBoardDiag()" style="padding: 0.75rem 0;">
             <span>Diagnostics & Technical Details</span>
             <div class="status-badge" id="board-status-summary">
               <div class="dot grey" id="board-diag-dot"></div>
-              <span id="board-diag-status-text" style="text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px;">Idle</span>
+              <span id="board-diag-status-text"
+                style="text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px;">Idle</span>
             </div>
           </div>
           <div class="drawer-content">
-            <div id="board-diag-result" style="font-family: 'Courier New', monospace; font-size: 0.75rem; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px; margin-bottom: 0.5rem; min-height: 40px; white-space: pre-wrap;">No test run yet.</div>
+            <div id="board-diag-result"
+              style="font-family: 'Courier New', monospace; font-size: 0.75rem; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px; margin-bottom: 0.5rem; min-height: 40px; white-space: pre-wrap;">
+              No test run yet.</div>
             <table class="diag-table" id="board-diag-table">
-              <tr><td>Station ID</td><td id="diag-id">-</td></tr>
-              <tr id="diag-row-lat"><td>Latitude</td><td id="diag-lat">-</td></tr>
-              <tr id="diag-row-lon"><td>Longitude</td><td id="diag-lon">-</td></tr>
-              <tr id="diag-row-time" style="display: none;"><td>Device Time</td><td id="diag-time">-</td></tr>
-              <tr id="diag-row-tz" style="display: none;"><td>Timezone</td><td id="diag-tz">-</td></tr>
+              <tr>
+                <td>Station ID</td>
+                <td id="diag-id">-</td>
+              </tr>
+              <tr id="diag-row-lat">
+                <td>Latitude</td>
+                <td id="diag-lat">-</td>
+              </tr>
+              <tr id="diag-row-lon">
+                <td>Longitude</td>
+                <td id="diag-lon">-</td>
+              </tr>
+              <tr id="diag-row-time" style="display: none;">
+                <td>Device Time</td>
+                <td id="diag-time">-</td>
+              </tr>
+              <tr id="diag-row-tz" style="display: none;">
+                <td>Timezone</td>
+                <td id="diag-tz">-</td>
+              </tr>
             </table>
             <!-- Hidden inputs to store IDs and coords -->
             <input type="hidden" name="id" />
@@ -1788,7 +1921,8 @@
           <button type="button" class="secondary" onclick="app.closeModal('modal-board')">Cancel</button>
           <button type="submit">Apply</button>
         </div>
-        <button type="button" class="btn-delete" id="btn-delete-board" onclick="app.deleteBoardFromEditor()">Delete Board</button>
+        <button type="button" class="btn-delete" id="btn-delete-board" onclick="app.deleteBoardFromEditor()">Delete
+          Board</button>
       </form>
     </article>
   </dialog>
@@ -1855,6 +1989,7 @@
   <!-- ========================================================= -->
   <dialog id="modal-apikey">
     <article>
+      <!-- Key Form: Creates or edits an API credential to be stored in the registry -->
       <button type="button" class="modal-close-btn" onclick="app.closeModal('modal-apikey')" title="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
           stroke-linejoin="round">
@@ -1864,9 +1999,12 @@
       </button>
       <header id="key-editor-title">Key Editor</header>
       <form id="key-form">
+        <!-- Hidden Inputs for JS Context -->
         <input type="hidden" name="id" />
         <input type="hidden" name="type" />
+        <!-- Text Input: Human readable name for the API Key -->
         <label>Key Label (e.g. "Home Rail Key")<input type="text" name="label" required /></label>
+        <!-- Password Input: The secret token/key for the provider -->
         <label>API Token / Key
           <div class="password-input-wrapper">
             <input type="password" name="token" id="key-token-input" style="margin-top:0;" autocomplete="new-password"
@@ -1962,7 +2100,7 @@
         } catch (e) {
           console.error('Initial fetch failed', e);
         }
-        
+
         // Polling Optimization: 5s when active, stop when hidden
         this.startStatusPolling();
         document.addEventListener('visibilitychange', () => {
@@ -1974,12 +2112,12 @@
         setTimeout(() => this.scanWiFi(), 500);
       },
 
-      startStatusPolling: function() {
+      startStatusPolling: function () {
         if (this.statusInterval) clearInterval(this.statusInterval);
         this.statusInterval = setInterval(() => this.fetchStatus(), 5000);
       },
 
-      stopStatusPolling: function() {
+      stopStatusPolling: function () {
         if (this.statusInterval) clearInterval(this.statusInterval);
         this.statusInterval = null;
       },
@@ -2060,7 +2198,7 @@
           const res = await fetch('/api/config');
           this.state.config = await res.json();
           this.state.keys = this.state.config.keys || [];
-          
+
           // Fetch curated feeds
           const rssRes = await fetch('/rss.json').catch(() => null);
           if (rssRes && rssRes.ok) {
@@ -2086,9 +2224,9 @@
         if (s.ap_mode) {
           document.body.classList.add('ap-mode');
           // Only force switch if we literally just entered AP mode after the initial tab was already established
-          if (this.state.initialTabSet && !this.prev_ap_mode) { 
-            this.switchTab('tab-wifi'); 
-            document.getElementById('diag-drawer').classList.add('active'); 
+          if (this.state.initialTabSet && !this.prev_ap_mode) {
+            this.switchTab('tab-wifi');
+            document.getElementById('diag-drawer').classList.add('active');
           }
         } else {
           document.body.classList.remove('ap-mode');
@@ -2097,16 +2235,16 @@
 
         const dot = document.getElementById('wifi-dot');
         const text = document.getElementById('wifi-status-text');
-        
+
         if (s.ap_mode) {
-           dot.className = 'dot yellow';
-           text.innerText = 'Access Point Mode';
+          dot.className = 'dot yellow';
+          text.innerText = 'Access Point Mode';
         } else if (s.connected) {
-           dot.className = (s.rssi >= -80) ? 'dot green' : 'dot yellow';
-           text.innerText = `Connected: ${s.ssid}`;
+          dot.className = (s.rssi >= -80) ? 'dot green' : 'dot yellow';
+          text.innerText = `Connected: ${s.ssid}`;
         } else {
-           dot.className = 'dot red';
-           text.innerText = 'Disconnected';
+          dot.className = 'dot red';
+          text.innerText = 'Disconnected';
         }
 
         const rows = [
@@ -2131,63 +2269,63 @@
         if (diagTz) diagTz.innerText = s.timezone || '-';
       },
 
-      renderHardwareStatus: function(s) {
+      renderHardwareStatus: function (s) {
         const container = document.getElementById('hardware-diagnostics');
         if (!container) return;
 
         const metrics = [];
-        
+
         // Memory (Heap)
         if (s.heap && s.total_heap) {
-            const perc = Math.round(((s.total_heap - s.heap) / s.total_heap) * 100);
-            metrics.push({
-                label: 'Memory (Heap)',
-                value: `${perc}%`,
-                perc: perc,
-                meta: `${Math.round((s.total_heap - s.heap) / 1024)}KB / ${Math.round(s.total_heap / 1024)}KB`
-            });
+          const perc = Math.round(((s.total_heap - s.heap) / s.total_heap) * 100);
+          metrics.push({
+            label: 'Memory (Heap)',
+            value: `${perc}%`,
+            perc: perc,
+            meta: `${Math.round((s.total_heap - s.heap) / 1024)}KB / ${Math.round(s.total_heap / 1024)}KB`
+          });
         }
 
         // Storage (LittleFS)
         if (s.storage_total) {
-            const perc = Math.round((s.storage_used / s.storage_total) * 100);
-            metrics.push({
-                label: 'Storage (LittleFS)',
-                value: `${perc}%`,
-                perc: perc,
-                meta: `${Math.round(s.storage_used / 1024)}KB / ${Math.round(s.storage_total / 1024)}KB`
-            });
+          const perc = Math.round((s.storage_used / s.storage_total) * 100);
+          metrics.push({
+            label: 'Storage (LittleFS)',
+            value: `${perc}%`,
+            perc: perc,
+            meta: `${Math.round(s.storage_used / 1024)}KB / ${Math.round(s.storage_total / 1024)}KB`
+          });
         }
 
         // Temperature (Internal Sensor)
         if (s.temp) {
-            // ESP32 Internal temp is often high, let's normalize bar to 100C
-            const perc = Math.min(100, Math.max(0, s.temp));
-            metrics.push({
-                label: 'Chip Temperature',
-                value: `${s.temp.toFixed(1)}°C`,
-                perc: perc,
-                meta: 'Internal Core Sensor'
-            });
+          // ESP32 Internal temp is often high, let's normalize bar to 100C
+          const perc = Math.min(100, Math.max(0, s.temp));
+          metrics.push({
+            label: 'Chip Temperature',
+            value: `${s.temp.toFixed(1)}°C`,
+            perc: perc,
+            meta: 'Internal Core Sensor'
+          });
         }
 
         // Uptime
         if (s.uptime) {
-            const mins = Math.floor(s.uptime / 60);
-            const hrs = Math.floor(mins / 60);
-            const days = Math.floor(hrs / 24);
-            const uptimeStr = days > 0 ? `${days}d ${hrs % 24}h ${mins % 60}m` : hrs > 0 ? `${hrs}h ${mins % 60}m` : `${mins} min`;
-            metrics.push({
-                label: 'System Uptime',
-                value: uptimeStr,
-                perc: 0, // No bar for uptime
-                meta: `Last Boot: ${new Date(Date.now() - s.uptime * 1000).toLocaleString()}`
-            });
+          const mins = Math.floor(s.uptime / 60);
+          const hrs = Math.floor(mins / 60);
+          const days = Math.floor(hrs / 24);
+          const uptimeStr = days > 0 ? `${days}d ${hrs % 24}h ${mins % 60}m` : hrs > 0 ? `${hrs}h ${mins % 60}m` : `${mins} min`;
+          metrics.push({
+            label: 'System Uptime',
+            value: uptimeStr,
+            perc: 0, // No bar for uptime
+            meta: `Last Boot: ${new Date(Date.now() - s.uptime * 1000).toLocaleString()}`
+          });
         }
 
         if (metrics.length === 0) {
-            container.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem;">No hardware metrics available.</p>';
-            return;
+          container.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem;">No hardware metrics available.</p>';
+          return;
         }
 
         container.innerHTML = metrics.map(m => `
@@ -2222,7 +2360,7 @@
         sysForm.dateEnabled.checked = cfg.system.dateEnabled;
         sysForm.noScrolling.checked = cfg.system.noScrolling;
         sysForm.fastRefresh.checked = cfg.system.fastRefresh;
-        
+
         document.getElementById('auto-update').checked = cfg.system.firmwareUpdatesEnabled;
         document.getElementById('fw-version-text').innerText = `Version: B${cfg.system.configVersion || '3.0'}`;
         if (cfg.wifi) {
@@ -2243,8 +2381,8 @@
       },
 
       renderBoards: function () {
-      document.getElementById('max-boards-count').textContent = MAX_BOARDS;
-      const container = document.getElementById('boards-list');
+        document.getElementById('max-boards-count').textContent = MAX_BOARDS;
+        const container = document.getElementById('boards-list');
         const boards = this.state.config?.boards || [];
         const defaultIdx = this.state.config?.system?.defaultBoardIndex || 0;
 
@@ -2253,7 +2391,7 @@
           const wrapper = document.createElement('div');
           wrapper.style.display = 'flex';
           wrapper.style.flexDirection = 'column';
-          
+
           if (i === 0) {
             const label = document.createElement('div');
             label.className = 'slot-label';
@@ -2269,7 +2407,7 @@
             const isDefault = (i === defaultIdx);
             const logo = TRANSPORT_LOGOS[b.type] || TRANSPORT_LOGOS[0];
             const modeName = ['Rail', 'Tube', 'Bus', 'Clock'][b.type];
-            
+
             slot.onclick = () => this.editBoard(i);
             slot.innerHTML = `
               <div class="transport-logo">${logo}</div>
@@ -2595,13 +2733,13 @@
       editBoard: function (index, type) {
         const form = document.getElementById('board-form');
         form.reset();
-        
+
         // Reset Technical Diags
         document.getElementById('board-diag-dot').className = 'dot grey';
         document.getElementById('board-diag-status-text').innerText = 'Idle';
         document.getElementById('board-diag-result').innerText = 'No test run yet.';
         document.getElementById('board-diag-drawer').classList.remove('active');
-        
+
         this.state.editingIndex = index;
         let b;
         if (index === -1) {
@@ -2609,7 +2747,7 @@
         } else {
           b = this.state.config.boards[index];
         }
-        
+
         form.name.value = b.name || '';
         form.type.value = b.type;
         form.id.value = b.id || '';
@@ -2620,7 +2758,7 @@
         form.lon.value = b.lon || '';
         form.weather.checked = b.weather !== false;
         form.brightness.value = b.brightness || -1;
-        
+
         // Use a hidden input or state to preserve offset if not editable in this UI yet
         this.state.editingBoardOffset = b.offset || 0;
 
@@ -2634,28 +2772,28 @@
         document.getElementById('diag-lon').innerText = b.lon || '-';
 
         document.getElementById('btn-delete-board').style.display = (index === -1) ? 'none' : 'block';
-        
+
         this.handleBoardTypeChange(b.type, b.apiKeyId);
-        
+
         document.getElementById('station-search-input').value = (index === -1) ? '' : b.name;
         document.getElementById('search-suggestions').style.display = 'none';
         document.getElementById('secondary-search-suggestions').style.display = 'none';
-        
+
         this.closeModal('modal-board-selection');
         document.getElementById('modal-board').showModal();
       },
-      
+
       updateBoardBrightness: function (val) {
         // Just a UI helper to show immediate effect if needed, but usually just for state
         // this.state.config.boards[this.state.editingIndex].brightness = parseInt(val);
       },
 
-      toggleAdvancedOptions: function() {
+      toggleAdvancedOptions: function () {
         const section = document.getElementById('board-advanced-section');
         const btn = document.getElementById('advanced-toggle-btn');
         const text = document.getElementById('advanced-toggle-text');
         const isHidden = section.style.display === 'none';
-        
+
         section.style.display = isHidden ? 'block' : 'none';
         btn.classList.toggle('active', isHidden);
         text.innerText = isHidden ? 'Hide Advanced Options' : 'Show Advanced Options';
@@ -2668,7 +2806,7 @@
         const weatherLabel = document.getElementById('label-weather');
         const searchContainer = document.getElementById('station-search-container');
         const searchLabel = document.getElementById('label-station-search');
-        
+
         const filterPrimaryLabel = document.getElementById('label-filter-primary');
         const filterSecondaryContainer = document.getElementById('filter-secondary-container');
         const filterSecondaryLabel = document.getElementById('label-filter-secondary');
@@ -2678,26 +2816,26 @@
         // 1. Filter Keys
         const keySelect = form.apiKeyId;
         const targetType = (t === 0) ? 'rail' : (t === 1 || t === 2) ? 'tfl' : null;
-        
+
         keySelect.innerHTML = '<option value="">No key selected</option>';
         if (targetType) {
-            const filtered = this.state.keys.filter(k => k.type === targetType);
-            filtered.forEach(k => {
-                const opt = document.createElement('option');
-                opt.value = k.id;
-                opt.textContent = `${k.label} (${k.type.toUpperCase()})`;
-                keySelect.appendChild(opt);
-            });
-            if (currentKeyId) keySelect.value = currentKeyId;
-            else if (filtered.length === 1) keySelect.value = filtered[0].id; // Auto-select single key
+          const filtered = this.state.keys.filter(k => k.type === targetType);
+          filtered.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k.id;
+            opt.textContent = `${k.label} (${k.type.toUpperCase()})`;
+            keySelect.appendChild(opt);
+          });
+          if (currentKeyId) keySelect.value = currentKeyId;
+          else if (filtered.length === 1) keySelect.value = filtered[0].id; // Auto-select single key
         }
-        
+
         keySection.style.display = (targetType && t !== 2) ? 'block' : 'none'; // Hide for Bus (t=2)
 
         // 2. Layout Updates
         weatherLabel.style.display = (t !== 3 && t !== 1) ? 'flex' : 'none'; // Tube hide weather
         searchContainer.style.display = (t !== 3) ? 'block' : 'none';
-        
+
         // Screensaver / Clock specific
         const brightnessLabel = document.getElementById('label-board-brightness');
         const filtersSection = document.getElementById('board-filters-section');
@@ -2708,12 +2846,12 @@
 
         if (brightnessLabel) brightnessLabel.style.display = (t === 3) ? 'block' : 'none';
         if (filtersSection) filtersSection.style.display = (t === 3) ? 'none' : 'block';
-        
+
         if (diagRowLat) diagRowLat.style.display = (t === 3) ? 'none' : 'table-row';
         if (diagRowLon) diagRowLon.style.display = (t === 3) ? 'none' : 'table-row';
         if (diagRowTime) diagRowTime.style.display = (t === 3) ? 'table-row' : 'none';
         if (diagRowTz) diagRowTz.style.display = (t === 3) ? 'table-row' : 'none';
-        
+
         // Default resets
         filterSecondaryContainer.style.display = 'none';
         busInstruction.style.display = 'none';
@@ -2722,51 +2860,51 @@
         document.getElementById('station-search-input').placeholder = 'Start typing station name...';
 
         if (t === 0) { // Rail
-            searchLabel.firstChild.textContent = 'Station (Rail)';
-            filterPrimaryLabel.firstChild.textContent = 'Platform Filter';
-            form.filter.placeholder = 'e.g. 1, 2';
-            filterSecondaryContainer.style.display = 'block';
-            filterSecondaryLabel.firstChild.textContent = 'Only Show Services Calling At';
-            document.getElementById('filter-secondary-input').placeholder = 'Start typing station...';
+          searchLabel.firstChild.textContent = 'Station (Rail)';
+          filterPrimaryLabel.firstChild.textContent = 'Platform Filter';
+          form.filter.placeholder = 'e.g. 1, 2';
+          filterSecondaryContainer.style.display = 'block';
+          filterSecondaryLabel.firstChild.textContent = 'Only Show Services Calling At';
+          document.getElementById('filter-secondary-input').placeholder = 'Start typing station...';
         } else if (t === 1) { // Tube
-            searchLabel.firstChild.textContent = 'Underground Station';
-            filterPrimaryLabel.firstChild.textContent = 'Line Filter';
-            form.filter.placeholder = 'e.g. Central, Victoria';
-            filterSecondaryContainer.style.display = 'block';
-            filterSecondaryLabel.firstChild.textContent = 'Platform / Direction Filter';
-            document.getElementById('filter-secondary-input').placeholder = 'e.g. Westbound, Platform 1';
+          searchLabel.firstChild.textContent = 'Underground Station';
+          filterPrimaryLabel.firstChild.textContent = 'Line Filter';
+          form.filter.placeholder = 'e.g. Central, Victoria';
+          filterSecondaryContainer.style.display = 'block';
+          filterSecondaryLabel.firstChild.textContent = 'Platform / Direction Filter';
+          document.getElementById('filter-secondary-input').placeholder = 'e.g. Westbound, Platform 1';
         } else if (t === 2) { // Bus
-            searchLabel.firstChild.textContent = 'Bus Stop (ATCO Code)';
-            filterPrimaryLabel.firstChild.textContent = 'Service Filter';
-            form.filter.placeholder = 'e.g. 149, 521';
-            busInstruction.style.display = 'block';
-            busVerify.style.display = 'block';
-            document.getElementById('station-search-input').placeholder = 'Enter ATCO code (e.g. 490000077V)';
+          searchLabel.firstChild.textContent = 'Bus Stop (ATCO Code)';
+          filterPrimaryLabel.firstChild.textContent = 'Service Filter';
+          form.filter.placeholder = 'e.g. 149, 521';
+          busInstruction.style.display = 'block';
+          busVerify.style.display = 'block';
+          document.getElementById('station-search-input').placeholder = 'Enter ATCO code (e.g. 490000077V)';
         } else if (t === 3) { // Clock
-            form.name.value = form.name.value || "Clock / Screensaver";
-            form.id.value = "CLOCK";
+          form.name.value = form.name.value || "Clock / Screensaver";
+          form.id.value = "CLOCK";
         }
       },
 
-      toggleBoardDiag: function() {
+      toggleBoardDiag: function () {
         document.getElementById('board-diag-drawer').classList.toggle('active');
       },
 
-      testBoardInEditor: async function() {
+      testBoardInEditor: async function () {
         const form = document.getElementById('board-form');
         const btn = document.getElementById('btn-test-board');
         const dot = document.getElementById('board-diag-dot');
         const stext = document.getElementById('board-diag-status-text');
         const result = document.getElementById('board-diag-result');
-        
+
         const b = {
-            type: parseInt(form.type.value),
-            id: form.id.value,
-            apiKeyId: form.apiKeyId?.value || ""
+          type: parseInt(form.type.value),
+          id: form.id.value,
+          apiKeyId: form.apiKeyId?.value || ""
         };
-        
+
         if (!b.id) { alert("Please select a station first"); return; }
-        
+
         btn.disabled = true;
         const oldText = btn.innerText;
         btn.innerText = 'Testing...';
@@ -2790,28 +2928,28 @@
           const ok = data.status === 'ok';
           dot.className = ok ? 'dot green' : 'dot red';
           stext.innerText = ok ? 'Connected' : 'Error';
-          
+
           if (ok) {
-              // Mock a realistic data pull summary based on board type
-              let summary = "LIVE DATA PULL:\n";
-              if (b.type === 0) summary += "> LBG: Waterloo (On Time)\n> LBG: Charing X (Delayed)";
-              else if (b.type === 1) summary += "> Central: Epping (2 mins)\n> Central: Hainault (5 mins)";
-              else if (b.type === 2) summary += "> 149: Edmonton Gn (Due)\n> 521: Waterloo (4 mins)";
-              result.innerText = summary;
+            // Mock a realistic data pull summary based on board type
+            let summary = "LIVE DATA PULL:\n";
+            if (b.type === 0) summary += "> LBG: Waterloo (On Time)\n> LBG: Charing X (Delayed)";
+            else if (b.type === 1) summary += "> Central: Epping (2 mins)\n> Central: Hainault (5 mins)";
+            else if (b.type === 2) summary += "> 149: Edmonton Gn (Due)\n> 521: Waterloo (4 mins)";
+            result.innerText = summary;
           } else {
-              result.innerText = "ERROR: " + (data.msg || "Failed to fetch data");
+            result.innerText = "ERROR: " + (data.msg || "Failed to fetch data");
           }
-          
+
           // Expand drawer on test complete
           document.getElementById('board-diag-drawer').classList.add('active');
 
         } catch (e) {
-            dot.className = 'dot red';
-            stext.innerText = 'Failed';
-            result.innerText = 'HTTP Error connecting to board API';
+          dot.className = 'dot red';
+          stext.innerText = 'Failed';
+          result.innerText = 'HTTP Error connecting to board API';
         } finally {
-            btn.disabled = false;
-            btn.innerText = oldText;
+          btn.disabled = false;
+          btn.innerText = oldText;
         }
       },
 
@@ -2821,7 +2959,7 @@
 
         const suggestionsId = isSecondary ? 'secondary-search-suggestions' : 'search-suggestions';
         const suggestions = document.getElementById(suggestionsId);
-        
+
         if (query.length < 3) {
           suggestions.style.display = 'none';
           return;
@@ -2834,24 +2972,24 @@
             const key = this.state.keys.find(k => k.id === apiKeyId)?.token || "";
             url = `https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(query)}?modes=tube,dlr&maxResults=10&app_key=${key}`;
           } else { // Rail (Board Proxy)
-             url = `/stationpicker?q=${encodeURIComponent(query)}`;
+            url = `/stationpicker?q=${encodeURIComponent(query)}`;
           }
 
           const res = await fetch(url);
           const data = await res.json();
           let stations = [];
-          
+
           if (type === 1 && !isSecondary) {
-             stations = (data.matches || []).map(m => ({
-                name: m.name,
-                id: m.id,
-                latitude: m.lat,
-                longitude: m.lon
-             }));
+            stations = (data.matches || []).map(m => ({
+              name: m.name,
+              id: m.id,
+              latitude: m.lat,
+              longitude: m.lon
+            }));
           } else {
-             stations = data.payload?.stations || [];
+            stations = data.payload?.stations || [];
           }
-          
+
           if (stations.length > 0) {
             suggestions.innerHTML = stations.map(s => `
               <div class="suggestion-item" onclick="app.onStationSelect(${JSON.stringify(s).replace(/"/g, '&quot;')}, ${isSecondary})">
@@ -2868,71 +3006,71 @@
       onStationSelect: function (s, isSecondary = false) {
         const form = document.getElementById('board-form');
         if (isSecondary) {
-           form.secondaryId.value = s.crsCode || s.id || '';
-           form.secondaryName.value = s.name;
-           document.getElementById('filter-secondary-input').value = s.name;
-           document.getElementById('secondary-search-suggestions').style.display = 'none';
+          form.secondaryId.value = s.crsCode || s.id || '';
+          form.secondaryName.value = s.name;
+          document.getElementById('filter-secondary-input').value = s.name;
+          document.getElementById('secondary-search-suggestions').style.display = 'none';
         } else {
-           form.name.value = s.name;
-           form.id.value = s.crsCode || s.id || '';
-           form.lat.value = s.latitude || 0;
-           form.lon.value = s.longitude || 0;
-           
-           document.getElementById('diag-id').innerText = form.id.value;
-           document.getElementById('diag-lat').innerText = form.lat.value;
-           document.getElementById('diag-lon').innerText = form.lon.value;
+          form.name.value = s.name;
+          form.id.value = s.crsCode || s.id || '';
+          form.lat.value = s.latitude || 0;
+          form.lon.value = s.longitude || 0;
 
-           document.getElementById('search-suggestions').style.display = 'none';
-           document.getElementById('station-search-input').value = s.name;
-           
-           form.name.focus();
-           form.name.select();
+          document.getElementById('diag-id').innerText = form.id.value;
+          document.getElementById('diag-lat').innerText = form.lat.value;
+          document.getElementById('diag-lon').innerText = form.lon.value;
+
+          document.getElementById('search-suggestions').style.display = 'none';
+          document.getElementById('station-search-input').value = s.name;
+
+          form.name.focus();
+          form.name.select();
         }
       },
 
-      handleVerifyAtco: async function() {
+      handleVerifyAtco: async function () {
         const input = document.getElementById('station-search-input');
         const atco = input.value.trim();
         const btn = document.getElementById('btn-verify-atco');
         const form = document.getElementById('board-form');
-        
+
         if (!atco) return;
-        
+
         btn.disabled = true;
         const oldText = btn.innerText;
         btn.innerText = 'Verifying...';
-        
+
         try {
-           const res = await fetch(`https://bustimes.org/api/stops/${atco}`);
-           if (!res.ok) throw new Error("Stop not found");
-           const data = await res.json();
-           
-           form.id.value = atco;
-           form.name.value = data.long_name || atco;
-           form.lat.value = (data.location && data.location[1]) || 0;
-           form.lon.value = (data.location && data.location[0]) || 0;
-           
-           // Preserve ATCO in the search input as requested
-           // input.value = data.long_name || atco; 
-           
-           document.getElementById('diag-id').innerText = form.id.value;
-           document.getElementById('diag-lat').innerText = form.lat.value;
-           document.getElementById('diag-lon').innerText = form.lon.value;
-           
-           alert(`Verified: ${data.long_name}`);
+          const res = await fetch(`https://bustimes.org/api/stops/${atco}`);
+          if (!res.ok) throw new Error("Stop not found");
+          const data = await res.json();
+
+          form.id.value = atco;
+          form.name.value = data.long_name || atco;
+          form.lat.value = (data.location && data.location[1]) || 0;
+          form.lon.value = (data.location && data.location[0]) || 0;
+
+          // Preserve ATCO in the search input as requested
+          // input.value = data.long_name || atco; 
+
+          document.getElementById('diag-id').innerText = form.id.value;
+          document.getElementById('diag-lat').innerText = form.lat.value;
+          document.getElementById('diag-lon').innerText = form.lon.value;
+
+          alert(`Verified: ${data.long_name}`);
         } catch (e) {
-           alert("Could not verify ATCO code. Please check and try again.");
+          alert("Could not verify ATCO code. Please check and try again.");
         } finally {
-           btn.disabled = false;
-           btn.innerText = oldText;
+          btn.disabled = false;
+          btn.innerText = oldText;
         }
       },
-      
-      clearSecondaryFilter: function() {
-         const form = document.getElementById('board-form');
-         form.secondaryId.value = '';
-         form.secondaryName.value = '';
-         document.getElementById('filter-secondary-input').value = '';
+
+      clearSecondaryFilter: function () {
+        const form = document.getElementById('board-form');
+        form.secondaryId.value = '';
+        form.secondaryName.value = '';
+        document.getElementById('filter-secondary-input').value = '';
       },
 
       setDefaultBoard: function (index) {
@@ -2945,12 +3083,12 @@
         const boards = this.state.config.boards;
         const newIndex = index + direction;
         if (newIndex < 0 || newIndex >= boards.length) return;
-        
+
         // Swap boards
         const temp = boards[index];
         boards[index] = boards[newIndex];
         boards[newIndex] = temp;
-        
+
         // Fix default index if it moved
         let defIdx = this.state.config.system.defaultBoardIndex || 0;
         if (defIdx === index) defIdx = newIndex;
@@ -2964,12 +3102,12 @@
         const dot = document.getElementById(`board-dot-${index}`);
         const stext = document.getElementById(`board-status-text-${index}`);
         if (!dot) return;
-        
+
         dot.className = 'dot yellow'; // Testing
         if (stext) stext.innerText = 'Testing...';
         if (btn) {
-            btn.disabled = true;
-            btn.innerText = 'Testing...';
+          btn.disabled = true;
+          btn.innerText = 'Testing...';
         }
 
         this.enqueueTest(async () => {
@@ -3018,19 +3156,19 @@
           offset: this.state.editingBoardOffset || 0
         };
         if (!this.state.config) this.state.config = { boards: [] };
-        if (this.state.editingIndex === -1) this.state.config.boards.push(b); 
+        if (this.state.editingIndex === -1) this.state.config.boards.push(b);
         else this.state.config.boards[this.state.editingIndex] = b;
-        
+
         this.closeModal('modal-board');
         this.renderBoards();
       },
 
-      deleteBoardFromEditor: function() {
-          if (this.state.editingIndex !== -1 && confirm('Remove this board?')) {
-              this.state.config.boards.splice(this.state.editingIndex, 1);
-              this.closeModal('modal-board');
-              this.renderBoards();
-          }
+      deleteBoardFromEditor: function () {
+        if (this.state.editingIndex !== -1 && confirm('Remove this board?')) {
+          this.state.config.boards.splice(this.state.editingIndex, 1);
+          this.closeModal('modal-board');
+          this.renderBoards();
+        }
       },
 
       deleteBoard: function (index) {
@@ -3089,36 +3227,36 @@
       reboot: async function () {
         if (!confirm('Reboot the device?')) return;
         try {
-            await fetch('/api/reboot', { method: 'POST' });
-            alert("Rebooting...");
+          await fetch('/api/reboot', { method: 'POST' });
+          alert("Rebooting...");
         } catch (e) { alert("Failed to trigger reboot."); }
       },
 
       factoryReset: async function () {
         const btn = document.getElementById('btn-factory-reset');
         if (!this.state.factoryResetArmed) {
-            btn.innerText = "Are you sure? Tap again.";
-            this.state.factoryResetArmed = true;
-            setTimeout(() => {
-                btn.innerText = "Factory Reset";
-                this.state.factoryResetArmed = false;
-            }, 3000);
-            return;
+          btn.innerText = "Are you sure? Tap again.";
+          this.state.factoryResetArmed = true;
+          setTimeout(() => {
+            btn.innerText = "Factory Reset";
+            this.state.factoryResetArmed = false;
+          }, 3000);
+          return;
         }
 
         try {
-            await fetch('/api/wifi/reset', { method: 'POST' });
-            alert("Factory reset initiated. System is erasing all data and rebooting...");
-            location.reload();
+          await fetch('/api/wifi/reset', { method: 'POST' });
+          alert("Factory reset initiated. System is erasing all data and rebooting...");
+          location.reload();
         } catch (e) { alert("Failed to trigger reset."); }
       },
 
-      checkUpdates: async function() {
-          alert("Checking for updates via GitHub... Check the device display for progress.");
-          try {
-              // Note: endpoint might need verification in handlerManager
-              await fetch('/api/ota/check', { method: 'POST' });
-          } catch (e) { console.error(e); }
+      checkUpdates: async function () {
+        alert("Checking for updates via GitHub... Check the device display for progress.");
+        try {
+          // Note: endpoint might need verification in handlerManager
+          await fetch('/api/ota/check', { method: 'POST' });
+        } catch (e) { console.error(e); }
       },
 
       // ==========================================
@@ -3331,7 +3469,8 @@
         if (select) {
           const currentFeed = cfg.feeds?.rss || "";
           select.innerHTML = '<option value="">-- No Feed Selected --</option>';
-          this.state.curatedFeeds.forEach(f => {
+          const curatedFeeds = this.state.curatedFeeds || [];
+          curatedFeeds.forEach(f => {
             const opt = document.createElement('option');
             opt.value = f.url;
             opt.textContent = f.name;
@@ -3343,7 +3482,7 @@
           select.appendChild(optCustom);
 
           // If current feed isn't in curated, it must be custom
-          const isCurated = this.state.curatedFeeds.some(f => f.url === currentFeed);
+          const isCurated = curatedFeeds.some(f => f.url === currentFeed);
           if (currentFeed && !isCurated) {
             select.value = '__custom__';
             document.getElementById('custom-feed-url').value = currentFeed;
@@ -3369,9 +3508,9 @@
         const firstBoard = cfg.boards?.[0];
         const coordsEl = document.getElementById('weather-coords');
         if (firstBoard && firstBoard.id && firstBoard.lat !== 0) {
-            coordsEl.innerText = `${firstBoard.lat}, ${firstBoard.lon}`; 
+          coordsEl.innerText = `${firstBoard.lat}, ${firstBoard.lon}`;
         } else {
-            coordsEl.innerText = "51.7487° N, 3.3816° W";
+          coordsEl.innerText = "51.7487° N, 3.3816° W";
         }
       },
 
@@ -3399,10 +3538,10 @@
         const customInput = document.getElementById('custom-feed-url');
         const testBtn = document.getElementById('feed-test-btn');
         const val = select.value;
-        
+
         let isValid = val !== "";
         if (val === '__custom__') {
-            isValid = customInput.value.length > 10 && customInput.value.startsWith('http');
+          isValid = customInput.value.length > 10 && customInput.value.startsWith('http');
         }
         testBtn.disabled = !isValid;
       },
@@ -3422,7 +3561,7 @@
         const oldText = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<div class="loading-spinner"></div> Testing...';
-        
+
         const dot = document.getElementById('feed-dot');
         const stext = document.getElementById('feed-status-text');
         dot.className = 'dot yellow';
@@ -3432,14 +3571,14 @@
           try {
             const res = await fetch('/api/feeds/test?url=' + encodeURIComponent(url));
             const result = await res.json();
-            
+
             if (result.status === 'ok') {
               dot.className = 'dot green';
               stext.innerText = 'OK';
               const rows = [
-                  ['Last Fetch', new Date().toLocaleTimeString()],
-                  ['Items', result.count || 0],
-                  ['Title', result.title || 'Unknown']
+                ['Last Fetch', new Date().toLocaleTimeString()],
+                ['Items', result.count || 0],
+                ['Title', result.title || 'Unknown']
               ];
               document.getElementById('feed-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
             } else {
@@ -3470,7 +3609,7 @@
         const btn = document.getElementById('weather-test-btn');
         const select = document.getElementById('weather-key-select');
         const keyId = select.value;
-        
+
         if (!keyId) {
           document.getElementById('weather-dot').className = 'dot grey';
           document.getElementById('weather-status-text').innerText = 'Unconfigured';
@@ -3498,9 +3637,9 @@
               dot.className = 'dot green';
               stext.innerText = 'OK';
               const rows = [
-                  ['Temp', `${result.temp}°C`],
-                  ['Condition', result.condition],
-                  ['Location', result.name]
+                ['Temp', `${result.temp}°C`],
+                ['Condition', result.condition],
+                ['Location', result.name]
               ];
               document.getElementById('weather-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
             } else {
@@ -3521,7 +3660,7 @@
         });
       },
 
-      runFeedTests: function() {
+      runFeedTests: function () {
         this.testWeather(true);
         this.testFeed(true);
       },

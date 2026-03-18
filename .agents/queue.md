@@ -3,17 +3,18 @@
 This file tracks active and pending agent sessions to prevent hardware and build conflicts.
 
 ## Lock Status
-- **Locked By**: 
-- **Reason**: 
-- **Since**: 
+- **Locked By**: deb59b03-cb96-4a9c-afff-69421abb7936
+- **Reason**: Executing implementation plan for 6cb48930-4216-44d0-b9d0-831a1683ea87
+- **Since**: 2026-03-18T21:42:00Z
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |
 | :--- | :--- | :--- | :--- |
 | 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
-| 6cb48930-4216-44d0-b9d0-831a1683ea87 | Cleanup and Modernization: State Machine, Error Delegation & Layout Fixes | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6cb48930-4216-44d0-b9d0-831a1683ea87/implementation_plan.md) | 2026-03-17T15:47:56Z |
 | 23531fa4-dd20-4a3a-ab4d-6ae6ceb6589f | Clock Display Review: Add NTP/Time diagnostics and per-board brightness overrides with 'Use Global' toggle | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/23531fa4-dd20-4a3a-ab4d-6ae6ceb6589f/implementation_plan.md) | 2026-03-17T18:56:02Z |
 | b5ab1a93-935d-456a-b852-6ad8393fa56b | Fix Device Hangs and Network Robustness (non-blocking yields & empty-ID guards) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/b5ab1a93-935d-456a-b852-6ad8393fa56b/implementation_plan.md) | 2026-03-18T18:59:54Z |
+| 65ebed96-b4a2-4ec2-8761-22a0f22c4ff6 | Develop the System Specification Document (SSD) and consolidate all architectural docs & fonts | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/65ebed96-b4a2-4ec2-8761-22a0f22c4ff6/implementation_plan.md) | 2026-03-18T21:58:23Z |
+| 89f588da-1676-4623-abd1-bd9230c2811e | Create Developer Guide Documentation | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/89f588da-1676-4623-abd1-bd9230c2811e/implementation_plan.md) | 2026-03-18T22:21:48Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |

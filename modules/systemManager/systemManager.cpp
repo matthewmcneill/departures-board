@@ -22,8 +22,6 @@
 #include <logger.hpp>
 #include <timeManager.hpp>
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
-#include <boards/systemBoard/loadingBoard.hpp>
-#include <boards/systemBoard/splashBoard.hpp>
 #include <wifiManager.hpp> // Added as per instruction
 
 /**
@@ -108,52 +106,55 @@ void systemManager::tick() {
                 lastUpdateResult = activeBoard->updateData();
             } else {
                 LOG_WARN("DATA", "Active board is NULL for slot index: " + String(activeIndex));
+                lastUpdateResult = 7; // Error code if missing
             }
 
-            // Select next update interval
-            if (activeBC.type == MODE_RAIL)      nextDataUpdate = millis() + config.apiRefreshRate; // MODE_RAIL
-            else if (activeBC.type == MODE_TUBE) nextDataUpdate = millis() + 30000; // MODE_TUBE (UGDATAUPDATEINTERVAL)
-            else if (activeBC.type == MODE_BUS)  nextDataUpdate = millis() + 45000; // MODE_BUS (BUSDATAUPDATEINTERVAL)
+            if (lastUpdateResult != UPD_PENDING) {
+                // Select next update interval
+                if (activeBC.type == MODE_RAIL)      nextDataUpdate = millis() + config.apiRefreshRate; // MODE_RAIL
+                else if (activeBC.type == MODE_TUBE) nextDataUpdate = millis() + 30000; // MODE_TUBE (UGDATAUPDATEINTERVAL)
+                else if (activeBC.type == MODE_BUS)  nextDataUpdate = millis() + 45000; // MODE_BUS (BUSDATAUPDATEINTERVAL)
 
-            // Handle Result Codes
-            if (lastUpdateResult == 0 || lastUpdateResult == 1) { // UPD_SUCCESS, UPD_NO_CHANGE
-                displayMgr.setOtaUpdateAvailable(false);
-                lastDataLoadTime = millis();
-                noDataLoaded = false;
-                dataLoadSuccess++;
-                
-                // Asynchronously update weather and RSS
-                weatherClient& weather = context->getWeather();
-                rssClient& rss = context->getRss();
-                
-                if (weather.getWeatherEnabled() && activeBC.showWeather && millis() > weather.getNextWeatherUpdate()) {
-                    iDisplayBoard* active = displayMgr.getDisplayBoard(activeIndex);
-                    if (active) {
-                        WeatherStatus& ws = active->getWeatherStatus();
-                        if (activeBC.lat == 0.0f && activeBC.lon == 0.0f) {
-                            LOG_WARN("DATA", "Weather enabled but coordinates are 0,0. Skipping.");
-                            ws.status = WeatherUpdateStatus::NOT_CONFIGURED;
-                        } else {
-                            ws.lat = activeBC.lat;
-                            ws.lon = activeBC.lon;
-                            weather.updateWeather(ws, activeBC.apiKeyId);
+                // Handle Result Codes
+                if (lastUpdateResult == 0 || lastUpdateResult == 1) { // UPD_SUCCESS, UPD_NO_CHANGE
+                    displayMgr.setOtaUpdateAvailable(false);
+                    lastDataLoadTime = millis();
+                    noDataLoaded = false;
+                    dataLoadSuccess++;
+                    
+                    // Asynchronously update weather and RSS
+                    weatherClient& weather = context->getWeather();
+                    rssClient& rss = context->getRss();
+                    
+                    if (weather.getWeatherEnabled() && activeBC.showWeather && millis() > weather.getNextWeatherUpdate()) {
+                        iDisplayBoard* active = displayMgr.getDisplayBoard(activeIndex);
+                        if (active) {
+                            WeatherStatus& ws = active->getWeatherStatus();
+                            if (activeBC.lat == 0.0f && activeBC.lon == 0.0f) {
+                                LOG_WARN("DATA", "Weather enabled but coordinates are 0,0. Skipping.");
+                                ws.status = WeatherUpdateStatus::NOT_CONFIGURED;
+                            } else {
+                                ws.lat = activeBC.lat;
+                                ws.lon = activeBC.lon;
+                                weather.updateWeather(ws, activeBC.apiKeyId);
+                            }
                         }
                     }
+                    if (rss.getRssEnabled() && activeBC.type != MODE_BUS && millis() > rss.getNextRssUpdate()) {
+                        updateRssFeed();
+                    }
+                    
+                    displayMgr.render();
+                } else if (lastUpdateResult == 5) { // UPD_UNAUTHORISED
+                    // Board must render its own error inline; do not hijack the display here.
+                    LOG_WARN("DATA", "API Unauthorised. Displaying inline warning.");
+                } else {
+                    lastLoadFailure = millis();
+                    dataLoadFailure++;
+                    nextDataUpdate = millis() + 30000;
+                    displayMgr.setOtaUpdateAvailable(false);
+                    LOG_WARN("DATA", "Data update failed with code: " + String(lastUpdateResult) + ". Board will handle display.");
                 }
-                if (rss.getRssEnabled() && activeBC.type != MODE_BUS && millis() > rss.getNextRssUpdate()) {
-                    updateRssFeed();
-                }
-                
-                displayMgr.render();
-            } else if (lastUpdateResult == 5) { // UPD_UNAUTHORISED
-                // Board must render its own error inline; do not hijack the display here.
-                LOG_WARN("DATA", "API Unauthorised. Displaying inline warning.");
-            } else {
-                lastLoadFailure = millis();
-                dataLoadFailure++;
-                nextDataUpdate = millis() + 30000;
-                displayMgr.setOtaUpdateAvailable(false);
-                LOG_WARN("DATA", "Data update failed with code: " + String(lastUpdateResult) + ". Board will handle display.");
             }
         } else if (millis() > nextDataUpdate && context->getAppState() == AppState::RUNNING) {
             // Log once per minute why we aren't updating if WiFi is down
@@ -191,12 +192,9 @@ String systemManager::getBuildTime() {
  */
 void systemManager::updateRssFeed() {
     rssClient& rss = context->getRss();
+    if (rss.getLastRssUpdateResult() == 9) return; // Wait until current fetch completes
     LOG_INFO("DATA", "Triggering RSS Feed update: " + String(rss.getRssURL()));
-    int res = rss.loadFeed(rss.getRssURL());
-    rss.setLastRssUpdateResult(res);
-    LOG_INFO("DATA", "RSS Update Result: " + String(res == UPD_SUCCESS ? "SUCCESS" : "ERROR (" + String(res) + ")"));
-    if (res == UPD_SUCCESS) rss.setNextRssUpdate(millis() + 600000); 
-    else rss.setNextRssUpdate(millis() + 300000);
+    rss.loadFeed(rss.getRssURL());
 }
 
 /**
@@ -223,8 +221,9 @@ void systemManager::softResetBoard() {
     tzset();
  
     // Reset states
-    SplashBoard* splash = (SplashBoard*)displayMgr.getSystemBoard(SystemBoardId::SYS_BOOT_SPLASH);
-    displayMgr.showBoard(splash);
+    if (onSoftReset) {
+        onSoftReset();
+    }
  
     nextDataUpdate = 0;
     weather.setNextWeatherUpdate(0);
@@ -237,19 +236,15 @@ void systemManager::softResetBoard() {
     rss.setRssAddedtoMsgs(false);
     if (rss.getRssEnabled() && prevRssUrl != rss.getRssURL()) {
         rss.numRssTitles = 0;
-        if (config.boardType == MODE_RAIL || config.boardType == MODE_TUBE) {
+        if (config.boardCount > 0 && (config.boards[0].type == MODE_RAIL || config.boards[0].type == MODE_TUBE)) {
             prevProgressBarPosition = 50;
-            LoadingBoard* load = (LoadingBoard*)displayMgr.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING);
-            load->setProgress("Updating RSS headlines feed", 50);
-            displayMgr.showBoard(load);
+            if (onBootProgress) {
+                onBootProgress("Updating RSS headlines feed", 50);
+            }
             updateRssFeed();
         }
     }
  
-    if (config.boardType == MODE_RAIL) {
-        NationalRailBoard* nrb = (NationalRailBoard*)displayMgr.getDisplayBoard(0);
-        if (nrb) nrb->setAltStationActive(setAlternateStation());
-    }
     context->getGlobalMessagePool().clear();
 }
 
@@ -270,42 +265,6 @@ bool systemManager::isWifiPersistentError() const {
     return (millis() - wifiDisconnectTimer > 180000);
 }
 
-/**
- * @brief Returns true if an alternate station is enabled and current time is within activation period.
- */
-bool systemManager::isAltActive() {
-    const Config& config = context->getConfigManager().getConfig();
-    if (!config.altStationEnabled) return false;
-    
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo)) return false;
-
-    byte myHour = timeinfo.tm_hour;
-    if (config.altStarts > config.altEnds) {
-        return (myHour >= config.altStarts) || (myHour < config.altEnds);
-    } else {
-        return (myHour >= config.altStarts) && (myHour < config.altEnds);
-    }
-}
-
-/**
- * @brief Check schedule and set alternate station variables if in time range.
- */
-bool systemManager::setAlternateStation() {
-    const Config& config = context->getConfigManager().getConfig();
-    if (config.boardType == MODE_RAIL && config.altStationEnabled && isAltActive()) {
-        NationalRailBoard* nrb = (NationalRailBoard*)context->getDisplayManager().getDisplayBoard(0);
-        if (!nrb) return false;
-        nrb->setCrsCode(config.altCrsCode);
-        nrb->setStationLat(config.altLat);
-        nrb->setStationLon(config.altLon);
-        nrb->setCallingCrsCode(config.altCallingCrsCode);
-        nrb->setCallingStation(config.altCallingStation);
-        nrb->setPlatformFilter(config.altPlatformFilter);
-        return true;
-    }
-    return false;
-}
 
 /**
  * @brief Callback from data clients to update UI progress during boot.
@@ -315,12 +274,10 @@ void systemManager::tflCallback() {
     if (firstLoad) {
         if (startupProgressPercent < 95) {
             startupProgressPercent += 5;
-            LoadingBoard* load = (LoadingBoard*)context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_BOOT_LOADING);
-            if (load) {
-                if (config.boardType == MODE_TUBE) load->setProgress("Initialising TfL interface", startupProgressPercent);
-                else load->setProgress("Initialising BusTimes interface", startupProgressPercent);
-                context->getDisplayManager().showBoard(load);
-                context->getDisplayManager().resetState();
+            if (onBootProgress) {
+                BoardTypes firstType = (config.boardCount > 0) ? config.boards[0].type : MODE_RAIL;
+                if (firstType == MODE_TUBE) onBootProgress("Initialising TfL interface", startupProgressPercent);
+                else onBootProgress("Initialising BusTimes interface", startupProgressPercent);
             }
         }
     } else {
@@ -334,9 +291,9 @@ void systemManager::tflCallback() {
 void systemManager::raildataCallback(int stage, int nServices) {
     if (firstLoad) {
         int percent = ((nServices * 20) / 40) + 80;
-        LoadingBoard* load = (LoadingBoard*)context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_BOOT_LOADING);
-        load->setProgress("Initialising National Rail interface", percent);
-        context->getDisplayManager().showBoard(load);
+        if (onBootProgress) {
+            onBootProgress("Initialising National Rail interface", percent);
+        }
     } else {
         context->getDisplayManager().yieldAnimationUpdate();
     }
@@ -378,7 +335,8 @@ void systemManager::addRssMessage() {
         
         for (int i = 1; i < rss.numRssTitles; i++) {
             if (rssCombined.length() + strlen(rss.rssTitle[i]) + 2 < 400) {
-                rssCombined += (config.boardType == MODE_TUBE) ? "\x81" : "\x90";
+                BoardTypes firstType = (config.boardCount > 0) ? config.boards[0].type : MODE_RAIL;
+                rssCombined += (firstType == MODE_TUBE) ? "\x81" : "\x90";
                 rssCombined += rss.rssTitle[i];
             } else {
                 break;
