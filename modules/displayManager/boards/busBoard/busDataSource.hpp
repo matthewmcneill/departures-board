@@ -79,7 +79,6 @@ private:
     char lastErrorMsg[128];               // Most recent error message
     
     SemaphoreHandle_t dataMutex;          // Thread-safe lock protecting data transfers
-    TaskHandle_t fetchTaskHandle;         // Tracking handle for the FreeRTOS background task
     volatile int taskStatus;              // Cross-thread execution status tracking (e.g., UPD_PENDING)
     
     // Internal parser state (migrated from busDataClient)
@@ -212,17 +211,11 @@ public:
     void startArray() override;
     void startObject() override;
 
-private:
+public:
     /**
      * @brief Internal blocking method that executes the HTTPS protocol and coordinates HTML scraping.
      */
-    void executeFetch();
-    
-    /**
-     * @brief Static FreeRTOS Entry Point for background data processing.
-     * @param pvParameters Pointer to the executing busDataSource instance.
-     */
-    static void fetchTask(void* pvParameters);
+    void executeFetch() override;
 };
 
 #endif // BUS_DATA_SOURCE_HPP

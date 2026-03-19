@@ -17,18 +17,18 @@
 #include <logger.hpp>
 
 LoadingBoard::LoadingBoard() 
-    : pBar(0, 15, 256, 17) {
+    : pBar(0, 15, 256, 24) {
     noticeMessage[0] = '\0';
     heading[0] = '\0';
     buildTime[0] = '\0';
 }
 
-void LoadingBoard::setProgress(const char* message, int percent) {
+void LoadingBoard::setProgress(const char* message, int percent, uint32_t durationMs) {
     if (message != nullptr) {
         strlcpy(noticeMessage, message, sizeof(noticeMessage));
         pBar.setMessage(message);
     }
-    pBar.setPercent(percent);
+    pBar.setPercent(percent, durationMs);
 }
 
 void LoadingBoard::setHeading(const char* newHeading) {
@@ -73,19 +73,18 @@ void LoadingBoard::render(U8G2& display) {
     if (heading[0] != '\0') {
         centreText(display, heading, 0);
     }
-    
-    // Draw build time at bottom right
-    display.setFont(NatRailSmall9);
-    if (buildTime[0] != '\0') {
-        display.drawStr(0, 53, buildTime);
-    }
-    
-    // Draw progress bar logic in the middle block
+    // Draw progress bar logic in the middle block (handles drawing noticeMessage inherently)
     pBar.render(display);
     
-    // Draw notice message at the very bottom if provided
+    // Draw build time safely tucked away at bottom right
     display.setFont(NatRailSmall9);
-    if (noticeMessage[0] != '\0') {
-        centreText(display, noticeMessage, 53);
+    if (buildTime[0] != '\0') {
+        char buildStr[32];
+        snprintf(buildStr, sizeof(buildStr), "Build: %s", buildTime);
+        int textW = display.getStrWidth(buildStr);
+        display.drawStr(256 - textW - 2, 53, buildStr);
     }
+    
+    // Draw version label cleanly on the left axis
+    display.drawStr(2, 53, "Version: 3.0");
 }

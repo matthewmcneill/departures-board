@@ -29,8 +29,11 @@
 #include <HTTPClient.h>
 #include <logger.hpp>
 #include <memory>
+#include <appContext.hpp>
 
 #include "../interfaces/iDataSource.hpp"
+
+extern class appContext appContext;
 
 // HTML Scraper parsing states
 #define PBT_START 0
@@ -50,7 +53,6 @@ busDataSource::busDataSource() : callback(nullptr), messagesData(4), renderMessa
     if (renderData) memset(renderData.get(), 0, sizeof(BusStop));
     
     dataMutex = xSemaphoreCreateMutex();
-    fetchTaskHandle = nullptr;
     taskStatus = UPD_NO_DATA;
 
     lastErrorMsg[0] = '\0';
@@ -77,25 +79,14 @@ void busDataSource::configure(const char* atco, const char* filter, busDataSourc
  * @return int Update status code (e.g., UPD_SUCCESS or UPD_NO_CHANGE).
  */
 int busDataSource::updateData() {
-    if (fetchTaskHandle != nullptr) {
+    if (taskStatus == UPD_PENDING) {
         return UPD_PENDING;
     }
     
-    LOG_INFO("DATA", "Bus Source: Spawning FreeRTOS task on Core 0");
+    LOG_INFO("DATA", "Bus Source: Enqueuing fetch to DataWorker");
     taskStatus = UPD_PENDING;
-    xTaskCreatePinnedToCore(fetchTask, "Bus_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    appContext.getDataWorker().enqueueRequest(this);
     return UPD_PENDING;
-}
-
-/**
- * @brief Static FreeRTOS Entry Point for background data processing.
- * @param pvParameters Pointer to the executing busDataSource instance.
- */
-void busDataSource::fetchTask(void* pvParameters) {
-    busDataSource* source = static_cast<busDataSource*>(pvParameters);
-    source->executeFetch();
-    source->fetchTaskHandle = nullptr;
-    vTaskDelete(NULL);
 }
 
 /**

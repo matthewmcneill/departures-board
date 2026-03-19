@@ -88,7 +88,6 @@ private:
     MessagePool renderMessages; // Safe local copy for UI rendering
 
     SemaphoreHandle_t dataMutex; // Thread-safe lock protecting data transfers
-    TaskHandle_t fetchTaskHandle; // Tracking handle for the FreeRTOS background task
     volatile int taskStatus; // Cross-thread execution status tracking (e.g., UPD_PENDING)
 
     char lastErrorMessage[128];
@@ -165,17 +164,8 @@ public:
     void value(const char *value) override;
     void attribute(const char *attribute) override;
 
-private:
-    /**
-     * @brief Internal blocking method that executes the SOAP protocol and coordinates XML streaming parse.
-     */
-    void executeFetch();
-    
-    /**
-     * @brief Static FreeRTOS Entry Point for background data processing.
-     * @param pvParameters Pointer to the executing nationalRailDataSource instance.
-     */
-    static void fetchTask(void* pvParameters);
+public:
+    void executeFetch() override;
 };
 
 #endif // NATIONAL_RAIL_DATA_SOURCE_HPP

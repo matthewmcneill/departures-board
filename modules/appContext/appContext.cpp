@@ -63,56 +63,89 @@ void appContext::begin() {
     LOG_INFO("SYSTEM", "Initializing DisplayManager...");
     displayManager.begin(this);
 
-    auto updateBootProgress = [&](int percentage) {
-        if (auto* splash = static_cast<SplashBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_SPLASH))) {
-            splash->setProgress(percentage);
-            displayManager.render();
+    // --- Cinematic Splash Sequence ---
+    displayManager.setBrightness(0); // Guarantee screen is perfectly dark before drawing
+    auto* splash = static_cast<SplashBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_SPLASH));
+    displayManager.showBoard(splash, "Initial Boot Logo");
+    
+    // 400ms pre-fade hold in total darkness
+    delay(400);
+    
+    // 1 second fade in (51 steps * 20ms = ~1020ms)
+    for (int i = 0; i <= 255; i += 5) {
+        displayManager.setBrightness(i);
+        delay(20);
+    }
+    displayManager.setBrightness(255);
+    
+    // 2 second hold
+    delay(2000);
+    
+    // 1 second fade out (51 steps * 20ms = ~1020ms)
+    for (int i = 255; i >= 0; i -= 5) {
+        displayManager.setBrightness(i);
+        delay(20);
+    }
+    
+    displayManager.setBrightness(0); // Ensure perfectly dark before switching
+    
+    // 400ms post-fade hold in total darkness before transitioning
+    delay(400);
+    
+    displayManager.setBrightness(80); // Default readable brightness before config loads
+    auto* loadBoard = static_cast<LoadingBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING));
+    
+    // Prepare the loadBoard header strings natively here since we want them visible from 0%
+    loadBoard->setHeading("Departures Board");
+    displayManager.showBoard(loadBoard, "Switching to Loading Screen");
+
+    auto updateBootProgress = [&](int percentage, const char* msg) {
+        LOG_INFO("SYSTEM", msg);
+        if (auto* load = static_cast<LoadingBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
+            load->setProgress(msg, percentage, 600);
+            displayManager.showBoard(load, "Boot Progress Update", 600);
         }
     };
     
-    updateBootProgress(10);
+    updateBootProgress(10, "Initializing hardware graphics...");
 
     // 2. Hardware Filesystem (Must be first for config)
-    LOG_INFO("SYSTEM", "Initializing LittleFS...");
+    updateBootProgress(30, "Starting filesystem...");
     LittleFS.begin(true);
-    updateBootProgress(30);
 
     // 3. Storage & Config
-    LOG_INFO("SYSTEM", "Loading API keys and configuration...");
+    updateBootProgress(50, "Loading system configuration...");
     configManager.loadApiKeys();
     configManager.loadConfig();
     const Config& config = configManager.getConfig();
-    updateBootProgress(50);
 
     // 4. Networking (WiFi)
-    LOG_INFO("SYSTEM", "Initializing WiFi...");
+    updateBootProgress(70, "Initializing network services...");
     wifiManager.begin(config.hostname);
-    updateBootProgress(70);
 
     // 5. System Management (State & Refresh)
-    LOG_INFO("SYSTEM", "Initializing systemManager...");
+    updateBootProgress(85, "Starting system manager...");
     sysManager.begin(this);
-    updateBootProgress(85);
+    
+    // Initialize Centralized Data Fetch Worker
+    networkWorker.init(false); // Enable queue debug logging if true
 
     LOG_INFO("SYSTEM", "Network state: SSID=" + String(WiFi.SSID()) + ", IP=" + WiFi.localIP().toString());
 
     // 6. Register Config Consumers
-    LOG_INFO("SYSTEM", "Registering Configuration Consumers...");
+    updateBootProgress(95, "Registering application services...");
     configManager.registerConsumer(&displayManager);
     configManager.registerConsumer(&weather);
     configManager.registerConsumer(&rss);
     configManager.registerConsumer(&otaAssetUpdater);
     configManager.registerConsumer(&timeManager);
     configManager.registerConsumer(&wifiManager);
-    updateBootProgress(95);
-
+    
     // 7. Initialize global helper modules
-    LOG_INFO("SYSTEM", "Initializing helper modules...");
     otaAssetUpdater.init(this);
     timeManager.init(this);
-    updateBootProgress(100);
 
-    LOG_INFO("SYSTEM", "Stabilizing system...");
+    updateBootProgress(100, "Stabilizing application...");
     // 8. Connect Yield Callbacks for Non-Blocking I/O
     weather.setYieldCallback(yieldCallbackWrapper);
     rss.setYieldCallback(yieldCallbackWrapper);
@@ -121,8 +154,7 @@ void appContext::begin() {
     sysManager.setBootProgressCallback([this](const char* msg, int percent) {
         if (auto* load = static_cast<LoadingBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
             load->setProgress(msg, percent);
-            displayManager.showBoard(load, "systemManager Boot Progress Hook");
-            displayManager.resetState();
+            displayManager.showBoard(load, "systemManager Boot Progress Hook", 600);
         }
     });
 
@@ -210,13 +242,13 @@ void appContext::tick() {
                     load->setBuildTime(sysManager.getBuildTime().c_str());
                     int progress = 50;
                     load->setProgress("Setting the system clock...", progress);
-                    displayManager.showBoard(load);
+                    displayManager.showBoard(load, "Setting Clock Base");
 
                     timeManager.initialize([&]() {
                         progress += 5;
                         if (progress > 80) progress = 45; // loop the progress bar back to avoid overflow visually
                         load->setProgress("Setting the system clock...", progress);
-                        displayManager.showBoard(load);
+                        displayManager.showBoard(load, "Setting Clock Tick", 600);
                     });
                 } else {
                     timeManager.initialize();
@@ -237,7 +269,7 @@ void appContext::tick() {
                 } else {
                     currentState = AppState::RUNNING;
                     LOG_SPLASH("APP STATE: RUNNING");
-                    displayManager.resetState();
+                    displayManager.resumeDisplays();
                 }
             }
         }
@@ -254,7 +286,7 @@ void appContext::tick() {
             currentState = AppState::RUNNING;
             LOG_SPLASH("APP STATE: RUNNING");
             // Allow display rotation to naturally resume
-            displayManager.resetState();
+            displayManager.resumeDisplays();
         }
     }
 

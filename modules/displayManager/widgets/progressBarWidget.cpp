@@ -17,7 +17,7 @@
 #include <string.h>
 
 progressBarWidget::progressBarWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
-    : iGfxWidget(_x, _y, _w, _h), currentPercent(0), oldPercent(0), textChanged(false), showPercentText(false), font(_font) {
+    : iGfxWidget(_x, _y, _w, _h), currentPercent(0), targetPercent(0), startPercent(0), animStartTime(0), animDurationMs(0), oldPercent(0), textChanged(false), showPercentText(false), font(_font) {
     if (font == nullptr) font = NatRailSmall9;
     message[0] = '\0';
 }
@@ -43,15 +43,32 @@ void progressBarWidget::setShowPercentText(bool show) {
     }
 }
 
-void progressBarWidget::setPercent(int percent) {
+void progressBarWidget::setPercent(int percent, uint32_t durationMs) {
     if (percent < 0) percent = 0;
     if (percent > 100) percent = 100;
-    currentPercent = percent;
+    
+    animDurationMs = durationMs;
+    
+    if (animDurationMs > 0) {
+        startPercent = currentPercent;
+        targetPercent = percent;
+        animStartTime = millis();
+    } else {
+        currentPercent = percent;
+        targetPercent = percent;
+    }
 }
 
 void progressBarWidget::tick(uint32_t currentMillis) {
-    // Math validation is primarily handled in the setters for this widget,
-    // but we can ensure states are ready for comparison.
+    if (animDurationMs > 0 && currentPercent != targetPercent) {
+        uint32_t elapsed = currentMillis - animStartTime;
+        if (elapsed >= animDurationMs) {
+            currentPercent = targetPercent;
+        } else {
+            float progress = (float)elapsed / animDurationMs;
+            currentPercent = startPercent + (targetPercent - startPercent) * progress;
+        }
+    }
 }
 
 void progressBarWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
@@ -101,17 +118,17 @@ void progressBarWidget::render(U8G2& display) {
         if (startX < x) startX = x; // Trap boundary
         
         if (message[0] != '\0') {
-            display.drawStr(startX, y + renderH - 8, message);
+            display.drawStr(startX, y + 8, message);
         }
         
         // Draw % aligned to right of message
         if (showPercentText) {
-            display.drawStr(startX + textW, y + renderH - 8, pctStr);
+            display.drawStr(startX + textW, y + 8, pctStr);
         }
     }
 
     // Draw the bar itself at the bottom of the widget
-    int barY = y + renderH - 2;
+    int barY = y + renderH - 4;
     int fill = (currentPercent * renderW) / 100;
     bool toggle = false;
     

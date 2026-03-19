@@ -46,7 +46,7 @@ public:
     const char* getBoardName() const override { return "SYS: Loading"; }
     
     // Configures the displayed text and progress bar level
-    void setProgress(const char* message, int percent);
+    void setProgress(const char* message, int percent, uint32_t durationMs = 0);
     void setHeading(const char* newHeading);
     void setBuildTime(const char* newBuildTime);
     void setNotice(const char* message);

@@ -92,7 +92,7 @@ int TfLBoard::updateData() {
         }
     }
 
-    if (lastUpdateStatus != 0) {
+    if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
         LOG_WARN("DISPLAY", "TfL Board: Data update failed with status: " + String(lastUpdateStatus));
     } else {
         LOG_INFO("DISPLAY", "TfL Board: Data update finished successfully.");

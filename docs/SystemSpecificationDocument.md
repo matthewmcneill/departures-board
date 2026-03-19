@@ -45,7 +45,7 @@
 - **Data Flow**:
     1. **Trigger**: `SystemManager` or `Carousel` triggers `updateData()` on the active board's data source, instantly returning a `UPD_PENDING` (9) state while a FreeRTOS background task is spawned.
     2. **Coordinate Recovery**: For National Rail boards, if coordinates are missing from the primary OJP autocomplete picker (which lost spatial data in March 2026), the system performs a fallback lookup via the **TfL Search API** (`api.tfl.gov.uk/StopPoint/Search`) to ensure the weather system remains functional.
-    3. **Background Fetch & Parse**: A FreeRTOS task running exclusively on Core 0 performs the non-blocking HTTP GET/POST (REST or SOAP). Streaming parsers populate isolated background variables (`bgStatus`, etc.).
+    3. **Queue Submission & Background Fetch**: Fetch requests are submitted to a centralized FreeRTOS `xQueue`. A single, permanent `DataWorker` FreeRTOS task running exclusively on Core 0 dequeues requests sequentially and performs the non-blocking HTTP GET/POST (REST or SOAP). This serialization strictly prevents concurrent TLS block allocations, protecting the heap from exhaustion. Streaming parsers populate isolated background variables (`bgStatus`, etc.).
     4. **Mutex Synchronization**: Upon parse completion, the task acquires a `SemaphoreMutex`, safely `memcpy`s the verified structures into the UI-facing active memory blocks (`renderData`), sets `UPD_SUCCESS`, and immediately releases the lock to prevent memory tearing.
     5. **Render**: On the next `tick()`, `iDisplayBoard` reads the valid state and consumes the fresh data via `iGfxWidget`s for final hardware output.
 - **Data Retention & Archiving**: Configuration is persistent across reboots; real-time transport and weather data are purged on power loss or board deactivation.
@@ -129,10 +129,11 @@
 ### 5.10 `iDataSource` (The Data Contract)
 - **Role**: Abstraction for external API connectivity, separating parsing from presentation.
 - **Methods**:
-    - `updateData()`: Instantly returns `UPD_PENDING` (9) while delegating network calls to a FreeRTOS background task.
+    - `updateData()`: Enqueues a pointer to `this` instance onto the `DataWorker` queue, instantly returning `UPD_PENDING` (9). The centralized `DataWorker` processes the queue sequentially to protect network sockets and heap memory.
+    - `executeFetch()`: The internal blocking HTTP/parsing payload called exclusively by the `DataWorker` task.
     - `getLastUpdateStatus()`: Polled by Board controllers to track background fetching task progress.
     - `testConnection()`: Lightweight credential validation.
-- **Strategy**: Each board owns a specific datasource (e.g., `NationalRailDataSource`) which parses data into an isolated background buffer before yielding across a Thread-Safe Mutex to the active render structure.
+- **Strategy**: Each board owns a specific datasource (e.g., `NationalRailDataSource`). DataSources submit themselves to the central queue, where they are executed. They parse data into an isolated background buffer before yielding across a Thread-Safe Mutex to the active render structure.
 
 ### 5.11 `BoardVariant` (Memory Optimization)
 - **Role**: A `std::variant`-based static memory pool managed by `DisplayManager`.

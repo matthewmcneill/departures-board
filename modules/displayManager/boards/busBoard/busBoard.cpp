@@ -119,7 +119,7 @@ int BusBoard::updateData() {
     
     needsRefresh = true;
     
-    if (lastUpdateStatus != 0) {
+    if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
         LOG_WARN("DISPLAY", "Bus Board: Data update failed with status: " + String(lastUpdateStatus));
     } else {
         LOG_INFO("DISPLAY", "Bus Board: Data update finished successfully.");

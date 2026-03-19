@@ -148,31 +148,31 @@ iDisplayBoard* DisplayManager::getCurrentBoard() { return currentBoard; }
  * @param durationMs Optional duration in ms to block and animate.
  */
 void DisplayManager::showBoard(iDisplayBoard* board, const char* reason, uint32_t durationMs) {
-    if (currentBoard == board) return;
+    if (currentBoard != board) {
+        String msg = "showBoard() invoked for: [" + String(board ? board->getBoardName() : "NULL") + "] | Reason: " + String(reason);
+        LOG_INFO("DISPLAY", msg.c_str());
 
-    String msg = "showBoard() invoked for: [" + String(board ? board->getBoardName() : "NULL") + "] | Reason: " + String(reason);
-    LOG_INFO("DISPLAY", msg.c_str());
+        if (currentBoard != nullptr) {
+            currentBoard->onDeactivate();
+        }
 
-    if (currentBoard != nullptr) {
-        currentBoard->onDeactivate();
+        currentBoard = board;
+        
+        if (currentBoard != nullptr) {
+            currentBoard->onActivate();
+            LOG_INFO("DISPLAY", "Board activated.");
+        }
+        
+        // Initial full render
+        render();
     }
-
-    currentBoard = board;
-    
-    if (currentBoard != nullptr) {
-        currentBoard->onActivate();
-        LOG_INFO("DISPLAY", "Board activated.");
-    }
-    
-    // Initial full render
-    render();
 
     if (durationMs > 0) {
         unsigned long end = millis() + durationMs;
-        // Animation loop
+        // Animation loop (thtrottled to ~60 FPS to prevent OLED SPI DMA saturation)
         while (millis() < end) {
-            yieldAnimationUpdate();
-            delay(1); // Feed watchdog and yield to RTOS
+            tick(millis());
+            delay(15); // Feed watchdog and yield to RTOS while locking frame rate
         }
     }
 }
@@ -539,16 +539,12 @@ void DisplayManager::applyConfig(const Config& config) {
 }
 
 /**
- * @brief Resets the display manager state. Wakes up the screen if it was snoozing.
+ * @brief Unconditionally resumes the primary display carousel context.
+ *        This effectively wakes up the display from sleep mode and transitions
+ *        away from system screens (Splash, Loading, etc).
  */
-void DisplayManager::resetState() {
-    // Transition away from splash or sleep if we are now in the RUNNING state
-    bool isStillOnSplash = (currentBoard == &splashBoard);
-    bool isRunning = (context && context->getAppState() == AppState::RUNNING);
-
-    if (getIsSleeping() || (isStillOnSplash && isRunning)) {
-        LOG_INFO("DISPLAY", "System ready/awake. Activating default board.");
-        showBoard(getDisplayBoard(activeSlotIndex), "System Ready: Activating default board");
-        u8g2.setContrast(brightness);
-    }
+void DisplayManager::resumeDisplays() {
+    LOG_INFO("DISPLAY", "System ready/awake. Resuming carousel displays.");
+    showBoard(getDisplayBoard(activeSlotIndex), "Context Resume: Activating default board");
+    u8g2.setContrast(brightness);
 }

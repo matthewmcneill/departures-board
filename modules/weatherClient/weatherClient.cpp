@@ -56,8 +56,8 @@ weatherClient::weatherClient() {
  * @return True if the metadata was successfully fetched and parsed, otherwise false.
  */
 bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, const char* overrideToken) {
-    if (fetchTaskHandle != nullptr) {
-        LOG_INFO("DATA", "Weather Client: Task already running");
+    if (fetchPending) {
+        LOG_INFO("DATA", "Weather Client: Fetch already pending in Worker Queue");
         return true; 
     }
 
@@ -95,20 +95,10 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     bgStatus.status = WeatherUpdateStatus::NO_DATA;
     parsingComplete = false;
 
-    LOG_INFO("DATA", "Weather Client: Spawning FreeRTOS task on Core 0");
-    xTaskCreatePinnedToCore(fetchTask, "Weather_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    LOG_INFO("DATA", "Weather Client: Enqueuing fetch to DataWorker");
+    fetchPending = true;
+    appContext.getDataWorker().enqueueRequest(this);
     return true;
-}
-
-/**
- * @brief Static FreeRTOS Entry Point for background data processing.
- * @param pvParameters Pointer to the executing weatherClient instance.
- */
-void weatherClient::fetchTask(void* pvParameters) {
-    weatherClient* client = static_cast<weatherClient*>(pvParameters);
-    client->executeFetch();
-    client->fetchTaskHandle = nullptr;
-    vTaskDelete(NULL);
 }
 
 /**
@@ -132,6 +122,7 @@ void weatherClient::executeFetch() {
         xSemaphoreTake(weatherMutex, portMAX_DELAY); \
         if (activeStatus) *activeStatus = bgStatus; \
         xSemaphoreGive(weatherMutex); \
+        fetchPending = false; \
         return; \
     }
 
@@ -259,6 +250,7 @@ void weatherClient::executeFetch() {
     UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
     LOG_DEBUG("DATA", "Weather Task Stack High Water Mark: " + String(hwm) + " words");
 #endif
+    fetchPending = false;
     return;
 }
 

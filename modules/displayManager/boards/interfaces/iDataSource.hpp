@@ -38,9 +38,16 @@ public:
 
     /**
      * @brief Triggers the underlying mode-specific API client to fetch new data.
-     * @return Status code (0 for success, non-zero for error).
+     *        Typically enqueues this instance to the centralized DataWorker.
+     * @return Status code (0 for success, non-zero for error, 9 for pending).
      */
     virtual int updateData() = 0;
+
+    /**
+     * @brief Executes the blocking network request. Must ONLY be called by 
+     *        the centralized DataWorker task to prevent heap exhaustion.
+     */
+    virtual void executeFetch() = 0;
 
     /**
      * @brief Retrieves the last error message from the data source.

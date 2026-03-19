@@ -102,7 +102,9 @@ void systemManager::tick() {
 
             iDisplayBoard* activeBoard = displayMgr.getDisplayBoard(activeIndex);
             if (activeBoard) {
-                LOG_INFO("DATA", "Triggering active board data update for slot index: " + String(activeIndex));
+                if (lastUpdateResult != UPD_PENDING) {
+                    LOG_INFO("DATA", "Triggering active board data update for slot index: " + String(activeIndex));
+                }
                 lastUpdateResult = activeBoard->updateData();
             } else {
                 LOG_WARN("DATA", "Active board is NULL for slot index: " + String(activeIndex));
@@ -227,7 +229,7 @@ void systemManager::softResetBoard() {
  
     nextDataUpdate = 0;
     weather.setNextWeatherUpdate(0);
-    displayMgr.resetState();
+    displayMgr.resumeDisplays();
     firstLoad = true;
     noDataLoaded = true;
     prevProgressBarPosition = 70;

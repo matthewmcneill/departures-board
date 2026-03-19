@@ -71,7 +71,6 @@ private:
     MessagePool renderMessages; // Safe local copy for UI rendering
 
     SemaphoreHandle_t dataMutex; // Thread-safe lock protecting data transfers
-    TaskHandle_t fetchTaskHandle; // Tracking handle for the FreeRTOS background task
     volatile int taskStatus; // Cross-thread execution status tracking (e.g., UPD_PENDING)
 
     char lastErrorMsg[128];
@@ -138,17 +137,11 @@ public:
     void startArray() override;
     void startObject() override;
 
-private:
+public:
     /**
      * @brief Internal blocking method that executes the API protocol and coordinates JSON parse.
      */
-    void executeFetch();
-    
-    /**
-     * @brief Static FreeRTOS Entry Point for background data processing.
-     * @param pvParameters Pointer to the executing tflDataSource instance.
-     */
-    static void fetchTask(void* pvParameters);
+    void executeFetch() override;
 };
 
 #endif // TFL_DATA_SOURCE_HPP

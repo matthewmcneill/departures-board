@@ -29,8 +29,9 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
+#include "../displayManager/boards/interfaces/iDataSource.hpp"
 
-class weatherClient: public JsonListener, public iConfigurable {
+class weatherClient: public JsonListener, public iConfigurable, public iDataSource {
 
     private:
         const char* apiHost = "api.openweathermap.org";
@@ -43,7 +44,8 @@ class weatherClient: public JsonListener, public iConfigurable {
         WeatherStatus* activeStatus = nullptr; // Pointer to the UI-facing active status structure
         String activeApiKey = ""; // Thread-local copy of the API key for background fetch
         
-        TaskHandle_t fetchTaskHandle = nullptr; // Handle to track the background FreeRTOS task status
+        volatile bool fetchPending = false; // Tracks if a fetch is queued or executing
+
         SemaphoreHandle_t weatherMutex; // Mutex protecting the memory copy from bgStatus to activeStatus
         
         char weatherMsg[46] = "";
@@ -55,6 +57,11 @@ class weatherClient: public JsonListener, public iConfigurable {
     public:
         String currentWeather = "";
         char lastErrorMsg[128];
+
+        // iDataSource boilerplate implementations (as updateWeather is used specifically)
+        int updateData() override { return 0; }
+        const char* getLastErrorMsg() const override { return lastErrorMsg; }
+        int testConnection(const char* token = nullptr, const char* stationId = nullptr) override { return 0; }
 
         bool getWeatherEnabled() const { return weatherEnabled; }
         void setWeatherEnabled(bool val) { weatherEnabled = val; }
@@ -123,28 +130,11 @@ class weatherClient: public JsonListener, public iConfigurable {
  * @brief JSON handler triggered when entering an array.
  */
         virtual void startArray();
-
-/**
- * @brief JSON handler triggered when entering an object.
- */
         virtual void startObject();
-
-        /**
-         * @brief Implements the iConfigurable interface.
-         */
         virtual void reapplyConfig(const Config& config) override;
 
-    private:
-        /**
-         * @brief Internal blocking method that executes the HTTP protocol and coordinates streaming parse.
-         */
-        void executeFetch();
-        
-        /**
-         * @brief Static FreeRTOS Entry Point for background data processing.
-         * @param pvParameters Pointer to the executing weatherClient instance.
-         */
-        static void fetchTask(void* pvParameters);
+    public:
+        void executeFetch() override;
 };
 
 extern weatherClient* currentWeather;

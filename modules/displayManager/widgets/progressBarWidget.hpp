@@ -20,6 +20,10 @@ class progressBarWidget : public iGfxWidget {
 private:
     char message[256];
     int currentPercent;
+    int targetPercent;
+    int startPercent;
+    uint32_t animStartTime;
+    uint32_t animDurationMs;
     
     // State tracking for deduplication
     int oldPercent;
@@ -58,10 +62,11 @@ public:
     void setShowPercentText(bool show);
 
     /**
-     * @brief Sets the progress value (0-100).
-     * @param percent Progress amount.
+     * @brief Sets the progress value (0-100) and optionally animates to it.
+     * @param percent Target progress amount.
+     * @param durationMs Animation duration in milliseconds. 0 for instant snap.
      */
-    void setPercent(int percent);
+    void setPercent(int percent, uint32_t durationMs = 0);
 
     void tick(uint32_t currentMillis) override;
     void render(U8G2& display) override;

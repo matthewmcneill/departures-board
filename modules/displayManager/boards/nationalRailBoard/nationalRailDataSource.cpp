@@ -25,8 +25,11 @@
 #include <logger.hpp>
 #include "../xmlStreamingParser/xmlStreamingParser.hpp"
 #include <algorithm>
+#include <appContext.hpp>
 
 #include "../interfaces/iDataSource.hpp"
+
+extern class appContext appContext;
 
 nationalRailDataSource::nationalRailDataSource() 
     : loadingWDSL(false), tagLevel(0), isTestMode(false), id(-1), coaches(0), addedStopLocation(false), 
@@ -38,7 +41,6 @@ nationalRailDataSource::nationalRailDataSource()
     if (renderData) memset(renderData.get(), 0, sizeof(NationalRailStation));
     
     dataMutex = xSemaphoreCreateMutex();
-    fetchTaskHandle = nullptr;
     taskStatus = UPD_NO_DATA;
     
     lastErrorMessage[0] = '\0';
@@ -148,25 +150,14 @@ void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
 }
 
 int nationalRailDataSource::updateData() {
-    if (fetchTaskHandle != nullptr) {
+    if (taskStatus == UPD_PENDING) {
         return UPD_PENDING;
     }
     
-    LOG_INFO("DATA", "NR Source: Spawning FreeRTOS task on Core 0");
+    LOG_INFO("DATA", "NR Source: Enqueuing fetch to DataWorker");
     taskStatus = UPD_PENDING;
-    xTaskCreatePinnedToCore(fetchTask, "NR_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    appContext.getDataWorker().enqueueRequest(this);
     return UPD_PENDING;
-}
-
-/**
- * @brief Static FreeRTOS Entry Point for background data processing.
- * @param pvParameters Pointer to the executing nationalRailDataSource instance.
- */
-void nationalRailDataSource::fetchTask(void* pvParameters) {
-    nationalRailDataSource* source = static_cast<nationalRailDataSource*>(pvParameters);
-    source->executeFetch();
-    source->fetchTaskHandle = nullptr;
-    vTaskDelete(NULL);
 }
 
 /**

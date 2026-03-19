@@ -234,8 +234,12 @@ public:
     // Main execution loop for rendering the active board or the screensaver
     void tick(unsigned long currentMillis);
 
-    // Reset loop state (used during soft softResetBoard)
-    void resetState();
+    /**
+     * @brief Unconditionally resumes the primary display carousel context.
+     *        This effectively wakes up the display from sleep mode and transitions
+     *        away from system screens (Splash, Loading, Warning).
+     */
+    void resumeDisplays();
 
     /**
      * @brief Get current hardware execution mode wrapped inside the active board.

@@ -25,9 +25,12 @@
 #include <logger.hpp>
 #include <algorithm>
 #include <memory>
+#include <appContext.hpp>
 
 // Status codes mapping
 #include "../interfaces/iDataSource.hpp"
+
+extern class appContext appContext;
 
 tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4), renderMessages(4) {
     stationData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
@@ -36,7 +39,6 @@ tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr
     if (renderData) memset(renderData.get(), 0, sizeof(TflStation));
     
     dataMutex = xSemaphoreCreateMutex();
-    fetchTaskHandle = nullptr;
     taskStatus = UPD_NO_DATA;
 
     lastErrorMsg[0] = '\0';
@@ -53,25 +55,14 @@ void tflDataSource::configure(const char* naptanId, const char* apiKey, tflDataS
 }
 
 int tflDataSource::updateData() {
-    if (fetchTaskHandle != nullptr) {
+    if (taskStatus == UPD_PENDING) {
         return UPD_PENDING;
     }
     
-    LOG_INFO("DATA", "TfL Source: Spawning FreeRTOS task on Core 0");
+    LOG_INFO("DATA", "TfL Source: Enqueuing fetch to DataWorker");
     taskStatus = UPD_PENDING;
-    xTaskCreatePinnedToCore(fetchTask, "TfL_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
+    appContext.getDataWorker().enqueueRequest(this);
     return UPD_PENDING;
-}
-
-/**
- * @brief Static FreeRTOS Entry Point for background data processing.
- * @param pvParameters Pointer to the executing tflDataSource instance.
- */
-void tflDataSource::fetchTask(void* pvParameters) {
-    tflDataSource* source = static_cast<tflDataSource*>(pvParameters);
-    source->executeFetch();
-    source->fetchTaskHandle = nullptr;
-    vTaskDelete(NULL);
 }
 
 /**

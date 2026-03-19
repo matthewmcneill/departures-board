@@ -36,6 +36,8 @@
 - [ ] make an ota widget and remove the OTA overlay board
 - [x] Investigate persistent National Rail SOAP connection instability (success on WSDL boot, but frequent "SOAP connection failed" during data updates; requires retry logic evaluation). (Resolved: Implemented FreeRTOS asynchronous yielding).
 - [ ] Add diagnostic UI to expose real-time FreeRTOS TWDT (Watchdog) metrics and background task states for each data fetcher.
+- [x] Refactor data sources (weather, national rail, tfl, bus) to use a Centralized Worker Queue, preventing `WiFiClientSecure` OOM exceptions.
+- [ ] Implement C++ unit testing for the new `dataWorker` module to verify queue behavior on connection timeouts and duplicate fetch requests.
 
 - [x] need to fix the national rail key and testing process in the portal. Currently it always fails. (Resolved: Implemented sequential testing to handle connection overhead).
 - [x] fix the 'Testing' button height in the keys detailed form to ensure it remains constant when text changes. (Resolved: Buttons now have consistent vertical rhythm in modern modal layout).
