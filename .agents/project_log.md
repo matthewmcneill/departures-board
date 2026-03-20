@@ -2,6 +2,34 @@
 
 ## Execution History
 
+## 2026-03-20 - LGV Terminology Refactor: View -> Layout (Session 1cf75709)
+
+### Session Summary
+Systematically renamed all instances of "View" to "Layout" across the core display architecture to align with the "Display Designer" conceptual model. This refactor improves semantic clarity and prepares the codebase for future visual designer integration.
+
+### Key Decisions
+- **Terminology Alignment**: Migrated from the generic `View` term to `Layout` to better describe the visual arrangement of widgets on the board.
+- **Physical Structure Renaming**: Renamed all `views/` directories to `layouts/` and updated corresponding include paths.
+- **Contract Standardization**: Renamed `iBoardView` to `iBoardLayout` and all derived board-specific interfaces (e.g., `iNationalRailView` -> `iNationalRailLayout`).
+- **Variable Normalization**: Updated member variables in PCB controller classes (e.g., `activeView` -> `activeLayout`).
+- **Hardware Verification**: Successfully flashed and verified on ESP32, confirming stable board initialization and data rendering under the new terminology.
+
+### Git Commit
+Generated commit: [TBD - Verified on Hardware]
+
+## 2026-03-19 - Centralized Data Worker Queue Refactor (Session 206c4ba2)
+
+### Session Summary
+Addressed heap fragmentation and OOM panics in `WiFiClientSecure` caused by concurrent multi-board data polling. Implemented a centralized `dataWorker` queue on Core 0 to serialize external API requests across all transport modules (`weather` and `nationalRail/tfl/bus`). 
+
+### Key Decisions
+- **Serialized Worker Task**: Created a singleton FreeRTOS queue (`dataWorker.hpp`) to enforce one-at-a-time network TLS handshakes, drastically reducing peak memory usage without sacrificing UI rendering thread availability.
+- **iDataSource Contract Upgrade**: Promoted `executeFetch()` to the public `iDataSource` abstraction, stripping autonomous `xTaskCreatePinnedToCore` logic out of individual client modules.
+- **Deduplication Blocking**: Standardized `UPD_PENDING` tracking in local source modules to prevent duplicate task queued submissions when a network request is already processing.
+
+### Git Commit
+Generated commit: 8a58e10
+
 ## 2026-03-18 - Display Lifecycle Telemetry & Architecture Refactor (Session deb59b03)
 
 ### Session Summary

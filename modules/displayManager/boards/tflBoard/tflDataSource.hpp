@@ -87,6 +87,7 @@ private:
     // Configuration
     char tflAppkey[50];
     char tubeId[13];
+    char lineFilter[32];
     tflDataSourceCallback callback;
 
     // Internal Utilities
@@ -112,6 +113,10 @@ public:
      * @param cb Optional completion callback
      */
     void configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb);
+    void setFilter(const char* filter) { 
+        if (filter) strlcpy(lineFilter, filter, sizeof(lineFilter)); 
+        else lineFilter[0] = '\0';
+    }
 
     /**
      * @brief Limit the number of results returned. Used for lightweight testing.

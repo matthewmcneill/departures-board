@@ -65,6 +65,8 @@ bool scrollingMessagePoolWidget::loadNextMessage() {
  * @brief Ticks the underlying scroller and handles transitions.
  */
 void scrollingMessagePoolWidget::tick(uint32_t currentMillis) {
+    if (!isVisible) return;
+    
     // If we have no text currently, try to load one
     if (currentText[0] == '\0') {
         if (!loadNextMessage()) return;

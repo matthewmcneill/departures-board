@@ -45,7 +45,7 @@ public:
      * @param _h Height of bounding box.
      * @param _font U8g2 font array to use for rendering.
      */
-    scrollingTextWidget(int _x, int _y, int _w, int _h, const uint8_t* _font);
+    scrollingTextWidget(int _x, int _y, int _w, int _h, const uint8_t* _font = nullptr);
     virtual ~scrollingTextWidget() = default;
 
     /**
@@ -53,6 +53,12 @@ public:
      * @param newText Null-terminated string.
      */
     void setText(const char* newText);
+
+    /**
+     * @brief Update the font used for rendering.
+     * @param _font Pointer to U8g2 font array.
+     */
+    void setFont(const uint8_t* _font) { font = _font; needsLayout = true; }
 
     /**
      * @brief True when the text completes a full scroll loop off-screen.

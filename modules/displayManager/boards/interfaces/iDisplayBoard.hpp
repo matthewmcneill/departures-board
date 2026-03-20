@@ -97,6 +97,7 @@ public:
 
 protected:
     int lastUpdateStatus = -1; ///< Stores the result of the last updateData() call for inline error handling.
+    int consecutiveErrors = 0; ///< Tracks the number of consecutive data fetch failures to defer error overlays.
 };
 
 #endif // I_DISPLAY_BOARD_HPP

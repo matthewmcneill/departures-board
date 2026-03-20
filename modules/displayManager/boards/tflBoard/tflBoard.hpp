@@ -19,20 +19,16 @@ class appContext;
 #include "../interfaces/iDisplayBoard.hpp"
 #include "tflDataSource.hpp"
 #include <configManager.hpp>
-#include "../../widgets/headerWidget.hpp"
-#include "../../widgets/clockWidget.hpp"
-#include "../../widgets/serviceListWidget.hpp"
-#include "../../widgets/scrollingMessagePoolWidget.hpp"
+#include "iTflLayout.hpp"
+#include "layouts/layoutDefault.hpp"
 
 class TfLBoard : public iDisplayBoard {
 private:
     appContext* context;
     tflDataSource dataSource;
     
-    // UI Widgets
-    headerWidget headWidget;
-    serviceListWidget servicesWidget;
-    scrollingMessagePoolWidget msgWidget;
+    // UI Layout
+    iTflLayout* activeLayout;
 
     // Configuration
     char tflAppkey[50];
@@ -48,7 +44,7 @@ private:
 public:
     const char* getBoardName() const override { return "DATA: TfL Board"; }
     TfLBoard(appContext* contextPtr = nullptr);
-    virtual ~TfLBoard() = default;
+    virtual ~TfLBoard();
 
     // iDisplayBoard implementation
     void onActivate() override;

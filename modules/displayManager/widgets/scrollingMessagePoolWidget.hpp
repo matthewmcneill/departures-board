@@ -47,7 +47,7 @@ public:
      * @param _h Height.
      * @param _font Font array.
      */
-    scrollingMessagePoolWidget(int _x, int _y, int _w, int _h, const uint8_t* _font);
+    scrollingMessagePoolWidget(int _x, int _y, int _w, int _h, const uint8_t* _font = nullptr);
     virtual ~scrollingMessagePoolWidget() = default;
 
     /**

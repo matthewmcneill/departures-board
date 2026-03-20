@@ -9,6 +9,7 @@
 - [x] continue with the rationalisation of the data providers
 - [x] finish the updates to the web configuration front end to enable better board configuration (Overhauled Displays tab: Startup highlight, reorder buttons, dynamic instructions, and smart initial tab selection)
 - [x] iStation and messageData - shoudl be obsolete
+- [ ] **Config**: Add the constraints from `.agents/rules/explicit-execution.md` to the Antigravity extension's 'Workspace Custom Rules' to permanently enforce the lock/queue authorization structure.
 - [ ] header widgets - I have a feeling this is not generalised, and is spacific to NatRail. (Still largely NR specific)
 - [x] systemBoard.cpp still has a lot of old straggling stuff that needs to go into displays, widgets or modules. (Cleanup complete, broken into separate classes)
 - [x] Departures Board (systemManager) still has a bunch of specific data to the various boards which needs moving into the classes.
@@ -56,3 +57,4 @@
 - [ ] Audit `temperatureRead()` accuracy across ESP32 chip revisions (V1 vs V3) for more reliable diagnostic reporting.
 - [ ] Investigate moving the "Refresh Rate" configuration from a global system setting to a per-key property.
 - [ ] Add unit test or manual verification suite for `determineInitialTab` across all state transitions to ensure long-term stability as more tabs are added.
+- [ ] consider how we add validation to the filter strings to the portal to ensure that the filters make sense.

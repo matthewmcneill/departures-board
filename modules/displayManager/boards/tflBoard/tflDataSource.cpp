@@ -44,6 +44,7 @@ tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr
     lastErrorMsg[0] = '\0';
     tflAppkey[0] = '\0';
     tubeId[0] = '\0';
+    lineFilter[0] = '\0';
     maxResults = 0; // 0 means no limit
     isTestMode = false;
 }
@@ -331,8 +332,20 @@ void tflDataSource::value(String val) {
         else if (val.endsWith(" DLR Station")) val = val.substring(0, val.length()-12);
         strncpy(stationData->service[id].destination, val.c_str(), TFL_MAX_LOCATION-1);
     } else if (currentKey == "timeToStation") stationData->service[id].timeToStation = val.toInt();
-    else if (currentKey == "lineName") strncpy(stationData->service[id].lineName, val.c_str(), TFL_MAX_LINE-1);
-    else if (currentKey == "description") {
+    else if (currentKey == "lineName") {
+        strncpy(stationData->service[id].lineName, val.c_str(), TFL_MAX_LINE-1);
+        if (strlen(lineFilter) > 0) {
+            String ln = val;
+            String flt = lineFilter;
+            ln.toLowerCase();
+            flt.toLowerCase();
+            if (ln.indexOf(flt) == -1 && flt.indexOf(ln) == -1) {
+                if (stationData->numServices > 0) {
+                    stationData->numServices--;
+                }
+            }
+        }
+    } else if (currentKey == "description") {
         // Clean and add message
         String cleanVal = val;
         cleanVal.replace("\\n", "");

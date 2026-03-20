@@ -92,9 +92,11 @@ void headerWidget::resetScroll() {
 }
 
 void headerWidget::tick(uint32_t currentMillis) {
+    if (!isVisible) return;
+    
     clock.tick(currentMillis);
 
-    if (!isVisible || !needsScroll) return;
+    if (!needsScroll) return;
 
     if (lastScrollMs == 0) {
         lastScrollMs = currentMillis + 2000; // Initial pause
@@ -168,7 +170,7 @@ void headerWidget::render(U8G2& display) {
 
     if (clock.getVisible()) {
         clock.render(display);
-        rightBound -= 40; // Approx starting x of clock text
+        rightBound -= 56; // Respect clock initialization bounding box width
     }
 
     display.setFont(NatRailSmall9);

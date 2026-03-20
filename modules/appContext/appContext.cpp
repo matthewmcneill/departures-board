@@ -33,6 +33,9 @@ appContext* _instance = nullptr; // Global static pointer for yield callback ada
  *        Required for raw function pointers used in data clients.
  */
 void yieldCallbackWrapper() {
+    // Prevent the background data fetcher from concurrently driving the U8G2 hardware
+    if (strcmp(pcTaskGetName(NULL), "Data_Worker") == 0) return;
+    
     if (_instance) _instance->getDisplayManager().yieldAnimationUpdate();
 }
 

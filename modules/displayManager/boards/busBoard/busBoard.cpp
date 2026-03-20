@@ -32,26 +32,21 @@ extern const uint8_t NatRailSmall9[]; ///< Small font for scrolling messages
  */
 BusBoard::BusBoard(appContext* contextPtr) 
     : context(contextPtr),
-      headWidget(0, 0, 256, 14), 
-      servicesWidget(0, 15, 256, 39),
-      msgWidget(0, 56, 256, 8, NatRailSmall9),
+      activeLayout(nullptr),
       lastUpdate(0), 
       needsRefresh(true) {
-    headWidget.getClock().setFont(Underground10);
-    headWidget.getClock().setBlink(false);
+    
+    // Instantiate default view
+    activeLayout = new layoutBusDefault(context);
+
     busAtco[0] = '\0';
     busName[0] = '\0';
     busFilter[0] = '\0';
     enableBus = false;
+}
 
-    // --- Step 1: Configure widget constraints ---
-    // Configure service list columns for Bus layout
-    ColumnDef cols[3] = {
-        {25, 0},   // Route number (left aligned)
-        {180, 0},  // Destination (left aligned)
-        {51, 2}    // Time (right aligned)
-    };
-    servicesWidget.setColumns(3, cols);
+BusBoard::~BusBoard() {
+    if (activeLayout) delete activeLayout;
 }
 
 /**
@@ -59,16 +54,19 @@ BusBoard::BusBoard(appContext* contextPtr)
  */
 void BusBoard::onActivate() {
     dataSource.configure(busAtco, busFilter);
-    headWidget.setTitle(busName);
     
-    // Configure message pools
-    if (context) {
-        msgWidget.addMessagePool(&context->getGlobalMessagePool());
+    if (activeLayout) {
+        activeLayout->headWidget.setTitle(busName);
+        
+        // Configure message pools
+        if (context) {
+            activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
+        }
+        activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+        
+        // Set initial text (fallback)
+        activeLayout->msgWidget.setText(btAttribution);
     }
-    msgWidget.addMessagePool(dataSource.getMessagesData());
-    
-    // Set initial text (fallback)
-    msgWidget.setText(btAttribution);
     lastUpdate = 0; // Trigger immediate update
 }
 
@@ -93,9 +91,7 @@ void BusBoard::configure(const BoardConfig& config) {
  * @param ms Current system epoch in milliseconds.
  */
 void BusBoard::tick(uint32_t ms) {
-    headWidget.tick(ms);
-    msgWidget.tick(ms);
-    servicesWidget.tick(ms);
+    if (activeLayout) activeLayout->tick(ms);
 }
 
 int BusBoard::updateData() {
@@ -121,21 +117,27 @@ int BusBoard::updateData() {
     
     if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
         LOG_WARN("DISPLAY", "Bus Board: Data update failed with status: " + String(lastUpdateStatus));
+        if (lastUpdateStatus > 2) {
+            consecutiveErrors++;
+        }
     } else {
         LOG_INFO("DISPLAY", "Bus Board: Data update finished successfully.");
+        consecutiveErrors = 0;
     }
     
     if (lastUpdateStatus == 0) { // UPD_SUCCESS
         BusStop* data = dataSource.getStationData();
-        servicesWidget.clearRows();
-        if (data->numServices > 0) {
-            for (int i = 0; i < data->numServices; i++) {
-                const char* rowData[3] = {
-                    data->service[i].routeNumber,
-                    data->service[i].destination,
-                    data->service[i].expectedTime
-                };
-                servicesWidget.addRow(rowData);
+        if (activeLayout) {
+            activeLayout->servicesWidget.clearRows();
+            if (data->numServices > 0) {
+                for (int i = 0; i < data->numServices; i++) {
+                    const char* rowData[3] = {
+                        data->service[i].routeNumber,
+                        data->service[i].destination,
+                        data->service[i].expectedTime[0] != '\0' ? data->service[i].expectedTime : data->service[i].sTime
+                    };
+                    activeLayout->servicesWidget.addRow(rowData);
+                }
             }
         }
     }
@@ -163,9 +165,7 @@ void BusBoard::render(U8G2& display) {
         return;
     }
 
-    headWidget.render(display);
-    
-    if (lastUpdateStatus >= 2) {
+    if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
         if (context) {
             SystemBoardId id = context->getDisplayManager().mapErrorToId(lastUpdateStatus);
             iDisplayBoard* errBoard = context->getDisplayManager().getSystemBoard(id);
@@ -176,17 +176,17 @@ void BusBoard::render(U8G2& display) {
         }
     }
 
-    // Render the departures
-    BusStop* data = dataSource.getStationData();
-    
-    if (data->numServices > 0) {
-        servicesWidget.render(display);
-    } else {
-        display.setFont(Underground10);
-        display.drawStr(10, 35, "No scheduled services.");
+    if (activeLayout) {
+        BusStop* data = dataSource.getStationData();
+        if (data->numServices > 0) {
+            activeLayout->render(display);
+        } else {
+            activeLayout->headWidget.render(display);
+            display.setFont(Underground10);
+            display.drawStr(10, 35, "No scheduled services.");
+            activeLayout->msgWidget.render(display);
+        }
     }
-
-    msgWidget.render(display);
 }
 
 /**
@@ -197,7 +197,16 @@ void BusBoard::render(U8G2& display) {
 void BusBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (context && context->getsystemManager().isWifiPersistentError()) return;
     if (!config.complete) return;
-    headWidget.renderAnimationUpdate(display, currentMillis);
-    msgWidget.renderAnimationUpdate(display, currentMillis);
-    servicesWidget.renderAnimationUpdate(display, currentMillis);
+    if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+        if (context) {
+            SystemBoardId id = context->getDisplayManager().mapErrorToId(lastUpdateStatus);
+            iDisplayBoard* errBoard = context->getDisplayManager().getSystemBoard(id);
+            if (errBoard) {
+                errBoard->renderAnimationUpdate(display, currentMillis);
+                return;
+            }
+        }
+    }
+
+    if (activeLayout) activeLayout->renderAnimationUpdate(display, currentMillis);
 }

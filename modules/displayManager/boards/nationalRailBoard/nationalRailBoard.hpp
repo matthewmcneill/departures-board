@@ -19,20 +19,16 @@ class appContext;
 #include "../interfaces/iDisplayBoard.hpp"
 #include "nationalRailDataSource.hpp"
 #include <configManager.hpp>
-#include "../../widgets/headerWidget.hpp"
-#include "../../widgets/clockWidget.hpp"
-#include "../../widgets/serviceListWidget.hpp"
-#include "../../widgets/scrollingMessagePoolWidget.hpp"
+#include "iNationalRailLayout.hpp"
+#include "layouts/layoutDefault.hpp"
 
 class NationalRailBoard : public iDisplayBoard {
 private:
     appContext* context;
     nationalRailDataSource dataSource;
     
-    // UI Widgets
-    headerWidget headWidget;
-    serviceListWidget servicesWidget; // For secondary services
-    scrollingMessagePoolWidget msgWidget;
+    // UI Layout
+    iNationalRailLayout* activeLayout;
 
     // Configuration
     char nrToken[37];
@@ -56,7 +52,7 @@ private:
 public:
     const char* getBoardName() const override { return "DATA: National Rail"; }
     NationalRailBoard(appContext* contextPtr = nullptr);
-    virtual ~NationalRailBoard() = default;
+    virtual ~NationalRailBoard();
 
     // iDisplayBoard implementation
     void onActivate() override;

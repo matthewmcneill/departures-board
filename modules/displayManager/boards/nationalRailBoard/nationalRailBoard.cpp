@@ -21,12 +21,14 @@ extern const uint8_t NatRailSmall9[];
 
 NationalRailBoard::NationalRailBoard(appContext* contextPtr) 
     : context(contextPtr),
-      headWidget(0, 0, 256, 14), 
-      servicesWidget(0, 28, 256, 26), // Secondary services start lower
-      msgWidget(0, 28, 256, 9, NatRailSmall9),      // Line 2 scroller
+      activeLayout(nullptr),
       lastUpdate(0), 
       viaToggle(false),
       nextViaToggle(0) {
+    
+    // Instantiate default view
+    activeLayout = new layoutNrDefault(context);
+
     nrToken[0] = '\0';
     crsCode[0] = '\0';
     callingCrsCode[0] = '\0';
@@ -35,15 +37,10 @@ NationalRailBoard::NationalRailBoard(appContext* contextPtr)
     nrTimeOffset = 0;
     stationLat = 0;
     stationLon = 0;
+}
 
-    // Configure secondary service list columns
-    ColumnDef cols[4] = {
-        {23, 0},   // Ordinal (2nd, 3rd)
-        {27, 0},   // Scheduled time
-        {16, 1},   // Platform
-        {190, 0}   // Destination... actually we'd need more logic here
-    };
-    servicesWidget.setColumns(4, cols);
+NationalRailBoard::~NationalRailBoard() {
+    if (activeLayout) delete activeLayout;
 }
 
 void NationalRailBoard::onActivate() {
@@ -65,13 +62,13 @@ void NationalRailBoard::onActivate() {
     dataSource.configure(nrToken, crsCode, platformFilter, callingCrsCode, nrTimeOffset);
     
     // Configure message pools
-    if (context) {
-        msgWidget.addMessagePool(&context->getGlobalMessagePool());
+    if (context && activeLayout) {
+        activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
+        activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+        
+        // Set initial text (fallback)
+        activeLayout->msgWidget.setText(nrAttributionn);
     }
-    msgWidget.addMessagePool(dataSource.getMessagesData());
-    
-    // Set initial text (fallback)
-    msgWidget.setText(nrAttributionn);
     lastUpdate = 0;
 }
 
@@ -97,11 +94,16 @@ void NationalRailBoard::tick(uint32_t ms) {
     if (ms > nextViaToggle) {
         viaToggle = !viaToggle;
         nextViaToggle = ms + 4000;
+        
+        // Push the update to the view immediately
+        NationalRailStation* data = dataSource.getStationData();
+        if (data->numServices > 0 && activeLayout) {
+            const char* dest = viaToggle && data->service[0].via[0] ? data->service[0].via : data->service[0].destination;
+            activeLayout->row0Dest.setText(dest);
+        }
     }
 
-    headWidget.tick(ms);
-    msgWidget.tick(ms);
-    servicesWidget.tick(ms);
+    if (activeLayout) activeLayout->tick(ms);
 }
 
 int NationalRailBoard::updateData() {
@@ -130,39 +132,53 @@ int NationalRailBoard::updateData() {
 
     if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
         LOG_WARN("DISPLAY", "NR Board: Data update failed with status: " + String(lastUpdateStatus));
+        if (lastUpdateStatus > 2) {
+            consecutiveErrors++;
+        }
     } else {
         LOG_INFO("DISPLAY", "NR Board: Data update finished successfully.");
+        consecutiveErrors = 0;
     }
     
     if (lastUpdateStatus == 0) { // UPD_SUCCESS
         // Update header once we have the station name
         NationalRailStation* data = dataSource.getStationData();
-        if (data->location[0]) {
-            headWidget.setTitle(data->location);
-            headWidget.setCallingPoint(callingStation);
-            headWidget.setPlatform(platformFilter);
-            headWidget.setTimeOffset(nrTimeOffset);
-            headWidget.setShowDate(true);
+        if (data->location[0] && activeLayout) {
+            activeLayout->headWidget.setTitle(data->location);
+            activeLayout->headWidget.setCallingPoint(callingStation);
+            activeLayout->headWidget.setPlatform(platformFilter);
+            activeLayout->headWidget.setTimeOffset(nrTimeOffset);
+            activeLayout->headWidget.setShowDate(true);
         }
 
-        // Trigger scrolling of calling points if they changed
-        if (data->numServices > 0 && data->service[0].calling[0]) {
-            msgWidget.setText(data->service[0].calling);
+        if (data->numServices > 0 && activeLayout) {
+            // Push Primary Service (Row 0)
+            activeLayout->row0Time.setText(data->service[0].sTime);
+            
+            const char* dest = viaToggle && data->service[0].via[0] ? data->service[0].via : data->service[0].destination;
+            activeLayout->row0Dest.setText(dest);
+
+            // Trigger scrolling of calling points if they changed
+            if (data->service[0].calling[0]) {
+                activeLayout->msgWidget.setText(data->service[0].calling);
+            }
         }
         
-        // Populate services list for drawing later
-        servicesWidget.clearRows();
-        if (data->numServices > 1) {
-            for (int i = 1; i < data->numServices; i++) {
-                if (i - 1 >= 16) break;
-                sprintf(cachedOrdinals[i-1], "%d%s", i+1, (i==1?"nd":(i==2?"rd":"th")));
-                const char* rowData[4] = {
-                    cachedOrdinals[i-1],
-                    data->service[i].sTime,
-                    data->service[i].platform,
-                    data->service[i].destination
-                };
-                servicesWidget.addRow(rowData);
+        // Populate services list (Secondary)
+        if (activeLayout) {
+            activeLayout->servicesWidget.clearRows();
+            if (data->numServices > 1) { // Start from second service
+                for (int i = 1; i < data->numServices; i++) {
+                    if (i >= 17) break; // Array limit
+                    sprintf(cachedOrdinals[i-1], "%d%s", i+1, (i==1?"nd":(i==2?"rd":"th")));
+                    const char* rowData[4] = {
+                        cachedOrdinals[i-1],
+                        data->service[i].sTime,
+                        data->service[i].platform,
+                        data->service[i].destination
+                    };
+                    activeLayout->servicesWidget.addRow(rowData);
+                }
             }
         }
     }
@@ -186,9 +202,7 @@ void NationalRailBoard::render(U8G2& display) {
         return;
     }
 
-    headWidget.render(display);
-    
-    if (lastUpdateStatus >= 2) {
+    if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
         if (context) {
             SystemBoardId id = context->getDisplayManager().mapErrorToId(lastUpdateStatus);
             iDisplayBoard* errBoard = context->getDisplayManager().getSystemBoard(id);
@@ -199,32 +213,31 @@ void NationalRailBoard::render(U8G2& display) {
         }
     }
 
-    NationalRailStation* data = dataSource.getStationData();
-    if (data->numServices > 0) {
-        // Draw Primary Service (Row 0)
-        display.setFont(NatRailTall12);
-        display.drawStr(0, 25, data->service[0].sTime);
-        
-        const char* dest = viaToggle && data->service[0].via[0] ? data->service[0].via : data->service[0].destination;
-        display.drawStr(60, 25, dest);
-
-        // Draw Line 2 (Messages)
-        msgWidget.render(display);
-
-        // Draw Secondary Services (Row 1+)
-        if (data->numServices > 1) {
-            servicesWidget.render(display);
+    if (activeLayout) {
+        NationalRailStation* data = dataSource.getStationData();
+        if (data->numServices > 0) {
+            activeLayout->render(display);
+        } else {
+            activeLayout->headWidget.render(display);
+            display.setFont(NatRailTall12);
+            display.drawStr(10, 40, "No services found.");
         }
-    } else {
-        display.setFont(NatRailTall12);
-        display.drawStr(10, 40, "No services found.");
     }
 }
 
 void NationalRailBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (context && context->getsystemManager().isWifiPersistentError()) return;
     if (!config.complete) return;
-    headWidget.renderAnimationUpdate(display, currentMillis);
-    msgWidget.renderAnimationUpdate(display, currentMillis);
-    servicesWidget.renderAnimationUpdate(display, currentMillis);
+    if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+        if (context) {
+            SystemBoardId id = context->getDisplayManager().mapErrorToId(lastUpdateStatus);
+            iDisplayBoard* errBoard = context->getDisplayManager().getSystemBoard(id);
+            if (errBoard) {
+                errBoard->renderAnimationUpdate(display, currentMillis);
+                return;
+            }
+        }
+    }
+
+    if (activeLayout) activeLayout->renderAnimationUpdate(display, currentMillis);
 }

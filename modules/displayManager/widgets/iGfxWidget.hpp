@@ -47,6 +47,13 @@ public:
     void setVisible(bool visible) { isVisible = visible; }
 
     /**
+     * @brief Updates the widget's position and size.
+     */
+    void setCoords(int _x, int _y, int _w = -1, int _h = -1) {
+        x = _x; y = _y; width = _w; height = _h;
+    }
+
+    /**
      * @brief Checks if the widget is currently visible.
      */
     bool getVisible() const { return isVisible; }

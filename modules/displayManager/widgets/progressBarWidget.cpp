@@ -60,6 +60,8 @@ void progressBarWidget::setPercent(int percent, uint32_t durationMs) {
 }
 
 void progressBarWidget::tick(uint32_t currentMillis) {
+    if (!isVisible) return;
+    
     if (animDurationMs > 0 && currentPercent != targetPercent) {
         uint32_t elapsed = currentMillis - animStartTime;
         if (elapsed >= animDurationMs) {

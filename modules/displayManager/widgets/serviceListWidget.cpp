@@ -99,7 +99,7 @@ void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
  * @param currentMillis The current system time in milliseconds.
  */
 void serviceListWidget::tick(uint32_t currentMillis) {
-    if (totalRows == 0 || height <= 0) return;
+    if (!isVisible || totalRows == 0 || height <= 0) return;
     
     int rowsPerPage = height / 13; // Assume 13px pitch for now.
     int totalPages = (totalRows + rowsPerPage - 1) / rowsPerPage;

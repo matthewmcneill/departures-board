@@ -22,26 +22,22 @@ class appContext;
 #include "../interfaces/iDisplayBoard.hpp"
 #include "busDataSource.hpp"
 #include <configManager.hpp>
-#include "../../widgets/headerWidget.hpp"
-#include "../../widgets/clockWidget.hpp"
-#include "../../widgets/serviceListWidget.hpp"
-#include "../../widgets/scrollingMessagePoolWidget.hpp"
+#include "iBusLayout.hpp"
+#include "layouts/layoutDefault.hpp"
 
 /**
  * @brief Represents the physical or logical screen for displaying bus departures.
  * 
  * Manages fetching data via the busDataSource and rendering it using
- * a collection of generic UI widgets.
+ * a collection of generic UI widgets encapsulated in a Layout.
  */
 class BusBoard : public iDisplayBoard {
 private:
     appContext* context;
     busDataSource dataSource; ///< The data source responsible for fetching bus stop data
     
-    // UI Widgets
-    headerWidget headWidget;             ///< Widget displaying the board title and clock
-    serviceListWidget servicesWidget;    ///< Widget displaying the list of upcoming services
-    scrollingMessagePoolWidget msgWidget;    ///< Widget displaying scrolling status or system messages
+    // UI Layout
+    iBusLayout* activeLayout;
 
     // Configuration
     char busAtco[13];     ///< ATCO code of the bus stop
@@ -66,7 +62,7 @@ public:
     /**
      * @brief Destroys the BusBoard instance.
      */
-    virtual ~BusBoard() = default;
+    virtual ~BusBoard();
 
     // iDisplayBoard implementation
 
