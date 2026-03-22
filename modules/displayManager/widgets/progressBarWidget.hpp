@@ -69,6 +69,7 @@ public:
     /**
      * @brief Toggles whether the integer percentage value is rendered.
      * @param show True to render the percentage string (e.g. "45%").
+     * @designer_prop bool showPercentText = true - Render the numeric percentage.
      */
     void setShowPercentText(bool show);
 

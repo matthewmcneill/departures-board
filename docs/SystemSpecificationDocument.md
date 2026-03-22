@@ -125,6 +125,7 @@
     - **`clockWidget`**: Blinking colon time with partial update support.
     - **`serviceListWidget`**: Dynamic layout for departures/arrivals.
     - **`scrollingMessagePoolWidget`**: Optimized horizontal marquee for disruptions and RSS.
+- **Architectural Policy (Widgets vs. Primitives)**: To optimize RAM and execution efficiency on the EPS32, stateful `iGfxWidget` composition (such as `labelWidget`) is strictly reserved for data-driven, customizable **Transport Layouts**. Static **System Boards** (Splash, WiFi Wizard, Error screens) must deliberately bypass the widget ecosystem and render directly using lightweight `U8G2` primitives. This prevents the ~140 byte static RAM overhead per string instance from exhausting memory on screens that require zero runtime flexibility.
 
 ### 5.10 `iDataSource` (The Data Contract)
 - **Role**: Abstraction for external API connectivity, separating parsing from presentation.

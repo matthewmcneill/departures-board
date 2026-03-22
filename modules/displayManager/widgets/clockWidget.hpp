@@ -49,12 +49,14 @@ public:
     /**
      * @brief Update the font used by the clock.
      * @param newFont Pointer to the new u8g2 font array.
+     * @designer_prop font font = "Underground10" - The typography for the clock.
      */
     void setFont(const uint8_t* newFont);
 
     /**
      * @brief Toggle the blinking colon animation.
      * @param enable True to enable blinking, false for solid colon.
+     * @designer_prop bool blinkEnabled = true - Toggle colon blinking animation.
      */
     void setBlink(bool enable) { blinkEnabled = enable; showColon = true; }
     

@@ -33,6 +33,10 @@ layoutTflDefault::layoutTflDefault(appContext* context)
     
     msgWidget.setCoords(0, 52, 256, 12);
 
+    noDataLabel.setCoords(10, 35, 256, 15);
+    noDataLabel.setFont(Underground10);
+    noDataLabel.setText("No arrivals scheduled.");
+
     // --- Step 2: Column Layout ---
     // Configure service list columns for TfL (Underground specific)
     ColumnDef cols[3] = {

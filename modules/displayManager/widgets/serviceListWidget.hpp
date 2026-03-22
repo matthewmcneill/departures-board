@@ -72,6 +72,7 @@ public:
     /**
      * @brief Set how long each page should display before swapping.
      * @param ms Timeout in milliseconds. Default is 8000 (8 seconds).
+     * @designer_prop int pageTimeoutMs = 8000 - Timeout in milliseconds per page.
      */
     void setPageTimeout(int ms);
 

@@ -41,6 +41,10 @@ layoutNrReplica::layoutNrReplica(appContext* context)
     // HIDE THE HEADER (maybe we don't need station name here)
     headWidget.setVisible(false);
 
+    noDataLabel.setCoords(10, 40, 256, 15);
+    noDataLabel.setFont(NatRailTall12);
+    noDataLabel.setText("No services found.");
+
     // Configure service list columns (Different alignment or widths)
     ColumnDef cols[4] = {
         {20, 0},   // No ordinal? Just 1, 2, 3

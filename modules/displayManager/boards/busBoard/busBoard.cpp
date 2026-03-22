@@ -182,13 +182,13 @@ void BusBoard::render(U8G2& display) {
     if (activeLayout) {
         BusStop* data = dataSource.getStationData();
         if (data->numServices > 0) {
-            activeLayout->render(display);
+            activeLayout->servicesWidget.setVisible(true);
+            activeLayout->noDataLabel.setVisible(false);
         } else {
-            activeLayout->headWidget.render(display);
-            display.setFont(Underground10);
-            display.drawStr(10, 35, "No scheduled services.");
-            activeLayout->msgWidget.render(display);
+            activeLayout->servicesWidget.setVisible(false);
+            activeLayout->noDataLabel.setVisible(true);
         }
+        activeLayout->render(display);
     }
 }
 

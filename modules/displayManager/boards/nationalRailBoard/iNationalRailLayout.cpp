@@ -18,4 +18,7 @@ iNationalRailLayout::iNationalRailLayout(appContext* context)
       row0Dest(60, 12, 196, 14),
       servicesWidget(0, 26, 256, 39),
       msgWidget(0, 52, 256, 12),
-      sysClock(&context->getTimeManager(), 200, 0, 56, 14) {}
+      sysClock(&context->getTimeManager(), 200, 0, 56, 14),
+      noDataLabel(0, 0, 0, 0) {
+          noDataLabel.setVisible(false);
+      }

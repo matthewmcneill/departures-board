@@ -64,6 +64,7 @@ public:
     /**
      * @brief Update the font used for rendering.
      * @param _font Pointer to U8g2 font array.
+     * @designer_prop font font = "Underground10" - The font used for scrolling text.
      */
     void setFont(const uint8_t* _font) { font = _font; needsLayout = true; }
 

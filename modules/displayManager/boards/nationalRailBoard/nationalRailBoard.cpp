@@ -253,12 +253,17 @@ void NationalRailBoard::render(U8G2& display) {
     if (activeLayout) {
         NationalRailStation* data = dataSource.getStationData();
         if (data->numServices > 0) {
-            activeLayout->render(display);
+            activeLayout->servicesWidget.setVisible(true);
+            activeLayout->row0Time.setVisible(true);
+            activeLayout->row0Dest.setVisible(true);
+            activeLayout->noDataLabel.setVisible(false);
         } else {
-            activeLayout->headWidget.render(display);
-            display.setFont(NatRailTall12);
-            display.drawStr(10, 40, "No services found.");
+            activeLayout->servicesWidget.setVisible(false);
+            activeLayout->row0Time.setVisible(false);
+            activeLayout->row0Dest.setVisible(false);
+            activeLayout->noDataLabel.setVisible(true);
         }
+        activeLayout->render(display);
     }
 }
 

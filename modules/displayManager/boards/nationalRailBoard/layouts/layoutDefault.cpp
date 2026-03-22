@@ -46,6 +46,10 @@ layoutNrDefault::layoutNrDefault(appContext* context)
     // Disable bits that didn't exist in the v2.5 layout
     sysClock.setVisible(false);
 
+    noDataLabel.setCoords(10, 40, 256, 15);
+    noDataLabel.setFont(NatRailTall12);
+    noDataLabel.setText("No services found.");
+
     // Configure service list columns
     ColumnDef cols[4] = {
         {23, 0},   // Ordinal (2nd, 3rd)

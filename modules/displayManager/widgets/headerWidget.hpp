@@ -85,12 +85,14 @@ public:
     /**
      * @brief Adjust the header's time display offset.
      * @param offset Minutes to offset relative to system time.
+     * @designer_prop int timeOffset = 0 - Timezone offset in minutes.
      */
     void setTimeOffset(int offset);
 
     /**
      * @brief Toggle rendering the date underneath the time.
      * @param show True to render the date.
+     * @designer_prop bool showDate = true - Toggle visibility of the current date.
      */
     void setShowDate(bool show);
 

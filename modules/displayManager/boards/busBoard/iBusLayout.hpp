@@ -17,6 +17,7 @@ class appContext;
 #include <widgets/headerWidget.hpp>
 #include <widgets/serviceListWidget.hpp>
 #include <widgets/scrollingMessagePoolWidget.hpp>
+#include <widgets/labelWidget.hpp>
 
 /**
  * @brief Base Layout class for Bus layouts.
@@ -26,12 +27,16 @@ public:
     headerWidget headWidget;
     serviceListWidget servicesWidget;
     scrollingMessagePoolWidget msgWidget;
+    labelWidget noDataLabel;
 
     iBusLayout(appContext* context) 
         : iBoardLayout(context),
           headWidget(0, 0, 0, 0),
           servicesWidget(0, 0, 0, 0),
-          msgWidget(0, 0, 0, 0) {}
+          msgWidget(0, 0, 0, 0),
+          noDataLabel(0, 0, 0, 0) {
+              noDataLabel.setVisible(false);
+          }
 
     /**
      * @brief Virtual destructor.
@@ -46,6 +51,7 @@ public:
         headWidget.tick(currentMillis);
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
+        noDataLabel.tick(currentMillis);
     }
 
     /**
@@ -56,6 +62,7 @@ public:
         headWidget.render(display);
         servicesWidget.render(display);
         msgWidget.render(display);
+        noDataLabel.render(display);
     }
     
     /**

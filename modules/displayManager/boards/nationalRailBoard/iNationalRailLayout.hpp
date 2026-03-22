@@ -17,6 +17,7 @@
 #include <widgets/serviceListWidget.hpp>
 #include <widgets/scrollingMessagePoolWidget.hpp>
 #include <widgets/clockWidget.hpp>
+#include <widgets/labelWidget.hpp>
 
 class appContext;
 
@@ -33,6 +34,7 @@ public:
     serviceListWidget servicesWidget;
     scrollingMessagePoolWidget msgWidget;
     clockWidget sysClock;
+    labelWidget noDataLabel;
 
     /**
      * @brief Constructor for the National Rail view.
@@ -56,6 +58,7 @@ public:
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
         sysClock.tick(currentMillis);
+        noDataLabel.tick(currentMillis);
     }
 
     /**
@@ -69,6 +72,7 @@ public:
         servicesWidget.render(display);
         msgWidget.render(display);
         sysClock.render(display);
+        noDataLabel.render(display);
     }
        /**
      * @brief Targeted animation updates for all dynamic widgets.

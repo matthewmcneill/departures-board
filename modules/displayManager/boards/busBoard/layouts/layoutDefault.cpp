@@ -33,6 +33,10 @@ layoutBusDefault::layoutBusDefault(appContext* context)
     
     msgWidget.setCoords(0, 52, 256, 12);
 
+    noDataLabel.setCoords(10, 35, 256, 15);
+    noDataLabel.setFont(Underground10);
+    noDataLabel.setText("No scheduled services.");
+
     // --- Step 2: Column Layout ---
     // Configure service list columns for Bus layout (route numbers are shorter)
     ColumnDef cols[3] = {
