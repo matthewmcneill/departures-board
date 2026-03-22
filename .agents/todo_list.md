@@ -6,6 +6,7 @@
 
 - [x] move all the u8g2 setup and handling into the display manager. Add a displaymanager.Showboard( iDisplayBoard ) instead of calling render directly whcih injects the display hardware. Move all of the constants related to the display into the display manager
 - [x] clean up the drawing primitives. These routines should all take a u82g display as a paramaeter and not assume the global one exists.
+- [x] Refactor Transport Boards (TfL, Bus, NR) to use the new `labelWidget` for empty/error states instead of raw drawing primitives.
 - [x] continue with the rationalisation of the data providers
 - [x] finish the updates to the web configuration front end to enable better board configuration (Overhauled Displays tab: Startup highlight, reorder buttons, dynamic instructions, and smart initial tab selection)
 - [x] iStation and messageData - shoudl be obsolete
@@ -39,6 +40,8 @@
 - [ ] Add diagnostic UI to expose real-time FreeRTOS TWDT (Watchdog) metrics and background task states for each data fetcher.
 - [x] Refactor data sources (weather, national rail, tfl, bus) to use a Centralized Worker Queue, preventing `WiFiClientSecure` OOM exceptions.
 - [ ] Implement C++ unit testing for the new `dataWorker` module to verify queue behavior on connection timeouts and duplicate fetch requests.
+- [ ] Add unit testing for the SystemManager Round-Robin update multiplexing queue to monitor data load distributions across high board counts.
+- [ ] Implement a real-time 'Background Polling Log' in the web portal diagnostic UI for visibility into distributed update ticks.
 
 - [x] need to fix the national rail key and testing process in the portal. Currently it always fails. (Resolved: Implemented sequential testing to handle connection overhead).
 - [x] fix the 'Testing' button height in the keys detailed form to ensure it remains constant when text changes. (Resolved: Buttons now have consistent vertical rhythm in modern modal layout).

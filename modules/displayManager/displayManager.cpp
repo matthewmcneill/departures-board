@@ -453,7 +453,7 @@ void DisplayManager::yieldAnimationUpdate() {
         // --- Critical Step: Background Tasking ---
         // Allow the web server to process requests during long-duration 
         // network fetches or intensive scrolling.
-        if (context) context->getWebServer().handleClient();
+        // (Deprecated: ESPAsyncWebServer handles background automatically)
     }
 }
 

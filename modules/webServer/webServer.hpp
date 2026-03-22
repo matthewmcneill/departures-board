@@ -18,7 +18,11 @@
 
 #pragma once
 
-#include <WebServer.h>
+#if defined(ESP_IDF_VERSION_MAJOR) && ESP_IDF_VERSION_MAJOR >= 5
+#include <Network.h>
+#endif
+
+#include <ESPAsyncWebServer.h>
 
 class WebHandlerManager;
 
@@ -29,17 +33,11 @@ public:
      */
     void init();
 
-    /**
-     * @brief Hand control to the HTTP connection listener if any clients are waiting.
-     */
-    void handleClient();
-
 private:
     WebHandlerManager* _handlerManager = nullptr;
-    bool isHandlingClient = false; // Recursion lock preventing WebServer handleClient re-entrancy
 };
 
 extern WebServerManager webServer;
-extern WebServer server;
+extern AsyncWebServer server;
 
 void updateCurrentWeather(float latitude, float longitude);

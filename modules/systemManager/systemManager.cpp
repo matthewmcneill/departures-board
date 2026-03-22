@@ -23,17 +23,25 @@
 #include <timeManager.hpp>
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
 #include <wifiManager.hpp> // Added as per instruction
+#include <buttonHandler.hpp>
 
 /**
  * @brief Initialize default system state.
  */
 systemManager::systemManager() 
-    : context(nullptr), wifiConfigured(false), wifiConnected(false), 
+    : context(nullptr), inputDevice(nullptr), wifiConfigured(false), wifiConnected(false), 
       lastWiFiReconnect(0), firstLoad(true), startupProgressPercent(0), 
-      prevProgressBarPosition(0), nextDataUpdate(0), lastDataLoadTime(0), 
+      prevProgressBarPosition(0), nextRoundRobinUpdate(0), backgroundUpdateIndex(0), lastDataLoadTime(0), 
       noDataLoaded(true), dataLoadSuccess(0), dataLoadFailure(0), 
       lastLoadFailure(0), lastUpdateResult(0), lastActiveSlotIndex(-1) {
     strlcpy(myUrl, "http://0.0.0.0", sizeof(myUrl));
+}
+
+systemManager::~systemManager() {
+    if (inputDevice) {
+        delete inputDevice;
+        inputDevice = nullptr;
+    }
 }
 
 /**
@@ -49,6 +57,30 @@ void systemManager::begin(appContext* contextPtr) {
  * @brief Periodic maintenance logic for application-wide state.
  */
 void systemManager::tick() {
+    // Process input
+    if (inputDevice) {
+        inputDevice->update();
+        if (inputDevice->wasShortTapped()) {
+            DisplayManager& displayMgr = context->getDisplayManager();
+            if (displayMgr.getIsSleeping() || displayMgr.getForcedSleep()) {
+                LOG_INFO("INPUT", "Short tap: Waking from sleep");
+                displayMgr.setForcedSleep(false);
+                displayMgr.resumeDisplays();
+            } else {
+                LOG_INFO("INPUT", "Short tap: Cycling mode");
+                displayMgr.cycleNext();
+            }
+        } else if (inputDevice->wasLongTapped()) {
+            DisplayManager& displayMgr = context->getDisplayManager();
+            bool currentlySleeping = displayMgr.getForcedSleep() || displayMgr.getIsSleeping();
+            LOG_INFO("INPUT", String("Long tap: Toggling screensaver. Currently sleeping: ") + currentlySleeping);
+            displayMgr.setForcedSleep(!currentlySleeping);
+            if (!displayMgr.getForcedSleep()) {
+                displayMgr.resumeDisplays();
+            }
+        }
+    }
+
     // Connection Management
     if (WiFi.status() != WL_CONNECTED && wifiConnected) {
         wifiConnected = false;
@@ -60,8 +92,8 @@ void systemManager::tick() {
         LOG_INFO("SYSTEM", "WiFi connected. IP: " + WiFi.localIP().toString());
         updateMyUrl();
         // Immediately try to refresh data upon reconnection if we were waiting
-        if (noDataLoaded ||  millis() > getNextDataUpdate()) {
-            nextDataUpdate = millis();
+        if (noDataLoaded ||  millis() > getNextRoundRobinUpdate()) {
+            nextRoundRobinUpdate = millis();
         }
     }
 
@@ -83,41 +115,54 @@ void systemManager::tick() {
     DisplayManager& displayMgr = context->getDisplayManager();
     const Config& config = context->getConfigManager().getConfig();
 
-    // Data Fetching Logic
-    if (!displayMgr.getIsSleeping()) {
+    // Data Fetching Logic (Only fetch when not sleeping and initialized)
+    if (!displayMgr.getIsSleeping() && config.boardCount > 0) {
         int activeIndex = displayMgr.getActiveSlotIndex();
         
-        // Detect board switch to trigger immediate update
+        // Detect board switch to trigger immediate update (Fast-Path override)
         if (activeIndex != lastActiveSlotIndex) {
-            LOG_INFO("SYSTEM", "Board switch detected. Triggering immediate data update.");
-            nextDataUpdate = 0;
+            LOG_INFO("SYSTEM", "Board switch detected. Triggering immediate context fetch.");
+            iDisplayBoard* activeBoard = displayMgr.getDisplayBoard(activeIndex);
+            if (activeBoard && config.boards[activeIndex].complete) {
+                activeBoard->updateData();
+            }
+            
+            // Slightly delay the next background tick so we don't bombard immediately
+            nextRoundRobinUpdate = millis() + 5000;
             lastActiveSlotIndex = activeIndex;
         }
 
-        // Data Fetching Logic (Only fetch when in RUNNING state)
-        if (millis() > nextDataUpdate && wifiConnected && context->getAppState() == AppState::RUNNING) {
+        // Rotational Background Data Fetching Logic
+        if (millis() > nextRoundRobinUpdate && wifiConnected && context->getAppState() == AppState::RUNNING) {
             displayMgr.setOtaUpdateAvailable(true);
             
-            const BoardConfig& activeBC = config.boards[activeIndex];
+            // Advance the background cursor
+            backgroundUpdateIndex = (backgroundUpdateIndex + 1) % config.boardCount;
+            const BoardConfig& bgConfig = config.boards[backgroundUpdateIndex];
 
-            iDisplayBoard* activeBoard = displayMgr.getDisplayBoard(activeIndex);
-            if (activeBoard) {
-                if (lastUpdateResult != UPD_PENDING) {
-                    LOG_INFO("DATA", "Triggering active board data update for slot index: " + String(activeIndex));
+            iDisplayBoard* bgBoard = displayMgr.getDisplayBoard(backgroundUpdateIndex);
+            
+            if (bgBoard && bgConfig.complete) {
+                lastUpdateResult = bgBoard->updateData();
+                
+                int distributedInterval = config.apiRefreshRate / config.boardCount;
+                if (distributedInterval < 10000) distributedInterval = 10000; // Hard minimum floor
+                
+                if (bgBoard->getLastUpdateStatus() == -1 || bgBoard->getLastUpdateStatus() == 9) {
+                    // Fast-fill initialization override for unloaded dashboards
+                    LOG_INFO("DATA", "Fast-Filling unloaded board index array: " + String(backgroundUpdateIndex));
+                    distributedInterval = 2000; 
+                } else {
+                    if (lastUpdateResult != UPD_PENDING) {
+                        LOG_INFO("DATA", "Background sweep dispatched API request for index: " + String(backgroundUpdateIndex));
+                    }
                 }
-                lastUpdateResult = activeBoard->updateData();
+                
+                nextRoundRobinUpdate = millis() + distributedInterval;
             } else {
-                LOG_WARN("DATA", "Active board is NULL for slot index: " + String(activeIndex));
-                lastUpdateResult = 7; // Error code if missing
-            }
-
-            if (lastUpdateResult != UPD_PENDING) {
-                // Select next update interval
-                if (activeBC.type == MODE_RAIL)      nextDataUpdate = millis() + config.apiRefreshRate; // MODE_RAIL
-                else if (activeBC.type == MODE_TUBE) nextDataUpdate = millis() + 30000; // MODE_TUBE (UGDATAUPDATEINTERVAL)
-                else if (activeBC.type == MODE_BUS)  nextDataUpdate = millis() + 45000; // MODE_BUS (BUSDATAUPDATEINTERVAL)
-
-                // Handle Result Codes
+                // If the selected hardware slot is unconfigured/empty, skip rapidly
+                nextRoundRobinUpdate = millis() + 500;
+                } // Handle Result Codes
                 if (lastUpdateResult == 0 || lastUpdateResult == 1) { // UPD_SUCCESS, UPD_NO_CHANGE
                     displayMgr.setOtaUpdateAvailable(false);
                     lastDataLoadTime = millis();
@@ -127,6 +172,8 @@ void systemManager::tick() {
                     // Asynchronously update weather and RSS
                     weatherClient& weather = context->getWeather();
                     rssClient& rss = context->getRss();
+                    
+                    const BoardConfig& activeBC = config.boards[activeIndex];
                     
                     if (weather.getWeatherEnabled() && activeBC.showWeather && millis() > weather.getNextWeatherUpdate()) {
                         iDisplayBoard* active = displayMgr.getDisplayBoard(activeIndex);
@@ -153,12 +200,9 @@ void systemManager::tick() {
                 } else {
                     lastLoadFailure = millis();
                     dataLoadFailure++;
-                    nextDataUpdate = millis() + 30000;
                     displayMgr.setOtaUpdateAvailable(false);
-                    LOG_WARN("DATA", "Data update failed with code: " + String(lastUpdateResult) + ". Board will handle display.");
                 }
-            }
-        } else if (millis() > nextDataUpdate && context->getAppState() == AppState::RUNNING) {
+        } else if (millis() > nextRoundRobinUpdate && context->getAppState() == AppState::RUNNING) {
             // Log once per minute why we aren't updating if WiFi is down
             static unsigned long lastWifiWaitLog = 0;
             if (millis() - lastWifiWaitLog > 60000) {
@@ -227,7 +271,8 @@ void systemManager::softResetBoard() {
         onSoftReset();
     }
  
-    nextDataUpdate = 0;
+    nextRoundRobinUpdate = 0;
+    backgroundUpdateIndex = 0;
     weather.setNextWeatherUpdate(0);
     displayMgr.resumeDisplays();
     firstLoad = true;

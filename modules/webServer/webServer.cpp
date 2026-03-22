@@ -32,7 +32,7 @@
 extern class appContext appContext;
 
 // Instantiate the global server and manager
-WebServer server(80);
+AsyncWebServer server(80);
 WebServerManager webServer;
 File fsUploadFile;
 
@@ -41,12 +41,10 @@ File fsUploadFile;
  * @brief Initializes the web server and binds all application endpoints.
  */
 void WebServerManager::init() {
-  server.on(F("/"), HTTP_GET, []() {
-      server.sendHeader("Location", "/web", true);
-      server.send(302, "text/plain", "");
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->redirect("/web");
   });
  
-
 
  
   // Initialize and register new portal handlers
@@ -54,13 +52,5 @@ void WebServerManager::init() {
   _handlerManager->begin();
 
   server.begin();     
-  LOG_INFO("WEB", "Local webserver started at http://" + WiFi.localIP().toString() + ":80/");
-}
-
-void WebServerManager::handleClient() {
-    if (isHandlingClient) return;
-    isHandlingClient = true;
-    server.handleClient();
-    isHandlingClient = false;
-    yield();
+  LOG_INFO("WEB", "Local async webserver started at http://" + WiFi.localIP().toString() + ":80/");
 }

@@ -25,6 +25,8 @@
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>
+#include <buttonHandler.hpp>
+#include "departuresBoard.hpp"
 
 appContext* _instance = nullptr; // Global static pointer for yield callback adaptor
 
@@ -130,6 +132,15 @@ void appContext::begin() {
     updateBootProgress(85, "Starting system manager...");
     sysManager.begin(this);
     
+#ifdef BUTTON_PIN
+    // Instantiate the generic button hardware dependency and inject it into the application logic
+    buttonHandler* btn = new buttonHandler(BUTTON_PIN);
+    sysManager.setInputDevice(btn);
+    LOG_INFO("SYSTEM", "Hardware input device attached on GPIO " + String(BUTTON_PIN));
+#else
+    LOG_INFO("SYSTEM", "No BUTTON_PIN defined. Hardware input disabled.");
+#endif
+
     // Initialize Centralized Data Fetch Worker
     networkWorker.init(false); // Enable queue debug logging if true
 
@@ -297,7 +308,6 @@ void appContext::tick() {
     displayManager.tick(millis());
     yield();
 
-    // 6. Web server handle
-    webServer.handleClient();
+    // 6. Web server handle (Deprecated: ESPAsyncWebServer handles background automatically)
     yield();
 }

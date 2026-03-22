@@ -9,6 +9,9 @@ tmp/
 # Fonts (Generated)
 modules/displayManager/fonts/fonts.cpp
 
+# Generated Web Assets
+modules/webServer/portalAssets.h
+
 # Compiled Tools
 tools/bdfconv/bdfconv
 

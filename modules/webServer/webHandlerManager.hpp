@@ -28,7 +28,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WebServer.h>
+#include <ESPAsyncWebServer.h>
 #include <configManager.hpp>
 
 /**
@@ -38,10 +38,10 @@ class WebHandlerManager {
 public:
     /**
      * @brief Constructor for WebHandlerManager.
-     * @param server Reference to the active WebServer.
+     * @param server Reference to the active AsyncWebServer.
      * @param config Reference to the ConfigManager.
      */
-    WebHandlerManager(WebServer& server, ConfigManager& config);
+    WebHandlerManager(AsyncWebServer& server, ConfigManager& config);
 
     /**
      * @brief Register all portal routes with the server.
@@ -49,121 +49,35 @@ public:
     void begin();
 
 private:
-    WebServer& _server;
+    AsyncWebServer& _server;
     ConfigManager& _config;
 
     // --- Route Handlers ---
     
-    /**
-     * @brief Serve the modern portal index.html (gzipped).
-     */
-    void handlePortalRoot();
-
-    /**
-     * @brief Get system health and status as JSON.
-     */
-    void handleGetStatus();
-
-    /**
-     * @brief Save global configuration settings (legacy, to be removed)
-     */
-    void handleSaveConfig();
-
-    /**
-     * @brief Get unified configuration (System + Keys + Boards).
-     */
-    void handleGetConfig();
-
-    /**
-     * @brief Unified "Save & Apply" action.
-     */
-    void handleSaveAll();
-
-    /**
-     * @brief API: Scan for local WiFi networks.
-     */
-    void handleWiFiScan();
-
-    /**
-     * @brief API: Test a specific WiFi connection asynchronously.
-     */
-    void handleWiFiTest();
-
-    /**
-     * @brief API: Reset WiFi credentials and reboot into AP mode.
-     */
-    void handleWiFiReset();
-
-    /**
-     * @brief Get all boards configuration.
-     */
-    void handleGetBoards();
-
-    /**
-     * @brief CRUD: Add or update a board.
-     */
-    void handleSaveBoard();
-
-    /**
-     * @brief CRUD: Delete a board.
-     */
-    void handleDeepDeleteBoard();
-
-    /**
-     * @brief Get API Key Registry.
-     */
-    void handleGetKeys();
-
-    /**
-     * @brief CRUD: Save an API key.
-     */
-    void handleSaveKey();
-
-    /**
-     * @brief CRUD: Delete an API key.
-     */
-    void handleDeleteKey();
-
-    /**
-     * @brief API: Test an API key connection.
-     */
-    void handleTestKey();
-
-    /**
-     * @brief API: Test an RSS feed URL.
-     */
-    void handleTestFeed();
-
-    /**
-     * @brief API: Test a specific weather API key.
-     */
-    void handleTestWeather();
-
-    /**
-     * @brief API: Serve the curated RSS feeds JSON.
-     */
-    void handleRSSJson();
-    
-    /**
-     * @brief API: Test a specific board configuration.
-     */
-    void handleTestBoard();
-
-    /**
-     * @brief Handles the captive portal redirect for unknown routes.
-     */
-    void handleCaptivePortalRedirect();
-
-    /**
-     * @brief API: Trigger a system reboot.
-     */
-    void handleReboot();
-
-    /**
-     * @brief API: Trigger a manual firmware update check.
-     */
-    void handleOTACheck();
+    void handlePortalRoot(AsyncWebServerRequest *request);
+    void handleGetStatus(AsyncWebServerRequest *request);
+    void handleSaveConfig(AsyncWebServerRequest *request);
+    void handleGetConfig(AsyncWebServerRequest *request);
+    void handleSaveAll(AsyncWebServerRequest *request, const String& body);
+    void handleWiFiScan(AsyncWebServerRequest *request);
+    void handleWiFiTest(AsyncWebServerRequest *request, const String& body);
+    void handleWiFiReset(AsyncWebServerRequest *request);
+    void handleGetBoards(AsyncWebServerRequest *request);
+    void handleSaveBoard(AsyncWebServerRequest *request);
+    void handleDeepDeleteBoard(AsyncWebServerRequest *request);
+    void handleGetKeys(AsyncWebServerRequest *request);
+    void handleSaveKey(AsyncWebServerRequest *request, const String& body);
+    void handleDeleteKey(AsyncWebServerRequest *request);
+    void handleTestKey(AsyncWebServerRequest *request, const String& body);
+    void handleTestFeed(AsyncWebServerRequest *request);
+    void handleTestWeather(AsyncWebServerRequest *request);
+    void handleRSSJson(AsyncWebServerRequest *request);
+    void handleTestBoard(AsyncWebServerRequest *request, const String& body);
+    void handleCaptivePortalRedirect(AsyncWebServerRequest *request);
+    void handleReboot(AsyncWebServerRequest *request);
+    void handleOTACheck(AsyncWebServerRequest *request);
+    void handleStationPicker(AsyncWebServerRequest *request);
 
     // --- Helpers ---
-    void sendGzipFlash(const uint8_t* data, size_t len, const char* contentType);
+    void sendGzipFlash(AsyncWebServerRequest *request, const uint8_t* data, size_t len, const char* contentType);
 };

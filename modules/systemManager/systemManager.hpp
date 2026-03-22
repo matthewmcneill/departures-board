@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include <Arduino.h>
 #include <WiFi.h>
 #include <functional>
 
+class buttonHandler; // Forward declaration
 class appContext; // Forward declaration
 
 /**
@@ -29,6 +29,7 @@ class appContext; // Forward declaration
 class systemManager {
 private:
     appContext* context; ///< Pointer to owner for DI access
+    buttonHandler* inputDevice; ///< Generic input device for interaction
 
     // --- Network State ---
     bool wifiConfigured;          ///< True if WiFiManager has valid credentials
@@ -46,7 +47,8 @@ private:
     std::function<void()> onSoftReset;
 
     // --- Data Polling State ---
-    unsigned long nextDataUpdate;     ///< Calculated next poll timestamp (ms)
+    unsigned long nextRoundRobinUpdate; ///< Calculated next background poll timestamp (ms)
+    int backgroundUpdateIndex;        ///< Current index in the background fetch carousel
     unsigned long lastDataLoadTime;   ///< Timestamp of last successful data load (ms)
     bool noDataLoaded;                ///< Flag indicating if valid payload exists
     int dataLoadSuccess;              ///< Count of valid polling cycles
@@ -62,6 +64,11 @@ public:
     systemManager();
 
     /**
+     * @brief Cleanup the System Manager.
+     */
+    ~systemManager();
+
+    /**
      * @brief Initialize with the current application context.
      * @param contextPtr Pointer to the parent context.
      */
@@ -69,6 +76,7 @@ public:
 
     void setBootProgressCallback(std::function<void(const char* msg, int percent)> cb) { onBootProgress = cb; }
     void setSoftResetCallback(std::function<void()> cb) { onSoftReset = cb; }
+    void setInputDevice(buttonHandler* device) { inputDevice = device; }
 
     /**
      * @brief Main logic maintenance tick.
@@ -142,8 +150,8 @@ public:
     int getStartupProgressPercent() const { return startupProgressPercent; }
     void setStartupProgressPercent(int percent) { startupProgressPercent = percent; }
 
-    unsigned long getNextDataUpdate() const { return nextDataUpdate; }
-    void setNextDataUpdate(unsigned long time) { nextDataUpdate = time; }
+    unsigned long getNextRoundRobinUpdate() const { return nextRoundRobinUpdate; }
+    void setNextRoundRobinUpdate(unsigned long time) { nextRoundRobinUpdate = time; }
 
     unsigned long getLastDataLoadTime() const { return lastDataLoadTime; }
     int getDataLoadSuccess() const { return dataLoadSuccess; }

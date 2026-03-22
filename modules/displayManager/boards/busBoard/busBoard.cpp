@@ -185,6 +185,11 @@ void BusBoard::render(U8G2& display) {
             activeLayout->servicesWidget.setVisible(true);
             activeLayout->noDataLabel.setVisible(false);
         } else {
+            if (lastUpdateStatus == -1 || lastUpdateStatus == 9) {
+                activeLayout->noDataLabel.setText("Loading data...");
+            } else {
+                activeLayout->noDataLabel.setText("No scheduled services.");
+            }
             activeLayout->servicesWidget.setVisible(false);
             activeLayout->noDataLabel.setVisible(true);
         }

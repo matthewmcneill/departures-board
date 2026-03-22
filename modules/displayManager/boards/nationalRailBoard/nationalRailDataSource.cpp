@@ -22,6 +22,8 @@
 
 #include "nationalRailDataSource.hpp"
 #include <WiFiClientSecure.h>
+#define ENABLE_DEBUG_LOG
+#define ENABLE_RAW_XML_LOG
 #include <logger.hpp>
 #include "../xmlStreamingParser/xmlStreamingParser.hpp"
 #include <algorithm>
@@ -84,8 +86,8 @@ int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDa
     }
 
     httpsClient->setInsecure();
-    httpsClient->setTimeout(5000);
-    httpsClient->setConnectionTimeout(3000);
+    httpsClient->setTimeout(10000);
+    httpsClient->setConnectionTimeout(10000);
 
     int retry = 0;
     while(!httpsClient->connect(wsdlHost, 443) && (retry < 10)){
@@ -271,8 +273,8 @@ void nationalRailDataSource::executeFetch() {
     
     unsigned long ticker = millis() + 350;
     int retry = 0;
-    while(!httpsClient->available() && retry < 30) { delay(100); retry++; }
-    if (retry >= 30) {
+    while(!httpsClient->available() && retry < 80) { delay(100); retry++; }
+    if (retry >= 80) {
         LOG_ERROR("DATA", "NR Source: Request timeout!");
         delete xStation;
         taskStatus = UPD_TIMEOUT;
@@ -330,24 +332,38 @@ void nationalRailDataSource::executeFetch() {
     LOG_INFO("DATA", "NR Source: Starting XML parse...");
     int yieldCounter = 0;
     while(httpsClient->available() || httpsClient->connected()) {
-        while (httpsClient->available()) {
-            parser.parse(httpsClient->read());
-            bytesRecv++;
-            
-            // --- Arcane Logic ---
-            // On single-core ESP32 variants (e.g. ESP32-C3), the Wi-Fi stack and user application
-            // share the exact same processor core tightly via the RTOS scheduler. By explicitly
-            // yielding execution context via vTaskDelay(1) every 500 byte blocks, we guarantee
-            // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
-            yieldCounter++;
-            if (yieldCounter % 500 == 0) vTaskDelay(1); // Single-core compatibility yield
-            
-            if (millis() > ticker && stationData) {
-                if (callback) callback(2, stationData->numServices);
-                ticker = millis() + 350;
+        int avail = httpsClient->available();
+        if (avail > 0) {
+            uint8_t buffer[256];
+            int toRead = (avail > 256) ? 256 : avail;
+            int len = httpsClient->read(buffer, toRead);
+            if (len > 0) {
+#ifdef ENABLE_RAW_XML_LOG
+                String rawDump = "";
+                for(int j=0; j<len; j++) rawDump += (char)buffer[j];
+                LOG_DEBUG("DATA-RAW", rawDump);
+#endif
+                for(int i=0; i<len; i++) {
+                    parser.parse((char)buffer[i]);
+                    bytesRecv++;
+                    
+                    // --- Arcane Logic ---
+                    // On single-core ESP32 variants (e.g. ESP32-C3), the Wi-Fi stack and user application
+                    // share the exact same processor core tightly via the RTOS scheduler. By explicitly
+                    // yielding execution context via vTaskDelay(1) every 500 byte blocks, we guarantee
+                    // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
+                    yieldCounter++;
+                    if (yieldCounter % 500 == 0) vTaskDelay(1); // Single-core compatibility yield
+                    
+                    if (millis() > ticker && stationData) {
+                        if (callback) callback(2, stationData->numServices);
+                        ticker = millis() + 350;
+                    }
+                }
             }
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(5));
         }
-        vTaskDelay(pdMS_TO_TICKS(5));
     }
     httpsClient->stop();
     delete httpsClient;

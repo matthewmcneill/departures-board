@@ -142,7 +142,11 @@
 
 ## 6. User Interface Design
 - **Design Philosophy**: 
-    - **Minimalist Footprint**: Avoids heavy frameworks (Bootstrap/jQuery) in favor of **Vanilla ES6+ JS** and **Pico CSS**, keeping the uncompressed payload under 20KB.
+    - **Minimalist Footprint**: Avoids heavy frameworks (e.g., Bootstrap 5, jQuery) in favor of **Vanilla ES6+ JS** and minimalistic, custom CSS, keeping the total uncompressed payload strictly under 20KB. This is a critical embedded systems design choice:
+        - **Flash Memory Bloat**: Generalized frameworks like Bootstrap require ~200KB of storage, wasting massive amounts of the ESP32's application partition needed for core logic and OTA buffers.
+        - **RAM Exhaustion**: Serving large payloads spikes heap memory allocation during network transmission, risking `Out of Memory (OOM)` kernel panics during concurrent tasks (like TLS handshakes).
+        - **Power and Real-Time Penalties**: Longer transmission times keep the power-hungry Wi-Fi radio active longer and occupy the HTTP server thread, degrading deterministic hardware display updates.
+        - **AP Mode Reliability**: Relying on external CDNs to bypass flash limits completely breaks the configuration portal during initial offline Access Point (AP) setup, as the client device has no internet routing.
     - **Asset delivery**: Static assets are compressed via **gzip** and converted to **PROGMEM hexadecimal arrays**. This allows the server to stream files directly from Flash memory without taxing the LittleFS filesystem or DRAM.
     - **Mobile-First UX**: Prioritizes Fluid Grid layouts (Flexbox/Grid) and "Z-pattern" visual scanning for physical interaction in the field.
 - **Navigation & User Flow**: 

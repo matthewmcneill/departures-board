@@ -59,6 +59,11 @@
 #define MAX_CONFIG_CONSUMERS 10
 #endif
 
+// --- Hardware Pins ---
+#ifndef BUTTON_PIN
+#define BUTTON_PIN 34 // Touch sensor input pin (Defined in platformio.ini per env)
+#endif
+
 #ifndef MAX_BUS_ATCO_HISTORY
 #define MAX_BUS_ATCO_HISTORY 10
 #endif

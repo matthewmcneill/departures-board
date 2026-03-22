@@ -1,0 +1,38 @@
+diff --git a/lib/raildataXmlClient/raildataXmlClient.cpp b/lib/raildataXmlClient/raildataXmlClient.cpp
+index 176fa77..f8ec733 100644
+--- a/lib/raildataXmlClient/raildataXmlClient.cpp
++++ b/lib/raildataXmlClient/raildataXmlClient.cpp
+@@ -45,8 +45,8 @@ int raildataXmlClient::init(const char *wsdlHost, const char *wsdlAPI, rdCallbac
+ 
+     WiFiClientSecure httpsClient;
+     httpsClient.setInsecure();
+-    httpsClient.setTimeout(5000);
+-    httpsClient.setConnectionTimeout(3000);
++    httpsClient.setTimeout(10000);
++    httpsClient.setConnectionTimeout(10000);
+ 
+     int retryCounter=0; //retry counter
+     while((!httpsClient.connect(wsdlHost, 443)) && (retryCounter < 10)){
+@@ -292,8 +292,8 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
+ 
+     WiFiClientSecure httpsClient;
+     httpsClient.setInsecure();
+-    httpsClient.setTimeout(5000);
+-    httpsClient.setConnectionTimeout(5000);
++    httpsClient.setTimeout(8000);
++    httpsClient.setConnectionTimeout(8000);
+     httpsClient.setNoDelay(false);
+ 
+     int retryCounter=0; //retry counter
+@@ -330,9 +330,9 @@ int raildataXmlClient::updateDepartures(rdStation *station, stnMessages *message
+     while(!httpsClient.available()) {
+         delay(100);
+         retryCounter++;
+-        if (retryCounter >= 30) {
++        if (retryCounter >= 80) {
+             lastErrorMessage = F("Timed out (GET)");
+-            return UPD_TIMEOUT;     // No response within 3s
++            return UPD_TIMEOUT;     // No response within 8s
+         }
+     }
+ 

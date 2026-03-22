@@ -32,6 +32,17 @@
  * The core automatically maps the default Hardware SPI pathways to the correct pins 
  * for that respective board without us having to lift a finger in our codebase!
  *
+ * V3.0 Architecture removes direct driver dependencies via interface abstraction.
+ */
+
+#include "departuresBoard.hpp"
+
+// PlatformIO LDF workaround for Core 3.x
+#if defined(ESP_IDF_VERSION_MAJOR) && ESP_IDF_VERSION_MAJOR >= 5
+#include <Network.h>
+#endif
+
+/*
  * Module: src/departuresBoard.cpp
  * Description: Main application entry point for the Departures Board.
  *              Manages hardware initialization and the core executive loop.

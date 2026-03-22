@@ -258,6 +258,11 @@ void NationalRailBoard::render(U8G2& display) {
             activeLayout->row0Dest.setVisible(true);
             activeLayout->noDataLabel.setVisible(false);
         } else {
+            if (lastUpdateStatus == -1 || lastUpdateStatus == 9) {
+                activeLayout->noDataLabel.setText("Loading data...");
+            } else {
+                activeLayout->noDataLabel.setText("No services found.");
+            }
             activeLayout->servicesWidget.setVisible(false);
             activeLayout->row0Time.setVisible(false);
             activeLayout->row0Dest.setVisible(false);

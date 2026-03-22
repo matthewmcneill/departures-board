@@ -23,7 +23,8 @@
  */
 
 #include "webHandlerManager.hpp"
-#include <webServer/portalAssets.h>
+// Web UI Assets Embed
+#include "portalAssets.h"
 #include <ArduinoJson.h>
 #include <logger.hpp>
 #include <wifiManager.hpp>
@@ -37,49 +38,81 @@
 
 extern class appContext appContext;
 
-WebHandlerManager::WebHandlerManager(WebServer& server, ConfigManager& config) 
+WebHandlerManager::WebHandlerManager(AsyncWebServer& server, ConfigManager& config) 
     : _server(server), _config(config) {
 }
 
 void WebHandlerManager::begin() {
     LOG_INFO("WEB", "Initializing WebHandlerManager on /portal...");
 
+    // Helper lambda to collect chunked POST bodies and pass to handlers
+    auto bindPostDynamic = [this](const char* uri, void (WebHandlerManager::*handlerFunc)(AsyncWebServerRequest*, const String&)) {
+        _server.on(uri, HTTP_POST, 
+            [this, handlerFunc](AsyncWebServerRequest *request) {
+                if (request->_tempObject) {
+                    String* bodyPtr = (String*)request->_tempObject;
+                    String body = *bodyPtr;
+                    delete bodyPtr;
+                    request->_tempObject = NULL;
+                    (this->*handlerFunc)(request, body);
+                } else {
+                    (this->*handlerFunc)(request, "");
+                }
+            },
+            NULL,
+            [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+                if (index == 0) {
+                    request->_tempObject = new String();
+                }
+                String* bodyPtr = (String*)request->_tempObject;
+                if (bodyPtr) {
+                    for(size_t i = 0; i < len; i++) {
+                        *bodyPtr += (char)data[i];
+                    }
+                }
+            }
+        );
+    };
+
     // Main Web Entry
-    _server.on("/web", HTTP_GET, [this]() { this->handlePortalRoot(); });
-    _server.on("/web/", HTTP_GET, [this]() { this->handlePortalRoot(); });
-    _server.on("/web/index.html", HTTP_GET, [this]() { this->handlePortalRoot(); });
+    _server.on("/web", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handlePortalRoot(request); });
+    _server.on("/web/", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handlePortalRoot(request); });
+    _server.on("/web/index.html", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handlePortalRoot(request); });
 
     // API: System & Config (Unified)
-    _server.on("/api/status", HTTP_GET, [this]() { this->handleGetStatus(); });
-    _server.on("/api/config", HTTP_GET, [this]() { this->handleGetConfig(); });
-    _server.on("/api/saveall", HTTP_POST, [this]() { this->handleSaveAll(); });
-    _server.on("/api/reboot", HTTP_POST, [this]() { this->handleReboot(); });
-    _server.on("/api/ota/check", HTTP_POST, [this]() { this->handleOTACheck(); });
+    _server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetStatus(request); });
+    _server.on("/api/config", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetConfig(request); });
+    bindPostDynamic("/api/saveall", &WebHandlerManager::handleSaveAll);
+    _server.on("/api/reboot", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleReboot(request); });
+    _server.on("/api/ota/check", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleOTACheck(request); });
 
     // API: Individual CRUD (Legacy/Granular support)
-    _server.on("/api/boards", HTTP_GET, [this]() { this->handleGetBoards(); });
-    _server.on("/api/boards", HTTP_POST, [this]() { this->handleSaveBoard(); });
-    _server.on("/api/boards", HTTP_DELETE, [this]() { this->handleDeepDeleteBoard(); });
+    _server.on("/api/boards", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetBoards(request); });
+    _server.on("/api/boards", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleSaveBoard(request); });
+    _server.on("/api/boards", HTTP_DELETE, [this](AsyncWebServerRequest *request) { this->handleDeepDeleteBoard(request); });
 
     // API: Keys (CRUD)
-    _server.on("/api/keys", HTTP_GET, [this]() { this->handleGetKeys(); });
-    _server.on("/api/keys", HTTP_POST, [this]() { this->handleSaveKey(); });
-    _server.on("/api/keys", HTTP_DELETE, [this]() { this->handleDeleteKey(); });
-    _server.on("/api/keys/test", HTTP_POST, [this]() { this->handleTestKey(); });
+    _server.on("/api/keys", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetKeys(request); });
+    bindPostDynamic("/api/keys", &WebHandlerManager::handleSaveKey);
+    _server.on("/api/keys", HTTP_DELETE, [this](AsyncWebServerRequest *request) { this->handleDeleteKey(request); });
+    bindPostDynamic("/api/keys/test", &WebHandlerManager::handleTestKey);
 
     // API: WiFi (Bespoke Captive Portal)
-    _server.on("/api/wifi/scan", HTTP_GET, [this]() { this->handleWiFiScan(); });
-    _server.on("/api/wifi/test", HTTP_POST, [this]() { this->handleWiFiTest(); });
-    _server.on("/api/wifi/reset", HTTP_POST, [this]() { this->handleWiFiReset(); });
+    _server.on("/api/wifi/scan", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleWiFiScan(request); });
+    bindPostDynamic("/api/wifi/test", &WebHandlerManager::handleWiFiTest);
+    _server.on("/api/wifi/reset", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleWiFiReset(request); });
+
+    // API: Subsystems
+    _server.on("/stationpicker", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleStationPicker(request); });
 
     // API: Feeds & Weather Diagnostics
-    _server.on("/api/feeds/test", HTTP_GET, [this]() { this->handleTestFeed(); });
-    _server.on("/api/weather/test", HTTP_GET, [this]() { this->handleTestWeather(); });
-    _server.on("/api/boards/test", HTTP_POST, [this]() { this->handleTestBoard(); });
-    _server.on("/rss.json", HTTP_GET, [this]() { this->handleRSSJson(); });
+    _server.on("/api/feeds/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestFeed(request); });
+    _server.on("/api/weather/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestWeather(request); });
+    bindPostDynamic("/api/boards/test", &WebHandlerManager::handleTestBoard);
+    _server.on("/rss.json", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleRSSJson(request); });
 
     // Captive Portal Redirect
-    _server.onNotFound([this]() { this->handleCaptivePortalRedirect(); });
+    _server.onNotFound([this](AsyncWebServerRequest *request) { this->handleCaptivePortalRedirect(request); });
 
     LOG_INFO("WEB", "WebHandlerManager routes registered.");
 }
@@ -87,15 +120,15 @@ void WebHandlerManager::begin() {
 /**
  * @brief Serves the main web index.html file (gzipped from flash).
  */
-void WebHandlerManager::handlePortalRoot() {
+void WebHandlerManager::handlePortalRoot(AsyncWebServerRequest *request) {
     LOG_INFO("WEB_API", "Serving /web/index.html (gzipped)");
-    sendGzipFlash(index_html_gz, index_html_gz_len, "text/html");
+    sendGzipFlash(request, index_html_gz, index_html_gz_len, "text/html");
 }
 
 /**
  * @brief API Handler for GET /api/status. Returns system health and connectivity metrics.
  */
-void WebHandlerManager::handleGetStatus() {
+void WebHandlerManager::handleGetStatus(AsyncWebServerRequest *request) {
     // LOG_DEBUG("WEB_API", "GET /api/status called - returning system health");
     JsonDocument doc;
     doc["heap"] = ESP.getFreeHeap();
@@ -131,13 +164,13 @@ void WebHandlerManager::handleGetStatus() {
 
     String output;
     serializeJson(doc, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
 /**
  * @brief API Handler for GET /api/config. Returns the unified project configuration as JSON.
  */
-void WebHandlerManager::handleGetConfig() {
+void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
     LOG_INFO("WEB_API", "GET /api/config called - building unified JSON");
     const Config& config = _config.getConfig();
     JsonDocument doc;
@@ -197,22 +230,18 @@ void WebHandlerManager::handleGetConfig() {
 
     String output;
     serializeJson(doc, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
-void WebHandlerManager::handleSaveAll() {
+void WebHandlerManager::handleSaveAll(AsyncWebServerRequest *request, const String& body) {
     LOG_INFO("WEB_API", "POST /api/saveall called - processing unified save");
-    String body = _server.hasArg("plain") ? _server.arg("plain") : _server.arg(0);
-    if (body.length() == 0) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
-        return;
-    }
+
 
     LOG_DEBUG("WEB_API", String("Payload size: ") + body.length() + " bytes");
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, body);
     if (error) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid JSON\"}");
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid JSON\"}");
         return;
     }
 
@@ -278,7 +307,7 @@ void WebHandlerManager::handleSaveAll() {
         // --- Step 5: Persist and Notify ---
         _config.save();
 
-        _server.send(200, "application/json", "{\"status\":\"ok\"}");
+        request->send(200, "application/json", "{\"status\":\"ok\"}");
         
         _config.notifyConsumersToReapplyConfig();
 
@@ -290,22 +319,22 @@ void WebHandlerManager::handleSaveAll() {
     }
 }
 
-void WebHandlerManager::handleGetBoards() {
+void WebHandlerManager::handleGetBoards(AsyncWebServerRequest *request) {
     // Placeholder for Phase 2 implementation
-    _server.send(200, "application/json", "[]");
+    request->send(200, "application/json", "[]");
 }
 
-void WebHandlerManager::handleSaveBoard() {
+void WebHandlerManager::handleSaveBoard(AsyncWebServerRequest *request) {
     // Placeholder for Phase 2 implementation
-    _server.send(200, "application/json", "{\"status\":\"saved\"}");
+    request->send(200, "application/json", "{\"status\":\"saved\"}");
 }
 
-void WebHandlerManager::handleDeepDeleteBoard() {
+void WebHandlerManager::handleDeepDeleteBoard(AsyncWebServerRequest *request) {
     // Placeholder for Phase 2 implementation
-    _server.send(200, "application/json", "{\"status\":\"deleted\"}");
+    request->send(200, "application/json", "{\"status\":\"deleted\"}");
 }
 
-void WebHandlerManager::handleGetKeys() {
+void WebHandlerManager::handleGetKeys(AsyncWebServerRequest *request) {
     const Config& config = _config.getConfig();
     JsonDocument doc;
     JsonArray arr = doc.to<JsonArray>();
@@ -321,15 +350,11 @@ void WebHandlerManager::handleGetKeys() {
 
     String output;
     serializeJson(doc, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
-void WebHandlerManager::handleSaveKey() {
-    String body = _server.hasArg("plain") ? _server.arg("plain") : _server.arg(0);
-    if (body.length() == 0) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
-        return;
-    }
+void WebHandlerManager::handleSaveKey(AsyncWebServerRequest *request, const String& body) {
+
 
     JsonDocument doc;
     deserializeJson(doc, body);
@@ -352,35 +377,31 @@ void WebHandlerManager::handleSaveKey() {
     }
 
     if (strlen(key.label) == 0 || strlen(key.type) == 0) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Label and Type are required\"}");
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Label and Type are required\"}");
         return;
     }
 
     _config.updateKey(key);
-    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+    request->send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
-void WebHandlerManager::handleDeleteKey() {
-    if (!_server.hasArg("id")) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing ID\"}");
+void WebHandlerManager::handleDeleteKey(AsyncWebServerRequest *request) {
+    if (!request->hasArg("id")) {
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing ID\"}");
         return;
     }
 
-    _config.deleteKey(_server.arg("id").c_str());
-    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+    _config.deleteKey(request->arg("id").c_str());
+    request->send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
-void WebHandlerManager::handleTestKey() {
-    LOG_DEBUG("WEB_API", String("Arguments received: ") + _server.args());
-    for (int i = 0; i < _server.args(); i++) {
-        LOG_DEBUG("WEB_API", "Arg [" + _server.argName(i) + "]: " + _server.arg(i));
+void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const String& body) {
+    LOG_DEBUG("WEB_API", String("Arguments received: ") + request->args());
+    for (int i = 0; i < request->args(); i++) {
+        LOG_DEBUG("WEB_API", "Arg [" + request->argName(i) + "]: " + request->arg(i));
     }
 
-    String body = _server.hasArg("plain") ? _server.arg("plain") : (_server.args() > 0 ? _server.arg(0) : "");
-    if (body.length() == 0) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
-        return;
-    }
+
 
     JsonDocument doc;
     deserializeJson(doc, body);
@@ -443,10 +464,10 @@ void WebHandlerManager::handleTestKey() {
     
     String output;
     serializeJson(res, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
-void WebHandlerManager::handleWiFiScan() {
+void WebHandlerManager::handleWiFiScan(AsyncWebServerRequest *request) {
     LOG_INFO("WEB_API", "GET /api/wifi/scan - Starting WiFi scan...");
     int n = WiFi.scanNetworks();
     LOG_INFO("WEB_API", String("Scan complete. Found ") + n + " networks.");
@@ -465,17 +486,13 @@ void WebHandlerManager::handleWiFiScan() {
 
     String output;
     serializeJson(doc, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
-void WebHandlerManager::handleWiFiTest() {
+void WebHandlerManager::handleWiFiTest(AsyncWebServerRequest *request, const String& body) {
     LOG_INFO("WEB_API", "POST /api/wifi/test - Attempting async connection test...");
     
-    String body = _server.hasArg("plain") ? _server.arg("plain") : _server.arg(0);
-    if (body.length() == 0) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing credentials\"}");
-        return;
-    }
+
 
     JsonDocument doc;
     deserializeJson(doc, body);
@@ -483,7 +500,7 @@ void WebHandlerManager::handleWiFiTest() {
     const char* pass = doc["pass"] | "";
 
     if (strlen(ssid) == 0) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"SSID required\"}");
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"SSID required\"}");
         return;
     }
 
@@ -499,17 +516,17 @@ void WebHandlerManager::handleWiFiTest() {
 
     String output;
     serializeJson(res, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
-void WebHandlerManager::handleWiFiReset() {
+void WebHandlerManager::handleWiFiReset(AsyncWebServerRequest *request) {
     LOG_WARN("WEB_API", "POST /api/wifi/reset called - ERASING WiFi credentials and rebooting!");
     
     // 1. Erase credentials using WiFiConfig manager
     appContext.getWifiManager().resetSettings();
 
     // 2. Respond to client before rebooting
-    _server.send(200, "application/json", "{\"status\":\"ok\",\"msg\":\"WiFi erased. Board rebooting into AP mode...\"}");
+    request->send(200, "application/json", "{\"status\":\"ok\",\"msg\":\"WiFi erased. Board rebooting into AP mode...\"}");
 
     // 3. Trigger reboot after short delay to allow response to send
     LOG_INFO("SYSTEM", "Rebooting in 2 seconds...");
@@ -517,21 +534,20 @@ void WebHandlerManager::handleWiFiReset() {
     ESP.restart();
 }
 
-void WebHandlerManager::handleCaptivePortalRedirect() {
-    String host = _server.header("Host");
+void WebHandlerManager::handleCaptivePortalRedirect(AsyncWebServerRequest *request) {
+    String host = request->host();
     LOG_INFO("WEB", String("Captive Portal: Redirecting request from ") + host + " to /web");
     
     // Redirect all requests that are NOT for our API/Portal to the web root
-    _server.sendHeader("Location", "/web", true);
-    _server.send(302, "text/plain", "");
+    request->redirect("/web");
 }
 
-void WebHandlerManager::handleTestFeed() {
-    if (!_server.hasArg("url")) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing URL\"}");
+void WebHandlerManager::handleTestFeed(AsyncWebServerRequest *request) {
+    if (!request->hasArg("url")) {
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing URL\"}");
         return;
     }
-    String url = _server.arg("url");
+    String url = request->arg("url");
     LOG_INFO("WEB_API", "Testing RSS Feed: " + url);
     
     rssClient& rss = appContext.getRss();
@@ -548,18 +564,18 @@ void WebHandlerManager::handleTestFeed() {
     
     String output;
     serializeJson(doc, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
-void WebHandlerManager::handleTestWeather() {
-    if (!_server.hasArg("keyId")) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing Key ID\"}");
+void WebHandlerManager::handleTestWeather(AsyncWebServerRequest *request) {
+    if (!request->hasArg("keyId")) {
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing Key ID\"}");
         return;
     }
-    String keyIdStr = _server.arg("keyId");
+    String keyIdStr = request->arg("keyId");
     const char* keyId = keyIdStr.c_str();
-    String tokenStr = _server.arg("token");
-    const char* token = _server.hasArg("token") ? tokenStr.c_str() : nullptr;
+    String tokenStr = request->arg("token");
+    const char* token = request->hasArg("token") ? tokenStr.c_str() : nullptr;
 
     LOG_INFO("WEB_API", "Testing Weather Key: " + keyIdStr + (token ? " (with token override)" : " (stored)"));
     
@@ -587,17 +603,13 @@ void WebHandlerManager::handleTestWeather() {
     String output;
     serializeJson(doc, output);
     LOG_INFO("WEB_API", "Weather test complete. Success=" + String(success ? "YES" : "NO") + " Result=" + output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
-void WebHandlerManager::handleTestBoard() {
-    LOG_DEBUG("WEB_API", "POST /api/boards/test - Arguments received: " + String(_server.args()));
+void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const String& body) {
+    LOG_DEBUG("WEB_API", "POST /api/boards/test - Arguments received: " + String(request->args()));
     
-    String body = _server.hasArg("plain") ? _server.arg("plain") : (_server.args() > 0 ? _server.arg(0) : "");
-    if (body.length() == 0) {
-        _server.send(400, "application/json", "{\"status\":\"error\",\"msg\":\"No data\"}");
-        return;
-    }
+
 
     JsonDocument doc;
     deserializeJson(doc, body);
@@ -653,23 +665,23 @@ void WebHandlerManager::handleTestBoard() {
     
     String output;
     serializeJson(res, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
 /**
  * @brief API Handler for GET /rss.json. Serves the bundled RSS feed list.
  */
-void WebHandlerManager::handleRSSJson() {
-    LOG_INFO("WEB_API", "Serving /rss.json (gzipped)");
-    sendGzipFlash(rss_json_gz, rss_json_gz_len, "application/json");
+void WebHandlerManager::handleRSSJson(AsyncWebServerRequest *request) {
+    // LOG_INFO("WEB_API", "Serving /rss.json (gzipped)");
+    sendGzipFlash(request, rss_json_gz, rss_json_gz_len, "application/json");
 }
 
 /**
  * @brief API Handler for POST /api/reboot. Restarts the physical device.
  */
-void WebHandlerManager::handleReboot() {
+void WebHandlerManager::handleReboot(AsyncWebServerRequest *request) {
     LOG_WARN("WEB_API", "Reboot requested via API.");
-    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+    request->send(200, "application/json", "{\"status\":\"ok\"}");
     delay(1000);
     ESP.restart();
 }
@@ -677,9 +689,9 @@ void WebHandlerManager::handleReboot() {
 /**
  * @brief API Handler for POST /api/ota/check. Triggers a background firmware update check.
  */
-void WebHandlerManager::handleOTACheck() {
+void WebHandlerManager::handleOTACheck(AsyncWebServerRequest *request) {
     LOG_INFO("WEB_API", "Manual OTA update check requested.");
-    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+    request->send(200, "application/json", "{\"status\":\"ok\"}");
     
     // Trigger the update check in the background
     // We don't wait for it to finish before responding to the web UI
@@ -692,7 +704,100 @@ void WebHandlerManager::handleOTACheck() {
  * @param len Length of the data in bytes.
  * @param contentType The MIME type to send.
  */
-void WebHandlerManager::sendGzipFlash(const uint8_t* data, size_t len, const char* contentType) {
-    _server.sendHeader("Content-Encoding", "gzip");
-    _server.send_P(200, contentType, (const char*)data, len);
+void WebHandlerManager::handleStationPicker(AsyncWebServerRequest *request) {
+    if (!request->hasParam("q")) {
+        request->send(400, "text/plain", "Missing Query");
+        return;
+    }
+
+    String query = request->getParam("q")->value();
+    if (query.length() <= 2) {
+        request->send(400, "text/plain", "Query Too Short");
+        return;
+    }
+
+    const char* host = "ojp.nationalrail.co.uk";
+    WiFiClientSecure httpsClient;
+    httpsClient.setInsecure();
+    httpsClient.setTimeout(5000);
+
+    int retryCounter = 0;
+    while (!httpsClient.connect(host, 443) && retryCounter++ < 20) {
+        delay(50);
+    }
+
+    if (retryCounter >= 20) {
+        request->send(408, "text/plain", "NR Timeout");
+        return;
+    }
+
+    httpsClient.print(String("GET /find/stationsDLRLU/") + query + " HTTP/1.0\r\n" +
+                      "Host: ojp.nationalrail.co.uk\r\n" +
+                      "Connection: close\r\n\r\n");
+
+    retryCounter = 0;
+    while (!httpsClient.available() && retryCounter++ < 15) {
+        delay(100);
+    }
+
+    if (!httpsClient.available()) {
+        httpsClient.stop();
+        request->send(408, "text/plain", "NRQ Timeout");
+        return;
+    }
+
+    String statusLine = httpsClient.readStringUntil('\n');
+    statusLine.trim();
+
+    if (!statusLine.startsWith("HTTP/") || statusLine.indexOf("200") == -1) {
+        httpsClient.stop();
+        if (statusLine.indexOf("401") > 0) request->send(401, "text/plain", "Not Authorized");
+        else if (statusLine.indexOf("500") > 0) request->send(500, "text/plain", "Server Error");
+        else request->send(503, "text/plain", statusLine.c_str());
+        return;
+    }
+
+    while (httpsClient.connected() || httpsClient.available()) {
+        String line = httpsClient.readStringUntil('\n');
+        if (line == "\r" || line == "") break;
+    }
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, httpsClient);
+    httpsClient.stop();
+
+    if (error) {
+        request->send(500, "text/plain", "JSON Parse Error");
+        return;
+    }
+
+    JsonDocument outDoc;
+    JsonArray stationsArr = outDoc["payload"]["stations"].to<JsonArray>();
+
+    if (doc.is<JsonArray>()) {
+        for (JsonVariant item : doc.as<JsonArray>()) {
+            if (item.is<JsonArray>()) {
+                JsonArray stationData = item.as<JsonArray>();
+                JsonObject stationObj = stationsArr.add<JsonObject>();
+                stationObj["crsCode"] = stationData[0];
+                stationObj["name"] = stationData[1];
+                
+                float lat = stationData[7].as<float>();
+                float lon = stationData[8].as<float>();
+                stationObj["latitude"] = lat;
+                stationObj["longitude"] = lon;
+                stationObj["kbState"] = 1;
+            }
+        }
+    }
+
+    String output;
+    serializeJson(outDoc, output);
+    request->send(200, "application/json", output);
+}
+
+void WebHandlerManager::sendGzipFlash(AsyncWebServerRequest *request, const uint8_t* data, size_t len, const char* contentType) {
+    AsyncWebServerResponse *response = request->beginResponse(200, contentType, data, len);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
 }

@@ -34,7 +34,7 @@ except ImportError:
 
 ROOT_DIR = env.get("PROJECT_DIR", os.getcwd())
 PORTAL_DIR = os.path.join(ROOT_DIR, "web")
-OUTPUT_FILE = os.path.join(ROOT_DIR, "include/webServer/portalAssets.h")
+OUTPUT_FILE = os.path.join(ROOT_DIR, "modules/webServer/portalAssets.h")
 ASSETS = ["index.html", "rss.json"] 
 
 def should_rebuild():

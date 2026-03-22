@@ -84,16 +84,30 @@ void clockWidget::render(U8G2& display) {
 
     if (!timeMgr) return;
 
-    char timeStr[9];
-    if (showColon) {
-        strftime(timeStr, sizeof(timeStr), "%H:%M", &timeMgr->getCurrentTime());
-    } else {
-        strftime(timeStr, sizeof(timeStr), "%H %M", &timeMgr->getCurrentTime());
-    }
+    char hourStr[3];
+    char minStr[3];
+    strftime(hourStr, sizeof(hourStr), "%H", &timeMgr->getCurrentTime());
+    strftime(minStr, sizeof(minStr), "%M", &timeMgr->getCurrentTime());
 
-    int w = display.getStrWidth(timeStr);
-    int startX = x + (renderW - w) / 2;
+    int hourW = display.getStrWidth(hourStr);
+    int minW = display.getStrWidth(minStr);
+    int colonW = display.getStrWidth(":");
+
+    // Calculate total width using the colon's width as the fixed gap
+    int totalW = hourW + colonW + minW;
+    int startX = x + (renderW - totalW) / 2;
+
     // Clearing the area is usually handled by the board, but for a clock we might want to be precise
     blankArea(display, x, y, renderW, renderH);
-    display.drawStr(startX, y + renderH - 4, timeStr);
+    
+    // Draw hours
+    display.drawStr(startX, y + renderH - 4, hourStr);
+    
+    // Draw colon if enabled
+    if (showColon) {
+        display.drawStr(startX + hourW, y + renderH - 4, ":");
+    }
+    
+    // Draw minutes
+    display.drawStr(startX + hourW + colonW, y + renderH - 4, minStr);
 }
