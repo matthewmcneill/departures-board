@@ -7,8 +7,8 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/src/clockWidget.cpp
- * Description: Implementation of the clockWidget with blinking colon logic.
+ * Module: modules/displayManager/widgets/clockWidget.cpp
+ * Description: Implementation of the real-time clock drawing logic.
  */
 
 #include "clockWidget.hpp"
@@ -16,15 +16,26 @@
 #include <timeManager.hpp>
 #include <time.h>
 
+/**
+ * @brief Initialize the clock with its time manager and layout.
+ */
 clockWidget::clockWidget(TimeManager* _timeMgr, int _x, int _y, int _w, int _h, const uint8_t* _font)
     : iGfxWidget(_x, _y, _w, _h), showColon(true), blinkEnabled(true), lastBlinkMs(0), lastMinute(-1), font(_font), timeMgr(_timeMgr) {
     if (font == nullptr) font = UndergroundClock8;
 }
 
+/**
+ * @brief Update the font used for the time string.
+ * @param newFont Pointer to the font array.
+ */
 void clockWidget::setFont(const uint8_t* newFont) {
     font = newFont;
 }
 
+/**
+ * @brief Handle 1Hz pulse for the colon blink.
+ * @param currentMillis Milliseconds since boot.
+ */
 void clockWidget::tick(uint32_t currentMillis) {
     if (!isVisible || !blinkEnabled) return;
 
@@ -34,6 +45,11 @@ void clockWidget::tick(uint32_t currentMillis) {
     }
 }
 
+/**
+ * @brief Partial redraw for the blinking colon or minute change.
+ * @param display U8g2 reference.
+ * @param currentMillis Milliseconds since boot.
+ */
 void clockWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (!isVisible) return;
     
@@ -54,6 +70,10 @@ void clockWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     }
 }
 
+/**
+ * @brief Full frame render for the time string.
+ * @param display U8g2 reference.
+ */
 void clockWidget::render(U8G2& display) {
     if (!isVisible) return;
 

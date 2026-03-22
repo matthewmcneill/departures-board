@@ -7,13 +7,16 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/src/systemMessageWidget.cpp
- * Description: Implementation of systemMessageWidget for consistent alert layouts.
+ * Module: modules/displayManager/widgets/systemMessageWidget.cpp
+ * Description: Implementation of centered multi-line alert layouts.
  */
 
 #include "systemMessageWidget.hpp"
 #include "drawingPrimitives.hpp"
 
+/**
+ * @brief Initialize the system message widget with default state.
+ */
 systemMessageWidget::systemMessageWidget(int _x, int _y, int _w, int _h) 
     : iGfxWidget(_x, _y, _w, _h), numLines(0) {
     title[0] = '\0';
@@ -22,6 +25,13 @@ systemMessageWidget::systemMessageWidget(int _x, int _y, int _w, int _h)
     lines[2][0] = '\0';
 }
 
+/**
+ * @brief Bulk update the text lines.
+ * @param newTitle Main heading.
+ * @param l1 Line 1 content.
+ * @param l2 Line 2 content.
+ * @param l3 Line 3 content.
+ */
 void systemMessageWidget::setMessage(const char* newTitle, const char* l1, const char* l2, const char* l3) {
     if (newTitle) strncpy(title, newTitle, sizeof(title)-1);
     else title[0] = '\0';
@@ -32,6 +42,10 @@ void systemMessageWidget::setMessage(const char* newTitle, const char* l1, const
     if (l3) { strncpy(lines[2], l3, sizeof(lines[2])-1); numLines = 3; }
 }
 
+/**
+ * @brief Draw the centered notification text.
+ * @param display U8g2 reference.
+ */
 void systemMessageWidget::render(U8G2& display) {
     if (!isVisible) return;
 

@@ -40,8 +40,15 @@ public:
      */
     iNationalRailLayout(appContext* context);
 
+    /**
+     * @brief Virtual destructor.
+     */
     virtual ~iNationalRailLayout() = default;
 
+    /**
+     * @brief Periodic logic update for all widgets (Header, Specialized Rows, List, Clock).
+     * @param currentMillis Current system time in milliseconds.
+     */
     virtual void tick(uint32_t currentMillis) override {
         headWidget.tick(currentMillis);
         row0Time.tick(currentMillis);
@@ -51,6 +58,10 @@ public:
         sysClock.tick(currentMillis);
     }
 
+    /**
+     * @brief Full screen render for the National Rail boards.
+     * @param display Reference to U8g2.
+     */
     virtual void render(U8G2& display) override {
         headWidget.render(display);
         row0Time.render(display);
@@ -59,7 +70,11 @@ public:
         msgWidget.render(display);
         sysClock.render(display);
     }
-    
+       /**
+     * @brief Targeted animation updates for all dynamic widgets.
+     * @param display Reference to U8g2.
+     * @param currentMillis Current system time in milliseconds.
+     */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {
         headWidget.renderAnimationUpdate(display, currentMillis);
         row0Time.renderAnimationUpdate(display, currentMillis);

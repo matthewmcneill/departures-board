@@ -7,8 +7,10 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/wifiStatusWidget.hpp
- * Description: Renders a warning icon when the device loses Wi-Fi connectivity.
+ * Module: modules/displayManager/widgets/wifiStatusWidget.hpp
+ * Description: Global status overlay widget that monitors network connectivity. 
+ *              Renders a warning icon (character 0x7F) with an integrated 
+ *              blink timer for long-term disconnections.
  *
  * Exported Functions/Classes:
  * - wifiStatusWidget: Class extending iGfxWidget to draw a disconnection icon.

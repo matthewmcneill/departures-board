@@ -33,20 +33,36 @@ public:
           servicesWidget(0, 0, 0, 0),
           msgWidget(0, 0, 0, 0) {}
 
+    /**
+     * @brief Virtual destructor.
+     */
     virtual ~iBusLayout() = default;
-
+    
+    /**
+     * @brief Periodic logic update for all layouts (Header, List, Message).
+     * @param currentMillis Current system time in milliseconds.
+     */
     virtual void tick(uint32_t currentMillis) override {
         headWidget.tick(currentMillis);
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
     }
 
+    /**
+     * @brief Full screen render for the default Bus board logic.
+     * @param display Reference to U8g2.
+     */
     virtual void render(U8G2& display) override {
         headWidget.render(display);
         servicesWidget.render(display);
         msgWidget.render(display);
     }
     
+    /**
+     * @brief Targeted animation updates for scrolling headers and messages.
+     * @param display Reference to U8g2.
+     * @param currentMillis Current system time in milliseconds.
+     */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {
         headWidget.renderAnimationUpdate(display, currentMillis);
         servicesWidget.renderAnimationUpdate(display, currentMillis);

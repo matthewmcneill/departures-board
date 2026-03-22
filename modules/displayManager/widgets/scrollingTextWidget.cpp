@@ -62,28 +62,35 @@ void scrollingTextWidget::resetScroll() {
 void scrollingTextWidget::tick(uint32_t currentMillis) {
     if (!isVisible || !needsScroll) return;
 
-    // Initial load delay
+    // --- Step 1: Initial Delay ---
+    // Wait 3 seconds before starting the animation.
     if (lastScrollMs == 0) {
         lastScrollMs = currentMillis + 3000; 
         return;
     }
 
     if (currentMillis > lastScrollMs) {
+        // --- Step 2: Pixel Shift ---
         scrollX++;
         int maxW = (width > 0) ? width : SCREEN_WIDTH;
         
-        // Check if string has fully exited screen left
+        // --- Step 3: Loop/Exit Evaluation ---
+        // Check if string has fully exited screen left (out of visibility)
         if (scrollX > messageWidth + 30) {
-            scrollFinished = true; // Signal derived classes
+            scrollFinished = true; // Signal derived classes (e.g. MessagePool)
             scrollX = -maxW;       // Wrap completely around to right edge
         }
         
-        lastScrollMs = currentMillis + 40; // ~25fps pacing
+        lastScrollMs = currentMillis + 40; // Maintain ~25 FPS pacing
     }
 }
 
 /**
  * @brief Paints the widget entirely on-demand.
+ */
+/**
+ * @brief Full frame render for the scrolling text string.
+ * @param display U8g2 reference.
  */
 void scrollingTextWidget::render(U8G2& display) {
     if (!isVisible || currentText[0] == '\0') return;
@@ -119,6 +126,11 @@ void scrollingTextWidget::render(U8G2& display) {
 
 /**
  * @brief Partial refresh for high-speed non-blocking updates.
+ */
+/**
+ * @brief Targeted redraw for smooth marquee scrolling updates.
+ * @param display U8g2 reference.
+ * @param currentMillis Milliseconds since boot.
  */
 void scrollingTextWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (!isVisible || currentText[0] == '\0') return;

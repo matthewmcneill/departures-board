@@ -1,4 +1,3 @@
-#include <appContext.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  * Refactored for v3.0 by Matt McNeill 2026 CB Labs
@@ -8,18 +7,11 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/busBoard/src/busBoard.cpp
- * Description: Implementation of BusBoard using widgets and iDataSource.
- *
- * Exported Functions/Classes:
- * - BusBoard::BusBoard: Constructor.
- * - BusBoard::onActivate: Called when board activates.
- * - BusBoard::onDeactivate: Called when board deactivates.
- * - BusBoard::tick: Periodic update handler.
- * - BusBoard::render: Full rendering handler.
- * - BusBoard::renderAnimationUpdate: Partial rendering for animations.
+ * Module: modules/displayManager/boards/busBoard/busBoard.cpp
+ * Description: Implementation of Bus arrival controller logic.
  */
 
+#include <appContext.hpp>
 #include "busBoard.hpp"
 #include <logger.hpp>
 
@@ -45,6 +37,9 @@ BusBoard::BusBoard(appContext* contextPtr)
     enableBus = false;
 }
 
+/**
+ * @brief Rejects layout allocations.
+ */
 BusBoard::~BusBoard() {
     if (activeLayout) delete activeLayout;
 }
@@ -77,6 +72,10 @@ void BusBoard::onDeactivate() {
     // Cleanup if needed
 }
 
+/**
+ * @brief Apply board-specific settings (ATCO code, filter) from configuration.
+ * @param config The BoardConfig struct.
+ */
 void BusBoard::configure(const BoardConfig& config) {
     this->config = config;
     setBusAtco(config.id);
@@ -94,6 +93,10 @@ void BusBoard::tick(uint32_t ms) {
     if (activeLayout) activeLayout->tick(ms);
 }
 
+/**
+ * @brief Triggers or polls the background data fetch for Bus arrivals.
+ * @return Status code (0 = Success, 9 = Pending).
+ */
 int BusBoard::updateData() {
     if (lastUpdateStatus == UPD_PENDING) {
         lastUpdateStatus = dataSource.getLastUpdateStatus();

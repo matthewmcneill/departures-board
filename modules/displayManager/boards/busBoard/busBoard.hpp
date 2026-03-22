@@ -7,11 +7,21 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/busBoard/busBoard.hpp
- * Description: Implementation of iDisplayBoard for Bus departure boards.
+ * Module: modules/displayManager/boards/busBoard/busBoard.hpp
+ * Description: Controller for TfL Bus departure boards. Manages the 
+ *              asynchronous lifecycle of bus stop arrivals using the 
+ *              Instant API.
  *
  * Exported Functions/Classes:
- * - BusBoard: Implementation of iDisplayBoard for London Bus departure information.
+ * - BusBoard: Controller class for Bus displays.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - tick(): Logic update for timing and scrollers.
+ *   - render(): Full frame drawing.
+ *   - renderAnimationUpdate(): Targeted redraw for animation quality.
+ *   - updateData(): Initiates JSON fetch from TfL API.
+ *   - configure(): Applies BoardConfig settings to local state.
+ *   - getLastErrorMsg(): Accessor for data source error strings.
+ *   - getWeatherStatus(): Accessor for shared weather state.
  */
 
 #ifndef BUS_BOARD_HPP

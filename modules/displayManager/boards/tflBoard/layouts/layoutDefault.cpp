@@ -4,8 +4,11 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
- * Module: modules/displayManager/boards/tflBoard/views/viewDefault.cpp
- * Description: Implementation of the default TfL Tube layout logic.
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: modules/displayManager/boards/tflBoard/layouts/layoutDefault.cpp
+ * Description: Implementation of the default TfL Tube layout.
  */
 
 #include "layoutDefault.hpp"
@@ -13,9 +16,14 @@
 
 extern const uint8_t Underground10[];
 
+/**
+ * @brief Default TfL layout constructor.
+ * @param context Pointer to the application context.
+ */
 layoutTflDefault::layoutTflDefault(appContext* context) 
     : iTflLayout(context) {
     
+    // --- Step 1: Widget Mapping ---
     // Configure widget positions exactly as they were in TfLBoard v2.5
     headWidget.setCoords(0, 0, 256, 12);
     headWidget.getClock().setFont(Underground10);
@@ -25,7 +33,8 @@ layoutTflDefault::layoutTflDefault(appContext* context)
     
     msgWidget.setCoords(0, 52, 256, 12);
 
-    // Configure service list columns for TfL
+    // --- Step 2: Column Layout ---
+    // Configure service list columns for TfL (Underground specific)
     ColumnDef cols[3] = {
         {60, 0},   // Line name
         {140, 0},  // Destination

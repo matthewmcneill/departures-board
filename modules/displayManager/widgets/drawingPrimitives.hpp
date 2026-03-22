@@ -7,20 +7,21 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/drawingPrimitives.hpp
- * Description: Contains stateless U8G2 utility wrappers for text layout, measurement, 
- *              and basic loading indicators.
+ * Module: modules/displayManager/widgets/drawingPrimitives.hpp
+ * Description: Low-level graphics utility library providing stateless wrappers 
+ *              for text layout, measurement, and geometric primitives. Enhances 
+ *              the base U8G2 library with centering and truncation logic.
  *
  * Exported Functions/Classes:
- * - blankArea: Clears a rectangular area on the display by drawing a black box.
- * - getStringWidth: Calculates the pixel width of a string using the current font.
- * - drawTruncatedText: Renders text left-aligned, truncating with ellipsis if too long.
- * - centreText: Renders text horizontally centered on the screen.
- * - drawBox: Draws a rectangle (filled or unfilled).
- * - drawLine: Draws a straight line between two points.
- * - drawCircle: Draws a circle (filled or unfilled).
- * - drawRoundedBox: Draws a rectangle with rounded corners (filled or unfilled).
- * - drawTriangle: Draws a triangle (filled or unfilled).
+ * - blankArea(): Clears a rectangular screen region.
+ * - getStringWidth(): Pixel measurement for standard and PROGMEM strings.
+ * - drawTruncatedText(): Left-aligned text with automatic ellipsis.
+ * - centreText(): Horizontally centered text layout.
+ * - drawBox(): Geometric rectangle primitive (Filled/Frame).
+ * - drawLine(): Bresenham line primitive.
+ * - drawCircle(): Geometric circle primitive (Filled/Frame).
+ * - drawRoundedBox(): Rounded rectangle primitive (Filled/Frame).
+ * - drawTriangle(): Geometric triangle primitive (Filled/Frame).
  */
 
 #pragma once
@@ -28,16 +29,16 @@
 #include <U8g2lib.h>
 #include <Arduino.h>
 
-#define SCREEN_WIDTH 256 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define DIMMED_BRIGHTNESS 1 // OLED display brightness level when in sleep/screensaver mode
+#define SCREEN_WIDTH 256  // OLED display width in pixels
+#define SCREEN_HEIGHT 64  // OLED display height in pixels
+#define DIMMED_BRIGHTNESS 1 // Minimum hardware contrast for sleep/screensaver mode
 
-extern const uint8_t NatRailSmall9[];
-extern const uint8_t NatRailTall12[];
-extern const uint8_t NatRailClockSmall7[];
-extern const uint8_t NatRailClockLarge9[];
-extern const uint8_t Underground10[];
-extern const uint8_t UndergroundClock8[];
+extern const uint8_t NatRailSmall9[];      // 9px condensed font for NR data
+extern const uint8_t NatRailTall12[];      // 12px condensed font for NR headings
+extern const uint8_t NatRailClockSmall7[]; // 7px numeric font for small clocks
+extern const uint8_t NatRailClockLarge9[]; // 9px numeric font for large clocks
+extern const uint8_t Underground10[];      // 10px Johnston-style font for TfL
+extern const uint8_t UndergroundClock8[];  // 8px Johnston-style font for TfL clocks
 
 /**
  * @brief Clear a rectangular area on the OLED display by drawing a black box

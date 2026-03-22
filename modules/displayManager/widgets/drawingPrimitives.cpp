@@ -7,8 +7,8 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/drawingPrimitives.cpp
- * Description: Implementation of stateless U8G2 utility wrappers.
+ * Module: modules/displayManager/widgets/drawingPrimitives.cpp
+ * Description: Implementation of stateless U8G2 graphics utility wrappers.
  */
 
 #include "drawingPrimitives.hpp"
@@ -55,10 +55,15 @@ void drawTruncatedText(U8G2& display, const char *message, int line) {
   int w = getStringWidth(display, message);
   char buf[256];
   strcpy(buf,message);
+
+  // --- Step 1: Check for overflow ---
   if (w > 256) {
+    // Incrementally remove characters until the string + ellipsis fits
     while (getStringWidth(display, buf) > 249) buf[strlen(buf)-1]='\0';
     strcat(buf,"...");
   }
+
+  // --- Step 2: Render ---
   display.drawStr(0, line, buf);
 }
 
@@ -149,8 +154,10 @@ void drawRoundedBox(U8G2& display, int x, int y, int w, int h, int r, bool isFil
  */
 void drawTriangle(U8G2& display, int x0, int y0, int x1, int y1, int x2, int y2, bool isFilled) {
   if (isFilled) {
+    // Use hardware filled triangle routine
     display.drawTriangle(x0, y0, x1, y1, x2, y2);
   } else {
+    // Manually trace the vertices for an outline (not present in base U8G2)
     display.drawLine(x0, y0, x1, y1);
     display.drawLine(x1, y1, x2, y2);
     display.drawLine(x2, y2, x0, y0);

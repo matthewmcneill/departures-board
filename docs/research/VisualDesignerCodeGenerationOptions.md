@@ -36,31 +36,31 @@ The `TflBoard.cpp` naturally acts as a "God Class", directly executing `#include
 
 ## Option 2: The Model-View-Controller (Composition) Pattern
 
-To fix the structural mess of `.inc`, the visual designer generates a standalone View class (`GeneratedTflView`). The developer handwrites the Controller (`TflBoard`).
+To fix the structural mess of `.inc`, the visual designer generates a standalone Layout class (`GeneratedTflLayout`). The developer handwrites the Controller (`TflBoard`).
 
 ### Approach
-The designer strictly generates the View (`.hpp`/`.cpp`), which contains all widgets, X/Y plotting, and basic formatting. The Controller is a handwritten C++ class that *owns* the view: `GeneratedTflView view;`. The Controller fetches API data and decides *if* and *when* the view is allowed to draw itself.
+The designer strictly generates the Layout (`.hpp`/`.cpp`), which contains all widgets, X/Y plotting, and basic formatting. The Controller is a handwritten C++ class that *owns* the layout: `GeneratedTflLayout activeLayout;`. The Controller fetches API data and decides *if* and *when* the layout is allowed to draw itself.
 
 ### Arguments For:
-* **Bulletproof Architecture:** The visual designer knows nothing about errors or network drops. If a WiFi connection drops, the Controller safely intercepts the process and draws an Error Board instead of the normal View.
-* **Zero Overwrite Risk:** The designer purely regenerates the `View`, leaving developer logic totally untouched.
+* **Bulletproof Architecture:** The visual designer knows nothing about errors or network drops. If a WiFi connection drops, the Controller safely intercepts the process and draws an Error Board instead of the normal Layout.
+* **Zero Overwrite Risk:** The designer purely regenerates the `Layout`, leaving developer logic totally untouched.
 
 ### Arguments Against:
-* **Data-Binding Boilerplate:** If the designer places a new text widget, the Controller must manually write the route to it. This can be mitigated by injecting a global `DataDictionary` that the View polls automatically, but string-hashing inside a 30fps rendering loop introduces dangerous CPU jitter constraints.
-* **Memory Headroom Risk:** Allocating massive hierarchical view objects and Controllers creates twin-peaks on the ESP32’s limited heap/stack.
+* **Data-Binding Boilerplate:** If the designer places a new text widget, the Controller must manually write the route to it. This can be mitigated by injecting a global `DataDictionary` that the Layout polls automatically, but string-hashing inside a 30fps rendering loop introduces dangerous CPU jitter constraints.
+* **Memory Headroom Risk:** Allocating massive hierarchical layout objects and Controllers creates twin-peaks on the ESP32’s limited heap/stack.
 
 ---
 
-## Option 3: The Lightweight Generated View (LGV) Pattern
+## Option 3: The Lightweight Generated Layout (LGL) Pattern
 
 This is the ultimate architectural compromise and the industry standard for embedded UI frameworks like ST's TouchGFX. 
 
 ### Approach
-The script generates a single standalone class (`GeneratedNrView.hpp`). However, it treats the generated class as a "dumb box" containing **public** widgets. It does not attempt to architect data-binding dictionaries.
+The script generates a single standalone class (`GeneratedNrLayout.hpp`). However, it treats the generated class as a "dumb box" containing **public** widgets. It does not attempt to architect data-binding dictionaries.
 
 ```cpp
 // GENERATED
-class GeneratedNrView : public iBoardView {
+class GeneratedNrLayout : public iBoardLayout {
 public:
     headerWidget headWidget; // Explicitly PUBLIC
     serviceListWidget servicesWidget;
@@ -70,27 +70,27 @@ public:
 void NationalRailBoard::tick(uint32_t ms) {
     updateData(); 
     // Developer pushes data directly via IntelliSense autocomplete
-    view->servicesWidget.addRow(data->destination);
-    view->tick(ms); 
+    activeLayout->servicesWidget.addRow(data->destination);
+    activeLayout->tick(ms); 
 }
 ```
 
 ### Arguments For:
-* **Solves the `.inc` Flaws:** It restores Encapsulation (Controller vs View) and prevents IDE tracing issues. Most importantly, it completely solves the *Multi-Layout Nightmare*. Because standard C++ classes are generated, the layout Controller can easily instantiate `new GeneratedNrViewA()` or `new GeneratedNrViewB()` natively at runtime without duplicating network request logic.
+* **Solves the `.inc` Flaws:** It restores Encapsulation (Controller vs Layout) and prevents IDE tracing issues. Most importantly, it completely solves the *Multi-Layout Nightmare*. Because standard C++ classes are generated, the Board Controller can easily instantiate `new GeneratedNrLayoutA()` or `new GeneratedNrLayoutB()` natively at runtime without duplicating network request logic.
 * **Solves the MVC Flaws:** By utilizing public widgets, the developer types exactly one line of explicit, type-safe C++ getter/setter logic instead of constructing heavy Hash-Map bindings. 
 
 ---
 
 ## Final Decision & Implementation Nuances
 
-**Conclusion: We are proceeding with the Lightweight Generated View (LGV) pattern.** It provides the optimal balance of C++ runtime flexibility, ESP32 memory safety, and visual designer ease-of-use.
+**Conclusion: We are proceeding with the Lightweight Generated Layout (LGL) pattern.** It provides the optimal balance of C++ runtime flexibility, ESP32 memory safety, and visual designer ease-of-use.
 
 ### Handling "The Optional Widget Problem"
 
-When using the LGV pattern, if a Controller (e.g. `TflBoard`) expects to call `view->clockWidget.setTime()`, it will immediately crash the C++ compiler if the designer failed to place a Clock onto the layout canvas for that specific export.
+When using the LGL pattern, if a Controller (e.g. `TflBoard`) expects to call `activeLayout->clockWidget.setTime()`, it will immediately crash the C++ compiler if the designer failed to place a Clock onto the layout canvas for that specific export.
 
 We evaluated two mitigations:
-1. **The MVP Interface pattern:** We entirely restrict the Controller to an interface (`iNrView->updateTime(t)`), meaning unused widgets simply drop the payload on the floor.
+1. **The MVP Interface pattern:** We entirely restrict the Controller to an interface (`iNrLayout->updateTime(t)`), meaning unused widgets simply drop the payload on the floor.
 2. **The Dummy Widget approach:** We generate *all* known widgets inside the generated class, but set `isVisible = false` for the ones the designer did not actively place.
 
 **The Verdict on Optional Widgets:** 

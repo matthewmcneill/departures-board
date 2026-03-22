@@ -7,8 +7,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/interfaces/iDataSource.hpp
- * Description: Interface for all data sources (network clients).
+ * Module: modules/displayManager/boards/interfaces/iDataSource.hpp
+ * Description: Abstract interface for all transport data source providers. 
+ *              Defines the contract for non-blocking asynchronous data fetching, 
+ *              centralized task execution via DataWorker, and connectivity testing.
+ *
+ * Exported Functions/Classes:
+ * - iDataSource: Pure virtual base class for network API clients.
+ *   - updateData(): Triggers an update request (typically non-blocking).
+ *   - executeFetch(): Internal blocking network operation executed by DataWorker.
+ *   - getLastErrorMsg(): Human-readable error diagnostic.
+ *   - testConnection(): Connectivity and credential validation logic.
  */
 
 #ifndef I_DATA_SOURCE_HPP
@@ -34,6 +43,9 @@
  */
 class iDataSource {
 public:
+    /**
+     * @brief Virtual destructor.
+     */
     virtual ~iDataSource() = default;
 
     /**

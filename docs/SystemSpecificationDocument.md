@@ -188,6 +188,40 @@
     - Use `snprintf` for all string formatting to ensure null termination and prevent buffer overflows.
     - Avoid `strcpy` in favor of `strncpy` with explicit boundary checks.
 
+## 10. Extensibility & Interface Design
+
+The Departures Board is designed for high maintainability and ease of extension by future developers. This is achieved through a strict interface-driven architecture that separates business logic from presentation and hardware details.
+
+### 10.1 Architectural Philosophy (OO)
+The system's extensibility is rooted in the **SOLID** principles:
+- **Open/Closed Principle (OCP)**: By using `i`-prefixed pure virtual interfaces, the core orchestration logic (`DisplayManager`, `DataWorker`) is closed to modification but open to extension. New transport types or layouts can be added without changing the orchestrators.
+- **Dependency Inversion Principle (DIP)**: High-level modules (e.g., `appContext`) inject abstractions into low-level components, ensuring that the visual layer doesn't depend on the network layer's concrete implementation.
+- **Single Responsibility Principle (SRP)**: The separation of `iDataSource` (Data) from `iBoardLayout` (UI) ensures that changes to an external API (e.g., a protocol shift from SOAP to REST) do not force a redesign of the screen layout.
+
+### 10.2 Core Interfaces
+The system relies on five primary interfaces to facilitate extensibility:
+
+| Interface | Design Pattern | Responsibility |
+|-----------|----------------|----------------|
+| **`iDisplayBoard`** | **State Pattern** | Manages the lifecycle (`onActivate`, `onDeactivate`) and top-level logic/rendering for a specific screen type. |
+| **`iDataSource`** | **Client Pattern** | Abstracts the network and parsing logic. All data sources undergo background fetching via the `DataWorker`. |
+| **`iBoardLayout`** | **Strategy Pattern** | Decouples coordinate math and widget placement from the board controller, allowing multiple "skins" (e.g., Replica vs. Modern) per board. |
+| **`iGfxWidget`** | **Composition** | Small, reusable UI components (Clocks, Lists, Headers) that can be combined to build new layouts rapidly. |
+| **`iConfigurable`** | **Observer Pattern** | Allows any system component to subscribe to and react to configuration updates from the web portal. |
+
+### 10.3 Embedded System Optimizations
+The extensibility design is tailored for the ESP32's resource constraints:
+- **Fragmentation Prevention**: `iDisplayBoard` instances are managed via the `BoardVariant` static memory pool. This ensures zero dynamic allocation during the rendering loop, preserving a stable heap for TLS/SSL handshakes.
+- **Resource Serialization**: Detailed fetching logic in `iDataSource` is executed by a centralized `DataWorker` on Core 0. This serializes SSL allocations, protecting the device from Watchdog panics and heap exhaustion.
+- **SPI Bus Efficiency**: `iGfxWidget` implementations use the **Deduplication Pattern**. By utilizing `updateDisplayArea()`, widgets only trigger expensive hardware transfers if their mathematical state has actually changed, enabling fluid 60fps animations.
+
+### 10.4 Extending the System
+To add a new transport mode (e.g., "Ferry Board"), a developer would:
+1.  **Implement `iDataSource`**: Create `FerryDataSource` to handle API fetching and parsing.
+2.  **Define Layouts**: Create one or more classes inheriting from `iBoardLayout` to define the visual representation.
+3.  **Implement `iDisplayBoard`**: Create `FerryBoard` to orchestrate the data and layout.
+4.  **Register Slot**: Add the new board type to the `BoardVariant` pool in `DisplayManager`.
+
 ## 11. Font Architecture & Build Pipeline
 - **Overview**: The project utilizes custom, authentic UK railway and TfL station board fonts, optimized for low-memory OLED displays.
 - **The "Round Trip" Pipeline**:

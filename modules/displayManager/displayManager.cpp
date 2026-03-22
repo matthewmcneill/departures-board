@@ -8,14 +8,16 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/displayManager.cpp
- * Description: Implementation of the DisplayManager singleton orchestrator.
- *              Manages hardware display state, power management, and board rendering.
+ * Description: Implementation of the DisplayManager orchestrator. Handles 
+ *              the lifecycle of hardware displays, including SPI initialization, 
+ *              board rendering, memory pool allocation, and power management 
+ *              via a scheduled sleep system.
  *
  * Exported Functions/Classes:
  * - DisplayManager::DisplayManager: Constructor initializing default state.
  * - DisplayManager::begin: Initialize hardware display driver.
  * - DisplayManager::tick: Executive rendering and state management loop.
- * - DisplayManager::render: Forces a immediate synchronized display refresh.
+ * - DisplayManager::render: Forces an immediate synchronized display refresh.
  * - DisplayManager::showBoard: Switch to a new board and optionally block for an animation duration.
  * - DisplayManager::applyConfig: Provisions system state from a central config object.
  */
@@ -33,14 +35,23 @@
 
 // DisplayManager singleton will be owned by appContext
 
+/** @return True if screen is flipped 180 degrees. */
 bool DisplayManager::getFlipScreen() const { return flipScreen; }
+/** @return True if scheduled sleep is enabled. */
 bool DisplayManager::getSleepEnabled() const { return sleepEnabled; }
+/** @brief Enable or disable automated sleep schedule. */
 void DisplayManager::setSleepEnabled(bool enabled) { sleepEnabled = enabled; }
+/** @return Hour (0-23) when sleep starts. */
 byte DisplayManager::getSleepStarts() const { return sleepStarts; }
+/** @brief Set the hour to start sleep mode. */
 void DisplayManager::setSleepStarts(byte starts) { sleepStarts = starts; }
+/** @return Hour (0-23) when sleep ends. */
 byte DisplayManager::getSleepEnds() const { return sleepEnds; }
+/** @brief Set the hour to end sleep mode. */
 void DisplayManager::setSleepEnds(byte ends) { sleepEnds = ends; }
+/** @return True if sleep is manually forced. */
 bool DisplayManager::getForcedSleep() const { return forcedSleep; }
+/** @brief Manually force the display into sleep mode. */
 void DisplayManager::setForcedSleep(bool active) { forcedSleep = active; }
 
 // --- Singleton Instance ---
@@ -95,25 +106,28 @@ void DisplayManager::begin(appContext* contextPtr) {
  */
 void DisplayManager::tick(unsigned long currentMillis) {
     // --- Step 1: Handle Sleep Transitions ---
+    // Determine if the screen should be dimmed/clocked based on schedule or force-sleep.
     bool shouldSnooze = isSnoozing();
     iDisplayBoard* sleepBoard = getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
 
     if (shouldSnooze && currentBoard != sleepBoard) {
-        // Transition TO Sleep (Dimming and switching to clock)
+        // Transition TO Sleep: Dim the OLED and swap active board to the clock.
         showBoard(sleepBoard, "Screensaver sleep schedule triggered");
         u8g2.setContrast(((SleepingBoard*)sleepBoard)->getDimmedBrightness());
     } else if (!shouldSnooze && currentBoard == sleepBoard) {
-        // Transition FROM Sleep (Restoring brightness and active carousel board)
+        // Transition FROM Sleep: Restore user brightness and the last carousel board.
         showBoard(getDisplayBoard(activeSlotIndex), "Waking up from screensaver");
         u8g2.setContrast(brightness);
-        u8g2.clearDisplay(); // Ensure a clean wake-up surface
+        u8g2.clearDisplay(); // Ensure clean surface for data rendering
     }
 
-    // --- Step 2: Update Logic and Render ---
+    // --- Step 2: Internal Logic and Rendering ---
+    // Delegate state updates to the active board and global overlays.
     if (currentBoard != nullptr) currentBoard->tick(currentMillis);
     
     wifiWarning.tick(currentMillis);
     
+    // Trigger the actual hardware buffer transaction.
     render();
 }
 
@@ -122,21 +136,24 @@ void DisplayManager::tick(unsigned long currentMillis) {
  * @note Manages clearBuffer(), rendering the active/override board, and sendBuffer().
  */
 void DisplayManager::render() {
+    // --- Step 1: Prepare frame buffer ---
     u8g2.clearBuffer();
 
-    // Render the unified current target
+    // --- Step 2: Delegate board rendering ---
     if (currentBoard != nullptr) {
         currentBoard->render(u8g2);
     }
 
-    // Render Global Overlays
+    // --- Step 3: Overlay global system status indicators ---
     wifiWarning.render(u8g2);
     
     if (otaUpdateAvailable) {
+        // Render the small 'OTA' up-arrow or indicator
         u8g2.setFont(NatRailSmall9);
         u8g2.drawStr(0, 50, "\xAB");
     }
 
+    // --- Step 4: Hardware push ---
     u8g2.sendBuffer();
 }
 
@@ -149,30 +166,36 @@ iDisplayBoard* DisplayManager::getCurrentBoard() { return currentBoard; }
  */
 void DisplayManager::showBoard(iDisplayBoard* board, const char* reason, uint32_t durationMs) {
     if (currentBoard != board) {
+        // Log the transition for hardware-side diagnostics
         String msg = "showBoard() invoked for: [" + String(board ? board->getBoardName() : "NULL") + "] | Reason: " + String(reason);
         LOG_INFO("DISPLAY", msg.c_str());
 
+        // De-initialize the departing board
         if (currentBoard != nullptr) {
             currentBoard->onDeactivate();
         }
 
+        // Switch context
         currentBoard = board;
         
+        // Initialize the new board
         if (currentBoard != nullptr) {
             currentBoard->onActivate();
             LOG_INFO("DISPLAY", "Board activated.");
         }
         
-        // Initial full render
+        // Push initial frame immediately to prevent black screen during transit
         render();
     }
 
+    // --- Step 2: Blocking Animation Support ---
     if (durationMs > 0) {
         unsigned long end = millis() + durationMs;
-        // Animation loop (thtrottled to ~60 FPS to prevent OLED SPI DMA saturation)
+        // Run a local rendering loop for the specified duration.
+        // Capped at ~60 FPS to prevent OLED SPI DMA saturation.
         while (millis() < end) {
             tick(millis());
-            delay(15); // Feed watchdog and yield to RTOS while locking frame rate
+            delay(15); // Yield to RTOS and feed watchdog
         }
     }
 }
@@ -291,18 +314,20 @@ bool DisplayManager::getIsSleeping() const {
  * @return True if system should transition to sleep.
  */
 bool DisplayManager::isSnoozing() {
+    // --- Step 1: Explicit overrides ---
     if (forcedSleep) return true;
     if (!sleepEnabled) return false;
     
+    // --- Step 2: Schedule evaluation ---
     struct tm timeinfo;
-    if(!getLocalTime(&timeinfo)) return false; // Time sync required for schedule
+    if(!getLocalTime(&timeinfo)) return false; // Time sync required for scheduling
     
     byte myHour = timeinfo.tm_hour;
     if (sleepStarts > sleepEnds) {
-        // Range spans midnight
+        // Range spans midnight (e.g. 23:00 to 07:00)
         if ((myHour >= sleepStarts) || (myHour < sleepEnds)) return true; else return false;
     } else {
-        // Standard range within one day
+        // Standard range within one day (e.g. 10:00 to 14:00)
         if ((myHour >= sleepStarts) && (myHour < sleepEnds)) return true; else return false;
     }
 }
@@ -409,19 +434,25 @@ void DisplayManager::yieldAnimationUpdate() {
     static uint32_t lastAnim = 0;
     uint32_t now = millis();
     
+    // Enforce a strict frame timing of ~60fps (16ms)
     if (now - lastAnim >= 16) { 
         lastAnim = now;
+        
+        // Update delegted animation logic for board and overlays
         if (currentBoard) currentBoard->renderAnimationUpdate(u8g2, now);
         
-        // Directly update hardware buffer with animation state of overlay
         wifiWarning.renderAnimationUpdate(u8g2, now);
+        
         if (otaUpdateAvailable) {
+            // Partial update for the OTA indicator
             u8g2.setFont(NatRailSmall9);
             u8g2.drawStr(0, 50, "\xAB");
             u8g2.updateDisplayArea(0, 6, 1, 2);
         }
 
-        // Keep web server responsive during animations and background fetches
+        // --- Critical Step: Background Tasking ---
+        // Allow the web server to process requests during long-duration 
+        // network fetches or intensive scrolling.
         if (context) context->getWebServer().handleClient();
     }
 }

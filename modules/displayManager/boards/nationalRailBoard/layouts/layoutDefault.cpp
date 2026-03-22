@@ -4,8 +4,11 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
- * Module: modules/displayManager/boards/nationalRailBoard/views/viewDefault.cpp
- * Description: Implementation of the default National Rail layout logic.
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: modules/displayManager/boards/nationalRailBoard/layouts/layoutDefault.cpp
+ * Description: Implementation of the default National Rail layout.
  */
 
 #include "layoutDefault.hpp"
@@ -14,9 +17,14 @@
 extern const uint8_t NatRailTall12[];
 extern const uint8_t NatRailSmall9[];
 
+/**
+ * @brief Default National Rail layout constructor.
+ * @param context Pointer to the application context.
+ */
 layoutNrDefault::layoutNrDefault(appContext* context) 
     : iNationalRailLayout(context), viaToggle(false), nextViaToggle(0) {
     
+    // --- Step 1: Widget Placement ---
     // Configure widget positions exactly as they were in NationalRailBoard v2.5
     headWidget.setCoords(0, 0, 256, 12);
 
@@ -34,6 +42,7 @@ layoutNrDefault::layoutNrDefault(appContext* context)
     msgWidget.setCoords(0, 52, 256, 12);
     msgWidget.setFont(NatRailSmall9);
 
+    // --- Step 2: Specialized Configuration ---
     // Disable bits that didn't exist in the v2.5 layout
     sysClock.setVisible(false);
 
@@ -47,11 +56,19 @@ layoutNrDefault::layoutNrDefault(appContext* context)
     servicesWidget.setColumns(4, cols);
 }
 
+/**
+ * @brief Logic update for NR widgets.
+ * @param currentMillis Current uptime in milliseconds.
+ */
 void layoutNrDefault::tick(uint32_t currentMillis) {
     // Call base class to tick all widgets
     iNationalRailLayout::tick(currentMillis);
 }
 
+/**
+ * @brief Full frame render for the NR layout.
+ * @param display Reference to U8g2.
+ */
 void layoutNrDefault::render(U8G2& display) {
     iNationalRailLayout::render(display);
 }

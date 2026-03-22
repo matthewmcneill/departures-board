@@ -7,8 +7,8 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/sleepingBoard.cpp
- * Description: Implementation of the sleep mode screensaver board.
+ * Module: modules/displayManager/boards/systemBoard/sleepingBoard.cpp
+ * Description: Implementation of the burn-in protection sleep clock.
  */
 
 #include <appContext.hpp>
@@ -17,30 +17,36 @@
 #include "../../widgets/drawingPrimitives.hpp"
 #include <timeManager.hpp>
 
+/**
+ * @brief Initialize the sleep board with burn-in protection enabled.
+ */
 SleepingBoard::SleepingBoard() 
     : showClock(true), dimmedBrightness(DIMMED_BRIGHTNESS), 
       bounceX(0), bounceY(0), lastBounce(0) {
 }
 
+/**
+ * @brief Reset the bounce animation timer on activation.
+ */
 void SleepingBoard::onActivate() {
     // Optimization: Reset bounce position on entry
     lastBounce = millis();
 }
 
+/**
+ * @brief Lifecycle hook for board exit.
+ */
 void SleepingBoard::onDeactivate() {
     // No specific cleanup needed
 }
 
 /**
- * @brief Updates the state of the sleeping board.
- * 
- * This method is called periodically to update the board's internal state,
- * such as shifting the clock position to prevent OLED burn-in.
- * 
- * @param ms The current system milliseconds.
+ * @brief Per-tick state update for burn-in protection origin shifting.
+ * @param ms Current system time in milliseconds.
  */
 void SleepingBoard::tick(uint32_t ms) {
-    // Shift position every 60 seconds to prevent OLED burn-in
+    // --- burn-in protection ---
+    // Shift the rendering origin every 60 seconds to ensure consistent sub-pixel aging.
     if (ms - lastBounce > 60000) {
         bounceX = random(20);
         bounceY = random(10);
@@ -48,9 +54,14 @@ void SleepingBoard::tick(uint32_t ms) {
     }
 }
 
+/**
+ * @brief Render the oversized bouncing clock.
+ * @param display Reference to U8g2.
+ */
 void SleepingBoard::render(U8G2& display) {
     if (!showClock) return;
 
+    // --- Step 1: Time Acquisition ---
     context->getTimeManager().updateCurrentTime();
     const struct tm& timeinfo = context->getTimeManager().getCurrentTime();
 
@@ -59,8 +70,11 @@ void SleepingBoard::render(U8G2& display) {
     sprintf(timeStr, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
     strftime(dateStr, sizeof(dateStr), "%d %b %Y", &timeinfo);
 
+    // --- Step 2: Offset Rendering ---
+    // Apply the burn-in bounce offsets to all screen elements.
     display.setFont(NatRailClockLarge9);
     display.drawStr(60 + bounceX, 32 + bounceY, timeStr);
+    
     display.setFont(NatRailSmall9);
     display.drawStr(60 + bounceX, 48 + bounceY, dateStr);
 }

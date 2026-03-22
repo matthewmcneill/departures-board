@@ -7,8 +7,23 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/interfaces/iDisplayBoard.hpp
- * Description: Interface for all display boards (screens).
+ * Module: modules/displayManager/boards/interfaces/iDisplayBoard.hpp
+ * Description: Core abstract interface for all display boards (screens). 
+ *              Follows the State Pattern for UI lifecycle (Activate/Deactivate), 
+ *              Logic (Tick), and Drawing (Render). Acts as the bridge between 
+ *              DisplayManager and board-specific implementations.
+ *
+ * Exported Functions/Classes:
+ * - iDisplayBoard: Primary interface for displayable application models.
+ *   - getBoardName(): Semantic identity for telemetry.
+ *   - onActivate() / onDeactivate(): Lifecycle state transitions.
+ *   - tick() / render(): Logic and drawing entry points.
+ *   - updateData(): Explicit request to refresh backend data.
+ *   - configure(): Provision settings from BoardConfig.
+ *   - renderAnimationUpdate(): High-speed partial-frame updates.
+ *   - getLastUpdateStatus(): Retrieval of fetch result codes.
+ *   - getLastErrorMsg(): Accessor for source error strings.
+ *   - getWeatherStatus(): Shared weather state accessor.
  */
 
 #ifndef I_DISPLAY_BOARD_HPP
@@ -28,6 +43,9 @@ public:
      * @brief Self-identifying semantic name for lifecycle logging telemetry.
      */
     virtual const char* getBoardName() const = 0;
+    /**
+     * @brief Virtual destructor.
+     */
     virtual ~iDisplayBoard() = default;
 
     /**

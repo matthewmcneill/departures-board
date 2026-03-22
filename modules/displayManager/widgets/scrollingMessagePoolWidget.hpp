@@ -8,11 +8,16 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/scrollingMessagePoolWidget.hpp
- * Description: Specialized widget that cycles through messages from multiple pools
- *              using the generic scrollingTextWidget base.
+ * Description: Controller widget that orchestrates the rotation of text strings 
+ *              sourced from multiple MessagePool instances. Inherits marquee 
+ *              rendering from scrollingTextWidget and implements sequential 
+ *              pool traversal.
  *
  * Exported Functions/Classes:
- * - scrollingMessagePoolWidget: UI component for message rotation.
+ * - scrollingMessagePoolWidget: UI component for managed message rotation.
+ *   - addMessagePool(): Register a data source to the rotation.
+ *   - tick(): Automated pool traversal and scroller logic.
+ *   - loadNextMessage(): Internal selection logic.
  */
 
 #ifndef SCROLLING_MESSAGE_POOL_WIDGET_HPP

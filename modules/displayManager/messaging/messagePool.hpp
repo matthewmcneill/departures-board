@@ -8,11 +8,18 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/messaging/messagePool.hpp
- * Description: Encapsulates the storage and retrieval of station or system messages,
- *              avoiding large fixed multi-dimensional arrays to save memory.
+ * Description: Memory-efficient container for managing collections of display 
+ *              strings (e.g. RSS feeds, station alerts, system notifications). 
+ *              Utilizes std::vector for flexible storage while enforcing 
+ *              capacity bounds to prevent heap exhaustion.
  *
  * Exported Functions/Classes:
- * - MessagePool: Container for dynamically storing and retrieving strings.
+ * - MessagePool: Container class for managed string collections.
+ *   - addMessage(): Ingest a new string into the pool.
+ *   - getMessage(): Retrieve a string by index.
+ *   - getCount(): Get current message count.
+ *   - removeLastMessage(): Drop the most recent addition.
+ *   - clear(): Empties the pool and recovers memory.
  */
 
 #ifndef MESSAGE_POOL_HPP

@@ -42,18 +42,21 @@ void wifiStatusWidget::tick(uint32_t currentMillis) {
     bool currentlyConnected = (WiFi.status() == WL_CONNECTED);
     
     if (currentlyConnected) {
+        // --- Reset State ---
         disconnectTime = 0;
         blinkState = true;
     } else {
+        // --- Handle Disconnection ---
         if (disconnectTime == 0) disconnectTime = currentMillis;
         
-        // Blink logic: after 30 seconds of disconnection
+        // Blink logic: after 30 seconds of disconnection, start the 1Hz blink
         if (currentMillis - disconnectTime > 30000) {
-            if (currentMillis - lastBlinkMs > 1000) { // 1s toggle
+            if (currentMillis - lastBlinkMs > 1000) { 
                 blinkState = !blinkState;
                 lastBlinkMs = currentMillis;
             }
         } else {
+            // Static icon for the first 30 seconds
             blinkState = true;
         }
     }
@@ -85,24 +88,25 @@ void wifiStatusWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMill
     bool prevBlinkState = blinkState;
     tick(currentMillis);
 
-    // If connection restored, or if blink state changed while disconnected
+    // --- Transition: Restored ---
     if (currentlyConnected && !wasConnected) {
         wasConnected = true;
-        // Erase the warning icon area
+        // Erase the warning icon area immediately
         display.setDrawColor(0);
         display.drawBox(x, y-6, width, height); 
         display.setDrawColor(1);
         display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
     } 
+    // --- Transition: Offline / Blinking ---
     else if (!currentlyConnected) {
         if (wasConnected) {
+            // First time we detected the swap
             wasConnected = false;
-            // Immediate draw on first disconnect
             display.setFont(NatRailSmall9);
             display.drawStr(x, y, "\x7F");
             display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
         } else if (blinkState != prevBlinkState) {
-            // Blink changed
+            // Blinking timer triggered a swap
             if (blinkState) {
                 display.setFont(NatRailSmall9);
                 display.drawStr(x, y, "\x7F");

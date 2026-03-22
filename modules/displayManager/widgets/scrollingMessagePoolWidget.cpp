@@ -37,14 +37,15 @@ bool scrollingMessagePoolWidget::loadNextMessage() {
 
     size_t poolsChecked = 0;
     while (poolsChecked < pools.size()) {
+        // --- Step 1: Select Active Pool ---
         MessagePool* p = pools[currentPoolIndex];
         
-        // If we have messages in this pool
+        // --- Step 2: Validate Message Availability ---
         if (p->getCount() > 0) {
-            // Check if our message index is still valid for this pool
             if (currentMessageIndex < p->getCount()) {
                 const char* msg = p->getMessage(currentMessageIndex);
                 if (msg) {
+                    // Load into the marquee engine
                     setText(msg);
                     currentMessageIndex++;
                     return true;
@@ -52,7 +53,8 @@ bool scrollingMessagePoolWidget::loadNextMessage() {
             }
         }
 
-        // Move to next pool and reset message index
+        // --- Step 3: Pool Traversal ---
+        // If current pool is exhausted or empty, move to the next.
         currentPoolIndex = (currentPoolIndex + 1) % pools.size();
         currentMessageIndex = 0;
         poolsChecked++;

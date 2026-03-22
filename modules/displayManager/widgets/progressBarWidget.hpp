@@ -7,8 +7,19 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/progressBarWidget.hpp
- * Description: Renders a progress bar with a message and a percentage.
+ * Module: modules/displayManager/widgets/progressBarWidget.hpp
+ * Description: Graphical progress indicator with integrated message support 
+ *              and linear path animation. Features a unique checkered stippling 
+ *              effect for the filled bar region.
+ *
+ * Exported Functions/Classes:
+ * - progressBarWidget: Graphics widget for showing task progression.
+ *   - setMessage(): Set the primary label. Supports PROGMEM strings.
+ *   - setShowPercentText(): Toggle visibility of numeric percentage.
+ *   - setPercent(): Trigger a progress update (standard or animated).
+ *   - tick(): Logic update for animation lerping.
+ *   - render(): Primary drawing method.
+ *   - renderAnimationUpdate(): Targeted redraw for smooth progress.
  */
 
 #ifndef PROGRESS_BAR_WIDGET_HPP

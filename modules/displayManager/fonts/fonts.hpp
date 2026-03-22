@@ -7,7 +7,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: gfx/fonts.hpp
+ * Module: modules/displayManager/fonts/fonts.hpp
  * Description: Contains declarations for custom binary font arrays used by the OLED display
  *              to replicate authentic UK railway and TfL station boards.
  * 

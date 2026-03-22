@@ -4,8 +4,13 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
- * Module: modules/displayManager/boards/nationalRailBoard/views/viewDefault.hpp
- * Description: Default layout for National Rail, migrating hardcoded board logic.
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: modules/displayManager/boards/nationalRailBoard/layouts/layoutDefault.hpp
+ * Description: Default layout for National Rail, providing a pixel-perfect 
+ *              recreation of the legacy v2.5 board while utilizing the 
+ *              v3.0 widget-based architecture.
  */
 
 #pragma once

@@ -8,7 +8,7 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/messaging/messagePool.cpp
- * Description: Implementation of the MessagePool class for storing string messages.
+ * Description: Implementation of memory-efficient string message storage.
  */
 
 #include "messagePool.hpp"
@@ -28,10 +28,13 @@ MessagePool::MessagePool(size_t maxItems) : maxMessages(maxItems) {
 void MessagePool::addMessage(const char* msg) {
     if (msg == nullptr || msg[0] == '\0') return;
 
+    // --- Step 1: Enforce Bounds ---
+    // If the pool is at capacity, remove the oldest (first) message.
     if (messages.size() >= maxMessages) {
         messages.erase(messages.begin());
     }
     
+    // --- Step 2: Ingest ---
     messages.push_back(String(msg));
 }
 
@@ -55,6 +58,9 @@ size_t MessagePool::getCount() const {
     return messages.size();
 }
 
+/**
+ * @brief Drop the most recently added message from the collection.
+ */
 void MessagePool::removeLastMessage() {
     if (!messages.empty()) {
         messages.pop_back();

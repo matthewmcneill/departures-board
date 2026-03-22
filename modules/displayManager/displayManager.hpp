@@ -8,17 +8,32 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/displayManager.hpp
- * Description: Memory pool utilizing std::variant to statically allocate
- *              the memory required for up to MAX_BOARDS departures without 
- *              fragmenting the heap during run-time. Also manages global
- *              screen sleep states and screen dimming.
+ * Description: Central orchestrator for the hardware display subsystem. 
+ *              Manages a statically allocated memory pool of Board implementations 
+ *              using std::variant to prevent heap fragmentation. Handles display 
+ *              lifecycle, carousel rotation, power management (sleep/dimming), 
+ *              and global UI overlays.
  *
  * Exported Functions/Classes:
  * - BoardType: Enum identifying the specific board implementation class.
  * - SystemBoardId: Identifiers for functional layout templates in the system registry.
  * - BoardVariant: Type-safe union for statically allocated board memory.
- * - DisplayManager: Orchestrator for display lifecycle, rendering, and board carousel.
- * - displayManager: Global singleton for display management.
+ * - DisplayManager: Main singleton orchestrator for display logic and rendering.
+ *   - begin(): Initialize hardware and apply initial configurations.
+ *   - tick(): Main execution logic loop (sleep/rotate/update).
+ *   - render(): Forced synchronized display refresh.
+ *   - showBoard(): Explicitly transition to a specific board.
+ *   - applyConfig(): Bulk provision system state from a configuration object.
+ *   - cycleNext(): Advance the board carousel.
+ *   - yieldAnimationUpdate(): Logic for smooth sub-frame UI animations.
+ *   - setBrightness() / getBrightness(): Display intensity control.
+ *   - setFlipScreen() / getFlipScreen(): Orientation control.
+ *   - setSleepEnabled() / getSleepEnabled(): Schedule toggle.
+ *   - setForcedSleep() / getForcedSleep(): Manual sleep override.
+ *   - getIsSleeping(): Status check.
+ *   - addBoard(): Dynamic carousel registration.
+ *   - getDisplayBoard(): Board accessor.
+ * - displayManager: Global singleton instance.
  */
 
 #pragma once
@@ -189,10 +204,28 @@ public:
      */
     void setSleepEnabled(bool newSleepEnabled);
 
+    /**
+     * @brief Get the hour the sleep schedule begins.
+     * @return Hour (0-23).
+     */
     byte getSleepStarts() const;
+
+    /**
+     * @brief Configure the sleep schedule start time.
+     * @param newSleepStarts Hour (0-23).
+     */
     void setSleepStarts(byte newSleepStarts);
 
+    /**
+     * @brief Get the hour the sleep schedule ends.
+     * @return Hour (0-23).
+     */
     byte getSleepEnds() const;
+
+    /**
+     * @brief Configure the sleep schedule end time.
+     * @param newSleepEnds Hour (0-23).
+     */
     void setSleepEnds(byte newSleepEnds);
 
     /**
@@ -212,9 +245,21 @@ public:
      */
     void setOtaUpdateAvailable(bool available) { otaUpdateAvailable = available; }
 
+    /**
+     * @brief Check if the display is currently in a sleep/clock state.
+     * @return True if sleeping.
+     */
     bool getIsSleeping() const;
 
+    /**
+     * @brief Internal logic to determine if the system SHOULD be snoozing.
+     * @return True if schedule or manual override dictates sleep.
+     */
     bool isSnoozing();
+
+    /**
+     * @brief Default constructor.
+     */
     DisplayManager();
 
     /**
@@ -260,8 +305,18 @@ public:
     /**
      * @brief Obtain the specific Board object stored in a slot.
      */
+    /**
+     * @brief Retrieve the raw BoardVariant pointer for a specific slot.
+     * @param slotIndex Index (0 to MAX_BOARDS-1).
+     * @return BoardVariant* Pointer to the variant storage.
+     */
     BoardVariant* getSlot(int slotIndex);
 
+    /**
+     * @brief Retrieve the board implementation from a specific slot.
+     * @param slotIndex Index (0 to MAX_BOARDS-1).
+     * @return iDisplayBoard* Pointer to the board, or nullptr if empty.
+     */
     iDisplayBoard* getDisplayBoard(int slotIndex);
 
 

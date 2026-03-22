@@ -4,8 +4,20 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
  * Module: modules/displayManager/boards/interfaces/iBoardLayout.hpp
- * Description: Base interface for all display board views (Layouts).
+ * Description: Base abstract interface for all visual board layouts (MVC/LGV pattern). 
+ *              Decouples coordinate math and rendering from the board controller, 
+ *              allowing for multiple design skins (e.g. Default vs Replica) per board.
+ *
+ * Exported Functions/Classes:
+ * - iBoardLayout: Interface for visual designers and layout templates.
+ *   - iBoardLayout(): Constructor with context injection.
+ *   - tick(): View-specific timing logic (e.g. scrollers).
+ *   - render(): Full-frame rendering pass.
+ *   - renderAnimationUpdate(): Targeted sub-frame animation updates.
  */
 
 #pragma once
@@ -31,6 +43,9 @@ public:
      */
     iBoardLayout(appContext* _context) : context(_context) {}
 
+    /**
+     * @brief Virtual destructor.
+     */
     virtual ~iBoardLayout() = default;
 
     /**

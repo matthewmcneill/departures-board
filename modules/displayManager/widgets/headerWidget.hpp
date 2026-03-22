@@ -8,20 +8,23 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/headerWidget.hpp
- * Description: Renders the top bar of a departure board, including the location name.
+ * Description: Renders the top-level status bar for a board. Includes the primary 
+ *              location name, calling points/via destinations, platform info, 
+ *              and an integrated real-time clock. Supports automatic horizontal 
+ *              text scrolling for long titles.
  *
  * Exported Functions/Classes:
- * - headerWidget: Graphical widget that draws the header.
- *   - setTitle(): Set the primary station name.
- *   - setCallingPoint(): Set the via/calling at destination.
- *   - setPlatform(): Set the platform string to render.
- *   - setTimeOffset(): Set the timezone offset modifier.
- *   - setShowDate(): Enable or disable rendering the date.
- *   - resetScroll(): Restart the title scrolling animation.
- *   - getClock(): Get a reference to the internal clock widget.
- *   - tick(): Update internal animation state.
- *   - render(): Draw the widget to the display.
- *   - renderAnimationUpdate(): Perform fast partial updates.
+ * - headerWidget: Graphics widget for board identity and system time.
+ *   - setTitle(): Update the primary location string.
+ *   - setCallingPoint(): Update the secondary destination string.
+ *   - setPlatform(): Update the platform occupancy/tracking string.
+ *   - setTimeOffset(): Apply a local timezone/offset adjustment.
+ *   - setShowDate(): Toggle the visibility of the current date.
+ *   - resetScroll(): Force the title scroller back to index zero.
+ *   - getClock(): Direct access to the internal clock widget.
+ *   - tick(): Logic update for scroll and clock.
+ *   - render(): Primary drawing method.
+ *   - renderAnimationUpdate(): Targeted scroller animation.
  */
 #ifndef HEADER_WIDGET_HPP
 #define HEADER_WIDGET_HPP
@@ -46,9 +49,19 @@ private:
 
     clockWidget clock;
 
+    /**
+     * @brief Internal helper to rebuild the scrolling string from title components.
+     */
     void updateCompositeTitle();
 
 public:
+    /**
+     * @brief Construct a new header widget at specific coordinates.
+     * @param _x X coordinate in pixels.
+     * @param _y Y coordinate in pixels.
+     * @param _w Optional width (defaults to SCREEN_WIDTH).
+     * @param _h Optional height.
+     */
     headerWidget(int _x, int _y, int _w = -1, int _h = -1);
 
     /**

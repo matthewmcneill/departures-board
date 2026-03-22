@@ -7,8 +7,18 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/iGfxWidget.hpp
- * Description: Base interface for reusable graphical components.
+ * Module: modules/displayManager/widgets/iGfxWidget.hpp
+ * Description: Base abstract interface for all graphical UI components (Widgets). 
+ *              Provides standard controls for positioning, sizing, visibility, 
+ *              and hardware-accelerated rendering updates.
+ *
+ * Exported Functions/Classes:
+ * - iGfxWidget: Pure virtual base class for all display widgets.
+ *   - setVisible() / getVisible(): Rendering state control.
+ *   - setCoords(): Positioning and bounding box configuration.
+ *   - tick(): Logic and timing update core.
+ *   - render(): Primary drawing entry point.
+ *   - renderAnimationUpdate(): Targeted high-speed partial updates.
  */
 
 #ifndef I_GFX_WIDGET_HPP
@@ -38,6 +48,9 @@ public:
     iGfxWidget(int _x, int _y, int _w = -1, int _h = -1) 
         : x(_x), y(_y), width(_w), height(_h) {}
 
+    /**
+     * @brief Virtual destructor.
+     */
     virtual ~iGfxWidget() = default;
 
     /**

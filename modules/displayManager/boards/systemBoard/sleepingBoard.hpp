@@ -7,12 +7,18 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/sleepingBoard.hpp
- * Description: Specialized display board for sleep mode/screensaver.
- *              Encapsulates burn-in protection and clock rendering.
+ * Module: modules/displayManager/boards/systemBoard/sleepingBoard.hpp
+ * Description: Low-power screensaver board. Implements a bouncing large-format 
+ *              clock designed to prevent OLED burn-in/ghosting while the board 
+ *              is in a scheduled sleep state.
  *
  * Exported Functions/Classes:
- * - SleepingBoard: iDisplayBoard implementation for the sleep clock.
+ * - SleepingBoard: System board for inactivity periods.
+ *   - setShowClock(): Toggle time visibility.
+ *   - setDimmedBrightness(): Configure display contrast for night mode.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - tick(): Logic update for burn-in protection shifts.
+ *   - render(): Primary drawing method for the large clock.
  */
 
 #pragma once
@@ -66,11 +72,25 @@ public:
     void setDimmedBrightness(int level) { dimmedBrightness = level; }
     int getDimmedBrightness() const { return dimmedBrightness; }
 
+    /**
+     * @brief Inject the application context.
+     * @param contextPtr Pointer to context.
+     */
     void init(appContext* contextPtr) { context = contextPtr; }
 
     // Minimal interface implementations
+    /** @return Always 0 for system boards. */
     int updateData() override { return 0; }
+
+    /** @brief No-op animation tick. */
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {}
+
+    /** @return Empty string for system boards. */
     const char* getLastErrorMsg() override { return ""; }
+
+    /**
+     * @brief Access the shared weather state (unused on sleep).
+     * @return WeatherStatus reference.
+     */
     WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };

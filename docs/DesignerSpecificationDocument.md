@@ -5,7 +5,7 @@
 The Display Designer is a standalone graphical utility designed to orchestrate the User Interface (UI) layouts for the Departures Board firmware. Its primary objective is to allow developers and designers to drag, drop, and configure visual widgets onto a simulated dot-matrix canvas and seamlessly export the result as highly optimized C++ code for the ESP32.
 
 ### 1.2 Scope
-This tool handles the **View** layer of the firmware. It outputs the C++ boilerplate required to instantiate widgets and place them mechanically on the screen using the **Lightweight Generated View (LGV)** architectural pattern. It does not generate or interact with the firmware's networking, data-fetching, or business logic. 
+This tool handles the **Layout** layer of the firmware. It outputs the C++ boilerplate required to instantiate widgets and place them mechanically on the screen using the **Lightweight Generated Layout (LGL)** architectural pattern. It does not generate or interact with the firmware's networking, data-fetching, or business logic. 
 
 ---
 
@@ -16,7 +16,7 @@ The designer tool relies on the C++ firmware's widget library as its source of t
 ### 2.2 Export Pipeline
 1. **Designer Level:** The user saves the project as `layout_name.json`.
 2. **Intermediate Level:** A pre-compile script (`generate_ui.py`) reads the JSON.
-3. **Firmware Level:** The script exports `Generated[Name]View.hpp` and `.cpp` files. To solve the Optional Widget Problem without breaking compilation, the script generates *all* known widgets but enforces `isVisible = false` on those the designer did not actively place on the canvas. 
+3. **Firmware Level:** The script exports `Generated[Name]Layout.hpp` and `.cpp` files. To solve the Optional Widget Problem without breaking compilation, the script generates *all* known widgets but enforces `isVisible = false` on those the designer did not actively place on the canvas. 
 
 ---
 

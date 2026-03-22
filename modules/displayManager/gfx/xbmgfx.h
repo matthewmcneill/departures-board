@@ -8,7 +8,7 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/gfx/xbmgfx.h
- * Description: Auto-generated documentation header.
+ * Description: Encapsulated XBM bitmap assets (e.g. Gadec logo) for system displays.
  */
 #pragma once
 

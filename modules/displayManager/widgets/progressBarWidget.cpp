@@ -7,8 +7,8 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/src/progressBarWidget.cpp
- * Description: Implementation of the progress bar widget.
+ * Module: modules/displayManager/widgets/progressBarWidget.cpp
+ * Description: Implementation of animated progress bar rendering.
  */
 
 #include "progressBarWidget.hpp"
@@ -16,12 +16,19 @@
 #include <displayManager.hpp>
 #include <string.h>
 
+/**
+ * @brief Initialize the progress bar with its position and dimensions.
+ */
 progressBarWidget::progressBarWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
     : iGfxWidget(_x, _y, _w, _h), currentPercent(0), targetPercent(0), startPercent(0), animStartTime(0), animDurationMs(0), oldPercent(0), textChanged(false), showPercentText(false), font(_font) {
     if (font == nullptr) font = NatRailSmall9;
     message[0] = '\0';
 }
 
+/**
+ * @brief Set the caption message string.
+ * @param newMessage Pointer to the string character array.
+ */
 void progressBarWidget::setMessage(const char* newMessage) {
     if (newMessage == nullptr) return;
     if (strcmp(message, newMessage) != 0) {
@@ -30,12 +37,20 @@ void progressBarWidget::setMessage(const char* newMessage) {
     }
 }
 
+/**
+ * @brief Set the caption message from a Flash-stored string.
+ * @param newMessage PROGMEM string helper.
+ */
 void progressBarWidget::setMessage(const __FlashStringHelper* newMessage) {
     char buf[256];
     strcpy_P(buf, (const char*)newMessage);
     setMessage(buf);
 }
 
+/**
+ * @brief Enable or disable numeric percentage text rendering.
+ * @param show Boolean flag.
+ */
 void progressBarWidget::setShowPercentText(bool show) {
     if (showPercentText != show) {
         showPercentText = show;
@@ -43,22 +58,34 @@ void progressBarWidget::setShowPercentText(bool show) {
     }
 }
 
+/**
+ * @brief Set the progress value with optional animation duration.
+ * @param percent Value from 0-100.
+ * @param durationMs Animation length in milliseconds.
+ */
 void progressBarWidget::setPercent(int percent, uint32_t durationMs) {
+    // Clamp to valid range
     if (percent < 0) percent = 0;
     if (percent > 100) percent = 100;
     
     animDurationMs = durationMs;
     
     if (animDurationMs > 0) {
+        // --- Step 1: Initialize Animation Path ---
         startPercent = currentPercent;
         targetPercent = percent;
         animStartTime = millis();
     } else {
+        // --- Step 2: Instant State Transition ---
         currentPercent = percent;
         targetPercent = percent;
     }
 }
 
+/**
+ * @brief Periodic logic for progress interpolation.
+ * @param currentMillis Milliseconds since boot.
+ */
 void progressBarWidget::tick(uint32_t currentMillis) {
     if (!isVisible) return;
     
@@ -73,6 +100,11 @@ void progressBarWidget::tick(uint32_t currentMillis) {
     }
 }
 
+/**
+ * @brief Targeted redraw for smooth progress bar updates.
+ * @param display U8g2 reference.
+ * @param currentMillis Milliseconds since boot.
+ */
 void progressBarWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (!isVisible) return;
 
@@ -90,6 +122,10 @@ void progressBarWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMil
     }
 }
 
+/**
+ * @brief Full frame render for the progress bar and label.
+ * @param display U8g2 reference.
+ */
 void progressBarWidget::render(U8G2& display) {
     if (!isVisible) return;
 
@@ -139,7 +175,9 @@ void progressBarWidget::render(U8G2& display) {
     display.drawBox(x, barY, renderW, 2);
     display.setDrawColor(1);
 
-    // Draw filled track
+    // --- Step 3: Draw Filled Track (Checkered Stippling) ---
+    // Instead of a solid bar, we use every other pixel in a checkered pattern 
+    // to give a classic LCD/DMD "shaded" look without alpha blending.
     for (int i = 0; i < fill; i++) {
         if (toggle) {
             display.drawHVLine(x + i, barY, 1, 1);

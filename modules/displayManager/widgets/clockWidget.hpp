@@ -8,15 +8,16 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/clockWidget.hpp
- * Description: Renders the system clock with a configurable font and blinking colon.
+ * Description: Renders the system time with a configurable font and blinking colon functionality. 
+ *              Integrates directly with the TimeManager for accurate RTC/NTP synchronization.
  *
  * Exported Functions/Classes:
- * - clockWidget: Graphical widget that draws the time.
- *   - setFont(): Change the active font.
- *   - setBlink(): Toggle the colon blinking effect.
- *   - tick(): Update the internal clock state.
- *   - render(): Draw the clock to the display buffer.
- *   - renderAnimationUpdate(): Handle blink animation frames.
+ * - clockWidget: Graphical widget for real-time display.
+ *   - setFont(): Update the typography.
+ *   - setBlink(): Toggle the 1Hz colon animation.
+ *   - tick(): Logic update for blink timing.
+ *   - render(): Primary drawing method.
+ *   - renderAnimationUpdate(): Targeted redraw for the colon/minutes.
  */
 #ifndef CLOCK_WIDGET_HPP
 #define CLOCK_WIDGET_HPP

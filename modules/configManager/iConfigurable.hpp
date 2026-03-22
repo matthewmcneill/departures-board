@@ -7,7 +7,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/configManager/iConfigurable.hpp
+ * Module: modules/configManager/iConfigurable.hpp
  * Description: Interface for components that subscribe to configuration updates.
  *
  * Exported Functions/Classes:

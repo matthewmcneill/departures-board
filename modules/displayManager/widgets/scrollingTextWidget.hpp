@@ -13,6 +13,13 @@
  *
  * Exported Functions/Classes:
  * - scrollingTextWidget: Base graphics widget for scrolling strings.
+ *   - setText(): Assign new string to scroll.
+ *   - setFont(): Update the rendering font.
+ *   - isScrollFinished(): State check for loop completion.
+ *   - resetScroll(): Force scroller back to start.
+ *   - tick(): Logic update for pixel shifts.
+ *   - render(): Primary drawing method.
+ *   - renderAnimationUpdate(): Targeted redraw for smooth scrolling.
  */
 
 #ifndef SCROLLING_TEXT_WIDGET_HPP

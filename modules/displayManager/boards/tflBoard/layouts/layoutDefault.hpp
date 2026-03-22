@@ -4,8 +4,12 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
  * Module: modules/displayManager/boards/tflBoard/layouts/layoutDefault.hpp
- * Description: Default layout for TfL Tube, migrating hardcoded board logic.
+ * Description: Default layout for TfL Underground, providing a pixel-perfect 
+ *              recreation of the legacy v2.5 board.
  */
 
 #ifndef TFL_LAYOUT_DEFAULT_HPP

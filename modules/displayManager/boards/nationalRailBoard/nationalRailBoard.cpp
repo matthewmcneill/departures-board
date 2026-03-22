@@ -1,4 +1,3 @@
-#include <appContext.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  * Refactored for v3.0 by Matt McNeill 2026 CB Labs
@@ -8,10 +7,11 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/nationalRailBoard/src/nationalRailBoard.cpp
- * Description: Implementation of NationalRailBoard using widgets and iDataSource.
+ * Module: modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp
+ * Description: Implementation of National Rail controller logic and widget binding.
  */
 
+#include <appContext.hpp>
 #include "nationalRailBoard.hpp"
 #include <logger.hpp>
 
@@ -19,6 +19,10 @@ extern const char nrAttributionn[];
 extern const uint8_t NatRailTall12[];
 extern const uint8_t NatRailSmall9[];
 
+/**
+ * @brief Constructs the National Rail Board and its default layout.
+ * @param contextPtr Pointer to the global application context.
+ */
 NationalRailBoard::NationalRailBoard(appContext* contextPtr) 
     : context(contextPtr),
       activeLayout(nullptr),
@@ -39,14 +43,22 @@ NationalRailBoard::NationalRailBoard(appContext* contextPtr)
     stationLon = 0;
 }
 
+/**
+ * @brief Cleanup layout allocations.
+ */
 NationalRailBoard::~NationalRailBoard() {
     if (activeLayout) delete activeLayout;
 }
 
+/**
+ * @brief Lifecycle hook for activation. Initializes the SOAP client 
+ *        and binds widgets to the data source alerts.
+ */
 void NationalRailBoard::onActivate() {
     LOG_INFO("DISPLAY", "NR Board: onActivate() called.");
     
-    // Defer data source initialization if WiFi is not connected to avoid boot blocking
+    // --- Step 1: Data Source Initialization ---
+    // Defer initialization if WiFi is not connected to avoid blocking the main thread during boot.
     if (WiFi.status() == WL_CONNECTED) {
         int status = dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", raildataYieldWrapper); 
         if (status != 0) {
@@ -58,22 +70,30 @@ void NationalRailBoard::onActivate() {
         LOG_INFO("DISPLAY", "NR Board: WiFi not connected. Deferring dataSource.init().");
     }
     
-    // Use the stored configuration
+    // --- Step 2: Configuration Injection ---
     dataSource.configure(nrToken, crsCode, platformFilter, callingCrsCode, nrTimeOffset);
     
-    // Configure message pools
+    // --- Step 3: Widget Binding ---
     if (context && activeLayout) {
+        // Register message pools (global plus source-specific alerts)
         activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
         activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
         
-        // Set initial text (fallback)
+        // Initial attribution text
         activeLayout->msgWidget.setText(nrAttributionn);
     }
     lastUpdate = 0;
 }
 
+/**
+ * @brief Lifecycle hook for deactivation.
+ */
 void NationalRailBoard::onDeactivate() {}
 
+/**
+ * @brief Apply board-specific settings (CRS, tokens) from configuration.
+ * @param config The BoardConfig struct.
+ */
 void NationalRailBoard::configure(const BoardConfig& config) {
     this->config = config;
     if (context) {
@@ -90,6 +110,10 @@ void NationalRailBoard::configure(const BoardConfig& config) {
     setStationLon(config.lon);
 }
 
+/**
+ * @brief Logic update for the board, including destination/via toggling.
+ * @param ms Current system time in milliseconds.
+ */
 void NationalRailBoard::tick(uint32_t ms) {
     if (ms > nextViaToggle) {
         viaToggle = !viaToggle;
@@ -106,23 +130,31 @@ void NationalRailBoard::tick(uint32_t ms) {
     if (activeLayout) activeLayout->tick(ms);
 }
 
+/**
+ * @brief Triggers or polls the background SOAP data fetch status.
+ * @return Status code (0 = Success, 9 = Pending).
+ */
 int NationalRailBoard::updateData() {
+    // --- Step 1: Pending Result Status ---
     if (lastUpdateStatus == UPD_PENDING) {
         lastUpdateStatus = dataSource.getLastUpdateStatus();
         if (lastUpdateStatus == UPD_PENDING) {
             return UPD_PENDING;
         }
     } else {
+        // --- Step 2: Pre-Fetch Validation ---
         if (!config.complete) {
             LOG_WARN("DISPLAY", "NR Board: Skipping updateData() - Configuration incomplete.");
-            return 7; // Use a dedicated "Unconfigured" code if defined
+            return 7; // Unconfigured
         }
 
+        // Deferred init if WiFi joined late
         if (WiFi.status() == WL_CONNECTED && !dataSource.isInitialized()) {
             LOG_INFO("DISPLAY", "NR Board: Performing deferred dataSource.init()...");
             dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
         }
 
+        // --- Step 3: Initiation ---
         LOG_INFO("DISPLAY", "NR Board: Starting data update...");
         lastUpdateStatus = dataSource.updateData();
         if (lastUpdateStatus == UPD_PENDING) {
@@ -130,6 +162,7 @@ int NationalRailBoard::updateData() {
         }
     }
 
+    // --- Step 4: Post-Fetch Error Tracking ---
     if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
         LOG_WARN("DISPLAY", "NR Board: Data update failed with status: " + String(lastUpdateStatus));
         if (lastUpdateStatus > 2) {
@@ -185,6 +218,10 @@ int NationalRailBoard::updateData() {
     return lastUpdateStatus;
 }
 
+/**
+ * @brief Renders the full National Rail board including Row 0 and secondary list.
+ * @param display Reference to U8g2.
+ */
 void NationalRailBoard::render(U8G2& display) {
     if (context && context->getsystemManager().isWifiPersistentError()) {
         iDisplayBoard* wifiError = context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_ERROR_WIFI);
@@ -225,6 +262,11 @@ void NationalRailBoard::render(U8G2& display) {
     }
 }
 
+/**
+ * @brief Targeted high-speed animation updates for scrollers and clocks.
+ * @param display Reference to U8g2.
+ * @param currentMillis Current system time in milliseconds.
+ */
 void NationalRailBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (context && context->getsystemManager().isWifiPersistentError()) return;
     if (!config.complete) return;

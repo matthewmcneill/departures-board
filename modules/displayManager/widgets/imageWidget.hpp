@@ -7,13 +7,14 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/imageWidget.hpp
- * Description: Renders an XBM format monochrome image.
+ * Module: modules/displayManager/widgets/imageWidget.hpp
+ * Description: Renders static XBM-encoded monochrome bitmap images (branding/icons). 
+ *              Optimized for PROGMEM storage to minimize RAM footprint.
  *
  * Exported Functions/Classes:
- * - imageWidget: Class extending iGfxWidget to draw an XBM image.
- * - imageWidget::tick: No-op for static images.
- * - imageWidget::render: Draws the XBM array.
+ * - imageWidget: UI widget for static bitmap display.
+ *   - tick(): No-op lifecycle hook.
+ *   - render(): Primary drawing method.
  */
 
 #ifndef IMAGE_WIDGET_HPP

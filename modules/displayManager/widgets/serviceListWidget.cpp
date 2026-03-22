@@ -7,14 +7,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/src/serviceListWidget.cpp
- * Description: Implementation of multi-column service row rendering.
+ * Module: modules/displayManager/widgets/serviceListWidget.cpp
+ * Description: Implementation of tabular data rendering with pagination.
  */
 
 #include "serviceListWidget.hpp"
 #include "drawingPrimitives.hpp"
 #include <displayManager.hpp>
 
+/**
+ * @brief Initialize the service list with default fonts and pagination state.
+ */
 serviceListWidget::serviceListWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
     : iGfxWidget(_x, _y, _w, _h), numColumns(0), font(_font), totalRows(0), currentPage(0), 
       lastPageChange(0), pageTimeoutMs(8000) {
@@ -22,6 +25,11 @@ serviceListWidget::serviceListWidget(int _x, int _y, int _w, int _h, const uint8
     clearRows();
 }
 
+/**
+ * @brief Define the column schema for the table.
+ * @param _numCols Number of columns.
+ * @param _cols Array of column definitions.
+ */
 void serviceListWidget::setColumns(int _numCols, const ColumnDef* _cols) {
     numColumns = (_numCols > MAX_SERVICE_COLUMNS) ? MAX_SERVICE_COLUMNS : _numCols;
     for (int i = 0; i < numColumns; i++) {
@@ -29,16 +37,27 @@ void serviceListWidget::setColumns(int _numCols, const ColumnDef* _cols) {
     }
 }
 
+/**
+ * @brief Configure the automated pagination speed.
+ * @param ms Duration in milliseconds.
+ */
 void serviceListWidget::setPageTimeout(int ms) {
     pageTimeoutMs = ms;
 }
 
+/**
+ * @brief Clear all data rows and reset pagination to page zero.
+ */
 void serviceListWidget::clearRows() {
     totalRows = 0;
     currentPage = 0;
     lastPageChange = 0; // Force immediate render logic if asked
 }
 
+/**
+ * @brief Add a new row of data strings. Only the pointers are stored.
+ * @param data Array of string pointers matching the column count.
+ */
 void serviceListWidget::addRow(const char** data) {
     if (totalRows >= 16) return; // Hard array limit
     
@@ -60,6 +79,7 @@ void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
     display.setFont(font);
     int currentX = x;
 
+    // --- Step 1: Iterate Columns ---
     for (int i = 0; i < numColumns; i++) {
         int colW = columns[i].width;
         const char* text = data[i];
@@ -71,14 +91,15 @@ void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
         int textW = getStringWidth(display, text);
         int drawX = currentX;
 
-        // Apply alignment within the column
+        // --- Step 2: Alignment Logic ---
         if (columns[i].align == 1) { // Center
             drawX += (colW - textW) / 2;
         } else if (columns[i].align == 2) { // Right
             drawX += (colW - textW);
         }
 
-        // Clip to column width if necessary
+        // --- Step 3: Clipping and Rendering ---
+        // If the text is wider than the column, restrict the drawing window.
         bool clipping = (textW > colW);
         if (clipping) {
             display.setClipWindow(currentX, rowY - 12, currentX + colW, rowY + 2);
@@ -101,12 +122,16 @@ void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
 void serviceListWidget::tick(uint32_t currentMillis) {
     if (!isVisible || totalRows == 0 || height <= 0) return;
     
-    int rowsPerPage = height / 13; // Assume 13px pitch for now.
+    // --- Step 1: Determine Capacity ---
+    // Calculate how many rows fit based on a standard 13px baseline pitch.
+    int rowsPerPage = height / 13;
     int totalPages = (totalRows + rowsPerPage - 1) / rowsPerPage;
     
+    // --- Step 2: Page Management ---
     if (totalPages > 1) {
         if (lastPageChange == 0) lastPageChange = currentMillis;
         
+        // Swap page after timeout
         if (currentMillis - lastPageChange >= pageTimeoutMs) {
             currentPage++;
             if (currentPage >= totalPages) currentPage = 0;
@@ -141,6 +166,10 @@ void serviceListWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMil
     }
 }
 
+/**
+ * @brief Render the current page of service data.
+ * @param display U8g2 reference.
+ */
 void serviceListWidget::render(U8G2& display) {
     if (!isVisible || totalRows == 0) return;
     

@@ -7,8 +7,21 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/gfxUtilities/serviceListWidget.hpp
- * Description: Multi-column departure list widget with configurable alignments.
+ * Module: modules/displayManager/widgets/serviceListWidget.hpp
+ * Description: High-level table widget for rendering multi-column transport data. 
+ *              Supports configurable alignments, clipping, and automatic pagination 
+ *              for large data sets.
+ *
+ * Exported Functions/Classes:
+ * - ColumnDef: Configuration structure for column width and alignment.
+ * - serviceListWidget: Graphics widget for tabular service information.
+ *   - setColumns(): Define the table schema.
+ *   - setPageTimeout(): Configure rotation speed for paginated data.
+ *   - clearRows() / addRow(): Data ingestion methods.
+ *   - drawRow(): Internal utility for rendering a single record.
+ *   - tick(): Logic update for pagination timing.
+ *   - render(): Primary drawing method.
+ *   - renderAnimationUpdate(): Targeted page transition animation.
  */
 
 #ifndef SERVICE_LIST_WIDGET_HPP
@@ -39,6 +52,14 @@ private:
     int pageTimeoutMs;
 
 public:
+    /**
+     * @brief Construct a new service list widget.
+     * @param _x X coordinate.
+     * @param _y Y coordinate.
+     * @param _w Optional width.
+     * @param _h Optional height (controls rows per page).
+     * @param _font Optional font override.
+     */
     serviceListWidget(int _x, int _y, int _w = -1, int _h = -1, const uint8_t* _font = nullptr);
 
     /**
@@ -73,8 +94,23 @@ public:
      */
     void drawRow(U8G2& display, int rowY, const char** rowData);
 
+    /**
+     * @brief Periodic logic for pagination timing.
+     * @param currentMillis Milliseconds since boot.
+     */
     void tick(uint32_t currentMillis) override;
+
+    /**
+     * @brief Full frame render for the visible page of data.
+     * @param display U8g2 reference.
+     */
     void render(U8G2& display) override;
+
+    /**
+     * @brief Targeted redraw for smooth page transitions.
+     * @param display U8g2 reference.
+     * @param currentMillis Milliseconds since boot.
+     */
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
 };
 

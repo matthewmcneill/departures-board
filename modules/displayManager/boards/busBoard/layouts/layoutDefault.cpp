@@ -4,8 +4,11 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
- * Module: modules/displayManager/boards/busBoard/views/viewDefault.cpp
- * Description: Implementation of the default Bus layout logic.
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: modules/displayManager/boards/busBoard/layouts/layoutDefault.cpp
+ * Description: Implementation of the default Bus layout.
  */
 
 #include "layoutDefault.hpp"
@@ -13,9 +16,14 @@
 
 extern const uint8_t Underground10[];
 
+/**
+ * @brief Default Bus layout constructor.
+ * @param context Pointer to the application context.
+ */
 layoutBusDefault::layoutBusDefault(appContext* context) 
     : iBusLayout(context) {
     
+    // --- Step 1: Widget Mapping ---
     // Configure widget positions exactly as they were in BusBoard v2.5
     headWidget.setCoords(0, 0, 256, 12);
     headWidget.getClock().setFont(Underground10);
@@ -25,7 +33,8 @@ layoutBusDefault::layoutBusDefault(appContext* context)
     
     msgWidget.setCoords(0, 52, 256, 12);
 
-    // Configure service list columns for Bus layout
+    // --- Step 2: Column Layout ---
+    // Configure service list columns for Bus layout (route numbers are shorter)
     ColumnDef cols[3] = {
         {25, 0},   // Route number
         {180, 0},  // Destination
