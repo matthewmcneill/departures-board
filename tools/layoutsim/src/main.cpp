@@ -84,7 +84,13 @@ void syncData() {
 EMSCRIPTEN_KEEPALIVE
 const char* applyLayout(const char* json) {
     if (g_layoutParser) {
-        return g_layoutParser->parse(json, g_timeMgr, g_msgPool);
+        const char* result = g_layoutParser->parse(json, g_timeMgr, g_msgPool);
+        
+        // When the layout is applied, the active profile INSTANTIATES new 
+        // widget pointers. We must re-hydrate them with the latest known mock data.
+        syncData();
+        
+        return result;
     }
     return "Parser error";
 }
