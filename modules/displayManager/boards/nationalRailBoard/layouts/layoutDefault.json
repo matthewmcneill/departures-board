@@ -37,10 +37,22 @@
       "maxRows": 1,
       "font": "NatRailTall12",
       "columns": [
-        { "width": 0, "align": 0 },
-        { "width": 60, "align": 0 },
-        { "width": 0, "align": 0 },
-        { "width": 196, "align": 0 }
+        {
+          "width": 0,
+          "align": 0
+        },
+        {
+          "width": 60,
+          "align": 0
+        },
+        {
+          "width": 0,
+          "align": 0
+        },
+        {
+          "width": 196,
+          "align": 0
+        }
       ]
     },
     {
@@ -55,10 +67,26 @@
       "visible": true,
       "skipRows": 1,
       "columns": [
-        { "width": 23, "align": 0, "label": "No" },
-        { "width": 27, "align": 0, "label": "Time" },
-        { "width": 16, "align": 1, "label": "Plat" },
-        { "width": 190, "align": 0, "label": "Dest" }
+        {
+          "width": 23,
+          "align": 0,
+          "label": "No"
+        },
+        {
+          "width": 27,
+          "align": 0,
+          "label": "Time"
+        },
+        {
+          "width": 16,
+          "align": 1,
+          "label": "Plat"
+        },
+        {
+          "width": 190,
+          "align": 0,
+          "label": "Dest"
+        }
       ]
     },
     {

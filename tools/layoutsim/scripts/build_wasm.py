@@ -107,9 +107,18 @@ def build():
 
     # Compile C++ files
     print("Compiling C++ files...")
+    registry_hpp = os.path.join(SRC_DIR, "generated_registry.hpp")
     for src in cpp_sources:
         obj = os.path.join(BUILD_DIR, os.path.basename(src) + ".o")
-        if not os.path.exists(obj) or os.path.getmtime(src) > os.path.getmtime(obj):
+        
+        # Invalidate cache if the source file is updated, OR if we're compiling main.cpp 
+        # and the generated_registry header was updated.
+        needs_build = not os.path.exists(obj) or os.path.getmtime(src) > os.path.getmtime(obj)
+        if src.endswith("main.cpp") and os.path.exists(registry_hpp):
+            if os.path.getmtime(registry_hpp) > os.path.getmtime(obj):
+                needs_build = True
+                
+        if needs_build:
             cmd = [emcc_path] + cpp_flags + ["-c", src, "-o", obj]
             print(f"Executing: {' '.join(cmd)}")
             subprocess.run(cmd, check=True)
