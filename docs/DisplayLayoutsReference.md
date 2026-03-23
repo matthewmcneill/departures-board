@@ -41,12 +41,14 @@ Every layout JSON file consists of two top-level arrays: `widgets` and `primitiv
 
 ```json
 {
+  "layout": "iNationalRailLayout",
   "widgets": [
     {
       "id": "clock",
+      "type": "clockWidget",
       "geometry": {
         "x": 200,
-        "y": -1,
+        "y": 0,
         "w": 56,
         "h": 12
       },
@@ -77,7 +79,9 @@ You **must** provide the correct `id` for a widget as defined by the board's `De
 
 ### Universal Widget Properties
 These parameters can be applied to **any** widget:
-- `id` (String, Required): The unique identifier corresponding to the C++ object (e.g., `header`, `clock`, `services`).
+- `id` (String, Required): The unique identifier corresponding to the C++ object (e.g., `headWidget`, `sysClock`, `servicesWidget`).
+- `type` (String, Required): The exact C++ derived class of this widget. Stating this class powers precise IDE autocomplete.
+    - Valid types include: `"headerWidget"`, `"serviceListWidget"`, `"scrollingTextWidget"`, `"clockWidget"`, `"labelWidget"`, `"scrollingMessagePoolWidget"`.
 - `geometry` (Object, Required): Defines the size and position of the widget.
   - `x` (Int): X-coordinate of the top-left corner.
   - `y` (Int): Y-coordinate of the top-left corner.
@@ -86,19 +90,19 @@ These parameters can be applied to **any** widget:
 - `visible` (Boolean, Default `true`): Whether the widget should be drawn.
 
 ### Specialized Properties
-Certain properties are only consumed by specific widget types during parsing:
+Certain properties are only consumed by specific widget types during parsing. If you use the `.json` schema properly, VS Code will only suggest these fields if the `type` property is set correctly:
 
 - **`font` (String)**
-  - Applicable to: `labelWidget`, `clockWidget` (e.g., elements named `label`, `clock`, `sysClock`, `row0*`).
+  - Applicable to: `labelWidget`, `clockWidget`, `scrollingTextWidget`, `scrollingMessagePoolWidget`
   - Values: `NatRailSmall9`, `NatRailTall12`, `NatRailClockSmall7`, `NatRailClockLarge9`, `Underground10`, `UndergroundClock8`.
 - **`text` (String)**
-  - Applicable to: `labelWidget` (e.g., elements named `label`, `row0*`, `noDataLabel`).
+  - Applicable to: `labelWidget`
   - Description: Hardcodes the text content.
 - **`blink` (Boolean)**
-  - Applicable to: `clockWidget` (e.g., `clock`, `sysClock`).
+  - Applicable to: `clockWidget`
   - Description: Toggles the blinking colon animation.
 - **`columns` (Array of Objects)**
-  - Applicable to: `serviceListWidget` (element named `services`).
+  - Applicable to: `serviceListWidget`
   - Description: Defines the width and text alignment of each column. Max 6 columns.
   - Example: `"columns": [ { "width": 25, "align": 0 }, { "width": 100, "align": 1 } ]` (Align: 0=Left, 1=Center, 2=Right).
 

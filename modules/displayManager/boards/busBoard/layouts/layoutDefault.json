@@ -1,16 +1,16 @@
 {
   "layout": "iBusLayout",
   "widgets": [
-    { "id": "msgWidget", "geometry": { "x": 0, "y": 52, "w": 256, "h": 12 }, "visible": true, "font": "Underground10", "blink": true },
+    { "id": "headWidget", "type": "headerWidget", "geometry": { "x": 0, "y": 52, "w": 256, "h": 12 }, "visible": true, "font": "Underground10", "blink": true },
     { 
-      "id": "servicesWidget", "geometry": { "x": 0, "y": 12, "w": 256, "h": 39 }, "visible": true,
+      "id": "servicesWidget", "type": "serviceListWidget", "geometry": { "x": 0, "y": 12, "w": 256, "h": 39 }, "visible": true,
       "columns": [
         { "width": 25, "align": 0, "label": "No" },
         { "width": 180, "align": 0, "label": "Destination" },
         { "width": 51, "align": 2, "label": "Time" }
       ]
     },
-    { "id": "messages", "geometry": { "x": 0, "y": 52, "w": 256, "h": 12 }, "visible": true },
-    { "id": "noDataLabel", "geometry": { "x": 10, "y": 35, "w": 256, "h": 15 }, "visible": false, "font": "Underground10", "text": "No scheduled services." }
+    { "id": "msgWidget", "type": "scrollingMessagePoolWidget", "geometry": { "x": 0, "y": 52, "w": 256, "h": 12 }, "visible": true },
+    { "id": "noDataLabel", "type": "labelWidget", "geometry": { "x": 10, "y": 35, "w": 256, "h": 15 }, "visible": false, "font": "Underground10", "text": "No scheduled services." }
   ]
 }

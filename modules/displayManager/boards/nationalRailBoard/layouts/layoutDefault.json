@@ -3,6 +3,7 @@
   "widgets": [
     {
       "id": "headWidget",
+      "type": "headerWidget",
       "geometry": {
         "x": 0,
         "y": 0,
@@ -13,6 +14,7 @@
     },
     {
       "id": "sysClock",
+      "type": "clockWidget",
       "geometry": {
         "x": 200,
         "y": 0,
@@ -23,6 +25,7 @@
     },
     {
       "id": "row0Time",
+      "type": "scrollingTextWidget",
       "geometry": {
         "x": 0,
         "y": 12,
@@ -34,6 +37,7 @@
     },
     {
       "id": "row0Dest",
+      "type": "scrollingTextWidget",
       "geometry": {
         "x": 60,
         "y": 12,
@@ -45,6 +49,7 @@
     },
     {
       "id": "servicesWidget",
+      "type": "serviceListWidget",
       "geometry": {
         "x": 0,
         "y": 26,
@@ -77,6 +82,7 @@
     },
     {
       "id": "msgWidget",
+      "type": "scrollingMessagePoolWidget",
       "geometry": {
         "x": 0,
         "y": 52,
@@ -87,17 +93,8 @@
       "font": "NatRailSmall9"
     },
     {
-      "id": "sysClock",
-      "geometry": {
-        "x": 200,
-        "y": 0,
-        "w": 56,
-        "h": 11
-      },
-      "visible": false
-    },
-    {
       "id": "noDataLabel",
+      "type": "labelWidget",
       "geometry": {
         "x": 10,
         "y": 26,

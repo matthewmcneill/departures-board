@@ -19,11 +19,23 @@
       "description": "Stateful UI components managed by the C++ engine.",
       "items": {
         "type": "object",
-        "required": ["id", "x", "y"],
+        "required": ["id", "type"],
         "properties": {
           "id": {
             "type": "string",
             "description": "Unique identifier mapping to a C++ widget instance (e.g., 'header', 'clock', 'services')."
+          },
+          "type": {
+            "type": "string",
+            "description": "The exact C++ derived class of this widget. Validating this helps editors autocomplete allowed properties.",
+            "enum": [
+              "headerWidget",
+              "serviceListWidget",
+              "scrollingTextWidget",
+              "clockWidget",
+              "labelWidget",
+              "scrollingMessagePoolWidget"
+            ]
           },
           "geometry": {
             "type": "object",
@@ -35,36 +47,66 @@
               "h": { "type": "integer", "description": "Height" }
             }
           },
-          "visible": { "type": "boolean", "default": true, "description": "Determines if the widget is drawn." },
-          "font": {
-            "type": "string",
-            "description": "Font to use for Label and Clock widgets.",
-            "enum": [
-              "NatRailSmall9",
-              "NatRailTall12",
-              "NatRailClockSmall7",
-              "NatRailClockLarge9",
-              "Underground10",
-              "UndergroundClock8"
-            ]
-          },
-          "text": { "type": "string", "description": "Hardcoded text for Label widgets." },
-          "blink": { "type": "boolean", "description": "Enable blinking colon animation for Clock widgets." },
-          "columns": {
-            "type": "array",
-            "description": "Column definitions for the Service List widget.",
-            "maxItems": 6,
-            "items": {
-              "type": "object",
+          "visible": { "type": "boolean", "default": true, "description": "Determines if the widget is drawn." }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "type": { "const": "serviceListWidget" } } },
+            "then": {
               "properties": {
-                "width": { "type": "integer", "description": "Column width in pixels" },
-                "align": { "type": "integer", "enum": [0, 1, 2], "description": "Text alignment: 0=Left, 1=Center, 2=Right" },
-                "label": { "type": "string", "description": "Optional column header label." }
-              },
-              "required": ["width", "align"]
+                "columns": {
+                  "type": "array",
+                  "description": "Column definitions for the Service List widget.",
+                  "maxItems": 6,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "width": { "type": "integer", "description": "Column width in pixels" },
+                      "align": { "type": "integer", "enum": [0, 1, 2], "description": "Text alignment: 0=Left, 1=Center, 2=Right" },
+                      "label": { "type": "string", "description": "Optional column header label." }
+                    },
+                    "required": ["width", "align"]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": { "properties": { "type": { "enum": ["labelWidget", "scrollingTextWidget", "clockWidget", "scrollingMessagePoolWidget"] } } },
+            "then": {
+              "properties": {
+                "font": {
+                  "type": "string",
+                  "description": "Font string literal defined in the engine.",
+                  "enum": [
+                    "NatRailSmall9",
+                    "NatRailTall12",
+                    "NatRailClockSmall7",
+                    "NatRailClockLarge9",
+                    "Underground10",
+                    "UndergroundClock8"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": { "properties": { "type": { "const": "labelWidget" } } },
+            "then": {
+              "properties": {
+                "text": { "type": "string", "description": "Hardcoded text for Label widgets." }
+              }
+            }
+          },
+          {
+            "if": { "properties": { "type": { "const": "clockWidget" } } },
+            "then": {
+              "properties": {
+                "blink": { "type": "boolean", "description": "Enable blinking colon animation for Clock widgets." }
+              }
             }
           }
-        }
+        ]
       }
     },
     "primitives": {
