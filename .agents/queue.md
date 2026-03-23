@@ -16,6 +16,8 @@ This file tracks active and pending agent sessions to prevent hardware and build
 | 65ebed96-b4a2-4ec2-8761-22a0f22c4ff6 | Develop the System Specification Document (SSD) and consolidate all architectural docs & fonts | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/65ebed96-b4a2-4ec2-8761-22a0f22c4ff6/implementation_plan.md) | 2026-03-18T21:58:23Z |
 | 89f588da-1676-4623-abd1-bd9230c2811e | Create Developer Guide Documentation | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/89f588da-1676-4623-abd1-bd9230c2811e/implementation_plan.md) | 2026-03-18T22:21:48Z |
 | f28cbd50-8b5d-41d5-a79c-d385f5d941f1 | Universal Context Header Design (Pending Concept Selection) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/f28cbd50-8b5d-41d5-a79c-d385f5d941f1/implementation_plan.md) | 2026-03-20T07:11:00Z |
+| 61262f31-29fc-494f-b0b3-d94bad7f27fa | Adding Expected Time Column | N/A | 2026-03-23T22:46:42Z |
+| b719ca8f-cfc1-44ee-bfd3-426b8b795c4d | Header Widget Rewrite | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/b719ca8f-cfc1-44ee-bfd3-426b8b795c4d/implementation_plan.md) | 2026-03-23T23:27:42Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |

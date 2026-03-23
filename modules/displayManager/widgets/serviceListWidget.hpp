@@ -29,7 +29,7 @@
 
 #include "iGfxWidget.hpp"
 
-#define MAX_SERVICE_COLUMNS 4
+#define MAX_SERVICE_COLUMNS 6
 
 struct ColumnDef {
     int width;
@@ -46,10 +46,15 @@ private:
     const char* rowData[16][MAX_SERVICE_COLUMNS];
     int totalRows;
     
-    // Pagination state
-    int currentPage;
-    uint32_t lastPageChange;
-    int pageTimeoutMs;
+    // Scrolling state
+    int topRowIndex;
+    bool isAnimating;
+    bool isPageResetAnimating;
+    uint32_t animationStartMs;
+    uint32_t lastDwellStart;
+    int scrollDurationMs;
+    int scrollDwellMs;
+    int currentYOffset;
 
     // Data Slicing Configuration
     int skipRows;
@@ -75,11 +80,18 @@ public:
     void setColumns(int _numCols, const ColumnDef* _cols);
 
     /**
-     * @brief Set how long each page should display before swapping.
-     * @param ms Timeout in milliseconds. Default is 8000 (8 seconds).
-     * @designer_prop int pageTimeoutMs = 8000 - Timeout in milliseconds per page.
+     * @brief Set how long the scroll animation should take.
+     * @param ms Duration in milliseconds.
+     * @designer_prop int scrollDurationMs = 1000 - Scroll duration in ms.
      */
-    void setPageTimeout(int ms);
+    void setScrollDuration(int ms);
+
+    /**
+     * @brief Set how long to dwell on each line.
+     * @param ms Dwell time in milliseconds.
+     * @designer_prop int scrollDwellMs = 5000 - Dwell time in ms.
+     */
+    void setScrollDwell(int ms);
 
     /**
      * @brief Define the data slicing boundaries for this list.

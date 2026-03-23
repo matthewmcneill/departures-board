@@ -1,3 +1,16 @@
+"""
+Departures Board (c) 2025-2026 Gadec Software
+Refactored for v3.0 by Matt McNeill 2026 CB Labs
+
+https://github.com/gadec-uk/departures-board
+
+This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Module: tools/layoutsim/scripts/dev_server.py
+Description: Simple HTTP server to run the Layout Simulator locally with hot-reloading support.
+"""
+
 import http.server
 import socketserver
 import os
@@ -5,8 +18,8 @@ import sys
 import json
 import glob
 
-# Configuration
-PORT = 8000
+# Configuration Constants
+PORT = 8000 # HTTP listener port for the development server
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR = os.path.dirname(SCRIPT_DIR)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(TOOLS_DIR))
@@ -23,6 +36,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
+        """
+        Intercepts GET requests to provide mock API routes for the simulator frontend.
+        """
         if self.path == '/api/layouts':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -40,6 +56,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def get_all_layouts(self):
+        """
+        Scans the project directory for custom JSON board layouts.
+        Returns:
+            list: A collection of layout dictionaries containing formatting names and paths.
+        """
         pattern = os.path.join(PROJECT_ROOT, "modules/displayManager/boards/*/layouts/*.json")
         files = glob.glob(pattern)
         results = []
@@ -56,6 +77,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return results
 
     def get_latest_layout(self):
+        """
+        Identifies the most recently modified layout JSON file to auto-load in the IDE.
+        Returns:
+            str: Relative path to the latest JSON layout file.
+        """
         pattern = os.path.join(PROJECT_ROOT, "modules/displayManager/boards/*/layouts/*.json")
         files = glob.glob(pattern)
         if not files:
@@ -66,6 +92,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return os.path.relpath(latest_file, PROJECT_ROOT)
 
 def run():
+    """
+    Initializes and blocks on the TCP socket server to run the development instance.
+    """
     print(f"Starting Layout Simulator Dev Server on http://localhost:{PORT}")
     print(f"Project Root: {PROJECT_ROOT}")
     print("Direct link: http://localhost:8000/tools/layoutsim/web/index.html")

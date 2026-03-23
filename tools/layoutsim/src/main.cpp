@@ -1,3 +1,25 @@
+/*
+ * Departures Board (c) 2025-2026 Gadec Software
+ * Refactored for v3.0 by Matt McNeill 2026 CB Labs
+ *
+ * https://github.com/gadec-uk/departures-board
+ *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: tools/layoutsim/src/main.cpp
+ * Description: Main WebAssembly entry point for the layout engine. Exposes initialization, layout parsing, and frame rendering APIs to JavaScript.
+ *
+ * Exported Functions/Classes:
+ * - initEngine(): Initializes the simulator dependencies
+ * - syncData(): Synchronizes generic mock data to all active widgets
+ * - applyLayout(): Compiles a JSON layout description within the IDE
+ * - applyMockData(): Updates the global mock data singleton from JSON payload
+ * - setDebugMode(): Toggles debug diagnostic outputs
+ * - getLayoutMetadata(): Returns JSON diagnostics for IDE bounding boxes
+ * - renderFrame(): Paints a single IDE frame to an RGBA buffer
+ */
+
 #include <emscripten.h>
 #include <emscripten/bind.h>
 #include <iostream>
@@ -14,20 +36,23 @@
 #include "generated_registry.hpp"
 
 // OLED dimensions
-const int OLED_WIDTH = 256;
-const int OLED_HEIGHT = 64;
+const int OLED_WIDTH = 256; // Standard physical width of the display array
+const int OLED_HEIGHT = 64; // Standard physical height of the display array
 
 // Simulation state
-U8G2_SSD1322_NHD_256X64_F_4W_SW_SPI *g_u8g2;
-TimeManager *g_timeMgr;
-LayoutParser *g_layoutParser;
-MessagePool *g_msgPool;
+U8G2_SSD1322_NHD_256X64_F_4W_SW_SPI *g_u8g2; // Global mock graphics context pointer
+TimeManager *g_timeMgr; // Global mock time manager instance
+LayoutParser *g_layoutParser; // Global IDE JSON layout parser engine
+MessagePool *g_msgPool; // Global scrolling message buffer
 
 // Memory buffer for JavaScript to read
-uint8_t rgba_buffer[OLED_WIDTH * OLED_HEIGHT * 4];
+uint8_t rgba_buffer[OLED_WIDTH * OLED_HEIGHT * 4]; // Persistent RGBA pixel buffer exposed to Html5 canvas
 
 extern "C" {
 
+/**
+ * @brief Initializes the simulator dependencies
+ */
 EMSCRIPTEN_KEEPALIVE
 void initEngine() {
     // Setup a dummy U8g2 instance
@@ -43,10 +68,13 @@ void initEngine() {
     // loadLayoutProfile() when it parses the JSON `"layout"` field.
 }
 
+/**
+ * @brief Synchronizes generic mock data to all active widgets
+ */
 void syncData() {
     auto& mdm = MockDataManager::getInstance();
     
-    // Sync Header
+    // --- Step 1: Sync Header ---
     iGfxWidget* header = DesignerRegistry::getInstance().getWidget("headWidget");
     if (header) {
         ((headerWidget*)header)->setTitle(mdm.getStationTitle());
@@ -54,18 +82,28 @@ void syncData() {
         ((headerWidget*)header)->setPlatform(mdm.getStationPlatform());
     }
     
-    // Sync Services
+    // --- Step 2: Sync Services ---
     iGfxWidget* services = DesignerRegistry::getInstance().getWidget("servicesWidget");
     if (services) {
         ((serviceListWidget*)services)->clearRows();
         for (int i = 0; i < mdm.getServiceCount(); i++) {
             const auto& s = mdm.getService(i);
-            const char* row[4] = { s.time, s.destination, s.platform, s.status };
+            const char* row[5] = { s.ordinal, s.time, s.destination, s.platform, s.status };
             ((serviceListWidget*)services)->addRow(row);
         }
     }
     
-    // Sync specialized rows for National Rail
+    iGfxWidget* row0 = DesignerRegistry::getInstance().getWidget("row0Widget");
+    if (row0) {
+        ((serviceListWidget*)row0)->clearRows();
+        if (mdm.getServiceCount() > 0) {
+            const auto& s = mdm.getService(0);
+            const char* row[5] = { s.ordinal, s.time, s.destination, s.platform, s.status };
+            ((serviceListWidget*)row0)->addRow(row);
+        }
+    }
+    
+    // --- Step 3: Sync Specialized Rows ---
     iGfxWidget* row0Time = DesignerRegistry::getInstance().getWidget("row0Time");
     iGfxWidget* row0Dest = DesignerRegistry::getInstance().getWidget("row0Dest");
     if (row0Time && row0Dest && mdm.getServiceCount() > 0) {
@@ -74,13 +112,19 @@ void syncData() {
         ((scrollingTextWidget*)row0Dest)->setText(s.destination);
     }
     
-    // Sync Messages (MessagePool is shared globally across the simulation via generated_registry)
+    // --- Step 4: Sync Messages ---
+    // MessagePool is shared globally across the simulation via generated_registry
     g_msgPool->clear();
     for (int i = 0; i < mdm.getMessageCount(); i++) {
         g_msgPool->addMessage(mdm.getMessage(i));
     }
 }
 
+/**
+ * @brief Compiles a JSON layout description within the IDE
+ * @param json A layout definition string passed from the JS engine
+ * @return Const char string denoting parser state (e.g. error message) or nullptr on success
+ */
 EMSCRIPTEN_KEEPALIVE
 const char* applyLayout(const char* json) {
     if (g_layoutParser) {
@@ -95,20 +139,32 @@ const char* applyLayout(const char* json) {
     return "Parser error";
 }
 
+/**
+ * @brief Updates the global mock data singleton from JSON payload
+ * @param json A payload string describing simulated station state
+ */
 EMSCRIPTEN_KEEPALIVE
 void applyMockData(const char* json) {
     MockDataManager::getInstance().parse(json);
     syncData();
 }
 
-static bool debugMode = false;
-static char metadataBuffer[2048];
+static bool debugMode = false; // Flag governing browser console printing
+static char metadataBuffer[2048]; // Serialisation cache for IDE layout responses
 
+/**
+ * @brief Toggles debug diagnostic outputs
+ * @param enabled True to print additional debug to the browser console
+ */
 EMSCRIPTEN_KEEPALIVE
 void setDebugMode(bool enabled) {
     debugMode = enabled;
 }
 
+/**
+ * @brief Returns JSON diagnostics for IDE bounding boxes
+ * @return JSON string of component statuses
+ */
 EMSCRIPTEN_KEEPALIVE
 const char* getLayoutMetadata() {
     JsonDocument doc;
@@ -138,24 +194,29 @@ const char* getLayoutMetadata() {
     return metadataBuffer;
 }
 
+/**
+ * @brief Paints a single IDE frame to an RGBA buffer
+ * @param currentMillis Current mock execution time elapsed
+ * @return Pointer to the raw RGBA pixel memory segment
+ */
 EMSCRIPTEN_KEEPALIVE
 uint8_t* renderFrame(uint32_t currentMillis) {
     if (!g_u8g2) return nullptr;
 
+    // --- Step 1: Initialize Buffer ---
     g_u8g2->clearBuffer();
     
-    // Render Layout Primitives (Background)
+    // --- Step 2: Render Layout Primitives ---
+    // Draw static background details from the JSON definition
     if (g_layoutParser) {
         g_layoutParser->render(*g_u8g2);
     }
 
-    // Update logic via Active Profile
+    // --- Step 3: Update Logic & Render Widgets ---
     tickActiveProfile(currentMillis);
-    
-    // Render Widgets via Active Profile
     renderActiveProfile(*g_u8g2);
     
-    // Convert U8g2 1-bit buffer to RGBA for HTML5 Canvas
+    // --- Step 4: Convert U8G2 1-bit Buffer to RGBA Canvas Format ---
     uint8_t *internal_buf = g_u8g2->getBufferPtr();
     
     for (int y = 0; y < OLED_HEIGHT; y++) {

@@ -121,20 +121,24 @@
           "id": { "type": "string", "description": "Optional identifier for debugging." },
           "type": {
             "type": "string",
-            "enum": ["line", "box", "text"],
+            "enum": ["line", "box", "roundedBox", "circle", "triangle", "text"],
             "description": "The type of shape to draw."
           },
+          "isFilled": { "type": "boolean", "default": false, "description": "Whether the shape is filled. Applies to box, roundedBox, circle, and triangle." },
           "geometry": {
             "type": "object",
             "properties": {
-              "x": { "type": "integer", "description": "X-coordinate for box/text" },
-              "y": { "type": "integer", "description": "Y-coordinate for box/text" },
-              "w": { "type": "integer", "description": "Width for box" },
-              "h": { "type": "integer", "description": "Height for box" },
-              "x1": { "type": "integer", "description": "Start X for lines" },
-              "y1": { "type": "integer", "description": "Start Y for lines" },
-              "x2": { "type": "integer", "description": "End X for lines" },
-              "y2": { "type": "integer", "description": "End Y for lines" }
+              "x": { "type": "integer", "description": "X-coordinate for box/text/roundedBox/circle" },
+              "y": { "type": "integer", "description": "Y-coordinate for box/text/roundedBox/circle" },
+              "w": { "type": "integer", "description": "Width for box/roundedBox" },
+              "h": { "type": "integer", "description": "Height for box/roundedBox" },
+              "r": { "type": "integer", "description": "Radius for circle/roundedBox" },
+              "x1": { "type": "integer", "description": "Start X for lines, X1 for triangle" },
+              "y1": { "type": "integer", "description": "Start Y for lines, Y1 for triangle" },
+              "x2": { "type": "integer", "description": "End X for lines, X2 for triangle" },
+              "y2": { "type": "integer", "description": "End Y for lines, Y2 for triangle" },
+              "x0": { "type": "integer", "description": "X0 for triangle" },
+              "y0": { "type": "integer", "description": "Y0 for triangle" }
             }
           },
           "text": { "type": "string", "description": "Static string to draw for 'text' primitives." },

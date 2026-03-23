@@ -19,8 +19,9 @@
  * @brief Initialize the service list with default fonts and pagination state.
  */
 serviceListWidget::serviceListWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
-    : iGfxWidget(_x, _y, _w, _h), numColumns(0), font(_font), totalRows(0), currentPage(0), 
-      lastPageChange(0), pageTimeoutMs(8000), skipRows(0), maxRows(-1), totalRowsAdded(0) {
+    : iGfxWidget(_x, _y, _w, _h), numColumns(0), font(_font), totalRows(0), topRowIndex(0), 
+      isAnimating(false), isPageResetAnimating(false), animationStartMs(0), lastDwellStart(0), 
+      scrollDurationMs(1000), scrollDwellMs(5000), currentYOffset(0), skipRows(0), maxRows(-1), totalRowsAdded(0) {
     if (font == nullptr) font = Underground10;
     clearRows();
 }
@@ -38,11 +39,19 @@ void serviceListWidget::setColumns(int _numCols, const ColumnDef* _cols) {
 }
 
 /**
- * @brief Configure the automated pagination speed.
+ * @brief Configure the scroll animation duration.
  * @param ms Duration in milliseconds.
  */
-void serviceListWidget::setPageTimeout(int ms) {
-    pageTimeoutMs = ms;
+void serviceListWidget::setScrollDuration(int ms) {
+    if (ms >= 0) scrollDurationMs = ms;
+}
+
+/**
+ * @brief Configure the dwell time between scrolls.
+ * @param ms Dwell time in milliseconds.
+ */
+void serviceListWidget::setScrollDwell(int ms) {
+    if (ms >= 0) scrollDwellMs = ms;
 }
 
 /**
@@ -61,8 +70,11 @@ void serviceListWidget::setDataLimits(int skip, int max) {
 void serviceListWidget::clearRows() {
     totalRows = 0;
     totalRowsAdded = 0;
-    currentPage = 0;
-    lastPageChange = 0; // Force immediate render logic if asked
+    topRowIndex = 0;
+    isAnimating = false;
+    isPageResetAnimating = false;
+    currentYOffset = 0;
+    lastDwellStart = 0; // Force immediate render logic if asked
 }
 
 /**
@@ -121,62 +133,100 @@ void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
         }
 
         // --- Step 3: Clipping and Rendering ---
-        // If the text is wider than the column, restrict the drawing window.
-        bool clipping = (textW > colW);
-        if (clipping) {
-            display.setClipWindow(currentX, rowY - 12, currentX + colW, rowY + 2);
-        }
-
+        // Always constrain to the logical intersection of column width and widget boundaries.
+        // This prevents both long-text overflow AND vertical scrolling leakages.
+        int cX0 = currentX;
+        int cX1 = currentX + colW;
+        int renderW = (width > 0) ? width : 256;
+        if (cX1 > x + renderW) cX1 = x + renderW; // Cap at widget width
+        
+        int cY0 = y;
+        int cY1 = y + (height > 0 ? height : 64);
+        
+        display.setClipWindow(cX0, cY0, cX1, cY1);
         display.drawStr(drawX, rowY, text);
-
-        if (clipping) {
-            display.setMaxClipWindow();
-        }
 
         currentX += colW;
     }
+    
+    // Restore parent clip state
+    display.setMaxClipWindow();
 }
 
 /**
- * @brief Updates the widget's internal state, handling page changes.
+ * @brief Updates the widget's internal state, handling scroll animation.
  * @param currentMillis The current system time in milliseconds.
  */
 void serviceListWidget::tick(uint32_t currentMillis) {
     if (!isVisible || totalRows == 0 || height <= 0) return;
     
-    // --- Step 1: Determine Capacity ---
-    // Calculate how many rows fit based on a standard 13px baseline pitch.
     int rowsPerPage = height / 13;
-    int totalPages = (totalRows + rowsPerPage - 1) / rowsPerPage;
     
-    // --- Step 2: Page Management ---
-    if (totalPages > 1) {
-        if (lastPageChange == 0) lastPageChange = currentMillis;
+    // Do not scroll if all rows fit
+    if (totalRows <= rowsPerPage) {
+        topRowIndex = 0;
+        isAnimating = false;
+        isPageResetAnimating = false;
+        currentYOffset = 0;
+        return;
+    }
+    
+    if (!isAnimating && !isPageResetAnimating) {
+        if (lastDwellStart == 0) lastDwellStart = currentMillis;
         
-        // Swap page after timeout
-        if (currentMillis - lastPageChange >= pageTimeoutMs) {
-            currentPage++;
-            if (currentPage >= totalPages) currentPage = 0;
-            lastPageChange = currentMillis;
+        if (currentMillis - lastDwellStart >= scrollDwellMs) {
+            if (topRowIndex + rowsPerPage >= totalRows) {
+                // List reached the bottom. Trigger Page Reset Sweep.
+                isPageResetAnimating = true;
+                animationStartMs = currentMillis;
+                topRowIndex = 0;
+            } else {
+                isAnimating = true;
+                animationStartMs = currentMillis;
+            }
         }
-    } else {
-        currentPage = 0;
+    } 
+    
+    if (isAnimating) {
+        uint32_t elapsed = currentMillis - animationStartMs;
+        if (elapsed >= scrollDurationMs) {
+            isAnimating = false;
+            topRowIndex++;
+            lastDwellStart = currentMillis;
+            currentYOffset = 0;
+        } else {
+            float p = (float)elapsed / scrollDurationMs;
+            currentYOffset = (int)(p * 13.0f); // 13px line height
+        }
+    } else if (isPageResetAnimating) {
+        uint32_t elapsed = currentMillis - animationStartMs;
+        int pagePixelHeight = rowsPerPage * 13;
+        
+        if (elapsed >= scrollDurationMs) {
+            isPageResetAnimating = false;
+            lastDwellStart = currentMillis;
+            currentYOffset = 0;
+        } else {
+            float p = (float)elapsed / scrollDurationMs;
+            currentYOffset = -pagePixelHeight + (int)(p * pagePixelHeight);
+        }
     }
 }
 
 /**
- * @brief Handles animation updates, specifically for page transitions.
+ * @brief Handles targeted high framerate redraws for smooth scrolling.
  * @param display The U8G2 display object.
  * @param currentMillis The current system time in milliseconds.
  */
 void serviceListWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (!isVisible || totalRows == 0 || height <= 0) return;
     
-    int oldPage = currentPage;
+    bool wasAnimating = isAnimating || isPageResetAnimating;
     tick(currentMillis);
     
-    if (currentPage != oldPage) {
-        int renderW = (width > 0) ? width : SCREEN_WIDTH;
+    // Refresh during animation active frame, or the first frame it finishes.
+    if (isAnimating || isPageResetAnimating || (wasAnimating && !isAnimating && !isPageResetAnimating)) {
+        int renderW = (width > 0) ? width : 256;
         int renderH = height;
         
         display.setClipWindow(x, y, x + renderW, y + renderH);
@@ -189,22 +239,30 @@ void serviceListWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMil
 }
 
 /**
- * @brief Render the current page of service data.
+ * @brief Render the active window of scrolling service data.
  * @param display U8g2 reference.
  */
 void serviceListWidget::render(U8G2& display) {
     if (!isVisible || totalRows == 0) return;
     
-    int rowsPerPage = (height > 0) ? (height / 13) : 3; // Fallback to 3 if unbound
+    int rowsPerPage = (height > 0) ? (height / 13) : 3;
     
-    int startIndex = currentPage * rowsPerPage;
-    int endIndex = startIndex + rowsPerPage;
-    if (endIndex > totalRows) endIndex = totalRows;
+    int rowsToDraw = rowsPerPage;
+    // If we're scrolling line-by-line, we need to draw an extra row sliding in from the bottom
+    if (isAnimating) {
+        rowsToDraw = rowsPerPage + 1;
+    }
     
-    int renderY = y + 12; // First row baseline
+    int renderY = y + 12 - currentYOffset; // Shift baseline up by animation progress
     
-    for (int i = startIndex; i < endIndex; i++) {
-        drawRow(display, renderY, rowData[i]);
+    for (int i = 0; i < rowsToDraw; i++) {
+        int idx = topRowIndex + i; // Strict bounds, no infinitely looping array
+        if (idx < totalRows) {
+            drawRow(display, renderY, rowData[idx]);
+        }
         renderY += 13; // 13px pitch
     }
+    
+    // Ensure clipping window is fully cleared for subsequent widgets in the layout
+    display.setMaxClipWindow();
 }

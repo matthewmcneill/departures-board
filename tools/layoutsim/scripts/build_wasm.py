@@ -1,12 +1,25 @@
 #!/usr/bin/env python3
+"""
+Departures Board (c) 2025-2026 Gadec Software
+Refactored for v3.0 by Matt McNeill 2026 CB Labs
+
+https://github.com/gadec-uk/departures-board
+
+This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Module: tools/layoutsim/scripts/build_wasm.py
+Description: Compiles the C++ Layout Simulator engine into WebAssembly via Emscripten.
+"""
+
 import os
 import subprocess
 import sys
 import shutil
 
-# Configuration
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-TOOLS_DIR = os.path.join(PROJECT_ROOT, "tools", "layoutsim")
+# Configuration Constants
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")) # Path to the main repository root
+TOOLS_DIR = os.path.join(PROJECT_ROOT, "tools", "layoutsim") # Simulator sub-project root
 SRC_DIR = os.path.join(TOOLS_DIR, "src")
 WEB_DIR = os.path.join(TOOLS_DIR, "web")
 DIST_DIR = os.path.join(WEB_DIR, "dist")
@@ -22,6 +35,11 @@ os.makedirs(DIST_DIR, exist_ok=True)
 os.makedirs(BUILD_DIR, exist_ok=True)
 
 def check_emcc():
+    """
+    Locates the Emscripten compiler executable on the host system.
+    Returns:
+        str: Path to the emcc executable, or None if not found.
+    """
     try:
         subprocess.run(["emcc", "--version"], capture_output=True, check=True)
         return "emcc"
@@ -33,6 +51,9 @@ def check_emcc():
     return None
 
 def build():
+    """
+    Executes the full WASM build pipeline, including registry generation, object compilation, and linking.
+    """
     emcc_path = check_emcc()
     if not emcc_path:
         print("Error: 'emcc' not found.")
@@ -115,7 +136,7 @@ def build():
         # and the generated_registry header was updated.
         needs_build = not os.path.exists(obj) or os.path.getmtime(src) > os.path.getmtime(obj)
         if src.endswith("main.cpp") and os.path.exists(registry_hpp):
-            if os.path.getmtime(registry_hpp) > os.path.getmtime(obj):
+            if not os.path.exists(obj) or os.path.getmtime(registry_hpp) > os.path.getmtime(obj):
                 needs_build = True
                 
         if needs_build:

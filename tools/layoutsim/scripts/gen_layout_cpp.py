@@ -1,10 +1,28 @@
 #!/usr/bin/env python3
+"""
+Departures Board (c) 2025-2026 Gadec Software
+Refactored for v3.0 by Matt McNeill 2026 CB Labs
+
+https://github.com/gadec-uk/departures-board
+
+This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Module: tools/layoutsim/scripts/gen_layout_cpp.py
+Description: Compiles JSON layout specifications into generated C++ source code for the physical boards.
+"""
+
 import json
 import os
 import sys
 import argparse
 
 def gen_layout(json_path):
+    """
+    Parses a single JSON layout file and generates corresponding `.hpp` and `.cpp` headers for the ESP32.
+    Args:
+        json_path (str): The absolute or relative path to the `.json` target.
+    """
     with open(json_path, 'r') as f:
         data = json.load(f)
 
@@ -31,6 +49,7 @@ def gen_layout(json_path):
         board_type, base_class, base_include, class_prefix = "Bus", "iBusLayout", "../iBusLayout.hpp", "layoutBus"
     
     # Mapping from JSON ID to C++ member variable names in base classes
+    # Ensures IDE string names properly compile against predefined C++ structures
     widget_map = {
         "header": "headWidget",
         "services": "servicesWidget",
@@ -114,13 +133,37 @@ public:
             column_setup += "    };\n"
             column_setup += f"    {wid}.setColumns({len(cols)}, cols);"
 
+    # --- Step 4: Parse Background Primitives ---
+    # Append hardcoded shape generation calls into the layout render override
     render_calls = []
     for p in primitives:
         ptype = p["type"]
+        is_filled = p.get("isFilled", False)
+        
         if ptype == "line":
             render_calls.append(f"    display.drawLine({p['x1']}, {p['y1']}, {p['x2']}, {p['y2']});")
         elif ptype == "box":
-            render_calls.append(f"    display.drawBox({p['x']}, {p['y']}, {p['w']}, {p['h']});")
+            if is_filled:
+                render_calls.append(f"    display.drawBox({p['x']}, {p['y']}, {p['w']}, {p['h']});")
+            else:
+                render_calls.append(f"    display.drawFrame({p['x']}, {p['y']}, {p['w']}, {p['h']});")
+        elif ptype == "roundedBox":
+            if is_filled:
+                render_calls.append(f"    display.drawRBox({p['x']}, {p['y']}, {p['w']}, {p['h']}, {p['r']});")
+            else:
+                render_calls.append(f"    display.drawRFrame({p['x']}, {p['y']}, {p['w']}, {p['h']}, {p['r']});")
+        elif ptype == "circle":
+            if is_filled:
+                render_calls.append(f"    display.drawDisc({p['x']}, {p['y']}, {p['r']});")
+            else:
+                render_calls.append(f"    display.drawCircle({p['x']}, {p['y']}, {p['r']});")
+        elif ptype == "triangle":
+            if is_filled:
+                render_calls.append(f"    display.drawTriangle({p['x0']}, {p['y0']}, {p['x1']}, {p['y1']}, {p['x2']}, {p['y2']});")
+            else:
+                render_calls.append(f"    display.drawLine({p['x0']}, {p['y0']}, {p['x1']}, {p['y1']});")
+                render_calls.append(f"    display.drawLine({p['x1']}, {p['y1']}, {p['x2']}, {p['y2']});")
+                render_calls.append(f"    display.drawLine({p['x2']}, {p['y2']}, {p['x0']}, {p['y0']});")
         elif ptype == "text":
             if "font" in p:
                 render_calls.append(f"    display.setFont({p['font']});")

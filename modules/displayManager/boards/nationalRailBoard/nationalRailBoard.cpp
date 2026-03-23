@@ -269,11 +269,12 @@ void NationalRailBoard::populateServices() {
             
             const char* dest = (i == 0 && viaToggle && data->service[0].via[0]) ? data->service[0].via : data->service[i].destination;
             
-            const char* rowData[4] = {
+            const char* rowData[5] = {
                 ordinal,
                 data->service[i].sTime,
+                dest,
                 data->service[i].platform,
-                dest
+                data->service[i].etd
             };
             
             activeLayout->row0Widget.addRow(rowData);
