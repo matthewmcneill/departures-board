@@ -22,6 +22,15 @@ The Layout Simulator is a powerful, live-reloading tool that allows you to previ
    ```
 3. Open the provided link in your browser: `http://localhost:8000/tools/layoutsim/web/index.html`
 
+### Rebuilding the Widget Registry
+The Layout Simulator is inextricably linked to the physical C++ headers of your displays (e.g. `iNationalRailLayout.hpp`). If you add or rename a physical `iGfxWidget` variable in your C++ interface, you must rebuild the simulator so it can dynamically extract the updated "Element Explorer" widget registry from the C++ AST.
+
+Run the build script to regenerate the registry (`gen_sim_registry.py`) and compile the new WASM engine:
+```bash
+python3 tools/layoutsim/scripts/build_wasm.py
+```
+*(Requires Emscripten to be installed in the `/tools/layoutsim/emsdk` directory)*
+
 ### Using the Simulator
 For the best ergonomic experience, snap your browser window to one side of your screen and your code editor (e.g., VS Code) to the other.
 
