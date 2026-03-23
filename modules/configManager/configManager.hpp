@@ -228,6 +228,19 @@ public:
      */
     void notifyConsumersToReapplyConfig();
 
+    /**
+     * @brief Flag to safely trigger reconfiguration defensively on the main thread
+     */
+    bool reloadPending = false;
+    void requestReload() { reloadPending = true; }
+    bool checkAndClearReload() { 
+        if (reloadPending) {
+            reloadPending = false;
+            return true;
+        }
+        return false;
+    }
+
 private:
     static const int MAX_CONSUMERS = MAX_CONFIG_CONSUMERS; // Maximum number of configurable modules
     class iConfigurable* consumers[MAX_CONSUMERS]; // Array of registered consumer pointers

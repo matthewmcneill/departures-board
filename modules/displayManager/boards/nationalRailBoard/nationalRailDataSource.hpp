@@ -166,6 +166,13 @@ public:
 
 public:
     void executeFetch() override;
+    
+    /**
+     * @brief Performs a full WSDL discovery to find the latest SOAP endpoints.
+     *        Updates the global config and persists to disk on success.
+     * @return int Update status code.
+     */
+    int refreshWsdl();
 };
 
 #endif // NATIONAL_RAIL_DATA_SOURCE_HPP

@@ -27,6 +27,8 @@
 #include <logger.hpp>
 #include "../xmlStreamingParser/xmlStreamingParser.hpp"
 #include <algorithm>
+#include <LittleFS.h>
+#include <ArduinoJson.h>
 #include <appContext.hpp>
 
 #include "../interfaces/iDataSource.hpp"
@@ -76,72 +78,26 @@ bool nationalRailDataSource::compareTimes(const NationalRailService& a, const Na
 }
 
 int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb) {
-    LOG_INFO("DATA", "NR Source: Initializing Darwin API...");
     callback = cb;
     
-    WiFiClientSecure *httpsClient = new (std::nothrow) WiFiClientSecure();
-    if (!httpsClient) {
-        LOG_ERROR("DATA", "NR Source: Failed to allocate WiFiClientSecure on heap!");
-        return UPD_DATA_ERROR;
-    }
-
-    httpsClient->setInsecure();
-    httpsClient->setTimeout(10000);
-    httpsClient->setConnectionTimeout(10000);
-
-    int retry = 0;
-    while(!httpsClient->connect(wsdlHost, 443) && (retry < 10)){
-        delay(100); retry++;
-    }
-    if(retry >= 10) {
-        LOG_ERROR("DATA", "NR Source: Failed to connect to WSDL host: " + String(wsdlHost));
-        snprintf(lastErrorMessage, sizeof(lastErrorMessage), "WSDL connection failed");
-        delete httpsClient;
-        return UPD_NO_RESPONSE;
-    }
-
-    LOG_INFO("DATA", "NR Source: Connected to WSDL host. Requesting " + String(wsdlAPI));
-    httpsClient->print("GET " + String(wsdlAPI) + " HTTP/1.0\r\nHost: " + String(wsdlHost) + "\r\nConnection: close\r\n\r\n");
-
-    retry = 0;
-    while(!httpsClient->available() && retry < 100) { delay(100); retry++; }
-    if (retry >= 100) {
-        delete httpsClient;
-        return UPD_TIMEOUT;
-    }
-
-    while (httpsClient->connected() || httpsClient->available()) {
-        String line = httpsClient->readStringUntil('\n');
-        if (line.startsWith("HTTP") && line.indexOf("200 OK") == -1) {
-            httpsClient->stop();
-            delete httpsClient;
-            return UPD_HTTP_ERROR;
-        }
-        if (line == "\r") break;
-    }
-
-    loadingWDSL = true;
-    xmlStreamingParser parser;
-    parser.setListener(this);
-    parser.reset();
-    grandParentTagName = ""; parentTagName = ""; tagName = ""; tagLevel = 0;
-
-    while(httpsClient->available() || httpsClient->connected()) {
-        while (httpsClient->available()) parser.parse(httpsClient->read());
-    }
-    httpsClient->stop();
-    delete httpsClient;
-    loadingWDSL = false;
-
-    if (soapURL.startsWith("https://")) {
-        int delim = soapURL.indexOf("/", 8);
-        if (delim > 0) {
-            soapURL.substring(8, delim).toCharArray(soapHost, sizeof(soapHost));
-            soapURL.substring(delim).toCharArray(soapAPI, sizeof(soapAPI));
+    // Attempt to load discovered SOAP endpoints from dedicated cache file
+    if (LittleFS.exists(F("/darwin_wsdl_cache.json"))) {
+        String contents = appContext.getConfigManager().loadFile(F("/darwin_wsdl_cache.json"));
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, contents);
+        if (!error && doc[F("host")].is<const char*>() && doc[F("api")].is<const char*>()) {
+            strlcpy(soapHost, doc[F("host")], sizeof(soapHost));
+            strlcpy(soapAPI, doc[F("api")], sizeof(soapAPI));
+            LOG_INFO("DATA", "NR Source: Initialized from standalone cache: " + String(soapHost) + String(soapAPI));
             return UPD_SUCCESS;
         }
+        LOG_WARN("DATA", "NR Source: Cache file corrupted or invalid. Wiping.");
+        LittleFS.remove(F("/darwin_wsdl_cache.json"));
     }
-    return UPD_DATA_ERROR;
+    
+    // First boot or cache invalid: Trigger immediate WSDL discovery
+    LOG_INFO("DATA", "NR Source: No valid cache found. Triggering first-boot discovery...");
+    return refreshWsdl();
 }
 
 void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
@@ -204,15 +160,18 @@ void nationalRailDataSource::executeFetch() {
     LOG_INFO("DATA", "NR Source: Connection established. Free heap: " + String(ESP.getFreeHeap()));
 
     // Allocate temporary stations on the heap AFTER SSL link is up to conserve peak heap
-    NationalRailStation* xStation = new (std::nothrow) NationalRailStation();
-    if (!xStation) {
-        LOG_ERROR("DATA", "NR Source: Failed to allocate memory for station data update!");
-        httpsClient->stop();
-        delete httpsClient;
-        taskStatus = UPD_DATA_ERROR;
-        return;
+    NationalRailStation* xStation = nullptr;
+    if (!isTestMode) {
+        xStation = new (std::nothrow) NationalRailStation();
+        if (!xStation) {
+            LOG_ERROR("DATA", "NR Source: Failed to allocate memory for station data update!");
+            httpsClient->stop();
+            delete httpsClient;
+            taskStatus = UPD_DATA_ERROR;
+            return;
+        }
+        memset(xStation, 0, sizeof(NationalRailStation));
     }
-    memset(xStation, 0, sizeof(NationalRailStation));
 
     String data;
     String soapAction;
@@ -290,6 +249,14 @@ void nationalRailDataSource::executeFetch() {
                 LOG_ERROR("DATA", "NR Source: HTTP Error detected: " + line);
                 snprintf(lastErrorMessage, sizeof(lastErrorMessage), "HTTP Error: %s", line.c_str());
                 
+                // --- Self-Healing Logic ---
+                // If we get a 404 or 500 from the cached endpoint, it might have moved.
+                // Trigger a WSDL refresh for the next cycle.
+                if (line.indexOf("404") != -1 || line.indexOf("500") != -1) {
+                    LOG_WARN("DATA", "NR Source: Endpoint returned fatal error. Triggering WSDL refresh...");
+                    refreshWsdl();
+                }
+
                 // Read and log ALL headers
                 while (httpsClient->connected() || httpsClient->available()) {
                     String hLine = httpsClient->readStringUntil('\n');
@@ -307,8 +274,14 @@ void nationalRailDataSource::executeFetch() {
                 
                 httpsClient->stop();
                 delete httpsClient;
-                delete xStation;
+                if (xStation) delete xStation;
                 taskStatus = UPD_HTTP_ERROR;
+                return;
+            } else if (isTestMode) {
+                LOG_INFO("DATA", "NR Source: Test Mode validated HTTP 200 via fast-exit.");
+                httpsClient->stop();
+                delete httpsClient;
+                taskStatus = UPD_SUCCESS;
                 return;
             }
         } else if (line.startsWith("Transfer-Encoding:") && line.indexOf("chunked") >= 0) {
@@ -621,4 +594,84 @@ void nationalRailDataSource::attribute(const char *attr) {
             if (end != -1) soapURL = s.substring(start+10, end);
         }
     }
+}
+
+int nationalRailDataSource::refreshWsdl() {
+    LOG_INFO("DATA", "NR Source: Refreshing WSDL to discover latest SOAP endpoints...");
+    
+    Config& cfg = appContext.getConfigManager().getConfig();
+    const char* host = cfg.wsdlHost;
+    const char* api = cfg.wsdlAPI;
+    
+    WiFiClientSecure *client = new (std::nothrow) WiFiClientSecure();
+    if (!client) return UPD_DATA_ERROR;
+    
+    client->setInsecure();
+    client->setTimeout(10000);
+    
+    if (!client->connect(host, 443)) {
+        LOG_ERROR("DATA", "NR Source: Failed to connect to WSDL host: " + String(host));
+        delete client;
+        return UPD_NO_RESPONSE;
+    }
+    
+    String request = "GET " + String(api) + " HTTP/1.1\r\n" +
+                     "Host: " + String(host) + "\r\n" +
+                     "Connection: close\r\n\r\n";
+    client->print(request);
+    
+    // Fast-skip headers
+    while (client->connected() || client->available()) {
+        String line = client->readStringUntil('\n');
+        if (line == "\r" || line == "") break;
+    }
+    
+    xmlStreamingParser parser;
+    parser.setListener(this);
+    parser.reset();
+    
+    loadingWDSL = true;
+    soapURL = "";
+    grandParentTagName = ""; parentTagName = ""; tagName = ""; tagLevel = 0;
+    
+    while (client->connected() || client->available()) {
+        if (client->available()) {
+            parser.parse(client->read());
+        } else {
+            vTaskDelay(1);
+        }
+    }
+    client->stop();
+    delete client;
+    
+    if (soapURL.length() > 0) {
+        LOG_INFO("DATA", "NR Source: Successfully discovered SOAP URL: " + soapURL);
+        
+        // Parse the URL into Host and API path
+        // Expected format: https://host.com/path
+        if (soapURL.startsWith("https://")) {
+            String url = soapURL.substring(8);
+            int slashIdx = url.indexOf('/');
+            if (slashIdx != -1) {
+                String newHost = url.substring(0, slashIdx);
+                String newApi = url.substring(slashIdx);
+                
+                strlcpy(soapHost, newHost.c_str(), sizeof(soapHost));
+                strlcpy(soapAPI, newApi.c_str(), sizeof(soapAPI));
+                
+                LOG_INFO("DATA", "NR Source: Archiving discovery to /darwin_wsdl_cache.json...");
+                JsonDocument doc;
+                doc[F("host")] = soapHost;
+                doc[F("api")] = soapAPI;
+                String output;
+                serializeJson(doc, output);
+                appContext.getConfigManager().saveFile(F("/darwin_wsdl_cache.json"), output);
+                
+                return UPD_SUCCESS;
+            }
+        }
+    }
+    
+    LOG_ERROR("DATA", "NR Source: Failed to extract soap:address from WSDL response.");
+    return UPD_DATA_ERROR;
 }

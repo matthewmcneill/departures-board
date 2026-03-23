@@ -71,6 +71,11 @@ public:
      */
     bool getVisible() const { return isVisible; }
 
+    int getX() const { return x; }
+    int getY() const { return y; }
+    int getW() const { return width; }
+    int getH() const { return height; }
+
     /**
      * @brief Periodic logic update for state math and timing.
      *        USE THIS 99% of the time for standard animations (e.g. scrollX++).

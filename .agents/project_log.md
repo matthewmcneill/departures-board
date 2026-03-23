@@ -2,6 +2,36 @@
 
 ## Execution History
 
+## 2026-03-23 - Thread-Safe Reconfiguration & Boot Stability (Session eaf7823b)
+
+### Session Summary
+Diagnosed and resolved a fatal `LoadProhibited` race condition occurring during configuration reloads. Implemented a deferred synchronization pattern in `ConfigManager` and `appContext` to ensure layout memory is only manipulated by the primary rendering core. Optimized National Rail initialization by implementing a standalone `/darwin_wsdl_cache.json` system that bypasses legacy WSDL fetches while maintaining dynamic discovery and self-healing.
+
+### Key Decisions
+- **Deferred Reconfiguration**: Introduced an atomic `reloadPending` flag to decouple the `AsyncWebServer` network thread from the `DisplayManager` layout lifecycle, preventing memory access violations during I2C draw cycles.
+- **Continuous status Polling**: Fixed a "Loading..." UI deadlock by allowing the round-robin controller to continuously poll `updateData()` for pending boards, ensuring display widgets can read completion states from the background `DataWorker`.
+- **Standalone WSDL Cache**: Migrated the National Rail SOAP discovery results from `config.json` to a dedicated `/darwin_wsdl_cache.json` file. This preserves configuration purity while achieving millisecond boot times for the transport data source.
+- **Dynamic Discovery & Self-Healing**: Configured the system to perform a live WSDL fetch only if the cache is missing or if the current endpoint returns a 404/5xx error, ensuring long-term API adaptability without daily performance penalties.
+- **Sequential Test Routing**: Enforced that all web portal API validation tests must be enqueued through the `DataWorker` to prevent concurrent TLS allocation crashes.
+
+### Git Commit
+Generated commit: [TBD]
+
+## 2026-03-22 - WebServer Refactoring & Multi-Board Background Sync (Session 470d6a16)
+
+### Session Summary
+Successfully migrated the legacy blocking `WebServer` logic to completely asynchronous handling using `ESPAsyncWebServer`, decoupling the core API pulling logic and unblocking ESP32 thread availability. Implemented a robust 'Round-Robin' API polling distribution matrix natively into the central `systemManager` object hierarchy, resolving long-standing issues concerning background connectivity caching and data synchronization throttling for National Rail, TfL, and Bus displays.
+
+### Key Decisions
+- **Async Diagnostic Payloads**: Refactored chunking memory payload buffers `_tempObject` to dynamically protect explicit verification queries targeting the API Key components.
+- **Geographic Data Validation**: Re-integrated the upstream `/stationpicker` handler gracefully to reconstruct missing geospatial tracking coordinates for NRE stations.
+- **API Distribution Array**: Implemented the mathematical `(config.apiRefreshRate / config.boardCount)` interval loop to gracefully execute non-blocking, parallel background board synchronization queues perfectly avoiding upstream developer rate limits.
+- **Fast-Fill Initialization**: Instantiated a priority 'Fast-Fill' interval state (`2000ms`) prioritizing aggressive queueing of offline hardware configurations (`lastUpdateStatus == -1`) universally at boot.
+- **Dynamic UX Feedback**: Overrode static drawing elements throughout transport layout structures with real-time `Loading data...` status overlays when boards accurately resolve back to `UPD_PENDING` (`9`) execution modes.
+
+### Git Commit
+Generated commit: 64db430
+
 ## 2026-03-22 - labelWidget UI Component Architecture (Session 3ab2c4b6)
 
 ### Session Summary

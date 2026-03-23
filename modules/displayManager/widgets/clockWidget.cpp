@@ -93,8 +93,8 @@ void clockWidget::render(U8G2& display) {
     int minW = display.getStrWidth(minStr);
     int colonW = display.getStrWidth(":");
 
-    // Calculate total width using the colon's width as the fixed gap
-    int totalW = hourW + colonW + minW;
+    // Calculate total width using the colon's width as the fixed gap, plus 1px padding on each side
+    int totalW = hourW + colonW + minW + 2;
     int startX = x + (renderW - totalW) / 2;
 
     // Clearing the area is usually handled by the board, but for a clock we might want to be precise
@@ -105,9 +105,9 @@ void clockWidget::render(U8G2& display) {
     
     // Draw colon if enabled
     if (showColon) {
-        display.drawStr(startX + hourW, y + renderH - 4, ":");
+        display.drawStr(startX + hourW + 1, y + renderH - 4, ":");
     }
     
     // Draw minutes
-    display.drawStr(startX + hourW + colonW, y + renderH - 4, minStr);
+    display.drawStr(startX + hourW + colonW + 2, y + renderH - 4, minStr);
 }

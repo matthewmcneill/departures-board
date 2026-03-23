@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Departures Board Layout",
+  "description": "Schema for display board layouts in the Departures Board project.",
+  "type": "object",
+  "required": ["layout"],
+  "properties": {
+    "layout": {
+      "type": "string",
+      "description": "The exact C++ interface class this layout maps to (e.g., 'iNationalRailLayout').",
+      "enum": [
+        "iNationalRailLayout",
+        "iTflLayout",
+        "iBusLayout"
+      ]
+    },
+    "widgets": {
+      "type": "array",
+      "description": "Stateful UI components managed by the C++ engine.",
+      "items": {
+        "type": "object",
+        "required": ["id", "x", "y"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier mapping to a C++ widget instance (e.g., 'header', 'clock', 'services')."
+          },
+          "geometry": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "integer", "description": "X-coordinate of the top-left corner" },
+              "y": { "type": "integer", "description": "Y-coordinate of the top-left corner" },
+              "w": { "type": "integer", "description": "Width. Required for widgets that clip or align within bounds (like header/footer)." },
+              "h": { "type": "integer", "description": "Height" }
+            }
+          },
+          "visible": { "type": "boolean", "default": true, "description": "Determines if the widget is drawn." },
+          "font": {
+            "type": "string",
+            "description": "Font to use for Label and Clock widgets.",
+            "enum": [
+              "NatRailSmall9",
+              "NatRailTall12",
+              "NatRailClockSmall7",
+              "NatRailClockLarge9",
+              "Underground10",
+              "UndergroundClock8"
+            ]
+          },
+          "text": { "type": "string", "description": "Hardcoded text for Label widgets." },
+          "blink": { "type": "boolean", "description": "Enable blinking colon animation for Clock widgets." },
+          "columns": {
+            "type": "array",
+            "description": "Column definitions for the Service List widget.",
+            "maxItems": 6,
+            "items": {
+              "type": "object",
+              "properties": {
+                "width": { "type": "integer", "description": "Column width in pixels" },
+                "align": { "type": "integer", "enum": [0, 1, 2], "description": "Text alignment: 0=Left, 1=Center, 2=Right" },
+                "label": { "type": "string", "description": "Optional column header label." }
+              },
+              "required": ["width", "align"]
+            }
+          }
+        }
+      }
+    },
+    "primitives": {
+      "type": "array",
+      "description": "Stateless graphics drawn immediately during layout parsing.",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "id": { "type": "string", "description": "Optional identifier for debugging." },
+          "type": {
+            "type": "string",
+            "enum": ["line", "box", "text"],
+            "description": "The type of shape to draw."
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "integer", "description": "X-coordinate for box/text" },
+              "y": { "type": "integer", "description": "Y-coordinate for box/text" },
+              "w": { "type": "integer", "description": "Width for box" },
+              "h": { "type": "integer", "description": "Height for box" },
+              "x1": { "type": "integer", "description": "Start X for lines" },
+              "y1": { "type": "integer", "description": "Start Y for lines" },
+              "x2": { "type": "integer", "description": "End X for lines" },
+              "y2": { "type": "integer", "description": "End Y for lines" }
+            }
+          },
+          "text": { "type": "string", "description": "Static string to draw for 'text' primitives." },
+          "font": {
+             "type": "string",
+             "description": "Font to use for 'text' primitives.",
+             "enum": [
+              "NatRailSmall9",
+              "NatRailTall12",
+              "NatRailClockSmall7",
+              "NatRailClockLarge9",
+              "Underground10",
+              "UndergroundClock8"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

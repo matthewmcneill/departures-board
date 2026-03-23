@@ -1,0 +1,176 @@
+#include <emscripten.h>
+#include <emscripten/bind.h>
+#include <iostream>
+#include <vector>
+#include "U8g2lib.h"
+#include "headerWidget.hpp"
+#include "serviceListWidget.hpp"
+#include "scrollingMessagePoolWidget.hpp"
+#include "labelWidget.hpp"
+#include "mockDataManager.hpp"
+#include "timeManager.hpp"
+#include "layoutParser.hpp"
+#include "designerRegistry.hpp"
+#include "generated_registry.hpp"
+
+// OLED dimensions
+const int OLED_WIDTH = 256;
+const int OLED_HEIGHT = 64;
+
+// Simulation state
+U8G2_SSD1322_NHD_256X64_F_4W_SW_SPI *g_u8g2;
+TimeManager *g_timeMgr;
+LayoutParser *g_layoutParser;
+MessagePool *g_msgPool;
+
+// Memory buffer for JavaScript to read
+uint8_t rgba_buffer[OLED_WIDTH * OLED_HEIGHT * 4];
+
+extern "C" {
+
+EMSCRIPTEN_KEEPALIVE
+void initEngine() {
+    // Setup a dummy U8g2 instance
+    g_u8g2 = new U8G2_SSD1322_NHD_256X64_F_4W_SW_SPI(U8G2_R0, /* clock=*/ 0, /* data=*/ 0, /* cs=*/ 0, /* dc=*/ 0, /* reset=*/ 0);
+    g_u8g2->begin();
+    
+    // Initialize dependencies
+    g_timeMgr = new TimeManager();
+    g_layoutParser = new LayoutParser();
+    g_msgPool = new MessagePool(10);
+    
+    // We no longer instantiate widgets here. The layout parser will invoke
+    // loadLayoutProfile() when it parses the JSON `"layout"` field.
+}
+
+void syncData() {
+    auto& mdm = MockDataManager::getInstance();
+    
+    // Sync Header
+    iGfxWidget* header = DesignerRegistry::getInstance().getWidget("headWidget");
+    if (header) {
+        ((headerWidget*)header)->setTitle(mdm.getStationTitle());
+        ((headerWidget*)header)->setCallingPoint(mdm.getStationCalling());
+        ((headerWidget*)header)->setPlatform(mdm.getStationPlatform());
+    }
+    
+    // Sync Services
+    iGfxWidget* services = DesignerRegistry::getInstance().getWidget("servicesWidget");
+    if (services) {
+        ((serviceListWidget*)services)->clearRows();
+        for (int i = 0; i < mdm.getServiceCount(); i++) {
+            const auto& s = mdm.getService(i);
+            const char* row[4] = { s.time, s.destination, s.platform, s.status };
+            ((serviceListWidget*)services)->addRow(row);
+        }
+    }
+    
+    // Sync specialized rows for National Rail
+    iGfxWidget* row0Time = DesignerRegistry::getInstance().getWidget("row0Time");
+    iGfxWidget* row0Dest = DesignerRegistry::getInstance().getWidget("row0Dest");
+    if (row0Time && row0Dest && mdm.getServiceCount() > 0) {
+        const auto& s = mdm.getService(0);
+        ((scrollingTextWidget*)row0Time)->setText(s.time);
+        ((scrollingTextWidget*)row0Dest)->setText(s.destination);
+    }
+    
+    // Sync Messages (MessagePool is shared globally across the simulation via generated_registry)
+    g_msgPool->clear();
+    for (int i = 0; i < mdm.getMessageCount(); i++) {
+        g_msgPool->addMessage(mdm.getMessage(i));
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char* applyLayout(const char* json) {
+    if (g_layoutParser) {
+        return g_layoutParser->parse(json, g_timeMgr, g_msgPool);
+    }
+    return "Parser error";
+}
+
+EMSCRIPTEN_KEEPALIVE
+void applyMockData(const char* json) {
+    MockDataManager::getInstance().parse(json);
+    syncData();
+}
+
+static bool debugMode = false;
+static char metadataBuffer[2048];
+
+EMSCRIPTEN_KEEPALIVE
+void setDebugMode(bool enabled) {
+    debugMode = enabled;
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char* getLayoutMetadata() {
+    JsonDocument doc;
+    JsonArray widgetsArr = doc["widgets"].to<JsonArray>();
+    
+    if (g_layoutParser) {
+        auto const& validation = g_layoutParser->getValidationStatus();
+        for (auto const& [name, status] : validation) {
+            JsonObject w = widgetsArr.add<JsonObject>();
+            w["id"] = name.c_str();
+            w["validation_status"] = status.c_str();
+            
+            if (status != "unmapped") {
+                iGfxWidget* widget = DesignerRegistry::getInstance().getWidget(name);
+                if (widget) {
+                    JsonObject geom = w.createNestedObject("geometry");
+                    geom["x"] = widget->getX();
+                    geom["y"] = widget->getY();
+                    geom["w"] = widget->getW();
+                    geom["h"] = widget->getH();
+                }
+            }
+        }
+    }
+    
+    serializeJson(doc, metadataBuffer);
+    return metadataBuffer;
+}
+
+EMSCRIPTEN_KEEPALIVE
+uint8_t* renderFrame(uint32_t currentMillis) {
+    if (!g_u8g2) return nullptr;
+
+    g_u8g2->clearBuffer();
+    
+    // Render Layout Primitives (Background)
+    if (g_layoutParser) {
+        g_layoutParser->render(*g_u8g2);
+    }
+
+    // Update logic via Active Profile
+    tickActiveProfile(currentMillis);
+    
+    // Render Widgets via Active Profile
+    renderActiveProfile(*g_u8g2);
+    
+    // Convert U8g2 1-bit buffer to RGBA for HTML5 Canvas
+    uint8_t *internal_buf = g_u8g2->getBufferPtr();
+    
+    for (int y = 0; y < OLED_HEIGHT; y++) {
+        for (int x = 0; x < OLED_WIDTH; x++) {
+            // Standard U8g2 tile mapping (vertical tiles)
+            // Each byte contains 8 vertical pixels.
+            int tile_y = y / 8;
+            int bit_y = y % 8;
+            int index = tile_y * OLED_WIDTH + x;
+            bool pixel = (internal_buf[index] >> bit_y) & 0x01;
+            
+            int base = (y * OLED_WIDTH + x) * 4;
+            uint8_t val = pixel ? 255 : 0;
+            rgba_buffer[base + 0] = val; // R
+            rgba_buffer[base + 1] = val; // G
+            rgba_buffer[base + 2] = val; // B
+            rgba_buffer[base + 3] = 255; // A
+        }
+    }
+    
+    return rgba_buffer;
+}
+
+}

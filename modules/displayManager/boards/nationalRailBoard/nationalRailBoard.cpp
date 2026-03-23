@@ -108,6 +108,10 @@ void NationalRailBoard::configure(const BoardConfig& config) {
     setNrTimeOffset(config.timeOffset);
     setStationLat(config.lat);
     setStationLon(config.lon);
+    
+    // Inject the credentials and instantly init the static endpoints so background sweeps work successfully
+    dataSource.init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", raildataYieldWrapper);
+    dataSource.configure(nrToken, crsCode, platformFilter, callingCrsCode, nrTimeOffset);
 }
 
 /**

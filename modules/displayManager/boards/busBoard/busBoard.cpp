@@ -83,6 +83,9 @@ void BusBoard::configure(const BoardConfig& config) {
     setBusLat(config.lat);
     setBusLon(config.lon);
     setBusFilter(config.filter);
+    
+    // Inject the credentials down into the API caller so background sweeps work successfully
+    dataSource.configure(busAtco, busFilter);
 }
 
 /**

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Departures Board Layout Simulator</title>
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .header-bar {
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            height: 50px;
+            flex-shrink: 0;
+        }
+        h1 {
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin: 0;
+            color: #ff9800;
+        }
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .display-area {
+            background-color: #0f0f0f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            flex-shrink: 0;
+            border-bottom: 1px solid #333;
+        }
+        .display-container {
+            background-color: #000;
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            max-width: 1044px; /* 1024 + padding/border */
+            width: calc(100% - 40px);
+        }
+        canvas {
+            image-rendering: pixelated;
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 4 / 1;
+        }
+        .debug-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .debug-overlay.hide-boxes { display: none; }
+        
+        .overlay-canvas-sim {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: repeat(256, 1fr);
+            grid-template-rows: repeat(64, 1fr);
+        }
+        .widget-box {
+            position: relative;
+            border: 1px dashed rgba(0, 255, 255, 0.3);
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        /* Grid-based positioning for responsive overlay */
+        .widget-box { grid-column: var(--x) / span var(--w); grid-row: var(--y) / span var(--h); }
+        
+        .widget-box:hover, .widget-box.selected {
+            border-style: solid;
+            border-color: #ff9800;
+            background: rgba(255, 152, 0, 0.15);
+            z-index: 100;
+        }
+        .widget-label {
+            position: absolute;
+            top: -14px;
+            left: 0;
+            font-size: 10px;
+            color: #ff9800;
+            background: rgba(0,0,0,0.8);
+            padding: 1px 4px;
+            border-radius: 2px;
+            white-space: nowrap;
+            display: none;
+            pointer-events: none;
+        }
+        .widget-box:hover .widget-label, .widget-box.selected .widget-label {
+            display: block;
+        }
+        
+        .designer-panels {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            background: #181818;
+        }
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #333;
+        }
+        .panel:last-child { border-right: none; }
+        
+        .sidebar-section {
+            padding: 10px 15px;
+            background: #1e1e1e;
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
+        }
+        .sidebar-section h2 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #888;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+        .element-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .element-item {
+            padding: 6px 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .element-item:hover { background: #2a2a2a; }
+        .element-item.active { background: #37373d; border-left: 3px solid #ff9800; }
+        .element-item .type-icon {
+            font-size: 0.65rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: #444;
+            color: #ccc;
+            width: 45px;
+            text-align: center;
+        }
+        .element-item.widget .type-icon { background: #005a9e; color: white; }
+        .element-item.primitive .type-icon { background: #4b2371; color: white; }
+        
+        .inspector-content {
+            flex: 1;
+            padding: 10px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.75rem;
+            overflow: auto;
+            background: #000;
+            margin: 0;
+        }
+        .validation-status {
+            padding: 6px 15px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1e1e1e;
+            border-top: 1px solid #333;
+            flex-shrink: 0;
+        }
+        .validation-status.success { color: #4caf50; }
+        .validation-status.error { color: #f44336; background: #2a1a1a; }
+        .controls { display: flex; align-items: center; gap: 15px; font-size: 0.85rem; }
+        .status { font-size: 0.7rem; color: #666; margin-left: 20px; }
+    </style>
+</head>
+<body>
+    <header class="header-bar">
+        <h1>Layout Designer</h1>
+        <div class="controls">
+            <select id="layoutSelector" style="background:#333; color:white; border:1px solid #444; padding:4px 8px; border-radius:4px; outline:none; font-size:0.8rem; cursor:pointer;">
+                <option value="auto">(Auto-detect)</option>
+            </select>
+            <span class="status" id="status">Loading...</span>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="display-area">
+            <div class="display-container">
+                <canvas id="oled" width="256" height="64"></canvas>
+                <div id="debugOverlay" class="debug-overlay"></div>
+            </div>
+            <div id="layoutPath" style="margin-top:10px; font-size:0.7rem; color:#666; font-family:monospace; word-break:break-all; text-align:center; max-width:800px;">
+                Searching for layouts...
+            </div>
+        </div>
+
+        <div class="designer-panels">
+            <div class="panel">
+                <div class="sidebar-section" style="display:flex; align-items:center; justify-content:space-between;">
+                    <h2>Element Explorer</h2>
+                    <label style="font-size:0.7rem; color:#888; display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;">
+                        <input type="checkbox" id="showBoxes" checked> Show Boxes
+                    </label>
+                </div>
+                <div id="elementList" class="element-list"></div>
+            </div>
+
+            <div class="panel">
+                <div class="sidebar-section">
+                    <h2>Properties</h2>
+                </div>
+                <div id="inspectorContent" class="inspector-content">
+                    Select an element to inspect...
+                </div>
+            </div>
+        </div>
+
+        <div id="validationStatus" class="validation-status success">
+            ✅ Layout Valid
+        </div>
+    </div>
+
+    <script src="dist/layout_engine.js"></script>
+    <script>
+        const canvas = document.getElementById('oled');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const debugOverlayEl = document.getElementById('debugOverlay');
+        const elementListEl = document.getElementById('elementList');
+        const inspectorContentEl = document.getElementById('inspectorContent');
+        const layoutSelector = document.getElementById('layoutSelector');
+        const showBoxesToggle = document.getElementById('showBoxes');
+        
+        let engine;
+        let renderFrame, initEngine, applyLayout, applyMockData, setDebugMode, getLayoutMetadata;
+        let lastLayoutPath = '';
+        let lastLayoutJsonFile = ''; // Content of file on disk
+        let lastLayoutJson = '';     // Last KNOWN GOOD layout applied to engine
+        let lastDataJson = '';
+        
+        let activeLayoutPath = 'tools/layoutsim/layout.json';
+        let selectedId = null;
+
+        // --- WASM Lifecycle ---
+        createLayoutEngine().then(async Module => {
+            engine = Module;
+            statusEl.innerText = 'Engine Ready';
+            
+            initEngine = Module.cwrap('initEngine', 'void', []);
+            renderFrame = Module.cwrap('renderFrame', 'number', ['number']);
+            applyLayout = Module.cwrap('applyLayout', 'string', ['string']); 
+            applyMockData = Module.cwrap('applyMockData', 'void', ['string']);
+            setDebugMode = Module.cwrap('setDebugMode', 'void', ['boolean']);
+            getLayoutMetadata = Module.cwrap('getLayoutMetadata', 'string', []);
+            
+            initEngine();
+            setDebugMode(true); // Always enable debug features in engine
+            
+            await initLayoutList();
+            await reloadLayout();
+            await reloadData();
+            requestAnimationFrame(tick);
+
+            setInterval(async () => {
+                await reloadLayout();
+                await reloadData();
+            }, 500);
+        }).catch(err => {
+            statusEl.innerText = 'Error: ' + err.message;
+        });
+
+        // --- Layout Discovery ---
+        async function initLayoutList() {
+            try {
+                const response = await fetch('/api/layouts');
+                const layouts = await response.json();
+                layouts.forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.path;
+                    opt.innerText = l.name;
+                    layoutSelector.appendChild(opt);
+                });
+            } catch (e) { console.error("Layout discovery failed", e); }
+        }
+
+        layoutSelector.addEventListener('change', async () => {
+            if (layoutSelector.value !== 'auto') {
+                activeLayoutPath = layoutSelector.value;
+            }
+            await reloadLayout(true); // Force reload on manual switch
+        });
+
+        showBoxesToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                debugOverlayEl.classList.remove('hide-boxes');
+            } else {
+                debugOverlayEl.classList.add('hide-boxes');
+            }
+        });
+
+        async function reloadLayout(force = false) {
+            try {
+                // 1. Resolve Path
+                let targetPath = layoutSelector.value;
+                if (targetPath === 'auto') {
+                    const latest = await fetch('/api/latest-layout');
+                    targetPath = await latest.text();
+                    statusEl.innerText = `Auto: ${targetPath.split('/').pop()}`;
+                } else {
+                    statusEl.innerText = `Manual: ${targetPath.split('/').pop()}`;
+                }
+
+                // Update Breadcrumb
+                document.getElementById('layoutPath').innerText = targetPath;
+
+                // 2. Fetch and Apply
+                const response = await fetch('/' + targetPath, { cache: 'no-store' });
+                if (!response.ok) return;
+                const json = await response.text();
+                
+                if (json !== lastLayoutJsonFile || force || targetPath !== lastLayoutPath) {
+                    lastLayoutJsonFile = json;
+                    lastLayoutPath = targetPath;
+                    
+                    const error = applyLayout(json);
+                    const vs = document.getElementById('validationStatus');
+                    
+                    if (error) {
+                        vs.className = 'validation-status error';
+                        vs.innerText = '❌ ' + error;
+                    } else {
+                        vs.className = 'validation-status success';
+                        vs.innerText = '✅ Layout Valid';
+                        lastLayoutJson = json;
+                        updateDebugOverlay();
+                    }
+                }
+            } catch (err) { console.error("Reload failed", err); }
+        }
+
+        async function reloadData() {
+            try {
+                const response = await fetch('/tools/layoutsim/data.json', { cache: 'no-store' });
+                if (!response.ok) return;
+                const json = await response.text();
+                if (json !== lastDataJson) {
+                    applyMockData(json);
+                    lastDataJson = json;
+                }
+            } catch (err) {}
+        }
+
+        function updateDebugOverlay() {
+            elementListEl.innerHTML = '';
+            debugOverlayEl.innerHTML = '';
+            if (!engine || !lastLayoutJson) return;
+
+            const grid = document.createElement('div');
+            grid.className = 'overlay-canvas-sim';
+            debugOverlayEl.appendChild(grid);
+
+            try {
+                const metadata = JSON.parse(getLayoutMetadata());
+                const layout = JSON.parse(lastLayoutJson);
+
+                let globalError = false;
+                let globalWarning = false;
+
+                if (metadata.widgets) {
+                    metadata.widgets.forEach(w => {
+                        if (w.validation_status === 'unmapped') globalError = true;
+                        if (w.validation_status === 'missing_style') globalWarning = true;
+
+                        const config = layout.widgets ? layout.widgets.find(lw => lw.id === w.id) : null;
+                        let x, y, width, height;
+                        if (w.geometry) {
+                            x = w.geometry.x; y = w.geometry.y; width = w.geometry.w; height = w.geometry.h;
+                        } else if (config && config.geometry) {
+                            x = config.geometry.x; y = config.geometry.y; width = config.geometry.w; height = config.geometry.h;
+                        }
+                        addElementToUI(grid, w.id, 'widget', x, y, width, height, config, w.validation_status);
+                    });
+                }
+
+                if (layout.primitives) {
+                    layout.primitives.forEach((p, idx) => {
+                        const id = p.id || `${p.type}_${idx}`;
+                        let x = (p.x !== undefined) ? p.x : (p.x1 !== undefined ? Math.min(p.x1, p.x2) : 0);
+                        let y = (p.y !== undefined) ? p.y : (p.y1 !== undefined ? Math.min(p.y1, p.y2) : 0);
+                        let w = (p.w !== undefined) ? p.w : (p.x1 !== undefined ? Math.abs(p.x2 - p.x1) : 1);
+                        let h = (p.h !== undefined) ? p.h : (p.y1 !== undefined ? Math.abs(p.y2 - p.y1) : 1);
+                        if (w === 0) w = 1; if (h === 0) h = 1;
+                        addElementToUI(grid, id, 'primitive', x, y, w, h, p, 'valid');
+                    });
+                }
+                
+                const vs = document.getElementById('validationStatus');
+                if (globalError) {
+                    vs.className = 'validation-status error';
+                    vs.removeAttribute('style');
+                    vs.innerText = '❌ Validation Failed: JSON defines extra widgets not found in the C++ layout header.';
+                } else if (globalWarning) {
+                    vs.className = 'validation-status error';
+                    vs.style.color = '#ff9800'; // overwrite red to orange
+                    vs.style.background = '#2a1a00';
+                    vs.innerText = '⚠️ Validation Warning: JSON is missing layout styles for widgets legally defined in the C++ layout header.';
+                } else {
+                    vs.className = 'validation-status success';
+                    vs.removeAttribute('style');
+                    vs.innerText = '✅ Layout Perfectly Aligned with C++ Header';
+                }
+            } catch (e) { console.error('Overlay error:', e); }
+        }
+
+        function addElementToUI(grid, id, type, x, y, w, h, config, status) {
+            const item = document.createElement('div');
+            item.className = `element-item ${type}`;
+            if (id === selectedId) item.classList.add('active');
+            
+            let statusBadge = '';
+            if (status === 'unmapped') statusBadge = '<span title="Unmapped JSON Widget (Not in C++ Profile)" style="color:#f44336; margin-left:auto;">❌</span>';
+            if (status === 'missing_style') statusBadge = '<span title="Missing Style (Expected by C++ Profile)" style="color:#ff9800; margin-left:auto;">⚠️</span>';
+            if (status === 'valid') statusBadge = '<span title="Valid Mapping" style="color:#4caf50; margin-left:auto;">✅</span>';
+
+            item.innerHTML = `
+                <span class="type-icon">${type}</span>
+                <span style="flex:1; display:flex; align-items:center; gap:8px;">${id} ${statusBadge}</span>
+                <span style="color:#666; font-size:0.75rem">${x !== undefined ? x : '-'},${y !== undefined ? y : '-'}</span>
+            `;
+            
+            let box = null;
+            if (x !== undefined && y !== undefined && status !== 'unmapped') {
+                box = document.createElement('div');
+                box.className = 'widget-box';
+                if (id === selectedId) box.classList.add('selected');
+                box.style.setProperty('--x', (x || 0) + 1);
+                box.style.setProperty('--y', (y || 0) + 1);
+                box.style.setProperty('--w', w || 1);
+                box.style.setProperty('--h', h || 1);
+                box.innerHTML = `<div class="widget-label">${id}</div>`;
+                grid.appendChild(box);
+            }
+
+            const select = () => {
+                selectedId = id;
+                document.querySelectorAll('.widget-box').forEach(b => b.classList.remove('selected'));
+                if (box) box.classList.add('selected');
+                document.querySelectorAll('.element-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                inspectorContentEl.innerHTML = `<pre>${JSON.stringify({id, type, validation: status, geometry:{x,y,w,h}, config}, null, 2)}</pre>`;
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            };
+
+            if (box) box.onclick = (e) => { e.stopPropagation(); select(); };
+            item.onclick = select;
+
+            elementListEl.appendChild(item);
+        }
+
+        function tick(timestamp) {
+            if (!engine) return;
+            const ptr = renderFrame(timestamp);
+            const view = new Uint8ClampedArray(engine.HEAPU8.buffer, ptr, 256 * 64 * 4);
+            ctx.putImageData(new ImageData(view, 256, 64), 0, 0);
+            requestAnimationFrame(tick);
+        }
+    </script>
+</body>
+</html>

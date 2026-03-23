@@ -86,6 +86,13 @@ void WebHandlerManager::begin() {
     _server.on("/api/reboot", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleReboot(request); });
     _server.on("/api/ota/check", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleOTACheck(request); });
 
+    // API: Feeds & Weather Diagnostics (More specific routes MUST come first in ESPAsyncWebServer)
+    _server.on("/api/feeds/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestFeed(request); });
+    _server.on("/api/weather/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestWeather(request); });
+    bindPostDynamic("/api/boards/test", &WebHandlerManager::handleTestBoard);
+    bindPostDynamic("/api/keys/test", &WebHandlerManager::handleTestKey);
+    bindPostDynamic("/api/wifi/test", &WebHandlerManager::handleWiFiTest);
+
     // API: Individual CRUD (Legacy/Granular support)
     _server.on("/api/boards", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetBoards(request); });
     _server.on("/api/boards", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleSaveBoard(request); });
@@ -95,20 +102,14 @@ void WebHandlerManager::begin() {
     _server.on("/api/keys", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetKeys(request); });
     bindPostDynamic("/api/keys", &WebHandlerManager::handleSaveKey);
     _server.on("/api/keys", HTTP_DELETE, [this](AsyncWebServerRequest *request) { this->handleDeleteKey(request); });
-    bindPostDynamic("/api/keys/test", &WebHandlerManager::handleTestKey);
 
     // API: WiFi (Bespoke Captive Portal)
     _server.on("/api/wifi/scan", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleWiFiScan(request); });
-    bindPostDynamic("/api/wifi/test", &WebHandlerManager::handleWiFiTest);
     _server.on("/api/wifi/reset", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleWiFiReset(request); });
 
     // API: Subsystems
     _server.on("/stationpicker", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleStationPicker(request); });
 
-    // API: Feeds & Weather Diagnostics
-    _server.on("/api/feeds/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestFeed(request); });
-    _server.on("/api/weather/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestWeather(request); });
-    bindPostDynamic("/api/boards/test", &WebHandlerManager::handleTestBoard);
     _server.on("/rss.json", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleRSSJson(request); });
 
     // Captive Portal Redirect
@@ -309,7 +310,7 @@ void WebHandlerManager::handleSaveAll(AsyncWebServerRequest *request, const Stri
 
         request->send(200, "application/json", "{\"status\":\"ok\"}");
         
-        _config.notifyConsumersToReapplyConfig();
+        _config.requestReload();
 
         // If we were in AP mode, we should reboot to connect to the new network
         if (appContext.getWifiManager().getAPMode()) {
@@ -395,76 +396,81 @@ void WebHandlerManager::handleDeleteKey(AsyncWebServerRequest *request) {
     request->send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
-void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const String& body) {
-    LOG_DEBUG("WEB_API", String("Arguments received: ") + request->args());
-    for (int i = 0; i < request->args(); i++) {
-        LOG_DEBUG("WEB_API", "Arg [" + request->argName(i) + "]: " + request->arg(i));
+struct ApiTestParams {
+    String type;
+    String token;
+    String station;
+    volatile bool done;
+    String jsonObj;
+};
+
+class ApiTestDataSource : public iDataSource {
+public:
+    ApiTestParams* params;
+    ApiTestDataSource(ApiTestParams* p) : params(p) {}
+    void executeFetch() override {
+        bool success = false; String errorMsg = "Unsupported test type";
+
+        if (params->type == "owm") {
+            WeatherStatus tempStatus; tempStatus.lat = 51.52; tempStatus.lon = -0.13;
+            success = appContext.getWeather().updateWeather(tempStatus, nullptr, params->token.c_str());
+            if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
+        } else if (params->type == "rail") {
+            nationalRailDataSource ds;
+            success = (ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : "PAD") == UPD_SUCCESS);
+            if (!success) errorMsg = ds.getLastErrorMsg();
+        } else if (params->type == "tfl") {
+            tflDataSource ds;
+            int res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
+            success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
+            if (!success) errorMsg = ds.getLastErrorMsg();
+        } else if (params->type == "bus") {
+            busDataSource ds;
+            int res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
+            success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
+            if (!success) errorMsg = ds.getLastErrorMsg();
+        } else if (params->type == "clock") {
+            success = true;
+        }
+
+        JsonDocument res; res["status"] = success ? "ok" : "fail";
+        if (!success) res["msg"] = errorMsg;
+        serializeJson(res, params->jsonObj);
+        
+        params->done = true;
     }
+    int updateData() override { return 0; }
+    int testConnection(const char*, const char*) override { return 0; }
+    const char* getLastErrorMsg() const override { return ""; }
+};
 
-
-
+void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const String& body) {
     JsonDocument doc;
     deserializeJson(doc, body);
-    const char* type = doc["type"] | "";
-    const char* token = doc["token"] | "";
+    String typeStr = doc["type"] | "";
+    String tokenStr = doc["token"] | "";
     
-    // If token is empty, use the real stored token (test existing)
-    if (strlen(token) == 0) {
+    if (tokenStr.isEmpty()) {
         ApiKey* existing = _config.getKeyById(doc["id"] | "");
-        if (existing) {
-            token = existing->token;
-            LOG_DEBUG("WEB_API", "Using stored token for ID: " + String(doc["id"] | ""));
-        } else {
-            LOG_WARN("WEB_API", "Token empty and no key found for ID: " + String(doc["id"] | ""));
-        }
+        if (existing) tokenStr = existing->token;
     }
 
-    if (token && strlen(token) > 0) {
-        String tokenKey = String(token);
-        LOG_DEBUG("WEB_API", "Testing token length: " + String(tokenKey.length()) + " Starts with: " + tokenKey.substring(0, 5) + "...");
+    ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, "", false, ""};
+    ApiTestDataSource* testSource = new ApiTestDataSource(params);
+
+    if (!appContext.getDataWorker().enqueueRequest(testSource)) {
+        request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full\"}");
+        delete testSource;
+        delete params;
+        return;
     }
 
-    bool success = false;
-    String errorMsg = "Unsupported test type";
+    // Yield gracefully until the Background DataWorker payload finishes
+    while(!params->done) { vTaskDelay(pdMS_TO_TICKS(50)); }
 
-    if (strcmp(type, "owm") == 0) {
-        LOG_INFO("WEB_API", "Testing OWM key...");
-        WeatherStatus tempStatus;
-        tempStatus.lat = 51.52;
-        tempStatus.lon = -0.13;
-        success = appContext.getWeather().updateWeather(tempStatus, nullptr, token);
-        if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
-    } else if (strcmp(type, "rail") == 0) {
-        LOG_INFO("WEB_API", "Testing National Rail key via unified test interface...");
-        nationalRailDataSource ds;
-        int updRes = ds.testConnection(token);
-        LOG_INFO("WEB_API", "NR Test updRes: " + String(updRes));
-        success = (updRes == UPD_SUCCESS);
-        if (!success) errorMsg = ds.getLastErrorMsg();
-    } else if (strcmp(type, "tfl") == 0) {
-        LOG_INFO("WEB_API", "Testing TfL key via unified test interface...");
-        tflDataSource ds;
-        int updRes = ds.testConnection(token);
-        LOG_INFO("WEB_API", "TfL Test updRes: " + String(updRes));
-        success = (updRes == UPD_SUCCESS);
-        if (!success) errorMsg = ds.getLastErrorMsg();
-    } else if (strcmp(type, "bus") == 0) {
-        LOG_INFO("WEB_API", "Testing Bus source via unified test interface...");
-        busDataSource ds;
-        int updRes = ds.testConnection(token);
-        success = (updRes == UPD_SUCCESS);
-        if (!success) errorMsg = ds.getLastErrorMsg();
-    }
-
-    LOG_INFO("WEB_API", String("Test result for ") + type + ": " + (success ? "SUCCESS" : "FAILED (" + errorMsg + ")"));
-    
-    JsonDocument res;
-    res["status"] = success ? "ok" : "fail";
-    if (!success) res["msg"] = errorMsg;
-    
-    String output;
-    serializeJson(res, output);
-    request->send(200, "application/json", output);
+    request->send(200, "application/json", params->jsonObj);
+    delete testSource;
+    delete params;
 }
 
 void WebHandlerManager::handleWiFiScan(AsyncWebServerRequest *request) {
@@ -607,65 +613,34 @@ void WebHandlerManager::handleTestWeather(AsyncWebServerRequest *request) {
 }
 
 void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const String& body) {
-    LOG_DEBUG("WEB_API", "POST /api/boards/test - Arguments received: " + String(request->args()));
-    
-
-
     JsonDocument doc;
     deserializeJson(doc, body);
-    const char* typeStr = doc["type"] | "";
-    const char* stationId = doc["id"] | "";
-    const char* keyId = doc["apiKeyId"] | "";
+    String typeStr = doc["type"] | "";
+    String stationId = doc["id"] | "";
+    String keyId = doc["apiKeyId"] | "";
     
-    // For testing a board, we need the token from the associated key
-    const char* token = nullptr;
-    String tokenStr;
-    if (strlen(keyId) > 0) {
-        ApiKey* key = _config.getKeyById(keyId);
-        if (key) {
-            token = key->token;
-        }
+    String tokenStr = "";
+    if (keyId.length() > 0) {
+        ApiKey* key = _config.getKeyById(keyId.c_str());
+        if (key) tokenStr = key->token;
     }
 
-    LOG_INFO("WEB_API", "Testing Board: Type=" + String(typeStr) + " Station=" + String(stationId) + " KeyID=" + String(keyId));
+    ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, stationId, false, ""};
+    ApiTestDataSource* testSource = new ApiTestDataSource(params);
 
-    bool success = false;
-    String errorMsg = "Unsupported board type";
-    int type = -1;
-
-    if (strcmp(typeStr, "rail") == 0) type = 0;
-    else if (strcmp(typeStr, "tfl") == 0) type = 1;
-    else if (strcmp(typeStr, "bus") == 0) type = 2;
-    else if (strcmp(typeStr, "clock") == 0) type = 3;
-
-    if (type == 0) { // Rail
-        nationalRailDataSource ds;
-        int res = ds.testConnection(token, stationId);
-        success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
-        if (!success) errorMsg = ds.getLastErrorMsg();
-    } else if (type == 1) { // TfL
-        tflDataSource ds;
-        int res = ds.testConnection(token, stationId);
-        success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
-        if (!success) errorMsg = ds.getLastErrorMsg();
-    } else if (type == 2) { // Bus
-        busDataSource ds;
-        int res = ds.testConnection(token, stationId);
-        success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
-        if (!success) errorMsg = ds.getLastErrorMsg();
-    } else if (type == 3) { // Clock
-        success = true; // Clock always works
+    // Hand execution to DataWorker Core 0 queue to shield from OOM concurrent TLS
+    if (!appContext.getDataWorker().enqueueRequest(testSource)) {
+        request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full\"}");
+        delete testSource;
+        delete params;
+        return;
     }
 
-    LOG_INFO("WEB_API", String("Board test result: ") + (success ? "SUCCESS" : "FAILED (" + errorMsg + ")"));
-    
-    JsonDocument res;
-    res["status"] = success ? "ok" : "fail";
-    if (!success) res["msg"] = errorMsg;
-    
-    String output;
-    serializeJson(res, output);
-    request->send(200, "application/json", output);
+    while(!params->done) { vTaskDelay(pdMS_TO_TICKS(50)); }
+
+    request->send(200, "application/json", params->jsonObj);
+    delete testSource;
+    delete params;
 }
 
 /**

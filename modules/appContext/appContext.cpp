@@ -224,6 +224,12 @@ void appContext::begin() {
  * @brief Dispatch periodic maintenance ticks to all active services.
  */
 void appContext::tick() {
+    // 0. Process Deferred Configuration Reloads
+    if (configManager.checkAndClearReload()) {
+        LOG_INFO("SYSTEM", "Executing deferred configuration reload safely on Core 1...");
+        configManager.notifyConsumersToReapplyConfig();
+    }
+
     // 1. WiFi lifecycle (Non-blocking state machine)
     wifiManager.tick();
     yield();

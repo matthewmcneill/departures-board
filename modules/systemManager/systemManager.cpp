@@ -121,14 +121,23 @@ void systemManager::tick() {
         
         // Detect board switch to trigger immediate update (Fast-Path override)
         if (activeIndex != lastActiveSlotIndex) {
-            LOG_INFO("SYSTEM", "Board switch detected. Triggering immediate context fetch.");
+            LOG_INFO("SYSTEM", "Board switch detected. Aligning sweeper.");
             iDisplayBoard* activeBoard = displayMgr.getDisplayBoard(activeIndex);
             if (activeBoard && config.boards[activeIndex].complete) {
-                activeBoard->updateData();
+                int status = activeBoard->getLastUpdateStatus();
+                // Only trigger fetch if unloaded, pending, or errored to prevent API flooding from rapid swiping
+                if (status == -1 || status == 9 || status > 2) {
+                    LOG_INFO("SYSTEM", "Active board unloaded or errored. Triggering background fetch.");
+                    activeBoard->updateData();
+                } else {
+                    LOG_INFO("SYSTEM", "Active board has recent data. Skipping fetch.");
+                }
             }
             
-            // Slightly delay the next background tick so we don't bombard immediately
-            nextRoundRobinUpdate = millis() + 5000;
+            // Align the background sweeper to prioritize monitoring the newly active board
+            backgroundUpdateIndex = activeIndex;
+            nextRoundRobinUpdate = millis() + 500;
+            
             lastActiveSlotIndex = activeIndex;
         }
 
@@ -136,33 +145,41 @@ void systemManager::tick() {
         if (millis() > nextRoundRobinUpdate && wifiConnected && context->getAppState() == AppState::RUNNING) {
             displayMgr.setOtaUpdateAvailable(true);
             
-            // Advance the background cursor
-            backgroundUpdateIndex = (backgroundUpdateIndex + 1) % config.boardCount;
             const BoardConfig& bgConfig = config.boards[backgroundUpdateIndex];
-
             iDisplayBoard* bgBoard = displayMgr.getDisplayBoard(backgroundUpdateIndex);
             
             if (bgBoard && bgConfig.complete) {
-                lastUpdateResult = bgBoard->updateData();
+                lastUpdateResult = bgBoard->updateData(); // This both initiates pulls AND polls pending locks
                 
-                int distributedInterval = config.apiRefreshRate / config.boardCount;
-                if (distributedInterval < 10000) distributedInterval = 10000; // Hard minimum floor
-                
-                if (bgBoard->getLastUpdateStatus() == -1 || bgBoard->getLastUpdateStatus() == 9) {
-                    // Fast-fill initialization override for unloaded dashboards
-                    LOG_INFO("DATA", "Fast-Filling unloaded board index array: " + String(backgroundUpdateIndex));
-                    distributedInterval = 2000; 
+                if (bgBoard->getLastUpdateStatus() == 9) { // 9 == UPD_PENDING
+                    // Lock cursor on this pending board and poll it again in 500ms
+                    nextRoundRobinUpdate = millis() + 500;
                 } else {
-                    if (lastUpdateResult != UPD_PENDING) {
+                    int distributedInterval = config.apiRefreshRate / config.boardCount;
+                    if (distributedInterval < 10000) distributedInterval = 10000; // Hard minimum floor
+                    
+                    if (bgBoard->getLastUpdateStatus() == -1) {
+                        // Fast-fill initialization override for unloaded dashboards
+                        LOG_INFO("DATA", "Fast-Filling unloaded board index array: " + String(backgroundUpdateIndex));
+                        distributedInterval = 2000; 
+                    } else {
                         LOG_INFO("DATA", "Background sweep dispatched API request for index: " + String(backgroundUpdateIndex));
                     }
+                    
+                    nextRoundRobinUpdate = millis() + distributedInterval;
+                    
+                    // Proceed to next carousels only after completion
+                    if (config.boardCount > 0) {
+                        backgroundUpdateIndex = (backgroundUpdateIndex + 1) % config.boardCount;
+                    }
                 }
-                
-                nextRoundRobinUpdate = millis() + distributedInterval;
             } else {
-                // If the selected hardware slot is unconfigured/empty, skip rapidly
+                // Skip empty slots manually
                 nextRoundRobinUpdate = millis() + 500;
-                } // Handle Result Codes
+                if (config.boardCount > 0) {
+                    backgroundUpdateIndex = (backgroundUpdateIndex + 1) % config.boardCount;
+                }
+            } // Handle Result Codes
                 if (lastUpdateResult == 0 || lastUpdateResult == 1) { // UPD_SUCCESS, UPD_NO_CHANGE
                     displayMgr.setOtaUpdateAvailable(false);
                     lastDataLoadTime = millis();

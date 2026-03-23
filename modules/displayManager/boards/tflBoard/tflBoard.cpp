@@ -87,6 +87,9 @@ void TfLBoard::configure(const BoardConfig& config) {
     }
     setTubeName(config.name);
     dataSource.setFilter(config.filter);
+    
+    // Inject the credentials down into the API caller so background sweeps work successfully
+    dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
 }
 
 /**

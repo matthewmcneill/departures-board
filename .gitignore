@@ -12,6 +12,11 @@ modules/displayManager/fonts/fonts.cpp
 # Generated Web Assets
 modules/webServer/portalAssets.h
 
+# Emscripten SDK and Build Artifacts
+tools/layoutsim/emsdk/
+tools/layoutsim/build/
+tools/layoutsim/web/dist/
+
 # Compiled Tools
 tools/bdfconv/bdfconv
 
