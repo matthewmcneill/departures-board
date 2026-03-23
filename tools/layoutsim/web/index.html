@@ -512,7 +512,16 @@
                 if (box) box.classList.add('selected');
                 document.querySelectorAll('.element-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
-                inspectorContentEl.innerHTML = `<pre>${JSON.stringify({id, type, validation: status, geometry:{x,y,w,h}, config}, null, 2)}</pre>`;
+                
+                let titleHtml = `<div style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; color: #ff9800; font-family: sans-serif;"><strong>${id}</strong> <span style="font-size: 0.7rem; color: #888; margin-left:10px;">${type}</span></div>`;
+                let statusHtml = '';
+                if (status === 'unmapped') statusHtml = `<div style="color: #f44336; margin-bottom: 10px; font-size: 0.75rem; font-family: sans-serif;">❌ Validation: Ignored (Not in Registry)</div>`;
+                else if (status === 'missing_style') statusHtml = `<div style="color: #ff9800; margin-bottom: 10px; font-size: 0.75rem; font-family: sans-serif;">⚠️ Validation: Missing Style</div>`;
+                else if (status === 'valid') statusHtml = `<div style="color: #4caf50; margin-bottom: 10px; font-size: 0.75rem; font-family: sans-serif;">✅ Validation: Valid Alignment</div>`;
+
+                let codeContent = config ? JSON.stringify(config, null, 2) : `// ${id} is defined in C++ but not styled in the active layout JSON.\n{\n  "id": "${id}"\n}`;
+
+                inspectorContentEl.innerHTML = titleHtml + statusHtml + `<pre style="margin:0;">${codeContent}</pre>`;
                 item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             };
 
