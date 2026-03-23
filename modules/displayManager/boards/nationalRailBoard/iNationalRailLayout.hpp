@@ -29,8 +29,7 @@ class iNationalRailLayout : public iBoardLayout {
 public:
     // The Superset of widgets permitted on this board type (Public for Controller access)
     headerWidget headWidget;
-    scrollingTextWidget row0Time;   // Specialized Row 0 widgets
-    scrollingTextWidget row0Dest;   // Specialized Row 0 widgets
+    serviceListWidget row0Widget;   // Specialized Row 0 widget
     serviceListWidget servicesWidget;
     scrollingMessagePoolWidget msgWidget;
     clockWidget sysClock;
@@ -53,22 +52,16 @@ public:
      */
     virtual void tick(uint32_t currentMillis) override {
         headWidget.tick(currentMillis);
-        row0Time.tick(currentMillis);
-        row0Dest.tick(currentMillis);
+        row0Widget.tick(currentMillis);
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
         sysClock.tick(currentMillis);
         noDataLabel.tick(currentMillis);
     }
 
-    /**
-     * @brief Full screen render for the National Rail boards.
-     * @param display Reference to U8g2.
-     */
     virtual void render(U8G2& display) override {
         headWidget.render(display);
-        row0Time.render(display);
-        row0Dest.render(display);
+        row0Widget.render(display);
         servicesWidget.render(display);
         msgWidget.render(display);
         sysClock.render(display);
@@ -81,8 +74,7 @@ public:
      */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {
         headWidget.renderAnimationUpdate(display, currentMillis);
-        row0Time.renderAnimationUpdate(display, currentMillis);
-        row0Dest.renderAnimationUpdate(display, currentMillis);
+        row0Widget.renderAnimationUpdate(display, currentMillis);
         servicesWidget.renderAnimationUpdate(display, currentMillis);
         msgWidget.renderAnimationUpdate(display, currentMillis);
         sysClock.renderAnimationUpdate(display, currentMillis);

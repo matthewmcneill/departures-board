@@ -128,19 +128,28 @@ public:
                     }
                 }
 
-                // Special case for serviceListWidget columns
-                if (id && strcmp(id, "services") == 0 && w["columns"].is<JsonArray>()) {
+                // Special case for serviceListWidget configuration
+                if (w["type"].is<const char*>() && strcmp(w["type"].as<const char*>(), "serviceListWidget") == 0) {
                     serviceListWidget* sw = (serviceListWidget*)widget;
-                    JsonArray cols = w["columns"];
-                    ColumnDef defs[MAX_SERVICE_COLUMNS];
-                    int i = 0;
-                    for (JsonObject c : cols) {
-                        if (i >= MAX_SERVICE_COLUMNS) break;
-                        defs[i].width = c["width"] | 20;
-                        defs[i].align = c["align"] | 0;
-                        i++;
+                    
+                    if (w["skipRows"].is<int>() || w["maxRows"].is<int>()) {
+                        int skip = w["skipRows"] | 0;
+                        int max = w["maxRows"] | -1;
+                        sw->setDataLimits(skip, max);
                     }
-                    sw->setColumns(i, defs);
+
+                    if (w["columns"].is<JsonArray>()) {
+                        JsonArray cols = w["columns"];
+                        ColumnDef defs[MAX_SERVICE_COLUMNS];
+                        int i = 0;
+                        for (JsonObject c : cols) {
+                            if (i >= MAX_SERVICE_COLUMNS) break;
+                            defs[i].width = c["width"] | 20;
+                            defs[i].align = c["align"] | 0;
+                            i++;
+                        }
+                        sw->setColumns(i, defs);
+                    }
                 }
             } else {
                 validationStatus[id] = "unmapped";

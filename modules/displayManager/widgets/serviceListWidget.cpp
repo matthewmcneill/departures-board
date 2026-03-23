@@ -20,7 +20,7 @@
  */
 serviceListWidget::serviceListWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
     : iGfxWidget(_x, _y, _w, _h), numColumns(0), font(_font), totalRows(0), currentPage(0), 
-      lastPageChange(0), pageTimeoutMs(8000) {
+      lastPageChange(0), pageTimeoutMs(8000), skipRows(0), maxRows(-1), totalRowsAdded(0) {
     if (font == nullptr) font = Underground10;
     clearRows();
 }
@@ -46,25 +46,47 @@ void serviceListWidget::setPageTimeout(int ms) {
 }
 
 /**
+ * @brief Configure the slice boundaries for data ingestion.
+ * @param skip The number of initial rows to ignore.
+ * @param max The maximum number of rows to ingest limit (-1 for unbounded, capped at 16 internally based on array limits).
+ */
+void serviceListWidget::setDataLimits(int skip, int max) {
+    skipRows = skip;
+    maxRows = max;
+}
+
+/**
  * @brief Clear all data rows and reset pagination to page zero.
  */
 void serviceListWidget::clearRows() {
     totalRows = 0;
+    totalRowsAdded = 0;
     currentPage = 0;
     lastPageChange = 0; // Force immediate render logic if asked
 }
 
 /**
- * @brief Add a new row of data strings. Only the pointers are stored.
+ * @brief Add a new row of data strings, respecting slice limits. Only pointers are stored.
  * @param data Array of string pointers matching the column count.
  */
 void serviceListWidget::addRow(const char** data) {
+    if (totalRowsAdded < skipRows) {
+        totalRowsAdded++;
+        return;
+    }
+    
+    if (maxRows >= 0 && totalRows >= maxRows) {
+        totalRowsAdded++;
+        return;
+    }
+
     if (totalRows >= 16) return; // Hard array limit
     
     for (int i = 0; i < numColumns; i++) {
         rowData[totalRows][i] = data[i];
     }
     totalRows++;
+    totalRowsAdded++;
 }
 
 /**

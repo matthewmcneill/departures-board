@@ -51,6 +51,11 @@ private:
     uint32_t lastPageChange;
     int pageTimeoutMs;
 
+    // Data Slicing Configuration
+    int skipRows;
+    int maxRows;
+    int totalRowsAdded;
+
 public:
     /**
      * @brief Construct a new service list widget.
@@ -75,6 +80,13 @@ public:
      * @designer_prop int pageTimeoutMs = 8000 - Timeout in milliseconds per page.
      */
     void setPageTimeout(int ms);
+
+    /**
+     * @brief Define the data slicing boundaries for this list.
+     * @param skip Number of rows to discard from the beginning of the data set.
+     * @param max Maximum number of rows to ingest. Set to -1 for no limit.
+     */
+    void setDataLimits(int skip, int max);
 
     /**
      * @brief Clears all stored rows. Call this before adding new data.

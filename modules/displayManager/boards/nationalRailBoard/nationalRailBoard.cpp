@@ -122,13 +122,7 @@ void NationalRailBoard::tick(uint32_t ms) {
     if (ms > nextViaToggle) {
         viaToggle = !viaToggle;
         nextViaToggle = ms + 4000;
-        
-        // Push the update to the view immediately
-        NationalRailStation* data = dataSource.getStationData();
-        if (data->numServices > 0 && activeLayout) {
-            const char* dest = viaToggle && data->service[0].via[0] ? data->service[0].via : data->service[0].destination;
-            activeLayout->row0Dest.setText(dest);
-        }
+        populateServices(); // Repopulate to flip via points
     }
 
     if (activeLayout) activeLayout->tick(ms);
@@ -188,36 +182,13 @@ int NationalRailBoard::updateData() {
             activeLayout->headWidget.setShowDate(true);
         }
 
-        if (data->numServices > 0 && activeLayout) {
-            // Push Primary Service (Row 0)
-            activeLayout->row0Time.setText(data->service[0].sTime);
-            
-            const char* dest = viaToggle && data->service[0].via[0] ? data->service[0].via : data->service[0].destination;
-            activeLayout->row0Dest.setText(dest);
-
-            // Trigger scrolling of calling points if they changed
-            if (data->service[0].calling[0]) {
-                activeLayout->msgWidget.setText(data->service[0].calling);
-            }
+        // Trigger scrolling of calling points if they changed
+        if (data->numServices > 0 && activeLayout && data->service[0].calling[0]) {
+            activeLayout->msgWidget.setText(data->service[0].calling);
         }
         
-        // Populate services list (Secondary)
-        if (activeLayout) {
-            activeLayout->servicesWidget.clearRows();
-            if (data->numServices > 1) { // Start from second service
-                for (int i = 1; i < data->numServices; i++) {
-                    if (i >= 17) break; // Array limit
-                    sprintf(cachedOrdinals[i-1], "%d%s", i+1, (i==1?"nd":(i==2?"rd":"th")));
-                    const char* rowData[4] = {
-                        cachedOrdinals[i-1],
-                        data->service[i].sTime,
-                        data->service[i].platform,
-                        data->service[i].destination
-                    };
-                    activeLayout->servicesWidget.addRow(rowData);
-                }
-            }
-        }
+        // Populate services lists (row 0 and subsequent)
+        populateServices();
     }
     return lastUpdateStatus;
 }
@@ -257,9 +228,8 @@ void NationalRailBoard::render(U8G2& display) {
     if (activeLayout) {
         NationalRailStation* data = dataSource.getStationData();
         if (data->numServices > 0) {
+            activeLayout->row0Widget.setVisible(true);
             activeLayout->servicesWidget.setVisible(true);
-            activeLayout->row0Time.setVisible(true);
-            activeLayout->row0Dest.setVisible(true);
             activeLayout->noDataLabel.setVisible(false);
         } else {
             if (lastUpdateStatus == -1 || lastUpdateStatus == 9) {
@@ -267,12 +237,48 @@ void NationalRailBoard::render(U8G2& display) {
             } else {
                 activeLayout->noDataLabel.setText("No services found.");
             }
+            activeLayout->row0Widget.setVisible(false);
             activeLayout->servicesWidget.setVisible(false);
-            activeLayout->row0Time.setVisible(false);
-            activeLayout->row0Dest.setVisible(false);
             activeLayout->noDataLabel.setVisible(true);
         }
         activeLayout->render(display);
+    }
+}
+
+/**
+ * @brief Populate generic service widgets from the central data model.
+ */
+void NationalRailBoard::populateServices() {
+    if (!activeLayout) return;
+    
+    NationalRailStation* data = dataSource.getStationData();
+    activeLayout->row0Widget.clearRows();
+    activeLayout->servicesWidget.clearRows();
+    
+    if (data->numServices > 0) {
+        for (int i = 0; i < data->numServices; i++) {
+            if (i >= 17) break; // Array limit
+            
+            char ordinal[8] = "";
+            if (i > 0) {
+                sprintf(cachedOrdinals[i-1], "%d%s", i+1, (i==1?"nd":(i==2?"rd":"th")));
+                strcpy(ordinal, cachedOrdinals[i-1]);
+            } else {
+                strcpy(ordinal, "1st");
+            }
+            
+            const char* dest = (i == 0 && viaToggle && data->service[0].via[0]) ? data->service[0].via : data->service[i].destination;
+            
+            const char* rowData[4] = {
+                ordinal,
+                data->service[i].sTime,
+                data->service[i].platform,
+                dest
+            };
+            
+            activeLayout->row0Widget.addRow(rowData);
+            activeLayout->servicesWidget.addRow(rowData);
+        }
     }
 }
 

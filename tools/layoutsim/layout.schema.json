@@ -54,6 +54,8 @@
             "if": { "properties": { "type": { "const": "serviceListWidget" } } },
             "then": {
               "properties": {
+                "skipRows": { "type": "integer", "description": "Number of rows to discard from the beginning of the data set.", "default": 0 },
+                "maxRows": { "type": "integer", "description": "Maximum number of rows to ingest limit (-1 for unbounded).", "default": -1 },
                 "columns": {
                   "type": "array",
                   "description": "Column definitions for the Service List widget.",

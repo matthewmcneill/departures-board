@@ -150,6 +150,11 @@ public:
     int updateData() override;
 
     /**
+     * @brief Populates the layout widgets with the latest data slices.
+     */
+    void populateServices();
+
+    /**
      * @brief Get the last error string from the data source.
      * @return Error message pointer.
      */
