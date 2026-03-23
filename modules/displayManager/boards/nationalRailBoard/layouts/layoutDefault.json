@@ -47,9 +47,9 @@
       "id": "servicesWidget",
       "geometry": {
         "x": 0,
-        "y": 12,
+        "y": 26,
         "w": 256,
-        "h": 39
+        "h": 26
       },
       "visible": true,
       "columns": [
@@ -88,14 +88,20 @@
     },
     {
       "id": "sysClock",
+      "geometry": {
+        "x": 200,
+        "y": 0,
+        "w": 56,
+        "h": 11
+      },
       "visible": false
     },
     {
       "id": "noDataLabel",
       "geometry": {
         "x": 10,
-        "y": 40,
-        "w": 256,
+        "y": 26,
+        "w": 236,
         "h": 15
       },
       "visible": false,

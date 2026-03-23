@@ -482,14 +482,15 @@
             if (id === selectedId) item.classList.add('active');
             
             let statusBadge = '';
-            if (status === 'unmapped') statusBadge = '<span style="font-size:0.6rem; background:#444; padding:2px 5px; border-radius:3px; color:#ddd; margin-left:auto; border:1px solid #666;">Ignored</span>';
-            if (status === 'missing_style') statusBadge = '<span style="font-size:0.6rem; background:#730; padding:2px 5px; border-radius:3px; color:#fdba74; margin-left:auto; border:1px solid #950;">Missing Style</span>';
-            if (status === 'valid') statusBadge = '<span title="Valid Mapping" style="color:#4caf50; margin-left:auto;">✅</span>';
+            if (status === 'unmapped') statusBadge = '<span style="font-size:0.6rem; background:#444; padding:2px 5px; border-radius:3px; color:#ddd; border:1px solid #666;">Ignored</span>';
+            if (status === 'missing_style') statusBadge = '<span style="font-size:0.6rem; background:#730; padding:2px 5px; border-radius:3px; color:#fdba74; border:1px solid #950;">Missing Style</span>';
+            if (status === 'valid') statusBadge = '<span title="Valid Mapping" style="color:#4caf50;">✅</span>';
 
             item.innerHTML = `
                 <span class="type-icon">${type}</span>
-                <span style="flex:1; display:flex; align-items:center; gap:8px;">${id} ${statusBadge}</span>
-                <span style="color:#666; font-size:0.75rem">${x !== undefined ? x : '-'},${y !== undefined ? y : '-'}</span>
+                <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${id}</span>
+                <span style="color:#555; font-size:0.7rem; width:40px; text-align:right; font-family:monospace;">${x !== undefined ? x : '-'},${y !== undefined ? y : '-'}</span>
+                <div style="width:70px; display:flex; justify-content:flex-end; align-items:center;">${statusBadge}</div>
             `;
             
             let box = null;
