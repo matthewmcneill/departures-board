@@ -63,13 +63,9 @@ inline void loadLayoutProfile(const std::string& layoutName, TimeManager* tm, Me
         DesignerRegistry::getInstance().registerWidget("headWidget", w_headWidget);
         g_activeProfileWidgets.push_back(w_headWidget);
 
-        auto w_row0Time = new scrollingTextWidget(0, 0, 10, 10);
-        DesignerRegistry::getInstance().registerWidget("row0Time", w_row0Time);
-        g_activeProfileWidgets.push_back(w_row0Time);
-
-        auto w_row0Dest = new scrollingTextWidget(0, 0, 10, 10);
-        DesignerRegistry::getInstance().registerWidget("row0Dest", w_row0Dest);
-        g_activeProfileWidgets.push_back(w_row0Dest);
+        auto w_row0Widget = new serviceListWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("row0Widget", w_row0Widget);
+        g_activeProfileWidgets.push_back(w_row0Widget);
 
         auto w_servicesWidget = new serviceListWidget(0, 0, 10, 10);
         DesignerRegistry::getInstance().registerWidget("servicesWidget", w_servicesWidget);

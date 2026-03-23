@@ -188,7 +188,8 @@ void headerWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) 
             blankArea(display, x, y, renderW - 56, renderH);
 
             display.setFont(NatRailSmall9);
-            display.drawStr(x - scrollX, y + renderH - 4, compositeTitle);
+            int baselineY = y + (renderH + display.getAscent() - display.getDescent()) / 2;
+            display.drawStr(x - scrollX, baselineY, compositeTitle);
             display.setMaxClipWindow();
 
             display.updateDisplayArea(x / 8, y / 8, (renderW - 56 + 7) / 8, (renderH + 7) / 8);
@@ -236,7 +237,8 @@ void headerWidget::render(U8G2& display) {
         snprintf(tOffset, sizeof(tOffset), "(+%d mins)", timeOffset);
         int w = display.getStrWidth(tOffset);
         rightBound -= (w + 4);
-        display.drawStr(rightBound, y + renderH - 4, tOffset);
+        int baselineY = y + (renderH + display.getAscent() - display.getDescent()) / 2;
+        display.drawStr(rightBound, baselineY, tOffset);
     } else if (showDate && appContext.getConfigManager().getConfig().dateEnabled) {
         // Render the day and date (e.g. "Fri 20")
         char date[30];
@@ -246,16 +248,18 @@ void headerWidget::render(U8G2& display) {
         snprintf(date, sizeof(date), "%s %02d", weekdays[timeinfo.tm_wday], timeinfo.tm_mday);
         int w = display.getStrWidth(date);
         rightBound -= (w + 4);
-        display.drawStr(rightBound, y + renderH - 4, date);
+        int baselineY = y + (renderH + display.getAscent() - display.getDescent()) / 2;
+        display.drawStr(rightBound, baselineY, date);
     }
 
     // --- Step 3: Draw the Title (Centered or Scrolled) ---
+    int baselineY = y + (renderH + display.getAscent() - display.getDescent()) / 2;
     if (needsScroll) {
         // Clip to the remaining area before the clock/date
         display.setClipWindow(x, y, rightBound - 2, y + renderH);
-        display.drawStr(x - scrollX, y + renderH - 4, compositeTitle);
+        display.drawStr(x - scrollX, baselineY, compositeTitle);
         display.setMaxClipWindow();
     } else {
-        display.drawStr(x, y + renderH - 4, compositeTitle);
+        display.drawStr(x, baselineY, compositeTitle);
     }
 }

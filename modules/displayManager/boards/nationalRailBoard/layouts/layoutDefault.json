@@ -24,28 +24,24 @@
       "visible": true
     },
     {
-      "id": "row0Time",
-      "type": "scrollingTextWidget",
+      "id": "row0Widget",
+      "type": "serviceListWidget",
       "geometry": {
         "x": 0,
         "y": 12,
-        "w": 60,
+        "w": 256,
         "h": 14
       },
       "visible": true,
-      "font": "NatRailTall12"
-    },
-    {
-      "id": "row0Dest",
-      "type": "scrollingTextWidget",
-      "geometry": {
-        "x": 60,
-        "y": 12,
-        "w": 196,
-        "h": 14
-      },
-      "visible": true,
-      "font": "NatRailTall12"
+      "skipRows": 0,
+      "maxRows": 1,
+      "font": "NatRailTall12",
+      "columns": [
+        { "width": 0, "align": 0 },
+        { "width": 60, "align": 0 },
+        { "width": 0, "align": 0 },
+        { "width": 196, "align": 0 }
+      ]
     },
     {
       "id": "servicesWidget",
@@ -57,27 +53,12 @@
         "h": 26
       },
       "visible": true,
+      "skipRows": 1,
       "columns": [
-        {
-          "width": 36,
-          "align": 0,
-          "label": "Time"
-        },
-        {
-          "width": 150,
-          "align": 0,
-          "label": "Destination"
-        },
-        {
-          "width": 30,
-          "align": 1,
-          "label": "Plat"
-        },
-        {
-          "width": 40,
-          "align": 1,
-          "label": "Expected"
-        }
+        { "width": 23, "align": 0, "label": "No" },
+        { "width": 27, "align": 0, "label": "Time" },
+        { "width": 16, "align": 1, "label": "Plat" },
+        { "width": 190, "align": 0, "label": "Dest" }
       ]
     },
     {
