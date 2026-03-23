@@ -100,14 +100,16 @@ void clockWidget::render(U8G2& display) {
     // Clearing the area is usually handled by the board, but for a clock we might want to be precise
     blankArea(display, x, y, renderW, renderH);
     
+    int baselineY = y + (renderH + display.getAscent() - display.getDescent()) / 2;
+
     // Draw hours
-    display.drawStr(startX, y + renderH - 4, hourStr);
+    display.drawStr(startX, baselineY, hourStr);
     
     // Draw colon if enabled
     if (showColon) {
-        display.drawStr(startX + hourW + 1, y + renderH - 4, ":");
+        display.drawStr(startX + hourW + 1, baselineY, ":");
     }
     
     // Draw minutes
-    display.drawStr(startX + hourW + colonW + 2, y + renderH - 4, minStr);
+    display.drawStr(startX + hourW + colonW + 2, baselineY, minStr);
 }

@@ -14,12 +14,10 @@ layoutNrReplica::layoutNrReplica(appContext* context)
     msgWidget.setFont(NatRailSmall9);
     sysClock.setCoords(200, 0, 56, 12);
     sysClock.setVisible(true);
-    row0Time.setCoords(0, 12, 60, 14);
-    row0Time.setVisible(true);
-    row0Time.setFont(NatRailTall12);
-    row0Dest.setCoords(60, 12, 196, 14);
-    row0Dest.setVisible(true);
-    row0Dest.setFont(NatRailTall12);
+    row0Widget.setCoords(0, 12, 256, 14);
+    row0Widget.setVisible(true);
+    row0Widget.setDataLimits(0, 1);
+    row0Widget.setFont(NatRailTall12);
     servicesWidget.setCoords(0, 26, 256, 38);
     servicesWidget.setVisible(true);
     headWidget.setVisible(false);
@@ -35,5 +33,14 @@ layoutNrReplica::layoutNrReplica(appContext* context)
         {176, 0},
     };
     servicesWidget.setColumns(4, cols);
+    servicesWidget.setDataLimits(1, -1);
+
+    ColumnDef row0Cols[4] = {
+        {0, 0},
+        {60, 0},
+        {0, 0},
+        {196, 0},
+    };
+    row0Widget.setColumns(4, row0Cols);
 }
 

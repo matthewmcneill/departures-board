@@ -14,8 +14,7 @@
 iNationalRailLayout::iNationalRailLayout(appContext* context) 
     : iBoardLayout(context),
       headWidget(0, 0, 256, 12),
-      row0Time(0, 12, 60, 14),
-      row0Dest(60, 12, 196, 14),
+      row0Widget(0, 12, 256, 14),
       servicesWidget(0, 26, 256, 39),
       msgWidget(0, 52, 256, 12),
       sysClock(&context->getTimeManager(), 200, 0, 56, 14),
