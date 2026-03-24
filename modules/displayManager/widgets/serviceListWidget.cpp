@@ -1,3 +1,4 @@
+#include <fonts/fonts.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  * Refactored for v3.0 by Matt McNeill 2026 CB Labs
@@ -36,6 +37,14 @@ void serviceListWidget::setColumns(int _numCols, const ColumnDef* _cols) {
     for (int i = 0; i < numColumns; i++) {
         columns[i] = _cols[i];
     }
+}
+
+/**
+ * @brief Set the font to use for rendering row data.
+ * @param _font Pointer to the U8g2 font array.
+ */
+void serviceListWidget::setFont(const uint8_t* _font) {
+    if (_font) font = _font;
 }
 
 /**
@@ -126,9 +135,9 @@ void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
         int drawX = currentX;
 
         // --- Step 2: Alignment Logic ---
-        if (columns[i].align == 1) { // Center
+        if (columns[i].align == TextAlign::CENTER) { // Center
             drawX += (colW - textW) / 2;
-        } else if (columns[i].align == 2) { // Right
+        } else if (columns[i].align == TextAlign::RIGHT) { // Right
             drawX += (colW - textW);
         }
 

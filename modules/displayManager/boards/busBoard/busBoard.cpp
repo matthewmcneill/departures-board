@@ -9,6 +9,16 @@
  *
  * Module: modules/displayManager/boards/busBoard/busBoard.cpp
  * Description: Implementation of Bus arrival controller logic.
+ *
+ * Exported Functions/Classes:
+ * - BusBoard: Controller for Bus arrival boards.
+ *   - onActivate(): Lifecycle hook for activation.
+ *   - onDeactivate(): Lifecycle hook for deactivation.
+ *   - configure(const BoardConfig& config): Apply settings.
+ *   - tick(uint32_t ms): Periodic logic update.
+ *   - updateData(): Fetch background data.
+ *   - render(U8G2& display): Standard render pass.
+ *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): Animation pass.
  */
 
 #include <appContext.hpp>
@@ -51,7 +61,8 @@ void BusBoard::onActivate() {
     dataSource.configure(busAtco, busFilter);
     
     if (activeLayout) {
-        activeLayout->headWidget.setTitle(busName);
+        activeLayout->stationName.setText(busName);
+        activeLayout->filterInfo.setText(""); // Currently no global filters for Bus
         
         // Configure message pools
         if (context) {

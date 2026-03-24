@@ -9,6 +9,16 @@
  *
  * Module: modules/displayManager/boards/tflBoard/tflBoard.cpp
  * Description: Implementation of TfL Tube board logic.
+ *
+ * Exported Functions/Classes:
+ * - TfLBoard: Controller for TfL Tube/London Underground boards.
+ *   - onActivate(): Lifecycle hook for activation.
+ *   - onDeactivate(): Lifecycle hook for deactivation.
+ *   - configure(const BoardConfig& config): Apply settings.
+ *   - tick(uint32_t ms): Periodic logic update.
+ *   - updateData(): Fetch background data.
+ *   - render(U8G2& display): Standard render pass.
+ *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): Animation pass.
  */
 
 #include <appContext.hpp>
@@ -50,7 +60,8 @@ void TfLBoard::onActivate() {
     dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
     
     if (activeLayout) {
-        activeLayout->headWidget.setTitle(tubeName);
+        activeLayout->stationName.setText(tubeName);
+        activeLayout->filterInfo.setText(""); // Currently no global filters for TfL
         
         // Configure message pools
         if (context) {

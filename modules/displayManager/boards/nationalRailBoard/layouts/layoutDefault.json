@@ -2,12 +2,58 @@
   "layout": "iNationalRailLayout",
   "widgets": [
     {
-      "id": "headWidget",
-      "type": "headerWidget",
+      "id": "stationName",
+      "type": "labelWidget",
       "geometry": {
         "x": 0,
         "y": 0,
-        "w": 200,
+        "w": 100,
+        "h": 12
+      },
+      "visible": true,
+      "font": "NatRailSmall9"
+    },
+    {
+      "id": "filterInfo",
+      "type": "scrollingTextWidget",
+      "geometry": {
+        "x": 100,
+        "y": 0,
+        "w": 55,
+        "h": 12
+      },
+      "visible": true,
+      "font": "NatRailSmall9"
+    },
+    {
+      "id": "weather",
+      "type": "weatherWidget",
+      "geometry": {
+        "x": 155,
+        "y": 0,
+        "w": 15,
+        "h": 11
+      },
+      "visible": true
+    },
+    {
+      "id": "otaStatus",
+      "type": "otaStatusWidget",
+      "geometry": {
+        "x": 170,
+        "y": 0,
+        "w": 15,
+        "h": 11
+      },
+      "visible": true
+    },
+    {
+      "id": "wifiWarning",
+      "type": "wifiStatusWidget",
+      "geometry": {
+        "x": 185,
+        "y": 0,
+        "w": 15,
         "h": 11
       },
       "visible": true
@@ -150,6 +196,30 @@
         "y1": 51,
         "x2": 256,
         "y2": 51
+      }
+    },
+    {
+      "type": "text",
+      "id": "board_title",
+      "text": "DEPARTURES",
+      "font": "NatRailSmall9",
+      "align": "LEFT",
+      "geometry": {
+        "x": 2,
+        "y": 1
+      }
+    },
+    {
+      "type": "text",
+      "id": "version_label",
+      "text": "v3.0.x",
+      "font": "NatRailSmall9",
+      "align": "RIGHT",
+      "geometry": {
+        "x": 200,
+        "y": 52,
+        "w": 54,
+        "h": 10
       }
     }
   ]

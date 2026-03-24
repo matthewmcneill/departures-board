@@ -28,12 +28,13 @@
 #define SERVICE_LIST_WIDGET_HPP
 
 #include "iGfxWidget.hpp"
+#include "drawingPrimitives.hpp"
 
 #define MAX_SERVICE_COLUMNS 6
 
 struct ColumnDef {
     int width;
-    uint8_t align; // 0 = Left, 1 = Center, 2 = Right
+    TextAlign align; // LEFT, CENTER, RIGHT
 };
 
 class serviceListWidget : public iGfxWidget {
@@ -78,6 +79,12 @@ public:
      * @param _cols Array of ColumnDef structures.
      */
     void setColumns(int _numCols, const ColumnDef* _cols);
+    
+    /**
+     * @brief Set the font to use for rendering row data.
+     * @param _font Pointer to the U8g2 font byte array.
+     */
+    void setFont(const uint8_t* _font);
 
     /**
      * @brief Set how long the scroll animation should take.

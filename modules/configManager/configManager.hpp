@@ -34,7 +34,8 @@ enum BoardTypes {
     MODE_RAIL = 0,
     MODE_TUBE = 1,
     MODE_BUS = 2,
-    MODE_CLOCK = 3
+    MODE_CLOCK = 3,
+    MODE_DIAGNOSTIC = 4
 };
 
 /**

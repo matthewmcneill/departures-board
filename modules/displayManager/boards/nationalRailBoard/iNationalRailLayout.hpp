@@ -6,6 +6,12 @@
  *
  * Module: modules/displayManager/boards/nationalRailBoard/iNationalRailLayout.hpp
  * Description: Interface defining the superset of widgets available to National Rail layouts.
+ *
+ * Exported Functions/Classes:
+ * - iNationalRailLayout: Base class for National Rail layouts.
+ *   - tick(uint32_t currentMillis): Periodic logic update.
+ *   - render(U8G2& display): Full screen render.
+ *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): High-speed animation pass.
  */
 
 #pragma once
@@ -13,11 +19,14 @@
 #define I_NATIONAL_RAIL_LAYOUT_HPP
 
 #include "../interfaces/iBoardLayout.hpp"
-#include <widgets/headerWidget.hpp>
+#include <widgets/labelWidget.hpp>
 #include <widgets/serviceListWidget.hpp>
 #include <widgets/scrollingMessagePoolWidget.hpp>
+#include <widgets/scrollingTextWidget.hpp>
 #include <widgets/clockWidget.hpp>
-#include <widgets/labelWidget.hpp>
+#include <widgets/wifiStatusWidget.hpp>
+#include <widgets/weatherWidget.hpp>
+#include <widgets/otaStatusWidget.hpp>
 
 class appContext;
 
@@ -28,56 +37,74 @@ class appContext;
 class iNationalRailLayout : public iBoardLayout {
 public:
     // The Superset of widgets permitted on this board type (Public for Controller access)
-    headerWidget headWidget;
+    labelWidget stationName;        // Primary station identity
+    scrollingTextWidget filterInfo; // Meta-data (via, platform)
+    weatherWidget weather;          // Weather status
+    otaStatusWidget otaStatus;      // Firmware update status
+    wifiStatusWidget wifiWarning;   // Connectivity status
+    clockWidget sysClock;           // System clock
     serviceListWidget row0Widget;   // Specialized Row 0 widget
-    serviceListWidget servicesWidget;
-    scrollingMessagePoolWidget msgWidget;
-    clockWidget sysClock;
-    labelWidget noDataLabel;
+    serviceListWidget servicesWidget; // Main services list
+    scrollingMessagePoolWidget msgWidget; // Ticker tape messages
+    labelWidget noDataLabel;        // Fallback info label
 
     /**
      * @brief Constructor for the National Rail view.
-     *        Initializes widgets but leaves coordinates to derived classes.
+     * @param context Pointer to global app context.
      */
     iNationalRailLayout(appContext* context);
 
-    /**
-     * @brief Virtual destructor.
-     */
     virtual ~iNationalRailLayout() = default;
 
     /**
-     * @brief Periodic logic update for all widgets (Header, Specialized Rows, List, Clock).
+     * @brief Periodic logic update for all widgets.
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void tick(uint32_t currentMillis) override {
-        headWidget.tick(currentMillis);
+        stationName.tick(currentMillis);
+        filterInfo.tick(currentMillis);
+        weather.tick(currentMillis);
+        otaStatus.tick(currentMillis);
+        wifiWarning.tick(currentMillis);
+        sysClock.tick(currentMillis);
         row0Widget.tick(currentMillis);
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
-        sysClock.tick(currentMillis);
         noDataLabel.tick(currentMillis);
     }
 
+    /**
+     * @brief Full screen render pass.
+     * @param display Reference to U8g2 context.
+     */
     virtual void render(U8G2& display) override {
-        headWidget.render(display);
+        stationName.render(display);
+        filterInfo.render(display);
+        weather.render(display);
+        otaStatus.render(display);
+        wifiWarning.render(display);
+        sysClock.render(display);
         row0Widget.render(display);
         servicesWidget.render(display);
         msgWidget.render(display);
-        sysClock.render(display);
         noDataLabel.render(display);
     }
-       /**
-     * @brief Targeted animation updates for all dynamic widgets.
-     * @param display Reference to U8g2.
+
+    /**
+     * @brief Targeted animation updates for dynamic widgets.
+     * @param display Reference to U8g2 context.
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {
-        headWidget.renderAnimationUpdate(display, currentMillis);
+        stationName.renderAnimationUpdate(display, currentMillis);
+        filterInfo.renderAnimationUpdate(display, currentMillis);
+        weather.renderAnimationUpdate(display, currentMillis);
+        otaStatus.renderAnimationUpdate(display, currentMillis);
+        wifiWarning.renderAnimationUpdate(display, currentMillis);
+        sysClock.renderAnimationUpdate(display, currentMillis);
         row0Widget.renderAnimationUpdate(display, currentMillis);
         servicesWidget.renderAnimationUpdate(display, currentMillis);
         msgWidget.renderAnimationUpdate(display, currentMillis);
-        sysClock.renderAnimationUpdate(display, currentMillis);
     }
 };
 

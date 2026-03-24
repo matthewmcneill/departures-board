@@ -8,131 +8,120 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/drawingPrimitives.hpp
- * Description: Low-level graphics utility library providing stateless wrappers 
- *              for text layout, measurement, and geometric primitives. Enhances 
- *              the base U8G2 library with centering and truncation logic.
+ * Description: Stateless U8G2 graphics utility wrappers.
  *
  * Exported Functions/Classes:
- * - blankArea(): Clears a rectangular screen region.
- * - getStringWidth(): Pixel measurement for standard and PROGMEM strings.
- * - drawTruncatedText(): Left-aligned text with automatic ellipsis.
- * - centreText(): Horizontally centered text layout.
- * - drawBox(): Geometric rectangle primitive (Filled/Frame).
- * - drawLine(): Bresenham line primitive.
- * - drawCircle(): Geometric circle primitive (Filled/Frame).
- * - drawRoundedBox(): Rounded rectangle primitive (Filled/Frame).
- * - drawTriangle(): Geometric triangle primitive (Filled/Frame).
+ * - drawText(): Draw aligned/truncated text within a bounding box.
+ * - drawBox(): Draw filled or outlined rectangle.
+ * - drawLine(): Draw straight line segment.
+ * - drawCircle(): Draw disc or outline circle.
+ * - drawRoundedBox(): Draw rounded rectangle.
+ * - drawTriangle(): Draw filled or outlined triangle.
  */
 
-#pragma once
+#ifndef DRAWING_PRIMITIVES_HPP
+#define DRAWING_PRIMITIVES_HPP
 
 #include <U8g2lib.h>
 #include <Arduino.h>
 
-#define SCREEN_WIDTH 256  // OLED display width in pixels
-#define SCREEN_HEIGHT 64  // OLED display height in pixels
-#define DIMMED_BRIGHTNESS 1 // Minimum hardware contrast for sleep/screensaver mode
-
-extern const uint8_t NatRailSmall9[];      // 9px condensed font for NR data
-extern const uint8_t NatRailTall12[];      // 12px condensed font for NR headings
-extern const uint8_t NatRailClockSmall7[]; // 7px numeric font for small clocks
-extern const uint8_t NatRailClockLarge9[]; // 9px numeric font for large clocks
-extern const uint8_t Underground10[];      // 10px Johnston-style font for TfL
-extern const uint8_t UndergroundClock8[];  // 8px Johnston-style font for TfL clocks
+/**
+ * @brief Text alignment options for consolidated drawing primitives.
+ */
+enum class TextAlign : uint8_t {
+    LEFT = 0,
+    CENTER = 1,
+    RIGHT = 2
+};
 
 /**
- * @brief Clear a rectangular area on the OLED display by drawing a black box
- * @param x Top left X coordinate
- * @param y Top left Y coordinate
- * @param w Width of the area
- * @param h Height of the area
+ * @brief Clear a rectangular area on the OLED display
+ * @param display Reference to U8g2 context.
+ * @param x Top-left X.
+ * @param y Top-left Y.
+ * @param w Width.
+ * @param h Height.
  */
 void blankArea(U8G2& display, int x, int y, int w, int h);
 
 /**
- * @brief Calculate the width in pixels of a string using the current font
- * @param message C-string to measure
- * @return Width in pixels
+ * @brief Calculate the width in pixels of a string
+ * @param display Reference to U8g2 context.
+ * @param message Text to measure.
+ * @return Width in pixels.
  */
 int getStringWidth(U8G2& display, const char *message);
-
-/**
- * @brief Calculate the width in pixels of a PROGMEM string using the current font
- * @param message Flash string to measure
- * @return Width in pixels
- */
 int getStringWidth(U8G2& display, const __FlashStringHelper *message);
 
 /**
- * @brief Draw text left-aligned, truncating with '...' if it exceeds screen width
- * @param message The text to display
- * @param line The Y coordinate for the baseline
+ * @brief Draw text with alignment and optional truncation within a bounding box.
+ * @param display Reference to U8g2 context.
+ * @param message Text to display.
+ * @param x Top-left X coordinate of the text area.
+ * @param y Top-left Y coordinate of the text area.
+ * @param w Width of the area (-1 for screen width).
+ * @param h Height of the area (-1 for font height).
+ * @param align Alignment within the width (LEFT, CENTER, RIGHT).
+ * @param truncate If true, appends '...' if text exceeds width.
+ * @param font Optional font override. If nullptr, current font is used.
  */
-void drawTruncatedText(U8G2& display, const char *message, int line);
+void drawText(U8G2& display, const char *message, int x, int y, int w = -1, int h = -1, TextAlign align = TextAlign::LEFT, bool truncate = false, const uint8_t* font = nullptr);
+void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, int w = -1, int h = -1, TextAlign align = TextAlign::LEFT, bool truncate = false, const uint8_t* font = nullptr);
 
 /**
- * @brief Draw text horizontally centered on the screen
- * @param message The text to display
- * @param line The Y coordinate for the baseline
+ * @brief Draw a rectangle (box or frame)
+ * @param display Reference to U8g2 context.
+ * @param x Top-left X.
+ * @param y Top-left Y.
+ * @param w Width.
+ * @param h Height.
+ * @param isFilled true for filled box, false for frame.
  */
-void centreText(U8G2& display, const char *message, int line);
+void drawBox(U8G2& display, int x, int y, int w, int h, bool isFilled = true);
 
 /**
- * @brief Draw PROGMEM text horizontally centered on the screen
- * @param message The PROGMEM text to display
- * @param line The Y coordinate for the baseline
- */
-void centreText(U8G2& display, const __FlashStringHelper *message, int line);
-
-/**
- * @brief Draw a rectangle (box) on the OLED display
- * @param x Top left X coordinate
- * @param y Top left Y coordinate
- * @param w Width of the box
- * @param h Height of the box
- * @param isFilled true to fill the box, false for an outline only
- */
-void drawBox(U8G2& display, int x, int y, int w, int h, bool isFilled = false);
-
-/**
- * @brief Draw a straight line between two points
- * @param x0 Start X coordinate
- * @param y0 Start Y coordinate
- * @param x1 End X coordinate
- * @param y1 End Y coordinate
+ * @brief Draw a straight line
+ * @param display Reference to U8g2 context.
+ * @param x0 Start X.
+ * @param y0 Start Y.
+ * @param x1 End X.
+ * @param y1 End Y.
  */
 void drawLine(U8G2& display, int x0, int y0, int x1, int y1);
 
 /**
- * @brief Draw a circle on the OLED display
- * @param x Center X coordinate
- * @param y Center Y coordinate
- * @param r Radius of the circle
- * @param isFilled true to fill the circle, false for an outline only
+ * @brief Draw a circle (disc or outline)
+ * @param display Reference to U8g2 context.
+ * @param x Center X.
+ * @param y Center Y.
+ * @param r Radius.
+ * @param isFilled true for disc, false for circle.
  */
-void drawCircle(U8G2& display, int x, int y, int r, bool isFilled = false);
+void drawCircle(U8G2& display, int x, int y, int r, bool isFilled = true);
 
 /**
- * @brief Draw a rectangle with rounded corners on the OLED display
- * @param x Top left X coordinate
- * @param y Top left Y coordinate
- * @param w Width of the box
- * @param h Height of the box
- * @param r Radius of the rounded corners
- * @param isFilled true to fill the box, false for an outline only
+ * @brief Draw a rounded rectangle
+ * @param display Reference to U8g2 context.
+ * @param x Top-left X.
+ * @param y Top-left Y.
+ * @param w Width.
+ * @param h Height.
+ * @param r Boundary radius.
+ * @param isFilled true for filled, false for frame.
  */
-void drawRoundedBox(U8G2& display, int x, int y, int w, int h, int r, bool isFilled = false);
+void drawRoundedBox(U8G2& display, int x, int y, int w, int h, int r, bool isFilled = true);
 
 /**
- * @brief Draw a triangle on the OLED display
- * @param x0 First vertex X coordinate
- * @param y0 First vertex Y coordinate
- * @param x1 Second vertex X coordinate
- * @param y1 Second vertex Y coordinate
- * @param x2 Third vertex X coordinate
- * @param y2 Third vertex Y coordinate
- * @param isFilled true to fill the triangle, false for an outline only
+ * @brief Draw a triangle
+ * @param display Reference to U8g2 context.
+ * @param x0 Point 0 X.
+ * @param y0 Point 0 Y.
+ * @param x1 Point 1 X.
+ * @param y1 Point 1 Y.
+ * @param x2 Point 2 X.
+ * @param y2 Point 2 Y.
+ * @param isFilled true for filled, false for outline.
  */
-void drawTriangle(U8G2& display, int x0, int y0, int x1, int y1, int x2, int y2, bool isFilled = false);
+void drawTriangle(U8G2& display, int x0, int y0, int x1, int y1, int x2, int y2, bool isFilled = true);
 
-
+#endif // DRAWING_PRIMITIVES_HPP

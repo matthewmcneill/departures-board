@@ -6,6 +6,12 @@
  *
  * Module: modules/displayManager/boards/busBoard/iBusLayout.hpp
  * Description: Interface defining the superset of widgets available to Bus layouts.
+ *
+ * Exported Functions/Classes:
+ * - iBusLayout: Base class for Bus arrival layouts.
+ *   - tick(uint32_t currentMillis): Periodic logic update.
+ *   - render(U8G2& display): Full screen render.
+ *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): High-speed animation pass.
  */
 
 #pragma once
@@ -14,24 +20,30 @@
 
 class appContext;
 #include "../interfaces/iBoardLayout.hpp"
-#include <widgets/headerWidget.hpp>
+#include <widgets/labelWidget.hpp>
+#include <widgets/scrollingTextWidget.hpp>
 #include <widgets/serviceListWidget.hpp>
 #include <widgets/scrollingMessagePoolWidget.hpp>
 #include <widgets/labelWidget.hpp>
+#include <widgets/wifiStatusWidget.hpp>
 
 /**
  * @brief Base Layout class for Bus layouts.
  */
 class iBusLayout : public iBoardLayout {
 public:
-    headerWidget headWidget;
+    labelWidget stationName;
+    scrollingTextWidget filterInfo;
+    wifiStatusWidget wifiWarning;
     serviceListWidget servicesWidget;
     scrollingMessagePoolWidget msgWidget;
     labelWidget noDataLabel;
 
     iBusLayout(appContext* context) 
         : iBoardLayout(context),
-          headWidget(0, 0, 0, 0),
+          stationName(0, 0, 0, 0),
+          filterInfo(0, 0, 0, 0),
+          wifiWarning(0, 0),
           servicesWidget(0, 0, 0, 0),
           msgWidget(0, 0, 0, 0),
           noDataLabel(0, 0, 0, 0) {
@@ -48,7 +60,9 @@ public:
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void tick(uint32_t currentMillis) override {
-        headWidget.tick(currentMillis);
+        stationName.tick(currentMillis);
+        filterInfo.tick(currentMillis);
+        wifiWarning.tick(currentMillis);
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
         noDataLabel.tick(currentMillis);
@@ -59,7 +73,9 @@ public:
      * @param display Reference to U8g2.
      */
     virtual void render(U8G2& display) override {
-        headWidget.render(display);
+        stationName.render(display);
+        filterInfo.render(display);
+        wifiWarning.render(display);
         servicesWidget.render(display);
         msgWidget.render(display);
         noDataLabel.render(display);
@@ -71,7 +87,9 @@ public:
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {
-        headWidget.renderAnimationUpdate(display, currentMillis);
+        stationName.renderAnimationUpdate(display, currentMillis);
+        filterInfo.renderAnimationUpdate(display, currentMillis);
+        wifiWarning.renderAnimationUpdate(display, currentMillis);
         servicesWidget.renderAnimationUpdate(display, currentMillis);
         msgWidget.renderAnimationUpdate(display, currentMillis);
     }

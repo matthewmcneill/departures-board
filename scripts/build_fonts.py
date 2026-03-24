@@ -108,13 +108,66 @@ def build_fonts():
         with open(FONTS_DEST, "w") as out_f:
             out_f.write("/* AUTOMATICALLY GENERATED FILE - DO NOT EDIT */\n")
             out_f.write('#include <fonts/fonts.hpp>\n\n')
+            
             for tf in temp_c_files:
+                font_name = os.path.basename(tf).replace("temp_", "").replace(".c", "")
                 with open(tf, "r") as inf:
-                    in_blocks = False
-                    for line in inf:
-                        if "const uint8_t" in line: in_blocks = True
-                        if in_blocks: out_f.write(line)
-                out_f.write("\n")
+                    content = inf.read()
+                    
+                    # Extract the multi-line string literal content
+                    import re
+                    # Find everything between the first " after the = and the final ";
+                    match = re.search(r'=\s*\n\s*"(.*)";', content, re.DOTALL)
+                    if not match:
+                        # Try a simpler match if the above fails
+                        match = re.search(r'"(.*)"', content, re.DOTALL)
+                    
+                    if match:
+                        raw_str = match.group(1)
+                        # Remove quotes and newlines from the string literal fragments
+                        # bdfconv outputs "part1"\n  "part2"
+                        clean_str = raw_str.replace('"\n  "', '').replace('"\n "', '')
+                        
+                        # Convert C-style octal escapes to bytes
+                        # bdfconv uses \ooo (octal)
+                        bytes_data = []
+                        i = 0
+                        while i < len(clean_str):
+                            if clean_str[i] == '\\':
+                                if clean_str[i+1].isdigit():
+                                    # Octal \123
+                                    oct_str = ""
+                                    for j in range(1, 4):
+                                        if i+j < len(clean_str) and clean_str[i+j].isdigit():
+                                            oct_str += clean_str[i+j]
+                                        else: break
+                                    bytes_data.append(int(oct_str, 8))
+                                    i += 1 + len(oct_str)
+                                elif clean_str[i+1] == '"':
+                                    bytes_data.append(ord('"'))
+                                    i += 2
+                                elif clean_str[i+1] == '\\':
+                                    bytes_data.append(ord('\\'))
+                                    i += 2
+                                else:
+                                    # Other escape (handle as needed, bdfconv mostly uses octal)
+                                    i += 2
+                            else:
+                                bytes_data.append(ord(clean_str[i]))
+                                i += 1
+                        
+                        # Write as a proper hex array
+                        out_f.write(f'const uint8_t {font_name}[] U8G2_FONT_SECTION("{font_name}") = {{\n  ')
+                        for idx, b in enumerate(bytes_data):
+                            out_f.write(f"0x{b:02x}")
+                            if idx < len(bytes_data) - 1:
+                                out_f.write(", ")
+                            if (idx + 1) % 16 == 0:
+                                out_f.write("\n  ")
+                        out_f.write("\n};\n\n")
+                    else:
+                        print(f"Warning: Could not parse font data from {tf}")
+                
                 os.remove(tf)
         print(f"Successfully wrote {len(bdf_files)} fonts to {FONTS_DEST}")
     except Exception as e:

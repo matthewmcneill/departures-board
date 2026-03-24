@@ -42,6 +42,8 @@ def gen_layout(json_path):
             board_type, base_class, base_include, class_prefix = "TFL", "iTflLayout", "../iTflLayout.hpp", "layoutTfl"
         elif bt == "BUS":
             board_type, base_class, base_include, class_prefix = "Bus", "iBusLayout", "../iBusLayout.hpp", "layoutBus"
+        elif bt == "TEST":
+            board_type, base_class, base_include, class_prefix = "TEST", "iBoardLayout", "../../interfaces/iBoardLayout.hpp", "layoutTest"
     # Or override based on path
     elif "tflBoard" in json_path:
         board_type, base_class, base_include, class_prefix = "TFL", "iTflLayout", "../iTflLayout.hpp", "layoutTfl"
@@ -49,15 +51,17 @@ def gen_layout(json_path):
         board_type, base_class, base_include, class_prefix = "Bus", "iBusLayout", "../iBusLayout.hpp", "layoutBus"
     
     # Mapping from JSON ID to C++ member variable names in base classes
-    # Ensures IDE string names properly compile against predefined C++ structures
     widget_map = {
-        "header": "headWidget",
+        "stationName": "stationName",
+        "filterInfo": "filterInfo",
+        "weather": "weather",
+        "otaStatus": "otaStatus",
+        "wifiWarning": "wifiWarning",
         "services": "servicesWidget",
         "messages": "msgWidget",
         "sysClock": "sysClock",
         "noDataLabel": "noDataLabel",
-        "row0Time": "row0Time",
-        "row0Dest": "row0Dest",
+        "row0Widget": "row0Widget",
         "label": "label"
     }
 
@@ -86,119 +90,122 @@ def gen_layout(json_path):
 class {class_name} : public {base_class} {{
 public:
     {class_name}(appContext* context);
+    virtual void tick(uint32_t currentMillis) override;
+    virtual void render(U8G2& display) override;
 }};
 
 #endif // {guard_name}
 """
 
-    with open(os.path.join(dir_name, base_name + ".hpp"), 'w') as f:
+    hpp_output_path = os.path.join(dir_name, base_name + ".hpp")
+    with open(hpp_output_path, 'w') as f:
         f.write(hpp_content)
 
     # --- Generate CPP ---
-    widget_setup = []
-    column_setup = ""
+    constructor_body = []
+    column_setup = []
     
     for w in widgets:
         json_id = w["id"]
         wid = widget_map.get(json_id, json_id)
         
-        if "x" in w and "y" in w:
-            x, y = w["x"], w["y"]
-            width = w.get("w", -1)
-            height = w.get("h", -1)
-            widget_setup.append(f"    {wid}.setCoords({x}, {y}, {width}, {height});")
+        # Extracted coordinates from geometry block if present
+        geom = w.get("geometry", w)
+        if "x" in geom and "y" in geom:
+            x, y = geom["x"], geom["y"]
+            width = geom.get("w", -1)
+            height = geom.get("h", -1)
+            constructor_body.append(f"    {wid}.setCoords({x}, {y}, {width}, {height});")
         
         if "visible" in w:
             vis = "true" if w["visible"] else "false"
-            widget_setup.append(f"    {wid}.setVisible({vis});")
+            constructor_body.append(f"    {wid}.setVisible({vis});")
             
         if "font" in w:
-            widget_setup.append(f"    {wid}.setFont({w['font']});")
+            constructor_body.append(f"    {wid}.setFont({w['font']});")
             
         if "text" in w:
-            widget_setup.append(f"    {wid}.setText(\"{w['text']}\");")
+            constructor_body.append(f"    {wid}.setText(\"{w['text']}\");")
             
         if "blink" in w:
             blink = "true" if w["blink"] else "false"
-            if wid == "headWidget":
-                widget_setup.append(f"    {wid}.getClock().setBlink({blink});")
-            else:
-                widget_setup.append(f"    {wid}.setBlink({blink});")
+            constructor_body.append(f"    {wid}.setBlink({blink});")
 
-        if json_id == "services" and "columns" in w:
+        if (json_id == "services" or json_id == "servicesWidget" or json_id == "row0Widget") and "columns" in w:
             cols = w["columns"]
-            column_setup = f"    ColumnDef cols[{len(cols)}] = {{\n"
+            column_setup.append(f"    {{\n")
+            column_setup.append(f"        ColumnDef defs[{len(cols)}] = {{\n")
             for c in cols:
-                column_setup += f"        {{{c['width']}, {c['align']}}},\n"
-            column_setup += "    };\n"
-            column_setup += f"    {wid}.setColumns({len(cols)}, cols);"
+                align = c['align']
+                align_str = "LEFT"
+                if align == 1: align_str = "CENTER"
+                elif align == 2: align_str = "RIGHT"
+                column_setup.append(f"            {{{c['width']}, TextAlign::{align_str}}},\n")
+            column_setup.append("        };\n")
+            column_setup.append(f"        {wid}.setColumns({len(cols)}, defs);\n")
+            column_setup.append(f"    }}\n")
 
-    # --- Step 4: Parse Background Primitives ---
-    # Append hardcoded shape generation calls into the layout render override
-    render_calls = []
-    for p in primitives:
-        ptype = p["type"]
-        is_filled = p.get("isFilled", False)
+        if "skipRows" in w or "maxRows" in w:
+            skip = w.get("skipRows", 0)
+            max_r = w.get("maxRows", -1)
+            constructor_body.append(f"    {wid}.setDataLimits({skip}, {max_r});")
+
+        if "scrollDurationMs" in w:
+            constructor_body.append(f"    {wid}.setScrollDuration({w['scrollDurationMs']});")
         
-        if ptype == "line":
-            render_calls.append(f"    display.drawLine({p['x1']}, {p['y1']}, {p['x2']}, {p['y2']});")
-        elif ptype == "box":
-            if is_filled:
-                render_calls.append(f"    display.drawBox({p['x']}, {p['y']}, {p['w']}, {p['h']});")
-            else:
-                render_calls.append(f"    display.drawFrame({p['x']}, {p['y']}, {p['w']}, {p['h']});")
-        elif ptype == "roundedBox":
-            if is_filled:
-                render_calls.append(f"    display.drawRBox({p['x']}, {p['y']}, {p['w']}, {p['h']}, {p['r']});")
-            else:
-                render_calls.append(f"    display.drawRFrame({p['x']}, {p['y']}, {p['w']}, {p['h']}, {p['r']});")
-        elif ptype == "circle":
-            if is_filled:
-                render_calls.append(f"    display.drawDisc({p['x']}, {p['y']}, {p['r']});")
-            else:
-                render_calls.append(f"    display.drawCircle({p['x']}, {p['y']}, {p['r']});")
-        elif ptype == "triangle":
-            if is_filled:
-                render_calls.append(f"    display.drawTriangle({p['x0']}, {p['y0']}, {p['x1']}, {p['y1']}, {p['x2']}, {p['y2']});")
-            else:
-                render_calls.append(f"    display.drawLine({p['x0']}, {p['y0']}, {p['x1']}, {p['y1']});")
-                render_calls.append(f"    display.drawLine({p['x1']}, {p['y1']}, {p['x2']}, {p['y2']});")
-                render_calls.append(f"    display.drawLine({p['x2']}, {p['y2']}, {p['x0']}, {p['y0']});")
-        elif ptype == "text":
-            if "font" in p:
-                render_calls.append(f"    display.setFont({p['font']});")
-            render_calls.append(f"    display.drawStr({p['x']}, {p['y']}, \"{p['text']}\");")
+        if "scrollDwellMs" in w:
+            constructor_body.append(f"    {wid}.setScrollDwell({w['scrollDwellMs']});")
 
-    render_method = ""
-    if render_calls:
-        render_method = f"""
-void {class_name}::render(U8G2& display) {{
-    {base_class}::render(display);
+    render_calls = []
+    if primitives:
+        for p in primitives:
+            ptype = p["type"]
+            geom = p["geometry"]
+            if ptype == "line":
+                render_calls.append(f"    display.drawLine({geom['x1']}, {geom['y1']}, {geom['x2']}, {geom['y2']});")
+            elif ptype == "box":
+                render_calls.append(f"    display.drawBox({geom['x']}, {geom['y']}, {geom['w']}, {geom['h']});")
+            elif ptype == "text":
+                text = p.get("text", "")
+                font = p.get("font", "nullptr")
+                align_str = p.get("align", "LEFT").upper()
+                truncate = "true" if p.get("truncate", False) else "false"
+                x, y = geom.get("x", 0), geom.get("y", 0)
+                w, h = geom.get("w", -1), geom.get("h", -1)
+                render_calls.append(f"    drawText(display, \"{text}\", {x}, {y}, {w}, {h}, TextAlign::{align_str}, {truncate}, {font});")
     
+    render_method = f"""
+void {class_name}::tick(uint32_t currentMillis) {{
+}}
+
+void {class_name}::render(U8G2& display) {{
 {chr(10).join(render_calls)}
 }}
 """
 
-    cpp_content = f"""/*
- * Departures Board (c) 2025-2026 Gadec Software
- * Autogenerated from {os.path.basename(json_path)}
- */
-
-#include "{base_name}.hpp"
-#include <displayManager.hpp>
-
-{class_name}::{class_name}(appContext* context) 
-    : {base_class}(context) {{
+    cpp_lines = [
+        f"/*",
+        f" * Departures Board (c) 2025-2026 Gadec Software",
+        f" * Autogenerated from {os.path.basename(json_path)}",
+        f" */",
+        "",
+        f"#include \"{base_name}.hpp\"",
+        f"#include <displayManager.hpp>",
+        f"#include <fonts/fonts.hpp>",
+        "",
+        f"{class_name}::{class_name}(appContext* context) ",
+        f"    : {base_class}(context) {{",
+        ""
+    ]
     
-{os.linesep.join(widget_setup)}
-
-{column_setup}
-}}
-{render_method}
-"""
-
-    with open(os.path.join(dir_name, base_name + ".cpp"), 'w') as f:
-        f.write(cpp_content)
+    cpp_lines.extend(constructor_body)
+    cpp_lines.extend(column_setup)
+    cpp_lines.append("}")
+    cpp_lines.append(render_method)
+    
+    cpp_output_path = os.path.join(dir_name, base_name + ".cpp")
+    with open(cpp_output_path, 'w') as f:
+        f.write("\n".join(cpp_lines))
 
     print(f"Generated {class_name} (.hpp/.cpp) in {dir_name}")
 

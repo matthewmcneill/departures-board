@@ -47,49 +47,74 @@ int getStringWidth(U8G2& display, const __FlashStringHelper *message) {
 }
 
 /**
- * @brief Draw text left-aligned, truncating with '...' if it exceeds screen width
- * @param message The text to display
- * @param line The Y coordinate for the baseline
+ * @brief Draw text with alignment and optional truncation within a bounding box.
+ * Optimized for performance with a fast-path for the most common use cases.
  */
-void drawTruncatedText(U8G2& display, const char *message, int line) {
-  int w = getStringWidth(display, message);
-  char buf[256];
-  strcpy(buf,message);
-
-  // --- Step 1: Check for overflow ---
-  if (w > 256) {
-    // Incrementally remove characters until the string + ellipsis fits
-    while (getStringWidth(display, buf) > 249) buf[strlen(buf)-1]='\0';
-    strcat(buf,"...");
+void drawText(U8G2& display, const char *message, int x, int y, int w, int h, TextAlign align, bool truncate, const uint8_t* font) {
+  if (font) display.setFont(font);
+  
+  // --- FAST-PATH: Standard left-aligned, non-truncated text with no bounding box ---
+  // This bypasses all measurement and clipping logic (O(1) overhead).
+  if (align == TextAlign::LEFT && !truncate && w == -1 && h == -1) {
+    display.drawStr(x, y, message);
+    return;
   }
 
-  // --- Step 2: Render ---
-  display.drawStr(0, line, buf);
+  // --- FULL-PATH: Required for alignment, truncation, or explicit clipping ---
+  
+  // 1. Resolve bounding box defaults
+  if (w == -1) w = 256 - x; 
+  if (h == -1) h = display.getMaxCharHeight();
+  
+  int drawX = x;
+  int textW = 0;
+
+  // 2. Defer measurement until absolutely needed
+  if (align != TextAlign::LEFT || truncate) {
+    textW = display.getStrWidth(message);
+    if (align == TextAlign::CENTER) {
+      drawX += (w - textW) / 2;
+    } else if (align == TextAlign::RIGHT) {
+      drawX += (w - textW);
+    }
+  }
+
+  // 3. Clipping and Rendering
+  display.setClipWindow(x, y, x + w, y + h);
+
+  if (truncate && textW > w) {
+    // Truncation requires a stack buffer
+    char buf[256];
+    strlcpy(buf, message, sizeof(buf));
+    int ellipsisW = display.getStrWidth("...");
+    
+    // Optimization: Rough-cut based on average character width to avoid O(N) getStrWidth calls
+    int len = strlen(buf);
+    if (len > 0) {
+      int roughLen = (w - ellipsisW) / (textW / len);
+      if (roughLen < len) buf[roughLen] = '\0';
+    }
+
+    // Fine-tune for pixel perfection
+    while (strlen(buf) > 0 && display.getStrWidth(buf) > (w - ellipsisW)) {
+        buf[strlen(buf)-1] = '\0';
+    }
+    strcat(buf, "...");
+    display.drawStr(drawX, y, buf);
+  } else {
+    display.drawStr(drawX, y, message);
+  }
+
+  display.setMaxClipWindow();
 }
 
 /**
- * @brief Draw text horizontally centered on the screen
- * @param message The text to display
- * @param line The Y coordinate for the baseline
+ * @brief Draw PROGMEM text with alignment and optional truncation within a bounding box.
  */
-void centreText(U8G2& display, const char *message, int line) {
-  int w = getStringWidth(display, message);
-  if (w > 256) drawTruncatedText(display, message, line);
-  else {
-    int start = (256-w)/2;
-    display.drawStr(start, line, message);
-  }
-}
-
-/**
- * @brief Draw PROGMEM text horizontally centered on the screen
- * @param message The PROGMEM text to display
- * @param line The Y coordinate for the baseline
- */
-void centreText(U8G2& display, const __FlashStringHelper *message, int line) {
+void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, int w, int h, TextAlign align, bool truncate, const uint8_t* font) {
   char buf[256];
   strcpy_P(buf, (const char*)message);
-  centreText(display, buf, line);
+  drawText(display, buf, x, y, w, h, align, truncate, font);
 }
 
 /**

@@ -24,6 +24,8 @@
 #define APP_CONTEXT_MOCK_HPP
 
 #include "timeManager.hpp"
+#include "weatherClient.hpp"
+#include "displayManager.hpp"
 #include <string>
 
 class Config {
@@ -56,6 +58,16 @@ public:
      * @return Reference to the static ConfigManager object
      */
     ConfigManager& getConfigManager() { static ConfigManager cm; return cm; }
+
+    /**
+     * @brief Retrieves the mock weather client instance
+     */
+    WeatherClient& getWeather() { static WeatherClient wc; return wc; }
+
+    /**
+     * @brief Retrieves the mock display manager instance
+     */
+    DisplayManager& getDisplayManager() { extern DisplayManager displayManager; return displayManager; }
 };
 
 extern class appContext appContext; // Global context instance

@@ -26,6 +26,14 @@ public:
      * @brief Stubs deep firmware yield requests preventing thread blocks
      */
     void yieldAnimationUpdate() {}
+
+    /**
+     * @brief Check if an OTA update is pending (mocked)
+     */
+    bool isOtaUpdateAvailable() {
+        extern MockDataManager& g_mockData; // Defined in main.cpp or accessible via getInstance
+        return MockDataManager::getInstance().getOtaUpdateAvailable();
+    }
 };
 
 extern DisplayManager displayManager; // Global mock display instance

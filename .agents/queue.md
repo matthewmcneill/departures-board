@@ -3,25 +3,26 @@
 This file tracks active and pending agent sessions to prevent hardware and build conflicts.
 
 ## Lock Status
-- **Locked By**: d84b7bd1-ebd1-40f4-b15b-db00f504074e
-- **Reason**: Executing implementation plan for e60fc2d8-2557-44e3-8c6a-bc0611701d8a
-- **Since**: 2026-03-22T22:05:54Z
+- **Locked By**: NONE
+- **Reason**: 
+- **Since**: 
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |
 | :--- | :--- | :--- | :--- |
-| 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
 | 23531fa4-dd20-4a3a-ab4d-6ae6ceb6589f | Clock Display Review: Add NTP/Time diagnostics and per-board brightness overrides with 'Use Global' toggle | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/23531fa4-dd20-4a3a-ab4d-6ae6ceb6589f/implementation_plan.md) | 2026-03-17T18:56:02Z |
 | b5ab1a93-935d-456a-b852-6ad8393fa56b | Fix Device Hangs and Network Robustness (non-blocking yields & empty-ID guards) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/b5ab1a93-935d-456a-b852-6ad8393fa56b/implementation_plan.md) | 2026-03-18T18:59:54Z |
 | 65ebed96-b4a2-4ec2-8761-22a0f22c4ff6 | Develop the System Specification Document (SSD) and consolidate all architectural docs & fonts | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/65ebed96-b4a2-4ec2-8761-22a0f22c4ff6/implementation_plan.md) | 2026-03-18T21:58:23Z |
 | 89f588da-1676-4623-abd1-bd9230c2811e | Create Developer Guide Documentation | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/89f588da-1676-4623-abd1-bd9230c2811e/implementation_plan.md) | 2026-03-18T22:21:48Z |
 | f28cbd50-8b5d-41d5-a79c-d385f5d941f1 | Universal Context Header Design (Pending Concept Selection) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/f28cbd50-8b5d-41d5-a79c-d385f5d941f1/implementation_plan.md) | 2026-03-20T07:11:00Z |
 | 61262f31-29fc-494f-b0b3-d94bad7f27fa | Adding Expected Time Column | N/A | 2026-03-23T22:46:42Z |
-| b719ca8f-cfc1-44ee-bfd3-426b8b795c4d | Header Widget Rewrite | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/b719ca8f-cfc1-44ee-bfd3-426b8b795c4d/implementation_plan.md) | 2026-03-23T23:27:42Z |
+| 32798161-5bfe-4884-9fa6-75567fdaf2fe | Fix OLED Distortion & Font Corruption (NHD + Hex Fonts) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/32798161-5bfe-4884-9fa6-75567fdaf2fe/implementation_plan.md) | 2026-03-24T10:05:00Z |
+| 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |
 | :--- | :--- | :--- | :--- |
+| bd5ae513-e626-4fe7-b401-9c7d8184d55d | Refactor Text Primitives and Integrate into Layout JSON | Success | 2026-03-24T12:13:00Z |
 | 470d6a16-dd63-42c0-bc27-62a58dac6dd2 | WebServer Refactoring & Multi-Board Background Sync | Success | 2026-03-22T22:00:00Z |
 | c7ca7a4a-8640-47db-9237-6e8681f3c64d | Implementing iButton and TouchSensor | Success | 2026-03-22T18:15:00Z |
 | 1cf75709-e370-401c-a1f6-a8d71ba9fefe | Terminology Refactor: View to Layout | Success | 2026-03-20T15:15:00Z |

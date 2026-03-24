@@ -50,6 +50,10 @@ private:
     char stationCalling[MOCK_MAX_STR];
     char stationPlatform[16];
     
+    int weatherConditionId = 800; // Default clear
+    bool weatherIsNight = false;
+    bool otaUpdateAvailable = false;
+    
     MockService services[MOCK_MAX_SERVICES];
     int serviceCount = 0;
     
@@ -106,6 +110,16 @@ public:
             }
         }
 
+        if (doc.containsKey("weather")) {
+            JsonObject weather = doc["weather"];
+            weatherConditionId = weather["id"] | 800;
+            weatherIsNight = weather["isNight"] | false;
+        }
+
+        if (doc.containsKey("otaAvailable")) {
+            otaUpdateAvailable = doc["otaAvailable"] | false;
+        }
+
         if (doc.containsKey("messages")) {
             messageCount = 0;
             JsonArray msgs = doc["messages"];
@@ -160,6 +174,10 @@ public:
      * @return Const char string pointer
      */
     const char* getMessage(int i) const { return messages[i]; }
+
+    int getWeatherConditionId() const { return weatherConditionId; }
+    bool getWeatherIsNight() const { return weatherIsNight; }
+    bool getOtaUpdateAvailable() const { return otaUpdateAvailable; }
 };
 
 #endif // MOCK_DATA_MANAGER_HPP

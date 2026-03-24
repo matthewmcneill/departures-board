@@ -31,13 +31,14 @@
 - [ ] consider how we add validation to the filter strings to the portal to ensure that the filters make sense.
 - [ ] have the iDataProviders give a data-expiry time so that it can tell the scheduler that it should update (for example just after the last train was expected to depart) or do it at least once every minute.
 - [ ] review the whole data request queueing onto the other core for async - how we get queed - how to jump priority, how to update at the right time.
+- [ ] **Unit Testing**: Implement `unit_testing_host` scenarios for `drawText` to verify fast-path logic and rough-cut truncation accuracy under extreme string lengths.
 
 ## Completed
 - [x] Implement a unified diagnostic test queue in the frontend to prevent ESP32 resource saturation and dropped connections.
 - [x] Unify the "Active Displays" diagnostic UI with the "API Keys" style (added status text labels next to dots).
 - [x] Auto-abort pending diagnostic tests when switching tabs to focus on the current context.
 - [x] move all the u8g2 setup and handling into the display manager. Add a displaymanager.Showboard( iDisplayBoard ) instead of calling render directly whcih injects the display hardware. Move all of the constants related to the display into the display manager
-- [x] clean up the drawing primitives. These routines should all take a u82g display as a paramaeter and not assume the global one exists.
+- [x] clean up the drawing primitives. These routines should all take a u82g display as a paramaeter and not assume the global one exists. (Consolidated into unified drawText API in session bd5ae513)
 - [x] Refactor Transport Boards (TfL, Bus, NR) to use the new `labelWidget` for empty/error states instead of raw drawing primitives.
 - [x] continue with the rationalisation of the data providers
 - [x] finish the updates to the web configuration front end to enable better board configuration (Overhauled Displays tab: Startup highlight, reorder buttons, dynamic instructions, and smart initial tab selection)

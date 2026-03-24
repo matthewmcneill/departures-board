@@ -10,14 +10,19 @@
 
 #include "iNationalRailLayout.hpp"
 #include <appContext.hpp>
+#define DIMMED_BRIGHTNESS 15
 
-iNationalRailLayout::iNationalRailLayout(appContext* context) 
+iNationalRailLayout::iNationalRailLayout(appContext* context)
     : iBoardLayout(context),
-      headWidget(0, 0, 256, 12),
-      row0Widget(0, 12, 256, 14),
-      servicesWidget(0, 26, 256, 39),
-      msgWidget(0, 52, 256, 12),
-      sysClock(&context->getTimeManager(), 200, 0, 56, 14),
+      stationName(0, 0, 0, 0),
+      filterInfo(0, 0, 0, 0),
+      weather(context, 0, 0, 0, 0),
+      otaStatus(context, 0, 0, 0, 0),
+      wifiWarning(0, 0),
+      sysClock(&context->getTimeManager(), 0, 0, 0, 0),
+      row0Widget(0, 0, 0, 0),
+      servicesWidget(0, 0, 0, 0),
+      msgWidget(0, 0, 0, 0),
       noDataLabel(0, 0, 0, 0) {
-          noDataLabel.setVisible(false);
-      }
+    noDataLabel.setVisible(false);
+}

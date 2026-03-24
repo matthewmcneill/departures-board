@@ -1,0 +1,24 @@
+{
+  "layout": "iBoardLayout",
+  "boardType": "TEST",
+  "widgets": [],
+  "primitives": [
+    { "type": "line", "id": "border_top", "geometry": { "x1": 0, "y1": 0, "x2": 255, "y2": 0 } },
+    { "type": "line", "id": "border_bottom", "geometry": { "x1": 0, "y1": 63, "x2": 255, "y2": 63 } },
+    { "type": "line", "id": "border_left", "geometry": { "x1": 0, "y1": 0, "x2": 0, "y2": 63 } },
+    { "type": "line", "id": "border_right", "geometry": { "x1": 255, "y1": 0, "x2": 255, "y2": 63 } },
+    { "type": "line", "id": "v_center", "geometry": { "x1": 128, "y1": 0, "x2": 128, "y2": 63 } },
+    { "type": "line", "id": "h_center", "geometry": { "x1": 0, "y1": 32, "x2": 255, "y2": 32 } },
+    { "type": "box", "id": "corner_0_0", "geometry": { "x": 0, "y": 0, "w": 4, "h": 4 } },
+    { "type": "box", "id": "corner_251_0", "geometry": { "x": 251, "y": 0, "w": 4, "h": 4 } },
+    { "type": "box", "id": "corner_0_59", "geometry": { "x": 0, "y": 59, "w": 4, "h": 4 } },
+    { "type": "box", "id": "corner_251_59", "geometry": { "x": 251, "y": 59, "w": 4, "h": 4 } },
+    { "type": "line", "id": "grid_x32", "geometry": { "x1": 32, "y1": 0, "x2": 32, "y2": 63 } },
+    { "type": "line", "id": "grid_x64", "geometry": { "x1": 64, "y1": 0, "x2": 64, "y2": 63 } },
+    { "type": "line", "id": "grid_x96", "geometry": { "x1": 96, "y1": 0, "x2": 96, "y2": 63 } },
+    { "type": "line", "id": "grid_x128", "geometry": { "x1": 128, "y1": 0, "x2": 128, "y2": 63 } },
+    { "type": "line", "id": "grid_x160", "geometry": { "x1": 160, "y1": 0, "x2": 160, "y2": 63 } },
+    { "type": "line", "id": "grid_x192", "geometry": { "x1": 192, "y1": 0, "x2": 192, "y2": 63 } },
+    { "type": "line", "id": "grid_x224", "geometry": { "x1": 224, "y1": 0, "x2": 224, "y2": 63 } }
+  ]
+}

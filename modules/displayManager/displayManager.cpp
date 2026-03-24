@@ -1,3 +1,5 @@
+#include <departuresBoard.hpp>
+#include <fonts/fonts.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  * Refactored for v3.0 by Matt McNeill 2026 CB Labs
@@ -122,10 +124,8 @@ void DisplayManager::tick(unsigned long currentMillis) {
     }
 
     // --- Step 2: Internal Logic and Rendering ---
-    // Delegate state updates to the active board and global overlays.
+    // Delegate state updates to the active board.
     if (currentBoard != nullptr) currentBoard->tick(currentMillis);
-    
-    wifiWarning.tick(currentMillis);
     
     // Trigger the actual hardware buffer transaction.
     render();
@@ -144,14 +144,7 @@ void DisplayManager::render() {
         currentBoard->render(u8g2);
     }
 
-    // --- Step 3: Overlay global system status indicators ---
-    wifiWarning.render(u8g2);
-    
-    if (otaUpdateAvailable) {
-        // Render the small 'OTA' up-arrow or indicator
-        u8g2.setFont(NatRailSmall9);
-        u8g2.drawStr(0, 50, "\xAB");
-    }
+    // --- Step 3: Send to display ---
 
     // --- Step 4: Hardware push ---
     u8g2.sendBuffer();
@@ -348,6 +341,8 @@ iDisplayBoard* DisplayManager::getDisplayBoard(int slotIndex) {
         return &std::get<TfLBoard>(slots[slotIndex]);
     } else if (std::holds_alternative<BusBoard>(slots[slotIndex])) {
         return &std::get<BusBoard>(slots[slotIndex]);
+    } else if (std::holds_alternative<DiagnosticBoard>(slots[slotIndex])) {
+        return &std::get<DiagnosticBoard>(slots[slotIndex]);
     }
     return nullptr; 
 }
@@ -356,6 +351,7 @@ BoardType DisplayManager::getActiveBoardType() {
     if (std::holds_alternative<NationalRailBoard>(slots[activeSlotIndex])) return BoardType::NR_BOARD;
     if (std::holds_alternative<TfLBoard>(slots[activeSlotIndex])) return BoardType::TFL_BOARD;
     if (std::holds_alternative<BusBoard>(slots[activeSlotIndex])) return BoardType::BUS_BOARD;
+    if (std::holds_alternative<DiagnosticBoard>(slots[activeSlotIndex])) return BoardType::DIAGNOSTIC_BOARD;
     return BoardType::NR_BOARD;
 }
 
@@ -370,6 +366,7 @@ void DisplayManager::setBoardType(int slotIndex, BoardType type) {
         case BoardType::NR_BOARD: slots[slotIndex].emplace<NationalRailBoard>(context); break;
         case BoardType::TFL_BOARD: slots[slotIndex].emplace<TfLBoard>(context); break;
         case BoardType::BUS_BOARD: slots[slotIndex].emplace<BusBoard>(context); break;
+        case BoardType::DIAGNOSTIC_BOARD: slots[slotIndex].emplace<DiagnosticBoard>(context); break;
     }
 }
 
@@ -438,17 +435,8 @@ void DisplayManager::yieldAnimationUpdate() {
     if (now - lastAnim >= 16) { 
         lastAnim = now;
         
-        // Update delegted animation logic for board and overlays
+        // Update delegated animation logic for board
         if (currentBoard) currentBoard->renderAnimationUpdate(u8g2, now);
-        
-        wifiWarning.renderAnimationUpdate(u8g2, now);
-        
-        if (otaUpdateAvailable) {
-            // Partial update for the OTA indicator
-            u8g2.setFont(NatRailSmall9);
-            u8g2.drawStr(0, 50, "\xAB");
-            u8g2.updateDisplayArea(0, 6, 1, 2);
-        }
 
         // --- Critical Step: Background Tasking ---
         // Allow the web server to process requests during long-duration 
@@ -520,6 +508,10 @@ void DisplayManager::applyConfig(const Config& config) {
                     bb->setBusLon(bc.lon);
                     bb->setBusFilter(bc.filter);
                 }
+                break;
+            }
+            case MODE_DIAGNOSTIC: {
+                setBoardType(i, BoardType::DIAGNOSTIC_BOARD);
                 break;
             }
         }

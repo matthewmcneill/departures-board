@@ -29,6 +29,7 @@ class TimeManager;
 class clockWidget : public iGfxWidget {
 private:
     bool showColon;
+    bool oldColon;
     bool blinkEnabled;
     uint32_t lastBlinkMs;
     int lastMinute;

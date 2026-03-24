@@ -12,6 +12,7 @@
  */
 
 #include "helpBoard.hpp"
+#include <fonts/fonts.hpp>
 #include "../../widgets/drawingPrimitives.hpp"
 #include <string.h>
 
@@ -43,7 +44,7 @@ void HelpBoard::render(U8G2& display) {
     display.setFont(NatRailSmall9);
     
     if (title[0] != '\0') {
-        centreText(display, title, 3);
+        drawText(display, title, 0, 3, 256, 10, TextAlign::CENTER);
     }
     
     int startY = 14;
@@ -51,7 +52,7 @@ void HelpBoard::render(U8G2& display) {
     
     for (int i = 0; i < lineCount; i++) {
         if (lines[i] != nullptr) {
-            drawTruncatedText(display, lines[i], startY + (i * spacing));
+            drawText(display, lines[i], 0, startY + (i * spacing), 256, 10, TextAlign::LEFT, true);
         }
     }
 }

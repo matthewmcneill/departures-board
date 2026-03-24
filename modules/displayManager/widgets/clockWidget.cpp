@@ -1,3 +1,4 @@
+#include <fonts/fonts.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  * Refactored for v3.0 by Matt McNeill 2026 CB Labs
@@ -20,7 +21,7 @@
  * @brief Initialize the clock with its time manager and layout.
  */
 clockWidget::clockWidget(TimeManager* _timeMgr, int _x, int _y, int _w, int _h, const uint8_t* _font)
-    : iGfxWidget(_x, _y, _w, _h), showColon(true), blinkEnabled(true), lastBlinkMs(0), lastMinute(-1), font(_font), timeMgr(_timeMgr) {
+    : iGfxWidget(_x, _y, _w, _h), showColon(true), oldColon(true), blinkEnabled(true), lastBlinkMs(0), lastMinute(-1), font(_font), timeMgr(_timeMgr) {
     if (font == nullptr) font = UndergroundClock8;
 }
 
@@ -52,9 +53,6 @@ void clockWidget::tick(uint32_t currentMillis) {
  */
 void clockWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (!isVisible) return;
-    
-    bool oldColon = showColon;
-    tick(currentMillis);
     
     if (!timeMgr) return;
     

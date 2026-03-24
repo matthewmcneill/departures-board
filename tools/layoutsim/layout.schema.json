@@ -11,8 +11,14 @@
       "enum": [
         "iNationalRailLayout",
         "iTflLayout",
-        "iBusLayout"
+        "iBusLayout",
+        "iBoardLayout"
       ]
+    },
+    "boardType": {
+      "type": "string",
+      "description": "Optional board type hint for the C++ generator.",
+      "enum": ["NR", "TFL", "BUS", "TEST"]
     },
     "widgets": {
       "type": "array",

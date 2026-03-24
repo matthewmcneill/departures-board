@@ -1,8 +1,42 @@
 {
   "layout": "iTflLayout",
   "widgets": [
-    { "id": "headWidget", "type": "headerWidget", "geometry": { "x": 0, "y": 52, "w": 256, "h": 12 }, "visible": true, "font": "Underground10", "blink": true },
-    { 
+    {
+      "id": "stationName",
+      "type": "labelWidget",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "w": 150,
+        "h": 12
+      },
+      "visible": true,
+      "font": "Underground10"
+    },
+    {
+      "id": "filterInfo",
+      "type": "scrollingTextWidget",
+      "geometry": {
+        "x": 150,
+        "y": 0,
+        "w": 86,
+        "h": 12
+      },
+      "visible": true,
+      "font": "NatRailSmall9"
+    },
+    {
+      "id": "wifiWarning",
+      "type": "wifiStatusWidget",
+      "geometry": {
+        "x": 236,
+        "y": 0,
+        "w": 20,
+        "h": 12
+      },
+      "visible": true
+    },
+    {
       "id": "servicesWidget", "type": "serviceListWidget", "geometry": { "x": 0, "y": 12, "w": 256, "h": 39 }, "visible": true,
       "columns": [
         { "width": 60, "align": 0, "label": "Line" },

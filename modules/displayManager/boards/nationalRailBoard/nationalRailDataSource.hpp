@@ -72,6 +72,9 @@ struct NationalRailService {
  */
 struct NationalRailStation {
     char location[NR_MAX_LOCATION];
+    char stationName[NR_MAX_LOCATION];
+    char filterVia[NR_MAX_LOCATION];
+    char filterPlatform[16];
     bool platformAvailable;
     bool boardChanged;
     int numServices;

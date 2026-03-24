@@ -29,6 +29,13 @@
 #define VERSION_MINOR 0
 
 // --- Hardware Constraints ---
+#ifndef SCREEN_WIDTH
+#define SCREEN_WIDTH 256
+#endif
+#ifndef SCREEN_HEIGHT
+#define SCREEN_HEIGHT 64
+#endif
+
 #ifndef MAX_BOARDS
 #define MAX_BOARDS 6
 #endif

@@ -12,6 +12,7 @@
  */
 
 #include "loadingBoard.hpp"
+#include <fonts/fonts.hpp>
 #include <string.h>
 #include "../../widgets/drawingPrimitives.hpp"
 #include <logger.hpp>
@@ -108,9 +109,8 @@ void LoadingBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) 
  */
 void LoadingBoard::render(U8G2& display) {
     // --- Step 1: Branding Header ---
-    display.setFont(NatRailTall12);
     if (heading[0] != '\0') {
-        centreText(display, heading, 0);
+        drawText(display, heading, 0, 0, 256, 16, TextAlign::CENTER, false, NatRailTall12);
     }
 
     // --- Step 2: Progress Integration ---

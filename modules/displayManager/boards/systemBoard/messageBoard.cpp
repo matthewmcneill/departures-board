@@ -12,6 +12,7 @@
  */
 
 #include "messageBoard.hpp"
+#include <fonts/fonts.hpp>
 #include "../../widgets/drawingPrimitives.hpp"
 
 MessageBoard::MessageBoard() : showWarningIcon(false) {
@@ -52,14 +53,12 @@ void MessageBoard::tick(uint32_t ms) {
 
 void MessageBoard::render(U8G2& display) {
     
-    display.setFont(NatRailSmall9);
     if (hdr[0] != '\0') {
-        centreText(display, hdr, 3);
+        drawText(display, hdr, 0, 3, 256, 10, TextAlign::CENTER, false, NatRailSmall9);
     }
     
-    display.setFont(NatRailTall12);
     if (title[0] != '\0') {
-        centreText(display, title, 20); // Titles are slightly vertically offset
+        drawText(display, title, 0, 20, 256, 14, TextAlign::CENTER, false, NatRailTall12); 
     }
 
     display.setFont(NatRailSmall9);
@@ -68,10 +67,10 @@ void MessageBoard::render(U8G2& display) {
     int startY = 38;
     int spacing = 10;
     
-    if (msg1[0] != '\0') centreText(display, msg1, startY);
-    if (msg2[0] != '\0') centreText(display, msg2, startY + spacing);
-    if (msg3[0] != '\0') centreText(display, msg3, startY + (spacing * 2));
-    if (msg4[0] != '\0') centreText(display, msg4, startY + (spacing * 3));
+    if (msg1[0] != '\0') drawText(display, msg1, 0, startY, 256, 10, TextAlign::CENTER);
+    if (msg2[0] != '\0') drawText(display, msg2, 0, startY + spacing, 256, 10, TextAlign::CENTER);
+    if (msg3[0] != '\0') drawText(display, msg3, 0, startY + (spacing * 2), 256, 10, TextAlign::CENTER);
+    if (msg4[0] != '\0') drawText(display, msg4, 0, startY + (spacing * 3), 256, 10, TextAlign::CENTER);
     
     if (showWarningIcon) {
         display.setFont(NatRailTall12);

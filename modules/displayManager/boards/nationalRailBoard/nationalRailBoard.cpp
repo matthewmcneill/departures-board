@@ -9,6 +9,16 @@
  *
  * Module: modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp
  * Description: Implementation of National Rail controller logic and widget binding.
+ *
+ * Exported Functions/Classes:
+ * - NationalRailBoard: Controller for NR departure boards.
+ *   - onActivate(): Lifecycle hook for activation.
+ *   - onDeactivate(): Lifecycle hook for deactivation.
+ *   - configure(const BoardConfig& config): Apply settings.
+ *   - tick(uint32_t ms): Periodic logic update.
+ *   - updateData(): Fetch background data.
+ *   - render(U8G2& display): Standard render pass.
+ *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): Animation pass.
  */
 
 #include <appContext.hpp>
@@ -174,12 +184,18 @@ int NationalRailBoard::updateData() {
     if (lastUpdateStatus == 0) { // UPD_SUCCESS
         // Update header once we have the station name
         NationalRailStation* data = dataSource.getStationData();
-        if (data->location[0] && activeLayout) {
-            activeLayout->headWidget.setTitle(data->location);
-            activeLayout->headWidget.setCallingPoint(callingStation);
-            activeLayout->headWidget.setPlatform(platformFilter);
-            activeLayout->headWidget.setTimeOffset(nrTimeOffset);
-            activeLayout->headWidget.setShowDate(true);
+        if (activeLayout) {
+            activeLayout->stationName.setText(data->stationName);
+            
+            String filterText = "";
+            if (data->filterVia[0] != '\0') {
+                filterText += "via " + String(data->filterVia);
+            }
+            if (data->filterPlatform[0] != '\0') {
+                if (filterText.length() > 0) filterText += " ";
+                filterText += "[Plat " + String(data->filterPlatform) + "]";
+            }
+            activeLayout->filterInfo.setText(filterText.c_str());
         }
 
         // Trigger scrolling of calling points if they changed

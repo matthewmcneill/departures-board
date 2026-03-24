@@ -2,8 +2,13 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <vector>
 #include "designerRegistry.hpp"
-#include "headerWidget.hpp"
+#include "labelWidget.hpp"
+#include "scrollingTextWidget.hpp"
+#include "weatherWidget.hpp"
+#include "otaStatusWidget.hpp"
+#include "wifiStatusWidget.hpp"
 #include "serviceListWidget.hpp"
 #include "scrollingMessagePoolWidget.hpp"
 #include "labelWidget.hpp"
@@ -23,9 +28,17 @@ inline void loadLayoutProfile(const std::string& layoutName, TimeManager* tm, Me
     g_activeProfileWidgets.clear();
 
     if (layoutName == "iTflLayout") {
-        auto w_headWidget = new headerWidget(0, 0, 10, 10);
-        DesignerRegistry::getInstance().registerWidget("headWidget", w_headWidget);
-        g_activeProfileWidgets.push_back(w_headWidget);
+        auto w_stationName = new labelWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("stationName", w_stationName);
+        g_activeProfileWidgets.push_back(w_stationName);
+
+        auto w_filterInfo = new scrollingTextWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("filterInfo", w_filterInfo);
+        g_activeProfileWidgets.push_back(w_filterInfo);
+
+        auto w_wifiWarning = new wifiStatusWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("wifiWarning", w_wifiWarning);
+        g_activeProfileWidgets.push_back(w_wifiWarning);
 
         auto w_servicesWidget = new serviceListWidget(0, 0, 10, 10);
         DesignerRegistry::getInstance().registerWidget("servicesWidget", w_servicesWidget);
@@ -41,9 +54,17 @@ inline void loadLayoutProfile(const std::string& layoutName, TimeManager* tm, Me
         g_activeProfileWidgets.push_back(w_noDataLabel);
 
     } else if (layoutName == "iBusLayout") {
-        auto w_headWidget = new headerWidget(0, 0, 10, 10);
-        DesignerRegistry::getInstance().registerWidget("headWidget", w_headWidget);
-        g_activeProfileWidgets.push_back(w_headWidget);
+        auto w_stationName = new labelWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("stationName", w_stationName);
+        g_activeProfileWidgets.push_back(w_stationName);
+
+        auto w_filterInfo = new scrollingTextWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("filterInfo", w_filterInfo);
+        g_activeProfileWidgets.push_back(w_filterInfo);
+
+        auto w_wifiWarning = new wifiStatusWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("wifiWarning", w_wifiWarning);
+        g_activeProfileWidgets.push_back(w_wifiWarning);
 
         auto w_servicesWidget = new serviceListWidget(0, 0, 10, 10);
         DesignerRegistry::getInstance().registerWidget("servicesWidget", w_servicesWidget);
@@ -59,9 +80,29 @@ inline void loadLayoutProfile(const std::string& layoutName, TimeManager* tm, Me
         g_activeProfileWidgets.push_back(w_noDataLabel);
 
     } else if (layoutName == "iNationalRailLayout") {
-        auto w_headWidget = new headerWidget(0, 0, 10, 10);
-        DesignerRegistry::getInstance().registerWidget("headWidget", w_headWidget);
-        g_activeProfileWidgets.push_back(w_headWidget);
+        auto w_stationName = new labelWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("stationName", w_stationName);
+        g_activeProfileWidgets.push_back(w_stationName);
+
+        auto w_filterInfo = new scrollingTextWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("filterInfo", w_filterInfo);
+        g_activeProfileWidgets.push_back(w_filterInfo);
+
+        auto w_weather = new weatherWidget(&appContext, 0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("weather", w_weather);
+        g_activeProfileWidgets.push_back(w_weather);
+
+        auto w_otaStatus = new otaStatusWidget(&appContext, 0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("otaStatus", w_otaStatus);
+        g_activeProfileWidgets.push_back(w_otaStatus);
+
+        auto w_wifiWarning = new wifiStatusWidget(0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("wifiWarning", w_wifiWarning);
+        g_activeProfileWidgets.push_back(w_wifiWarning);
+
+        auto w_sysClock = new clockWidget(tm, 0, 0, 10, 10);
+        DesignerRegistry::getInstance().registerWidget("sysClock", w_sysClock);
+        g_activeProfileWidgets.push_back(w_sysClock);
 
         auto w_row0Widget = new serviceListWidget(0, 0, 10, 10);
         DesignerRegistry::getInstance().registerWidget("row0Widget", w_row0Widget);
@@ -75,10 +116,6 @@ inline void loadLayoutProfile(const std::string& layoutName, TimeManager* tm, Me
         w_msgWidget->addMessagePool(mp);
         DesignerRegistry::getInstance().registerWidget("msgWidget", w_msgWidget);
         g_activeProfileWidgets.push_back(w_msgWidget);
-
-        auto w_sysClock = new clockWidget(tm, 0, 0, 10, 10);
-        DesignerRegistry::getInstance().registerWidget("sysClock", w_sysClock);
-        g_activeProfileWidgets.push_back(w_sysClock);
 
         auto w_noDataLabel = new labelWidget(0, 0, 10, 10);
         DesignerRegistry::getInstance().registerWidget("noDataLabel", w_noDataLabel);

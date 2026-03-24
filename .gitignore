@@ -17,6 +17,10 @@ tools/layoutsim/emsdk/
 tools/layoutsim/build/
 tools/layoutsim/web/dist/
 
+# Generated Layout Files
+modules/displayManager/boards/*/layouts/*.hpp
+modules/displayManager/boards/*/layouts/*.cpp
+
 # Compiled Tools
 tools/bdfconv/bdfconv
 

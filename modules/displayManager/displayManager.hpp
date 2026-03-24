@@ -46,6 +46,7 @@ class appContext;
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
 #include <boards/tflBoard/tflBoard.hpp>
 #include <boards/busBoard/busBoard.hpp>
+#include <boards/systemBoard/diagnosticBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/wizardBoard.hpp>
@@ -65,7 +66,8 @@ class appContext;
 enum class BoardType {
     NR_BOARD,  // National Rail Departures
     TFL_BOARD, // London Underground / TfL Departures
-    BUS_BOARD  // Local Bus Times
+    BUS_BOARD, // Local Bus Times
+    DIAGNOSTIC_BOARD // Hardware Diagnostics
 };
 
 /**
@@ -89,7 +91,7 @@ enum class SystemBoardId {
  * @brief Type-safe union overlay spanning the maximum memory footprint 
  *        of any hardware Board class implementation.
  */
-using BoardVariant = std::variant<std::monostate, NationalRailBoard, TfLBoard, BusBoard>;
+using BoardVariant = std::variant<std::monostate, NationalRailBoard, TfLBoard, BusBoard, DiagnosticBoard>;
 
 class DisplayManager : public iConfigurable {
 private:
@@ -244,6 +246,11 @@ public:
      * @brief Instruct the DisplayManager to render the OTA update icon.
      */
     void setOtaUpdateAvailable(bool available) { otaUpdateAvailable = available; }
+
+    /**
+     * @brief Check if an OTA update is pending.
+     */
+    bool isOtaUpdateAvailable() const { return otaUpdateAvailable; }
 
     /**
      * @brief Check if the display is currently in a sleep/clock state.

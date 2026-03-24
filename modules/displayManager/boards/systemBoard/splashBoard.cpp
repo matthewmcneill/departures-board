@@ -12,6 +12,7 @@
  */
 
 #include "splashBoard.hpp"
+#include <fonts/fonts.hpp>
 #include <U8g2lib.h>
 
 SplashBoard::SplashBoard() {
@@ -52,7 +53,6 @@ void SplashBoard::render(U8G2& display) {
     // Draw the centred notice text below the logo
     display.setFont(NatRailSmall9);
     if (noticeMessage[0] != '\0') {
-        display.setFont(NatRailSmall9);
-        centreText(display, noticeMessage, 44); // Shifted up for layout clearance if used later
+        drawText(display, noticeMessage, 0, 44, 256, 10, TextAlign::CENTER);
     }
 }

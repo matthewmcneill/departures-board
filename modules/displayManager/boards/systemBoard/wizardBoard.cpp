@@ -12,7 +12,9 @@
  */
 
 #include <appContext.hpp>
+#include <fonts/fonts.hpp>
 #include "wizardBoard.hpp"
+#include <fonts/fonts.hpp>
 #include "../../widgets/drawingPrimitives.hpp"
 
 WizardBoard::WizardBoard() : currentIp(0,0,0,0), lastStageSwitch(0), currentStage(0) {
@@ -59,8 +61,7 @@ void WizardBoard::tick(uint32_t ms) {
 }
 
 void WizardBoard::render(U8G2& display) {
-    display.setFont(NatRailTall12);
-    centreText(display, "WiFi Setup Mode", 0);
+    drawText(display, "WiFi Setup Mode", 0, 0, 256, 16, TextAlign::CENTER, false, NatRailTall12);
     
     display.setFont(NatRailSmall9);
     
@@ -74,7 +75,7 @@ void WizardBoard::render(U8G2& display) {
     } else {
         strlcat(ssidMsg, "Departures-Board", sizeof(ssidMsg));
     }
-    centreText(display, ssidMsg, 24);
+    drawText(display, ssidMsg, 0, 24, 256, 12, TextAlign::CENTER);
 
     // Line 2: URL instructions
     char address[48];
@@ -83,8 +84,8 @@ void WizardBoard::render(U8G2& display) {
     } else {
         snprintf(address, sizeof(address), "Connect to configure...");
     }
-    centreText(display, address, 40);
+    drawText(display, address, 0, 40, 256, 12, TextAlign::CENTER);
     
     display.setFont(NatRailSmall9);
-    drawTruncatedText(display, "Follow instructions on your phone", 54);
+    drawText(display, "Follow instructions on your phone", 0, 54, 256, 10, TextAlign::LEFT, true);
 }

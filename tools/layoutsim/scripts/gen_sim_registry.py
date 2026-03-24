@@ -22,7 +22,11 @@ OUT_FILE = os.path.join("tools", "layoutsim", "src", "generated_registry.hpp")
 
 # Known widget types we expect to find in headers
 WIDGET_TYPES = {
-    "headerWidget": "headerWidget(0, 0, 10, 10)",
+    "stationName": "labelWidget(0, 0, 10, 10)",
+    "filterInfo": "scrollingTextWidget(0, 0, 10, 10)",
+    "weatherWidget": "weatherWidget(&appContext, 0, 0, 10, 10)",
+    "otaStatusWidget": "otaStatusWidget(&appContext, 0, 0, 10, 10)",
+    "wifiStatusWidget": "wifiStatusWidget(0, 0, 10, 10)",
     "serviceListWidget": "serviceListWidget(0, 0, 10, 10)",
     "scrollingMessagePoolWidget": "scrollingMessagePoolWidget(0, 0, 10, 10)",
     "labelWidget": "labelWidget(0, 0, 10, 10)",
@@ -73,8 +77,13 @@ def generate_cpp(layouts):
 #pragma once
 #include <string>
 #include <vector>
+#include <vector>
 #include "designerRegistry.hpp"
-#include "headerWidget.hpp"
+#include "labelWidget.hpp"
+#include "scrollingTextWidget.hpp"
+#include "weatherWidget.hpp"
+#include "otaStatusWidget.hpp"
+#include "wifiStatusWidget.hpp"
 #include "serviceListWidget.hpp"
 #include "scrollingMessagePoolWidget.hpp"
 #include "labelWidget.hpp"

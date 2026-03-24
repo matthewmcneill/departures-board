@@ -23,7 +23,6 @@
         { "width": 176, "align": 0, "label": "Dest" }
       ]
     },
-    { "id": "headWidget", "type": "headerWidget", "visible": false },
     { "id": "noDataLabel", "type": "labelWidget", "geometry": { "x": 10, "y": 40, "w": 256, "h": 15 }, "visible": false, "font": "NatRailTall12", "text": "No services found." }
   ]
 }

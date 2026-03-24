@@ -12,6 +12,7 @@
  */
 
 #include <appContext.hpp>
+#define DIMMED_BRIGHTNESS 15
 #include "sleepingBoard.hpp"
 #include <fonts/fonts.hpp>
 #include "../../widgets/drawingPrimitives.hpp"

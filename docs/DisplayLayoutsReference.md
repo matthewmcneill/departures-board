@@ -300,20 +300,26 @@ Draws a geometric triangle.
 ```
 
 ### `text`
-Draws a static string of text.
+Draws a static or system-driven string of text within a bounding box.
 
 | Property | Type | Required | Description |
 | -------- | ---- | -------- | ----------- |
-| `geometry.x` | Integer | Yes | X-coordinate (baseline aligned) |
-| `geometry.y` | Integer | Yes | Y-coordinate (baseline aligned) |
-| `text` | String | Yes | The static string of text to render |
+| `geometry.x` | Integer | Yes | Top-left X coordinate |
+| `geometry.y` | Integer | Yes | Top-left Y coordinate |
+| `geometry.w` | Integer | No | Width of the bounding box (-1 for auto) |
+| `geometry.h` | Integer | No | Height of the bounding box (-1 for auto) |
+| `text` | String | Yes | The text string to render |
 | `font` | String | Yes | The font identifier string to use |
+| `align` | Integer | No | Alignment (`0`=Left, `1`=Center, `2`=Right) |
+| `truncate` | Boolean | No | If true, appends '...' if text exceeds width |
+
 ```json
 {
   "type": "text",
-  "text": "Departures",
+  "text": "DEPARTURES",
   "font": "NatRailSmall9",
-  "geometry": { "x": 0, "y": 10 }
+  "align": 0,
+  "geometry": { "x": 2, "y": 1 }
 }
 ```
 
