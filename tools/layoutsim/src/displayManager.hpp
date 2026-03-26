@@ -19,8 +19,30 @@
 #define DISPLAY_MANAGER_MOCK_HPP
 
 #include <U8g2lib.h>
+#include "mockDataManager.hpp"
+#include <boards/interfaces/iDisplayBoard.hpp>
+#include "weatherClient.hpp"
+
+class MockDisplayBoard : public iDisplayBoard {
+public:
+    const char* getBoardName() const override { return "MockBoard"; }
+    void onActivate() override {}
+    void onDeactivate() override {}
+    void tick(uint32_t ms) override {}
+    void render(U8G2& display) override {}
+    int updateData() override { return 0; }
+    const char* getLastErrorMsg() override { return ""; }
+    void configure(const struct BoardConfig& config) override {}
+    WeatherStatus& getWeatherStatus() override {
+        static WeatherStatus ws;
+        return ws;
+    }
+};
 
 class DisplayManager {
+private:
+    MockDisplayBoard mockBoard;
+
 public:
     /**
      * @brief Stubs deep firmware yield requests preventing thread blocks
@@ -28,10 +50,14 @@ public:
     void yieldAnimationUpdate() {}
 
     /**
+     * @brief Access the simulated board abstraction bridging to dummy weather data.
+     */
+    iDisplayBoard* getCurrentBoard() { return &mockBoard; }
+
+    /**
      * @brief Check if an OTA update is pending (mocked)
      */
     bool isOtaUpdateAvailable() {
-        extern MockDataManager& g_mockData; // Defined in main.cpp or accessible via getInstance
         return MockDataManager::getInstance().getOtaUpdateAvailable();
     }
 };

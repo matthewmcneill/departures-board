@@ -13,6 +13,31 @@
 
 #include "drawingPrimitives.hpp"
 
+// --- U8g2StateSaver Implementation ---
+
+/**
+ * @brief Constructs the saver, caching current state.
+ * @param _display active U8G2 instance.
+ */
+U8g2StateSaver::U8g2StateSaver(U8G2& _display) : display(_display) {
+    u8g2_t *u8g2 = display.getU8g2();
+    oldFont = u8g2->font;
+    oldDrawColor = u8g2->draw_color;
+    oldClipX0 = u8g2->clip_x0;
+    oldClipY0 = u8g2->clip_y0;
+    oldClipX1 = u8g2->clip_x1;
+    oldClipY1 = u8g2->clip_y1;
+}
+
+/**
+ * @brief Destructor automatically reverts display state.
+ */
+U8g2StateSaver::~U8g2StateSaver() {
+    display.setFont(oldFont);
+    display.setDrawColor(oldDrawColor);
+    display.setClipWindow(oldClipX0, oldClipY0, oldClipX1, oldClipY1);
+}
+
 /**
  * @brief Clear a rectangular area on the OLED display by drawing a black box
  * @param x Top left X coordinate
@@ -21,9 +46,9 @@
  * @param h Height of the area
  */
 void blankArea(U8G2& display, int x, int y, int w, int h) {
+  U8g2StateSaver saver(display);
   display.setDrawColor(0);
   display.drawBox(x,y,w,h);
-  display.setDrawColor(1);
 }
 
 /**
@@ -51,13 +76,15 @@ int getStringWidth(U8G2& display, const __FlashStringHelper *message) {
  * Optimized for performance with a fast-path for the most common use cases.
  */
 void drawText(U8G2& display, const char *message, int x, int y, int w, int h, TextAlign align, bool truncate, const uint8_t* font) {
+  U8g2StateSaver saver(display);
+
   if (font) display.setFont(font);
   
   // --- FAST-PATH: Standard left-aligned, non-truncated text with no bounding box ---
   // This bypasses all measurement and clipping logic (O(1) overhead).
   if (align == TextAlign::LEFT && !truncate && w == -1 && h == -1) {
     display.drawStr(x, y, message);
-    return;
+    return; // State safely restored by RAII destructor
   }
 
   // --- FULL-PATH: Required for alignment, truncation, or explicit clipping ---
@@ -80,7 +107,20 @@ void drawText(U8G2& display, const char *message, int x, int y, int w, int h, Te
   }
 
   // 3. Clipping and Rendering
-  display.setClipWindow(x, y, x + w, y + h);
+  u8g2_t *u8g2_struct = display.getU8g2();
+  
+  // Intersect our desired clip with the existing clip
+  u8g2_uint_t new_x0 = (x > u8g2_struct->clip_x0) ? x : u8g2_struct->clip_x0;
+  u8g2_uint_t new_y0 = (y > u8g2_struct->clip_y0) ? y : u8g2_struct->clip_y0;
+  u8g2_uint_t new_x1 = ((x + w - 1) < u8g2_struct->clip_x1) ? (x + w - 1) : u8g2_struct->clip_x1;
+  u8g2_uint_t new_y1 = ((y + h - 1) < u8g2_struct->clip_y1) ? (y + h - 1) : u8g2_struct->clip_y1;
+
+  // If intersection is valid, apply it. Otherwise, squash the drawing region to nothing.
+  if (new_x0 <= new_x1 && new_y0 <= new_y1) {
+      display.setClipWindow(new_x0, new_y0, new_x1, new_y1);
+  } else {
+      display.setClipWindow(0, 0, 0, 0);
+  }
 
   if (truncate && textW > w) {
     // Truncation requires a stack buffer
@@ -104,8 +144,6 @@ void drawText(U8G2& display, const char *message, int x, int y, int w, int h, Te
   } else {
     display.drawStr(drawX, y, message);
   }
-
-  display.setMaxClipWindow();
 }
 
 /**
@@ -117,55 +155,6 @@ void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, i
   drawText(display, buf, x, y, w, h, align, truncate, font);
 }
 
-/**
- * @brief Draw a rectangle (box) on the OLED display
- * @param x Top left X coordinate
- * @param y Top left Y coordinate
- * @param w Width of the box
- * @param h Height of the box
- * @param isFilled true to fill the box, false for an outline only
- */
-void drawBox(U8G2& display, int x, int y, int w, int h, bool isFilled) {
-  if (isFilled) display.drawBox(x, y, w, h);
-  else display.drawFrame(x, y, w, h);
-}
-
-/**
- * @brief Draw a straight line between two points
- * @param x0 Start X coordinate
- * @param y0 Start Y coordinate
- * @param x1 End X coordinate
- * @param y1 End Y coordinate
- */
-void drawLine(U8G2& display, int x0, int y0, int x1, int y1) {
-  display.drawLine(x0, y0, x1, y1);
-}
-
-/**
- * @brief Draw a circle on the OLED display
- * @param x Center X coordinate
- * @param y Center Y coordinate
- * @param r Radius of the circle
- * @param isFilled true to fill the circle, false for an outline only
- */
-void drawCircle(U8G2& display, int x, int y, int r, bool isFilled) {
-  if (isFilled) display.drawDisc(x, y, r);
-  else display.drawCircle(x, y, r);
-}
-
-/**
- * @brief Draw a rectangle with rounded corners on the OLED display
- * @param x Top left X coordinate
- * @param y Top left Y coordinate
- * @param w Width of the box
- * @param h Height of the box
- * @param r Radius of the rounded corners
- * @param isFilled true to fill the box, false for an outline only
- */
-void drawRoundedBox(U8G2& display, int x, int y, int w, int h, int r, bool isFilled) {
-  if (isFilled) display.drawRBox(x, y, w, h, r);
-  else display.drawRFrame(x, y, w, h, r);
-}
 
 /**
  * @brief Draw a triangle on the OLED display

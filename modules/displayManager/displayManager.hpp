@@ -84,7 +84,8 @@ enum class SystemBoardId {
     SYS_ERROR_CRS,      // Invalid station code
     SYS_FIRMWARE_UPDATE, // OTA progress screen
     SYS_SLEEP_CLOCK,     // Snooze/Screensaver clock
-    SYS_ERROR_WIFI       // Persistent WiFi disconnection
+    SYS_ERROR_WIFI,       // Persistent WiFi disconnection
+    SYS_DIAGNOSTIC       // Hardware calibration grid
 };
 
 /**
@@ -107,6 +108,7 @@ private:
     MessageBoard messageBoard;
     FirmwareUpdateBoard firmwareUpdateBoard;
     SleepingBoard sleepingBoard;
+    DiagnosticBoard diagnosticBoard;
     
     // Global Feature Overlays
     wifiStatusWidget wifiWarning;
@@ -125,6 +127,7 @@ private:
     // Unified rendering target (pool or system)
     iDisplayBoard* currentBoard; // Pointer to a board from either the pool or registry
     unsigned long lastActivity;  // Timestamp of last user/data interaction for sleep logic
+    bool diagModeActive = false; // Run-time flag for hardware calibration grid
 
     /**
      * @brief Access the encapsulated hardware display instance.
@@ -263,6 +266,17 @@ public:
      * @return True if schedule or manual override dictates sleep.
      */
     bool isSnoozing();
+
+    /**
+     * @brief Control the hardware diagnostic grid overlay.
+     * @param active True to force the diagnostic screen.
+     */
+    void setDiagMode(bool active);
+
+    /**
+     * @return True if diagnostic mode is currently forced.
+     */
+    bool getDiagMode() const { return diagModeActive; }
 
     /**
      * @brief Default constructor.

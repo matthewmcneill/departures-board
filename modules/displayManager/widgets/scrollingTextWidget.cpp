@@ -111,24 +111,23 @@ void scrollingTextWidget::render(U8G2& display) {
 
     blankArea(display, x, y, renderW, renderH);
 
+    U8g2StateSaver stateSaver(display);
     display.setFont(font);
     
     if (needsScroll) {
-        display.setClipWindow(x, y, x + renderW, y + renderH);
-        display.drawStr(x - scrollX, y + renderH - 2, currentText);
-        display.setMaxClipWindow();
+        // --- Arcane Logic ---
+        // U8g2 coordinates are handled as 8-bit unsigned integers internally.
+        // If x + renderW equals 256, it rolls over to 0, destroying the clipping zone.
+        // We subtract 1 to ensure boundaries remain inclusive [0, 255].
+        display.setClipWindow(x, y, x + renderW - 1, y + renderH - 1);
+        drawText(display, currentText, x - scrollX, y, renderW + scrollX, renderH, TextAlign::LEFT, false);
     } else {
         // If it fits, we just center it statically
-        int w = display.getStrWidth(currentText);
-        int start = x + (renderW - w) / 2;
-        display.drawStr(start, y + renderH - 2, currentText);
+        drawText(display, currentText, x, y, renderW, renderH, TextAlign::CENTER, false);
         scrollFinished = true; // Automatically signal done since it never scrolls
     }
 }
 
-/**
- * @brief Partial refresh for high-speed non-blocking updates.
- */
 /**
  * @brief Targeted redraw for smooth marquee scrolling updates.
  * @param display U8g2 reference.
@@ -156,12 +155,14 @@ void scrollingTextWidget::renderAnimationUpdate(U8G2& display, uint32_t currentM
         int renderW = (width > 0) ? width : SCREEN_WIDTH;
         int renderH = (height > 0) ? height : 12;
 
-        display.setClipWindow(x, y, x + renderW, y + renderH);
+        U8g2StateSaver stateSaver(display);
+        
+        // --- Arcane Logic ---
+        // Prevent 8-bit boundary wraps (256 -> 0) by using inclusive end coordinates.
+        display.setClipWindow(x, y, x + renderW - 1, y + renderH - 1);
         blankArea(display, x, y, renderW, renderH);
 
-        display.setFont(font);
-        display.drawStr(x - scrollX, y + renderH - 2, currentText);
-        display.setMaxClipWindow();
+        drawText(display, currentText, x - scrollX, y, renderW + scrollX, renderH, TextAlign::LEFT, false);
 
         display.updateDisplayArea(x / 8, y / 8, (renderW + 7) / 8, (renderH + 7) / 8);
     }

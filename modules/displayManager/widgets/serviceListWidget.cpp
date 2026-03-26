@@ -131,35 +131,11 @@ void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
             continue;
         }
 
-        int textW = getStringWidth(display, text);
-        int drawX = currentX;
-
-        // --- Step 2: Alignment Logic ---
-        if (columns[i].align == TextAlign::CENTER) { // Center
-            drawX += (colW - textW) / 2;
-        } else if (columns[i].align == TextAlign::RIGHT) { // Right
-            drawX += (colW - textW);
-        }
-
-        // --- Step 3: Clipping and Rendering ---
-        // Always constrain to the logical intersection of column width and widget boundaries.
-        // This prevents both long-text overflow AND vertical scrolling leakages.
-        int cX0 = currentX;
-        int cX1 = currentX + colW;
-        int renderW = (width > 0) ? width : 256;
-        if (cX1 > x + renderW) cX1 = x + renderW; // Cap at widget width
-        
-        int cY0 = y;
-        int cY1 = y + (height > 0 ? height : 64);
-        
-        display.setClipWindow(cX0, cY0, cX1, cY1);
-        display.drawStr(drawX, rowY, text);
+        // --- Step 2 & 3: Alignment, Clipping, and Native Rendering via drawText ---
+        drawText(display, text, currentX, rowY, colW, height > 0 ? height : 64, static_cast<TextAlign>(columns[i].align), true);
 
         currentX += colW;
     }
-    
-    // Restore parent clip state
-    display.setMaxClipWindow();
 }
 
 /**
@@ -238,10 +214,13 @@ void serviceListWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMil
         int renderW = (width > 0) ? width : 256;
         int renderH = height;
         
-        display.setClipWindow(x, y, x + renderW, y + renderH);
+        U8g2StateSaver stateSaver(display);
+        
+        // --- Arcane Logic ---
+        // Prevent 8-bit boundary wraps (256 -> 0) by using inclusive end coordinates.
+        display.setClipWindow(x, y, x + renderW - 1, y + renderH - 1);
         blankArea(display, x, y, renderW, renderH);
         render(display);
-        display.setMaxClipWindow();
         
         display.updateDisplayArea(x / 8, y / 8, (renderW + 7) / 8, (renderH + 7) / 8);
     }
@@ -262,8 +241,17 @@ void serviceListWidget::render(U8G2& display) {
         rowsToDraw = rowsPerPage + 1;
     }
     
-    int renderY = y + 12 - currentYOffset; // Shift baseline up by animation progress
+    int renderY = y - currentYOffset; // Align with setFontPosTop
     
+    U8g2StateSaver stateSaver(display);
+
+    int renderW = (width > 0) ? width : 256;
+    int renderH = height > 0 ? height : 64;
+    
+    // --- Arcane Logic ---
+    // Prevent 8-bit boundary wraps (256 -> 0) by using inclusive end coordinates.
+    display.setClipWindow(x, y, x + renderW - 1, y + renderH - 1);
+
     for (int i = 0; i < rowsToDraw; i++) {
         int idx = topRowIndex + i; // Strict bounds, no infinitely looping array
         if (idx < totalRows) {
@@ -271,7 +259,4 @@ void serviceListWidget::render(U8G2& display) {
         }
         renderY += 13; // 13px pitch
     }
-    
-    // Ensure clipping window is fully cleared for subsequent widgets in the layout
-    display.setMaxClipWindow();
 }

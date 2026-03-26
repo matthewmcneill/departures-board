@@ -92,6 +92,7 @@ public:
     {class_name}(appContext* context);
     virtual void tick(uint32_t currentMillis) override;
     virtual void render(U8G2& display) override;
+    virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
 }};
 
 #endif // {guard_name}
@@ -105,6 +106,7 @@ public:
     constructor_body = []
     column_setup = []
     
+    # First pass: Process widgets for the constructor (always needed)
     for w in widgets:
         json_id = w["id"]
         wid = widget_map.get(json_id, json_id)
@@ -156,30 +158,46 @@ public:
         if "scrollDwellMs" in w:
             constructor_body.append(f"    {wid}.setScrollDwell({w['scrollDwellMs']});")
 
+    # Second pass: Generate tick, render, and animation calls in JSON order
     render_calls = []
-    if primitives:
-        for p in primitives:
-            ptype = p["type"]
-            geom = p["geometry"]
-            if ptype == "line":
-                render_calls.append(f"    display.drawLine({geom['x1']}, {geom['y1']}, {geom['x2']}, {geom['y2']});")
-            elif ptype == "box":
-                render_calls.append(f"    display.drawBox({geom['x']}, {geom['y']}, {geom['w']}, {geom['h']});")
-            elif ptype == "text":
-                text = p.get("text", "")
-                font = p.get("font", "nullptr")
-                align_str = p.get("align", "LEFT").upper()
-                truncate = "true" if p.get("truncate", False) else "false"
-                x, y = geom.get("x", 0), geom.get("y", 0)
-                w, h = geom.get("w", -1), geom.get("h", -1)
-                render_calls.append(f"    drawText(display, \"{text}\", {x}, {y}, {w}, {h}, TextAlign::{align_str}, {truncate}, {font});")
+    tick_calls = []
+    animation_calls = []
+    
+    for key, elements in data.items():
+        if key == "widgets":
+            for w in elements:
+                wid = widget_map.get(w["id"], w["id"])
+                render_calls.append(f"    {wid}.render(display);")
+                tick_calls.append(f"    {wid}.tick(currentMillis);")
+                animation_calls.append(f"    {wid}.renderAnimationUpdate(display, currentMillis);")
+        elif key == "primitives":
+            for p in elements:
+                ptype = p["type"]
+                geom = p["geometry"]
+                if ptype == "line":
+                    render_calls.append(f"    display.drawLine({geom['x1']}, {geom['y1']}, {geom['x2']}, {geom['y2']});")
+                elif ptype == "box":
+                    render_calls.append(f"    display.drawBox({geom['x']}, {geom['y']}, {geom['w']}, {geom['h']});")
+                elif ptype == "text":
+                    text = p.get("text", "")
+                    font = p.get("font", "nullptr")
+                    align_str = p.get("align", "LEFT").upper()
+                    truncate = "true" if p.get("truncate", False) else "false"
+                    x, y = geom.get("x", 0), geom.get("y", 0)
+                    w, h = geom.get("w", -1), geom.get("h", -1)
+                    render_calls.append(f"    drawText(display, \"{text}\", {x}, {y}, {w}, {h}, TextAlign::{align_str}, {truncate}, {font});")
     
     render_method = f"""
 void {class_name}::tick(uint32_t currentMillis) {{
+{chr(10).join(tick_calls)}
 }}
 
 void {class_name}::render(U8G2& display) {{
 {chr(10).join(render_calls)}
+}}
+
+void {class_name}::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {{
+{chr(10).join(animation_calls)}
 }}
 """
 

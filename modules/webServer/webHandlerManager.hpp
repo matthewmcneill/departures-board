@@ -77,6 +77,7 @@ private:
     void handleReboot(AsyncWebServerRequest *request);
     void handleOTACheck(AsyncWebServerRequest *request);
     void handleStationPicker(AsyncWebServerRequest *request);
+    void handleSetDiagMode(AsyncWebServerRequest *request);
 
     // --- Helpers ---
     void sendGzipFlash(AsyncWebServerRequest *request, const uint8_t* data, size_t len, const char* contentType);

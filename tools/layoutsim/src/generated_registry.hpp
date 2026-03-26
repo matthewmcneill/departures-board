@@ -6,16 +6,15 @@
 #include "designerRegistry.hpp"
 #include "labelWidget.hpp"
 #include "scrollingTextWidget.hpp"
+#include "serviceListWidget.hpp"
+#include "scrollingMessagePoolWidget.hpp"
+#include "clockWidget.hpp"
 #include "weatherWidget.hpp"
 #include "otaStatusWidget.hpp"
 #include "wifiStatusWidget.hpp"
-#include "serviceListWidget.hpp"
-#include "scrollingMessagePoolWidget.hpp"
-#include "labelWidget.hpp"
-#include "clockWidget.hpp"
-#include "scrollingTextWidget.hpp"
 #include "timeManager.hpp"
 #include "messagePool.hpp"
+#include "appContext.hpp"
 
 // We store active pointers here so we can safely delete them on profile swap.
 static std::vector<iGfxWidget*> g_activeProfileWidgets;
@@ -36,7 +35,7 @@ inline void loadLayoutProfile(const std::string& layoutName, TimeManager* tm, Me
         DesignerRegistry::getInstance().registerWidget("filterInfo", w_filterInfo);
         g_activeProfileWidgets.push_back(w_filterInfo);
 
-        auto w_wifiWarning = new wifiStatusWidget(0, 0, 10, 10);
+        auto w_wifiWarning = new wifiStatusWidget(0, 0);
         DesignerRegistry::getInstance().registerWidget("wifiWarning", w_wifiWarning);
         g_activeProfileWidgets.push_back(w_wifiWarning);
 
@@ -62,7 +61,7 @@ inline void loadLayoutProfile(const std::string& layoutName, TimeManager* tm, Me
         DesignerRegistry::getInstance().registerWidget("filterInfo", w_filterInfo);
         g_activeProfileWidgets.push_back(w_filterInfo);
 
-        auto w_wifiWarning = new wifiStatusWidget(0, 0, 10, 10);
+        auto w_wifiWarning = new wifiStatusWidget(0, 0);
         DesignerRegistry::getInstance().registerWidget("wifiWarning", w_wifiWarning);
         g_activeProfileWidgets.push_back(w_wifiWarning);
 
@@ -88,15 +87,15 @@ inline void loadLayoutProfile(const std::string& layoutName, TimeManager* tm, Me
         DesignerRegistry::getInstance().registerWidget("filterInfo", w_filterInfo);
         g_activeProfileWidgets.push_back(w_filterInfo);
 
-        auto w_weather = new weatherWidget(&appContext, 0, 0, 10, 10);
+        auto w_weather = new weatherWidget(&g_appContext, 0, 0, 10, 10);
         DesignerRegistry::getInstance().registerWidget("weather", w_weather);
         g_activeProfileWidgets.push_back(w_weather);
 
-        auto w_otaStatus = new otaStatusWidget(&appContext, 0, 0, 10, 10);
+        auto w_otaStatus = new otaStatusWidget(&g_appContext, 0, 0, 10, 10);
         DesignerRegistry::getInstance().registerWidget("otaStatus", w_otaStatus);
         g_activeProfileWidgets.push_back(w_otaStatus);
 
-        auto w_wifiWarning = new wifiStatusWidget(0, 0, 10, 10);
+        auto w_wifiWarning = new wifiStatusWidget(0, 0);
         DesignerRegistry::getInstance().registerWidget("wifiWarning", w_wifiWarning);
         g_activeProfileWidgets.push_back(w_wifiWarning);
 

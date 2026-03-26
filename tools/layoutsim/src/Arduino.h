@@ -20,7 +20,18 @@
 #include <string>
 #include "Print.h"
 
-typedef std::string String;
+class String : public std::string {
+public:
+    String() : std::string() {}
+    String(const char* s) : std::string(s ? s : "") {}
+    String(const std::string& s) : std::string(s) {}
+    String(int num) : std::string(std::to_string(num)) {}
+    String(float num) : std::string(std::to_string(num)) {}
+    String(double num) : std::string(std::to_string(num)) {}
+    String(unsigned int num) : std::string(std::to_string(num)) {}
+    String(long num) : std::string(std::to_string(num)) {}
+    String(unsigned long num) : std::string(std::to_string(num)) {}
+};
 
 class Printable {
 public:

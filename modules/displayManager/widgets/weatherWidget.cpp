@@ -28,13 +28,7 @@ void weatherWidget::render(U8G2& display) {
     if (!ws.isValid()) return;
 
     blankArea(display, x, y, width, height);
-    display.setFont(WeatherIcons16);
     
     char icon[2] = { ws.getIconChar(), '\0' };
-    int iconW = display.getStrWidth(icon);
-    
-    int startX = x + (width - iconW) / 2;
-    int baselineY = y + (height + display.getAscent() - display.getDescent()) / 2;
-    
-    display.drawStr(startX, baselineY, icon);
+    drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, WeatherIcons16);
 }

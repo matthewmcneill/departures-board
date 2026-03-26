@@ -87,16 +87,16 @@ public:
         DeserializationError error = deserializeJson(doc, json);
         if (error) return;
 
-        if (doc.containsKey("header")) {
-            JsonObject header = doc["header"];
-            if (header.containsKey("title")) strlcpy(stationTitle, header["title"], sizeof(stationTitle));
-            if (header.containsKey("callingPoint")) strlcpy(stationCalling, header["callingPoint"], sizeof(stationCalling));
-            if (header.containsKey("platform")) strlcpy(stationPlatform, header["platform"], sizeof(stationPlatform));
+        JsonObject header = doc["header"];
+        if (!header.isNull()) {
+            if (!header["title"].isNull()) strlcpy(stationTitle, header["title"], sizeof(stationTitle));
+            if (!header["callingPoint"].isNull()) strlcpy(stationCalling, header["callingPoint"], sizeof(stationCalling));
+            if (!header["platform"].isNull()) strlcpy(stationPlatform, header["platform"], sizeof(stationPlatform));
         }
 
-        if (doc.containsKey("services")) {
+        JsonArray svcs = doc["services"];
+        if (!svcs.isNull()) {
             serviceCount = 0;
-            JsonArray svcs = doc["services"];
             for (JsonArray s : svcs) {
                 if (serviceCount >= MOCK_MAX_SERVICES) break;
                 if (s.size() >= 5) {
@@ -110,19 +110,19 @@ public:
             }
         }
 
-        if (doc.containsKey("weather")) {
-            JsonObject weather = doc["weather"];
+        JsonObject weather = doc["weather"];
+        if (!weather.isNull()) {
             weatherConditionId = weather["id"] | 800;
             weatherIsNight = weather["isNight"] | false;
         }
 
-        if (doc.containsKey("otaAvailable")) {
+        if (!doc["otaAvailable"].isNull()) {
             otaUpdateAvailable = doc["otaAvailable"] | false;
         }
 
-        if (doc.containsKey("messages")) {
+        JsonArray msgs = doc["messages"];
+        if (!msgs.isNull()) {
             messageCount = 0;
-            JsonArray msgs = doc["messages"];
             for (const char* m : msgs) {
                 if (messageCount >= MOCK_MAX_MSGS) break;
                 strlcpy(messages[messageCount], m, MOCK_MAX_STR);

@@ -78,6 +78,9 @@ void clockWidget::render(U8G2& display) {
     int renderW = (width > 0) ? width : 56;
     int renderH = (height > 0) ? height : 14;
 
+    // Save global display state (font selection, colors, clippers) before modifying
+    U8g2StateSaver stateSaver(display);
+
     display.setFont(font);
 
     if (!timeMgr) return;
@@ -95,19 +98,23 @@ void clockWidget::render(U8G2& display) {
     int totalW = hourW + colonW + minW + 2;
     int startX = x + (renderW - totalW) / 2;
 
-    // Clearing the area is usually handled by the board, but for a clock we might want to be precise
+    // We use setFontPosTop globally in v3.0, so to vertically center text in renderH:
+    // We calculate the remaining physical height after the font pixel height is subtracted, 
+    // and split it into top and bottom padding.
+    int fontHeight = display.getAscent() - display.getDescent();
+    int drawY = y + (renderH - fontHeight) / 2;
+
+    // Clearing the area prevents trailing artifacts
     blankArea(display, x, y, renderW, renderH);
     
-    int baselineY = y + (renderH + display.getAscent() - display.getDescent()) / 2;
-
-    // Draw hours
-    display.drawStr(startX, baselineY, hourStr);
+    // Abstract the vertical geometries directly using U8g2 raw calls to avoid clipping pipeline overhead
+    display.drawStr(startX, drawY, hourStr);
     
     // Draw colon if enabled
     if (showColon) {
-        display.drawStr(startX + hourW + 1, baselineY, ":");
+        display.drawStr(startX + hourW + 1, drawY, ":");
     }
     
     // Draw minutes
-    display.drawStr(startX + hourW + colonW + 2, baselineY, minStr);
+    display.drawStr(startX + hourW + colonW + 2, drawY, minStr);
 }

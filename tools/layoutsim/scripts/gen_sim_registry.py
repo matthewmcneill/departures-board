@@ -24,9 +24,9 @@ OUT_FILE = os.path.join("tools", "layoutsim", "src", "generated_registry.hpp")
 WIDGET_TYPES = {
     "stationName": "labelWidget(0, 0, 10, 10)",
     "filterInfo": "scrollingTextWidget(0, 0, 10, 10)",
-    "weatherWidget": "weatherWidget(&appContext, 0, 0, 10, 10)",
-    "otaStatusWidget": "otaStatusWidget(&appContext, 0, 0, 10, 10)",
-    "wifiStatusWidget": "wifiStatusWidget(0, 0, 10, 10)",
+    "weatherWidget": "weatherWidget(&g_appContext, 0, 0, 10, 10)",
+    "otaStatusWidget": "otaStatusWidget(&g_appContext, 0, 0, 10, 10)",
+    "wifiStatusWidget": "wifiStatusWidget(0, 0)",
     "serviceListWidget": "serviceListWidget(0, 0, 10, 10)",
     "scrollingMessagePoolWidget": "scrollingMessagePoolWidget(0, 0, 10, 10)",
     "labelWidget": "labelWidget(0, 0, 10, 10)",
@@ -51,8 +51,12 @@ def main():
         if not class_match:
             continue
             
-        layout_name = class_match.group(1)
-        layouts[layout_name] = []
+        layout_name_raw = class_match.group(1)
+        
+        # Keep the raw class name to exactly match the JSON layout property
+        clean_name = layout_name_raw
+            
+        layouts[clean_name] = []
         
         # Find widget instantiations
         for line in content.split("\n"):
@@ -63,7 +67,7 @@ def main():
                 w_type = m.group(1)
                 w_name = m.group(2)
                 if w_type in WIDGET_TYPES:
-                    layouts[layout_name].append((w_type, w_name))
+                    layouts[clean_name].append((w_type, w_name))
 
     generate_cpp(layouts)
 
@@ -81,16 +85,15 @@ def generate_cpp(layouts):
 #include "designerRegistry.hpp"
 #include "labelWidget.hpp"
 #include "scrollingTextWidget.hpp"
+#include "serviceListWidget.hpp"
+#include "scrollingMessagePoolWidget.hpp"
+#include "clockWidget.hpp"
 #include "weatherWidget.hpp"
 #include "otaStatusWidget.hpp"
 #include "wifiStatusWidget.hpp"
-#include "serviceListWidget.hpp"
-#include "scrollingMessagePoolWidget.hpp"
-#include "labelWidget.hpp"
-#include "clockWidget.hpp"
-#include "scrollingTextWidget.hpp"
 #include "timeManager.hpp"
 #include "messagePool.hpp"
+#include "appContext.hpp"
 
 // We store active pointers here so we can safely delete them on profile swap.
 static std::vector<iGfxWidget*> g_activeProfileWidgets;

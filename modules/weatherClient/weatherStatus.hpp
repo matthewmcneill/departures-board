@@ -57,11 +57,16 @@ public:
     }
 
     /**
-     * @brief Formats current temp and wind for display.
+     * @brief Formats current temp and wind for display without heap allocation.
+     * @param buffer Pre-allocated character array to receive the formatted string.
+     * @param maxLen The size of the provided buffer.
      */
-    String toString() const {
-        if (!isValid()) return "Weather: N/A";
-        return String(description) + " " + String((int)temp) + "C, " + String((int)windSpeed) + "knt";
+    void toString(char* buffer, size_t maxLen) const {
+        if (!isValid()) {
+            snprintf(buffer, maxLen, "Weather: N/A");
+            return;
+        }
+        snprintf(buffer, maxLen, "%s %dC, %dknt", description, (int)temp, (int)windSpeed);
     }
 
     /**

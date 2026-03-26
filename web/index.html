@@ -1623,6 +1623,8 @@
                 type="checkbox" name="fastRefresh" style="width: auto; margin:0;" /> Increase API Refresh Rate</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
                 type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180&deg;)</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
+                type="checkbox" id="diag-mode-toggle" onchange="app.toggleDiagMode(this)" style="width: auto; margin:0;" /> Show Calibration Grid</label>
           </div>
 
           <div class="instruction-box" style="margin-bottom: 0.5rem; margin-top: 1rem;">
@@ -2191,6 +2193,22 @@
         document.querySelectorAll('.theme-btn').forEach(btn => {
           btn.onclick = () => { theme = btn.dataset.theme; localStorage.setItem('theme', theme); apply(theme); };
         });
+      },
+
+      /**
+       * @brief Toggles the volatile hardware diagnostic grid overlay.
+       * @param el The checkbox element.
+       */
+      toggleDiagMode: async function (el) {
+        const active = el.checked;
+        try {
+          const res = await fetch(`/api/system/diag?active=${active}`, { method: 'POST' });
+          if (!res.ok) throw new Error('Failed to toggle diagnostic mode');
+          console.log('Diagnostic mode toggled:', active);
+        } catch (err) {
+          console.error('Diag Toggle Error:', err);
+          el.checked = !active;
+        }
       },
 
       fetchConfig: async function () {

@@ -85,6 +85,7 @@ void WebHandlerManager::begin() {
     bindPostDynamic("/api/saveall", &WebHandlerManager::handleSaveAll);
     _server.on("/api/reboot", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleReboot(request); });
     _server.on("/api/ota/check", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleOTACheck(request); });
+    _server.on("/api/system/diag", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleSetDiagMode(request); });
 
     // API: Feeds & Weather Diagnostics (More specific routes MUST come first in ESPAsyncWebServer)
     _server.on("/api/feeds/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestFeed(request); });
@@ -671,6 +672,20 @@ void WebHandlerManager::handleOTACheck(AsyncWebServerRequest *request) {
     // Trigger the update check in the background
     // We don't wait for it to finish before responding to the web UI
     appContext.getOtaUpdater().checkForFirmwareUpdate();
+}
+
+/**
+ * @brief API Handler for POST /api/system/diag. Toggles the volatile diagnostic mode.
+ */
+void WebHandlerManager::handleSetDiagMode(AsyncWebServerRequest *request) {
+    if (request->hasParam("active")) {
+        bool active = request->getParam("active")->value() == "true";
+        LOG_INFO("WEB_API", String("Diagnostic mode requested: ") + (active ? "ON" : "OFF"));
+        appContext.getDisplayManager().setDiagMode(active);
+        request->send(200, "application/json", "{\"status\":\"ok\"}");
+    } else {
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Missing 'active' param\"}");
+    }
 }
 
 /**

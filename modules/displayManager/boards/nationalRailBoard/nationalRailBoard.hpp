@@ -60,6 +60,7 @@ private:
     uint32_t nextViaToggle;
     
     char cachedOrdinals[16][8];
+    char firstOrdinal[4];
     WeatherStatus weatherStatus;
 
 public:

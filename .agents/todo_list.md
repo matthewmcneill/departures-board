@@ -32,6 +32,7 @@
 - [ ] have the iDataProviders give a data-expiry time so that it can tell the scheduler that it should update (for example just after the last train was expected to depart) or do it at least once every minute.
 - [ ] review the whole data request queueing onto the other core for async - how we get queed - how to jump priority, how to update at the right time.
 - [ ] **Unit Testing**: Implement `unit_testing_host` scenarios for `drawText` to verify fast-path logic and rough-cut truncation accuracy under extreme string lengths.
+- [ ] **Simulator Parity**: Update the WebAssembly `layoutsim` mock data injection (`syncData()` in `main.cpp`) to accurately populate the `location` memory array rather than defaulting to `stationName`, preventing false-blank simulator displays for National Rail layouts.
 
 ## Completed
 - [x] Implement a unified diagnostic test queue in the frontend to prevent ESP32 resource saturation and dropped connections.

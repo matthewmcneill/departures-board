@@ -25,10 +25,10 @@
 #include <iostream>
 #include <vector>
 #include "U8g2lib.h"
-#include "headerWidget.hpp"
 #include "serviceListWidget.hpp"
 #include "scrollingMessagePoolWidget.hpp"
 #include "labelWidget.hpp"
+#include "scrollingTextWidget.hpp"
 #include "mockDataManager.hpp"
 #include "timeManager.hpp"
 #include "layoutParser.hpp"
@@ -40,13 +40,16 @@ const int OLED_WIDTH = 256; // Standard physical width of the display array
 const int OLED_HEIGHT = 64; // Standard physical height of the display array
 
 // Simulation state
-U8G2_SSD1322_NHD_256X64_F_4W_SW_SPI *g_u8g2; // Global mock graphics context pointer
+U8G2_SH1122_256X64_F_4W_SW_SPI *g_u8g2; // Global mock graphics context pointer
 TimeManager *g_timeMgr; // Global mock time manager instance
 LayoutParser *g_layoutParser; // Global IDE JSON layout parser engine
 MessagePool *g_msgPool; // Global scrolling message buffer
+appContext g_appContext; // Global mock application pipeline context wrapper
 
 // Memory buffer for JavaScript to read
 uint8_t rgba_buffer[OLED_WIDTH * OLED_HEIGHT * 4]; // Persistent RGBA pixel buffer exposed to Html5 canvas
+
+volatile int g_crashIdx = -1;
 
 extern "C" {
 
@@ -55,9 +58,10 @@ extern "C" {
  */
 EMSCRIPTEN_KEEPALIVE
 void initEngine() {
-    // Setup a dummy U8g2 instance
-    g_u8g2 = new U8G2_SSD1322_NHD_256X64_F_4W_SW_SPI(U8G2_R0, /* clock=*/ 0, /* data=*/ 0, /* cs=*/ 0, /* dc=*/ 0, /* reset=*/ 0);
+    // Setup a dummy U8g2 instance with a GUARANTEED 1-bit internal buffer architecture (SH1122 not SSD1322 4-bit)
+    g_u8g2 = new U8G2_SH1122_256X64_F_4W_SW_SPI(U8G2_R0, /* clock=*/ 0, /* data=*/ 0, /* cs=*/ 0, /* dc=*/ 0, /* reset=*/ 0);
     g_u8g2->begin();
+    g_u8g2->setFontPosTop();
     
     // Initialize dependencies
     g_timeMgr = new TimeManager();
@@ -74,15 +78,20 @@ void initEngine() {
 void syncData() {
     auto& mdm = MockDataManager::getInstance();
     
-    // --- Step 1: Sync Header ---
-    iGfxWidget* header = DesignerRegistry::getInstance().getWidget("headWidget");
-    if (header) {
-        ((headerWidget*)header)->setTitle(mdm.getStationTitle());
-        ((headerWidget*)header)->setCallingPoint(mdm.getStationCalling());
-        ((headerWidget*)header)->setPlatform(mdm.getStationPlatform());
+    // --- Step 1: Sync Header Components ---
+    iGfxWidget* stationName = DesignerRegistry::getInstance().getWidget("stationName");
+    if (stationName) {
+        ((labelWidget*)stationName)->setText(mdm.getStationTitle());
     }
     
-    // --- Step 2: Sync Services ---
+    iGfxWidget* filterInfo = DesignerRegistry::getInstance().getWidget("filterInfo");
+    if (filterInfo) {
+        ((scrollingTextWidget*)filterInfo)->setText(mdm.getStationCalling());
+    }
+    
+    // --- Step 2: Sync Mock Hardware Layout Sub-Components ---
+    // Physical indicators (weather, ota, wifi) now compile structurally into the WASM binary.
+    // They natively poll context pointers for UI visibility limits identically to the ESP32.
     iGfxWidget* services = DesignerRegistry::getInstance().getWidget("servicesWidget");
     if (services) {
         ((serviceListWidget*)services)->clearRows();
@@ -180,7 +189,7 @@ const char* getLayoutMetadata() {
             if (status != "unmapped") {
                 iGfxWidget* widget = DesignerRegistry::getInstance().getWidget(name);
                 if (widget) {
-                    JsonObject geom = w.createNestedObject("geometry");
+                    JsonObject geom = w["geometry"].to<JsonObject>();
                     geom["x"] = widget->getX();
                     geom["y"] = widget->getY();
                     geom["w"] = widget->getW();
@@ -219,14 +228,34 @@ uint8_t* renderFrame(uint32_t currentMillis) {
     // --- Step 4: Convert U8G2 1-bit Buffer to RGBA Canvas Format ---
     uint8_t *internal_buf = g_u8g2->getBufferPtr();
     
+    // DIAGNOSTIC
+    int nz = 0;
+    for(int i=0; i<8192; i++) { if(internal_buf[i] != 0) nz++; }
+    if(currentMillis < 100) {
+        printf("[WASM_C++_DEBUG] U8G2 buffer non-zero bytes (out of 8192): %d\\n", nz);
+    }
+    
     for (int y = 0; y < OLED_HEIGHT; y++) {
         for (int x = 0; x < OLED_WIDTH; x++) {
-            // Standard U8g2 tile mapping (vertical tiles)
-            // Each byte contains 8 vertical pixels.
-            int tile_y = y / 8;
-            int bit_y = y % 8;
-            int index = tile_y * OLED_WIDTH + x;
-            bool pixel = (internal_buf[index] >> bit_y) & 0x01;
+            // Horizontal tile mapping (1 byte = 8 horizontal pixels)
+            // SH1122 rows are 256 pixels wide -> 32 bytes wide.
+            int byte_idx = y * (OLED_WIDTH / 8) + (x / 8);
+            int bit_idx = x % 8;
+            // SH1122 uses LSB or MSB for X-coordinate bits?
+            // U8g2's U8X8_MSG_DISPLAY_DRAW_TILE sends 8 pixels at a time.
+            // To figure out if it's LSB first or MSB first:
+            // Usually, U8g2 stores drawing bits where bit 0 is the leftmost pixel.
+            bool pixel = (internal_buf[byte_idx] >> bit_idx) & 0x01;
+            
+            // Wait: For SH1122 memory architectures, bit 7 might actually be the leftmost pixel!
+            // According to standard U8g2 SH1122: horizontal bytes. If it's flipped horizontally, it's `7 - bit_idx`.
+            // Typical 1-bit horizontally packed buffers pack the left-most pixel in the LSB or MSB.
+            // Let's use `7 - bit_idx` first. If it's backward, we'll swap it back.
+            // Wait, U8X8 horizontal formats pack bit 0 = leftmost, bit 7 = rightmost.
+            // Let's stick with (internal_buf[byte_idx] >> bit_idx) & 0x01
+            // Actually, horizontal unpacking might just be: bit 7 = leftmost! Let's try `7 - bit_idx` 
+            // wait, no: U8g2 uses `bit_idx`. 
+            pixel = (internal_buf[byte_idx] >> (7 - bit_idx)) & 0x01;
             
             int base = (y * OLED_WIDTH + x) * 4;
             uint8_t val = pixel ? 255 : 0;

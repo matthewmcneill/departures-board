@@ -19,7 +19,7 @@ import json
 import glob
 
 # Configuration Constants
-PORT = 8000 # HTTP listener port for the development server
+PORT = 8001 # HTTP listener port for the development server
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR = os.path.dirname(SCRIPT_DIR)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(TOOLS_DIR))
@@ -39,7 +39,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         """
         Intercepts GET requests to provide mock API routes for the simulator frontend.
         """
-        if self.path == '/api/layouts':
+        if self.path == '/' or self.path == '/index.html':
+            self.send_response(302)
+            self.send_header('Location', '/tools/layoutsim/web/index.html')
+            self.end_headers()
+            return
+        elif self.path == '/api/layouts':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
@@ -97,7 +102,7 @@ def run():
     """
     print(f"Starting Layout Simulator Dev Server on http://localhost:{PORT}")
     print(f"Project Root: {PROJECT_ROOT}")
-    print("Direct link: http://localhost:8000/tools/layoutsim/web/index.html")
+    print("Open in browser: http://localhost:8000/")
     
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         try:

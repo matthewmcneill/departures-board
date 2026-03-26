@@ -52,45 +52,10 @@ void labelWidget::render(U8G2& display) {
         return;
     }
 
+    U8g2StateSaver stateSaver(display);
     display.setFont(font);
-
-    // Make an isolated copy or work buffer in case we need to mutate it for truncation
-    char renderBuffer[128];
-    strncpy(renderBuffer, textBuffer, sizeof(renderBuffer) - 1);
-    renderBuffer[sizeof(renderBuffer) - 1] = '\0';
-
-    int txtWidth = getStringWidth(display, renderBuffer);
     
-    // Evaluate truncation if defined and if widget width applies (width > 0)
-    if (isTruncated && width > 0 && txtWidth > width) {
-        size_t len = strlen(renderBuffer);
-        int ellipsisWidth = getStringWidth(display, "...");
-        
-        while (len > 0 && (getStringWidth(display, renderBuffer) + ellipsisWidth > width)) {
-            len--;
-            renderBuffer[len] = '\0';
-        }
-        
-        strncat(renderBuffer, "...", sizeof(renderBuffer) - strlen(renderBuffer) - 1);
-        txtWidth = getStringWidth(display, renderBuffer); // Refresh calculated width
-    }
-
-    // Evaluate Alignment logic
-    int renderX = x;
-    if (alignment == 1) { // Center
-        if (width > 0) {
-            renderX = x + (width - txtWidth) / 2;
-        } else {
-            // Default center around X without arbitrary bound width
-            renderX = x - (txtWidth / 2);
-        }
-    } else if (alignment == 2) { // Right alignment
-        if (width > 0) {
-            renderX = x + width - txtWidth;
-        } else {
-            renderX = x - txtWidth;
-        }
-    }
-
-    display.drawStr(renderX, y, renderBuffer);
+    // drawText natively handles mathematical alignment, width boundary truncation, 
+    // and layout offsets transparently against the active U8G2 context.
+    drawText(display, textBuffer, x, y, width, height, static_cast<TextAlign>(alignment), isTruncated);
 }

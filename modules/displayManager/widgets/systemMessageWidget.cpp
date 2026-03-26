@@ -57,16 +57,12 @@ void systemMessageWidget::render(U8G2& display) {
     blankArea(display, x, y, renderW, renderH);
 
     // Title
-    display.setFont(Underground10);
-    int titleW = display.getStrWidth(title);
-    display.drawStr(x + (renderW - titleW)/2, y + 12, title);
+    drawText(display, title, x, y + 12, renderW, -1, TextAlign::CENTER, false, Underground10);
 
     // Lines
-    display.setFont(NatRailSmall9);
     int yOffset = y + 28;
     for (int i = 0; i < numLines; i++) {
-        int lineW = display.getStrWidth(lines[i]);
-        display.drawStr(x + (renderW - lineW)/2, yOffset, lines[i]);
+        drawText(display, lines[i], x, yOffset, renderW, -1, TextAlign::CENTER, false, NatRailSmall9);
         yOffset += 12;
     }
 }

@@ -12,11 +12,8 @@
  *
  * Exported Functions/Classes:
  * - drawText(): Draw aligned/truncated text within a bounding box.
- * - drawBox(): Draw filled or outlined rectangle.
- * - drawLine(): Draw straight line segment.
- * - drawCircle(): Draw disc or outline circle.
- * - drawRoundedBox(): Draw rounded rectangle.
  * - drawTriangle(): Draw filled or outlined triangle.
+ * - U8g2StateSaver: RAII scope guard to elegantly push/pop U8G2 display state.
  */
 
 #ifndef DRAWING_PRIMITIVES_HPP
@@ -32,6 +29,33 @@ enum class TextAlign : uint8_t {
     LEFT = 0,
     CENTER = 1,
     RIGHT = 2
+};
+
+/**
+ * @brief RAII scope guard to preserve and restore U8G2 display properties.
+ * Tracks clipping windows, colors, and fonts natively without heap allocation.
+ */
+class U8g2StateSaver {
+private:
+    U8G2& display;               // Reference to the display context
+    const uint8_t* oldFont;      // Cached font pointer
+    uint8_t oldDrawColor;        // Cached draw color
+    u8g2_uint_t oldClipX0;       // Cached top-left X clip bound
+    u8g2_uint_t oldClipY0;       // Cached top-left Y clip bound
+    u8g2_uint_t oldClipX1;       // Cached bottom-right X clip bound
+    u8g2_uint_t oldClipY1;       // Cached bottom-right Y clip bound
+
+public:
+    /**
+     * @brief Constructs the saver, caching current state.
+     * @param _display active U8G2 instance.
+     */
+    U8g2StateSaver(U8G2& _display);
+
+    /**
+     * @brief Destructor automatically reverts display state.
+     */
+    ~U8g2StateSaver();
 };
 
 /**
@@ -68,48 +92,7 @@ int getStringWidth(U8G2& display, const __FlashStringHelper *message);
 void drawText(U8G2& display, const char *message, int x, int y, int w = -1, int h = -1, TextAlign align = TextAlign::LEFT, bool truncate = false, const uint8_t* font = nullptr);
 void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, int w = -1, int h = -1, TextAlign align = TextAlign::LEFT, bool truncate = false, const uint8_t* font = nullptr);
 
-/**
- * @brief Draw a rectangle (box or frame)
- * @param display Reference to U8g2 context.
- * @param x Top-left X.
- * @param y Top-left Y.
- * @param w Width.
- * @param h Height.
- * @param isFilled true for filled box, false for frame.
- */
-void drawBox(U8G2& display, int x, int y, int w, int h, bool isFilled = true);
 
-/**
- * @brief Draw a straight line
- * @param display Reference to U8g2 context.
- * @param x0 Start X.
- * @param y0 Start Y.
- * @param x1 End X.
- * @param y1 End Y.
- */
-void drawLine(U8G2& display, int x0, int y0, int x1, int y1);
-
-/**
- * @brief Draw a circle (disc or outline)
- * @param display Reference to U8g2 context.
- * @param x Center X.
- * @param y Center Y.
- * @param r Radius.
- * @param isFilled true for disc, false for circle.
- */
-void drawCircle(U8G2& display, int x, int y, int r, bool isFilled = true);
-
-/**
- * @brief Draw a rounded rectangle
- * @param display Reference to U8g2 context.
- * @param x Top-left X.
- * @param y Top-left Y.
- * @param w Width.
- * @param h Height.
- * @param r Boundary radius.
- * @param isFilled true for filled, false for frame.
- */
-void drawRoundedBox(U8G2& display, int x, int y, int w, int h, int r, bool isFilled = true);
 
 /**
  * @brief Draw a triangle

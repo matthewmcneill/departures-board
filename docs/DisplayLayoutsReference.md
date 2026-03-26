@@ -20,7 +20,7 @@ The Layout Simulator is a powerful, live-reloading tool that allows you to previ
    ```bash
    python3 tools/layoutsim/scripts/dev_server.py
    ```
-3. Open the provided link in your browser: `http://localhost:8000/tools/layoutsim/web/index.html`
+3. Open the provided link in your browser: `http://localhost:8000/`
 
 ### Rebuilding the Widget Registry
 The Layout Simulator is inextricably linked to the physical C++ headers of your displays (e.g. `iNationalRailLayout.hpp`). If you add or rename a physical `iGfxWidget` variable in your C++ interface, you must rebuild the simulator so it can dynamically extract the updated "Element Explorer" widget registry from the C++ AST.

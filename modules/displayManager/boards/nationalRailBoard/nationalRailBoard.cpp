@@ -185,15 +185,15 @@ int NationalRailBoard::updateData() {
         // Update header once we have the station name
         NationalRailStation* data = dataSource.getStationData();
         if (activeLayout) {
-            activeLayout->stationName.setText(data->stationName);
+            activeLayout->stationName.setText(data->location);
             
             String filterText = "";
-            if (data->filterVia[0] != '\0') {
-                filterText += "via " + String(data->filterVia);
+            if (callingStation[0] != '\0') {
+                filterText += "to " + String(callingStation);
             }
-            if (data->filterPlatform[0] != '\0') {
+            if (platformFilter[0] != '\0') {
                 if (filterText.length() > 0) filterText += " ";
-                filterText += "[Plat " + String(data->filterPlatform) + "]";
+                filterText += "[Plat " + String(platformFilter) + "]";
             }
             activeLayout->filterInfo.setText(filterText.c_str());
         }
@@ -275,18 +275,19 @@ void NationalRailBoard::populateServices() {
         for (int i = 0; i < data->numServices; i++) {
             if (i >= 17) break; // Array limit
             
-            char ordinal[8] = "";
+            char* ordinalRef;
             if (i > 0) {
                 sprintf(cachedOrdinals[i-1], "%d%s", i+1, (i==1?"nd":(i==2?"rd":"th")));
-                strcpy(ordinal, cachedOrdinals[i-1]);
+                ordinalRef = cachedOrdinals[i-1];
             } else {
-                strcpy(ordinal, "1st");
+                strcpy(firstOrdinal, "1st");
+                ordinalRef = firstOrdinal;
             }
             
             const char* dest = (i == 0 && viaToggle && data->service[0].via[0]) ? data->service[0].via : data->service[i].destination;
             
             const char* rowData[5] = {
-                ordinal,
+                ordinalRef,
                 data->service[i].sTime,
                 dest,
                 data->service[i].platform,

@@ -98,11 +98,13 @@ def build():
         os.path.join(SRC_DIR, "Arduino.cpp"),
         os.path.join(WIDGETS_DIR, "drawingPrimitives.cpp"),
         os.path.join(WIDGETS_DIR, "clockWidget.cpp"),
-        os.path.join(WIDGETS_DIR, "headerWidget.cpp"),
         os.path.join(WIDGETS_DIR, "serviceListWidget.cpp"),
         os.path.join(WIDGETS_DIR, "scrollingTextWidget.cpp"),
         os.path.join(WIDGETS_DIR, "scrollingMessagePoolWidget.cpp"),
         os.path.join(WIDGETS_DIR, "labelWidget.cpp"),
+        os.path.join(WIDGETS_DIR, "weatherWidget.cpp"),
+        os.path.join(WIDGETS_DIR, "otaStatusWidget.cpp"),
+        os.path.join(WIDGETS_DIR, "wifiStatusWidget.cpp"),
         os.path.join(PROJECT_ROOT, "modules/displayManager/messaging/messagePool.cpp"),
         os.path.join(FONTS_DIR, "fonts.cpp"),
         os.path.join(U8G2_LIB_DIR, "U8g2lib.cpp"),
@@ -126,19 +128,26 @@ def build():
             subprocess.run(cmd, check=True)
         objects.append(obj)
 
+    # Collect max modification time of all headers to invalidate cache robustly 
+    max_header_mtime = 0
+    header_search_dirs = [modules_root, SRC_DIR]
+    for search_dir in header_search_dirs:
+        for root, dirs, files in os.walk(search_dir):
+            for f in files:
+                if f.endswith(('.hpp', '.h')):
+                    mtime = os.path.getmtime(os.path.join(root, f))
+                    if mtime > max_header_mtime:
+                        max_header_mtime = mtime
+
     # Compile C++ files
     print("Compiling C++ files...")
     registry_hpp = os.path.join(SRC_DIR, "generated_registry.hpp")
     for src in cpp_sources:
         obj = os.path.join(BUILD_DIR, os.path.basename(src) + ".o")
         
-        # Invalidate cache if the source file is updated, OR if we're compiling main.cpp 
-        # and the generated_registry header was updated.
-        needs_build = not os.path.exists(obj) or os.path.getmtime(src) > os.path.getmtime(obj)
-        if src.endswith("main.cpp") and os.path.exists(registry_hpp):
-            if not os.path.exists(obj) or os.path.getmtime(registry_hpp) > os.path.getmtime(obj):
-                needs_build = True
-                
+        # Invalidate cache if the source file is updated, OR if any header was updated
+        needs_build = not os.path.exists(obj) or os.path.getmtime(src) > os.path.getmtime(obj) or max_header_mtime > os.path.getmtime(obj)
+        
         if needs_build:
             cmd = [emcc_path] + cpp_flags + ["-c", src, "-o", obj]
             print(f"Executing: {' '.join(cmd)}")

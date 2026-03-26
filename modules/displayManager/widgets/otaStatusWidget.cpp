@@ -21,14 +21,8 @@ void otaStatusWidget::render(U8G2& display) {
     if (!context->getDisplayManager().isOtaUpdateAvailable()) return;
 
     blankArea(display, x, y, width, height);
-    display.setFont(NatRailSmall9);
     
     // Character 0xAB is the up-arrow/OTA symbol
     const char* icon = "\xAB";
-    int iconW = display.getStrWidth(icon);
-    
-    int startX = x + (width - iconW) / 2;
-    int baselineY = y + (height + display.getAscent() - display.getDescent()) / 2;
-    
-    display.drawStr(startX, baselineY, icon);
+    drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, NatRailSmall9);
 }

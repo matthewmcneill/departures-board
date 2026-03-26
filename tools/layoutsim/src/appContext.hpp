@@ -70,7 +70,7 @@ public:
     DisplayManager& getDisplayManager() { extern DisplayManager displayManager; return displayManager; }
 };
 
-extern class appContext appContext; // Global context instance
+extern class appContext g_appContext; // Global context instance
 extern const char* weekdays[]; // Array of short weekday names
 
 #endif

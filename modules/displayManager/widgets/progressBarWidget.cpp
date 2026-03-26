@@ -137,34 +137,25 @@ void progressBarWidget::render(U8G2& display) {
     // Clear the bounding box
     blankArea(display, x, y, renderW, renderH);
 
+    U8g2StateSaver stateSaver(display);
     display.setFont(font);
     
-    // Draw the message text (centered or left aligned)
+    // Draw the message text (centered natively within bounds geometry)
     if (message[0] != '\0' || showPercentText) {
-        int textW = display.getStrWidth(message);
+        char fullStr[128];
         
-        char pctStr[10];
-        pctStr[0] = '\0';
-        int pctW = 0;
-        
+        // If message is empty but percent is shown, trim leading space
         if (showPercentText) {
-            snprintf(pctStr, sizeof(pctStr), " %d%%", currentPercent);
-            pctW = display.getStrWidth(pctStr);
+            if (message[0] != '\0') {
+                snprintf(fullStr, sizeof(fullStr), "%s %d%%", message, currentPercent);
+            } else {
+                snprintf(fullStr, sizeof(fullStr), "%d%%", currentPercent);
+            }
+        } else {
+            strlcpy(fullStr, message, sizeof(fullStr));
         }
-        
-        // Draw centered message
-        int totalW = textW + pctW;
-        int startX = x + (renderW - totalW) / 2;
-        if (startX < x) startX = x; // Trap boundary
-        
-        if (message[0] != '\0') {
-            display.drawStr(startX, y + 8, message);
-        }
-        
-        // Draw % aligned to right of message
-        if (showPercentText) {
-            display.drawStr(startX + textW, y + 8, pctStr);
-        }
+
+        drawText(display, fullStr, x, y, renderW, renderH - 4, TextAlign::CENTER, true);
     }
 
     // Draw the bar itself at the bottom of the widget

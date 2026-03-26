@@ -259,7 +259,9 @@
         </div>
     </div>
 
-    <script src="dist/layout_engine.js"></script>
+    <script>
+        document.write('<script src="dist/layout_engine.js?v=' + Date.now() + '"><\/script>');
+    </script>
     <script>
         const canvas = document.getElementById('oled');
         const ctx = canvas.getContext('2d');
@@ -281,7 +283,15 @@
         let selectedId = null;
 
         // --- WASM Lifecycle ---
-        createLayoutEngine().then(async Module => {
+        let ModuleParams = {
+            locateFile: function(path, prefix) {
+                if (path.endsWith('.wasm')) {
+                    return prefix + path + '?v=' + Date.now();
+                }
+                return prefix + path;
+            }
+        };
+        createLayoutEngine(ModuleParams).then(async Module => {
             engine = Module;
             statusEl.innerText = 'Engine Ready';
             
@@ -531,10 +541,27 @@
             container.appendChild(item);
         }
 
+        let frameCount = 0;
         function tick(timestamp) {
             if (!engine) return;
             const ptr = renderFrame(timestamp);
+            if (ptr === 0) {
+                console.error("renderFrame returned a null memory pointer!");
+            }
             const view = new Uint8ClampedArray(engine.HEAPU8.buffer, ptr, 256 * 64 * 4);
+            
+            // DIAGNOSTIC 2: See if the buffer has ANY non-zero pixels
+            let hasPixels = false;
+            let sum = 0;
+            for(let i=0; i<view.length; i+=4) {
+                 if (view[i] > 0) { hasPixels = true; sum += view[i]; }
+            }
+            
+            if (frameCount < 15) {
+                 console.log(`[WASM_DEBUG] Frame ${frameCount} | Ptr: ${ptr} | HasPixels: ${hasPixels} | Sum: ${sum}`);
+                 frameCount++;
+            }
+            
             ctx.putImageData(new ImageData(view, 256, 64), 0, 0);
             requestAnimationFrame(tick);
         }

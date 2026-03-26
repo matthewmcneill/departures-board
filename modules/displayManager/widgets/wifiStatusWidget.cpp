@@ -71,8 +71,7 @@ void wifiStatusWidget::render(U8G2& display) {
     if (!isVisible) return;
     
     if (WiFi.status() != WL_CONNECTED && blinkState) {
-        display.setFont(NatRailSmall9);
-        display.drawStr(x, y, "\x7F");
+        drawText(display, "\x7F", x, y, width, height, TextAlign::CENTER, false, NatRailSmall9);
     }
 }
 
@@ -92,31 +91,24 @@ void wifiStatusWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMill
     // --- Transition: Restored ---
     if (currentlyConnected && !wasConnected) {
         wasConnected = true;
-        // Erase the warning icon area immediately
-        display.setDrawColor(0);
-        display.drawBox(x, y-6, width, height); 
-        display.setDrawColor(1);
-        display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
+        blankArea(display, x, y, width, height);
+        display.updateDisplayArea(x / 8, y / 8, (width+7) / 8, (height+7) / 8);
     } 
     // --- Transition: Offline / Blinking ---
     else if (!currentlyConnected) {
         if (wasConnected) {
             // First time we detected the swap
             wasConnected = false;
-            display.setFont(NatRailSmall9);
-            display.drawStr(x, y, "\x7F");
-            display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
+            drawText(display, "\x7F", x, y, width, height, TextAlign::CENTER, false, NatRailSmall9);
+            display.updateDisplayArea(x / 8, y / 8, (width+7) / 8, (height+7) / 8);
         } else if (blinkState != prevBlinkState) {
             // Blinking timer triggered a swap
             if (blinkState) {
-                display.setFont(NatRailSmall9);
-                display.drawStr(x, y, "\x7F");
+                drawText(display, "\x7F", x, y, width, height, TextAlign::CENTER, false, NatRailSmall9);
             } else {
-                display.setDrawColor(0);
-                display.drawBox(x, y-6, width, height);
-                display.setDrawColor(1);
+                blankArea(display, x, y, width, height);
             }
-            display.updateDisplayArea(x / 8, (y-6) / 8, (width+7) / 8, (height+7) / 8);
+            display.updateDisplayArea(x / 8, y / 8, (width+7) / 8, (height+7) / 8);
         }
     }
 }

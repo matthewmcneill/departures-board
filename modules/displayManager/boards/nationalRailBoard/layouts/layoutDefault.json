@@ -19,8 +19,8 @@
       "geometry": {
         "x": 100,
         "y": 0,
-        "w": 55,
-        "h": 12
+        "w": 83,
+        "h": 11
       },
       "visible": true,
       "font": "NatRailSmall9"
@@ -29,9 +29,9 @@
       "id": "weather",
       "type": "weatherWidget",
       "geometry": {
-        "x": 155,
+        "x": 183,
         "y": 0,
-        "w": 15,
+        "w": 11,
         "h": 11
       },
       "visible": true
@@ -40,9 +40,9 @@
       "id": "otaStatus",
       "type": "otaStatusWidget",
       "geometry": {
-        "x": 170,
+        "x": 194,
         "y": 0,
-        "w": 15,
+        "w": 11,
         "h": 11
       },
       "visible": true
@@ -51,9 +51,9 @@
       "id": "wifiWarning",
       "type": "wifiStatusWidget",
       "geometry": {
-        "x": 185,
+        "x": 205,
         "y": 0,
-        "w": 15,
+        "w": 11,
         "h": 11
       },
       "visible": true
@@ -62,9 +62,9 @@
       "id": "sysClock",
       "type": "clockWidget",
       "geometry": {
-        "x": 200,
+        "x": 216,
         "y": 0,
-        "w": 56,
+        "w": 40,
         "h": 11
       },
       "visible": true
@@ -74,7 +74,7 @@
       "type": "serviceListWidget",
       "geometry": {
         "x": 0,
-        "y": 11,
+        "y": 13,
         "w": 256,
         "h": 14
       },
@@ -105,7 +105,7 @@
         },
         {
           "width": 45,
-          "align": 0,
+          "align": 2,
           "label": "Expected"
         }
       ]
@@ -115,12 +115,13 @@
       "type": "serviceListWidget",
       "geometry": {
         "x": 0,
-        "y": 24,
+        "y": 26,
         "w": 256,
         "h": 26
       },
       "visible": true,
       "skipRows": 1,
+      "font": "NatRailTall12",
       "scrollDurationMs": 1000,
       "scrollDwellMs": 5000,
       "columns": [
@@ -146,7 +147,7 @@
         },
         {
           "width": 45,
-          "align": 0,
+          "align": 2,
           "label": "Expected"
         }
       ]
@@ -156,7 +157,7 @@
       "type": "scrollingMessagePoolWidget",
       "geometry": {
         "x": 0,
-        "y": 52,
+        "y": 53,
         "w": 256,
         "h": 12
       },
@@ -196,30 +197,6 @@
         "y1": 51,
         "x2": 256,
         "y2": 51
-      }
-    },
-    {
-      "type": "text",
-      "id": "board_title",
-      "text": "DEPARTURES",
-      "font": "NatRailSmall9",
-      "align": "LEFT",
-      "geometry": {
-        "x": 2,
-        "y": 1
-      }
-    },
-    {
-      "type": "text",
-      "id": "version_label",
-      "text": "v3.0.x",
-      "font": "NatRailSmall9",
-      "align": "RIGHT",
-      "geometry": {
-        "x": 200,
-        "y": 52,
-        "w": 54,
-        "h": 10
       }
     }
   ]

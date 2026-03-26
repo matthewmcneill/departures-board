@@ -88,6 +88,7 @@ void DisplayManager::begin(appContext* contextPtr) {
     messageBoard.init(context);
     firmwareUpdateBoard.init(context);
     sleepingBoard.init(context);
+    diagnosticBoard.init(context);
 
     u8g2.begin();
     u8g2.setDrawColor(1);
@@ -129,6 +130,19 @@ void DisplayManager::tick(unsigned long currentMillis) {
     
     // Trigger the actual hardware buffer transaction.
     render();
+}
+
+void DisplayManager::setDiagMode(bool active) {
+    if (diagModeActive != active) {
+        diagModeActive = active;
+        if (diagModeActive) {
+            showBoard(&diagnosticBoard, "Diagnostic Mode Activated (Volatile)");
+        } else {
+            // Restore current carousel slot
+            showBoard(getDisplayBoard(activeSlotIndex), "Diagnostic Mode Deactivated");
+            u8g2.clearDisplay();
+        }
+    }
 }
 
 /**
@@ -251,6 +265,8 @@ iDisplayBoard* DisplayManager::getSystemBoard(SystemBoardId id) {
             messageBoard.setContent("** WIFI ERROR **", "CONNECTION LOST", ipStr, "CHECK YOUR ROUTER.");
             return &messageBoard;
         }
+        case SystemBoardId::SYS_DIAGNOSTIC:
+            return &diagnosticBoard;
         default:
             return nullptr;
     }

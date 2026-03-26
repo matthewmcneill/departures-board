@@ -28,6 +28,8 @@ public:
     DiagnosticBoard(appContext* contextPtr = nullptr);
     virtual ~DiagnosticBoard();
 
+    void init(appContext* contextPtr) { context = contextPtr; }
+
     void onActivate() override;
     void onDeactivate() override;
     void tick(uint32_t ms) override;

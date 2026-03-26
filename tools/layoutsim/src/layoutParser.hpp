@@ -100,26 +100,69 @@ public:
                 if (w["font"].is<const char*>()) {
                     const uint8_t* f = getFontByName(w["font"].as<const char*>());
                     if (f) {
-                        std::string idStr = id ? id : "";
-                        if (idStr == "label" || idStr == "stationName" || idStr.compare(0, 4, "row0") == 0) {
+                        const char* typeStrPtr = w["type"];
+                        std::string typeStr = typeStrPtr ? typeStrPtr : "";
+                        if (typeStr == "labelWidget") {
                             ((labelWidget*)widget)->setFont(f);
-                        } else if (idStr == "clock" || idStr == "sysClock") {
+                        } else if (typeStr == "scrollingTextWidget") {
+                            ((scrollingTextWidget*)widget)->setFont(f);
+                        } else if (typeStr == "clockWidget") {
                             ((clockWidget*)widget)->setFont(f);
+                        } else if (typeStr == "serviceListWidget") {
+                            ((serviceListWidget*)widget)->setFont(f);
+                        } else if (typeStr == "scrollingMessagePoolWidget") {
+                            ((scrollingMessagePoolWidget*)widget)->setFont(f);
                         }
                     }
                 }
 
                 if (w["text"].is<const char*>()) {
-                    std::string idStr = id ? id : "";
-                    if (idStr == "label" || idStr == "stationName" || idStr.compare(0, 4, "row0") == 0 || idStr == "noDataLabel") {
+                    const char* typeStrPtr = w["type"];
+                    std::string typeStr = typeStrPtr ? typeStrPtr : "";
+                    if (typeStr == "labelWidget") {
                         ((labelWidget*)widget)->setText(w["text"].as<const char*>());
+                    } else if (typeStr == "scrollingTextWidget") {
+                        ((scrollingTextWidget*)widget)->setText(w["text"].as<const char*>());
                     }
                 }
 
                 if (w["blink"].is<bool>()) {
-                    std::string idStr = id ? id : "";
-                    if (idStr == "clock" || idStr == "sysClock") {
+                    const char* typeStrPtr = w["type"];
+                    std::string typeStr = typeStrPtr ? typeStrPtr : "";
+                    if (typeStr == "clockWidget") {
                         ((clockWidget*)widget)->setBlink(w["blink"].as<bool>());
+                    }
+                }
+                
+                const char* tsPtr = w["type"];
+                if (tsPtr && std::string(tsPtr) == "serviceListWidget") {
+                    serviceListWidget* sw = (serviceListWidget*)widget;
+                    
+                    if (w["skipRows"].is<int>()) {
+                        int skip = w["skipRows"].as<int>();
+                        int max = w["maxRows"].is<int>() ? w["maxRows"].as<int>() : -1;
+                        sw->setDataLimits(skip, max);
+                    }
+                    
+                    if (w["scrollDurationMs"].is<int>()) {
+                        sw->setScrollDuration(w["scrollDurationMs"].as<int>());
+                    }
+                    
+                    if (w["scrollDwellMs"].is<int>()) {
+                        sw->setScrollDwell(w["scrollDwellMs"].as<int>());
+                    }
+                    
+                    JsonArray cols = w["columns"];
+                    if (!cols.isNull()) {
+                        ColumnDef defs[MAX_SERVICE_COLUMNS];
+                        int count = 0;
+                        for (JsonObject c : cols) {
+                            if (count >= MAX_SERVICE_COLUMNS) break;
+                            defs[count].width = c["width"] | 0;
+                            defs[count].align = static_cast<TextAlign>(c["align"] | 0);
+                            count++;
+                        }
+                        sw->setColumns(count, defs);
                     }
                 }
                 

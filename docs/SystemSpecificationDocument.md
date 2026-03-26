@@ -45,7 +45,10 @@
 - **Data Flow**:
     1. **Trigger**: `SystemManager` or `Carousel` triggers `updateData()` on the active board's data source, instantly returning a `UPD_PENDING` (9) state while a FreeRTOS background task is spawned.
     2. **Coordinate Recovery**: For National Rail boards, if coordinates are missing from the primary OJP autocomplete picker (which lost spatial data in March 2026), the system performs a fallback lookup via the **TfL Search API** (`api.tfl.gov.uk/StopPoint/Search`) to ensure the weather system remains functional.
-    3. **Queue Submission & Background Fetch**: Fetch requests are submitted to a centralized FreeRTOS `xQueue`. A single, permanent `DataWorker` FreeRTOS task running exclusively on Core 0 dequeues requests sequentially and performs the non-blocking HTTP GET/POST (REST or SOAP). This serialization strictly prevents concurrent TLS block allocations, protecting the heap from exhaustion. Streaming parsers populate isolated background variables (`bgStatus`, etc.).
+    3. **Schedule-Driven Background Fetch**: All network operations (Rail, Bus, Tube, Weather, RSS, Web Portal Tests) register with a centralized `DataManager` to ensure 100% of TLS allocations are serialized globally on Core 0. The core logic uses a **Priority-Aware Scheduling Loop** rather than a simple FIFO queue:
+        - Each source maintains a `nextFetchTime` and possesses the intelligence to dynamically parse its own schedule to determine optimal polling (e.g., 10s after the next train departs).
+        - A dynamic priority tiering system handles Immediate Ad-Hoc Portal Tests (Tier 0), Active Boards with Empty Data Frames (Tier 1), Normal Active Boards (Tier 2), and Background Boards (Tier 3).
+        - The `DataWorker` blocks smartly on a FreeRTOS event queue until the soonest `nextFetchTime`, then performs the non-blocking HTTP GET/POST, protecting the heap from exhaustion. Streaming parsers populate isolated background variables (`bgStatus`, etc.).
     4. **Mutex Synchronization**: Upon parse completion, the task acquires a `SemaphoreMutex`, safely `memcpy`s the verified structures into the UI-facing active memory blocks (`renderData`), sets `UPD_SUCCESS`, and immediately releases the lock to prevent memory tearing.
     5. **Render**: On the next `tick()`, `iDisplayBoard` reads the valid state and consumes the fresh data via `iGfxWidget`s for final hardware output.
 - **Data Retention & Archiving**: Configuration is persistent across reboots; real-time transport and weather data are purged on power loss or board deactivation.
@@ -80,6 +83,7 @@
         - **Logic Path**: Standard 10ms-100ms logic updates via `tick()` preceding a full synchronized `render()` pass.
         - **Yield Path**: High-priority `renderAnimationUpdate()` (60fps target) acting as an "escape hatch" during long-running network operations (e.g., SOAP/WSDL fetches). This path is triggered via a yield wrapper to keep UI elements like scrollers and clocks responsive during blocking I/O.
     - **Hardware Optimization**: Implements direct hardware buffer updates for overlays (e.g., WiFi warnings) using `u8g2.updateDisplayArea()`.
+    - **RAII State Isolation**: Enforces the `U8g2StateSaver` RAII pattern across all `iGfxWidget` rendering methods. This strictly isolates destructive drawing primitives (like `setClipWindow`, `setFont`, and `setDrawColor`) to their local execution scope, preventing visual bleeding and configuration leakage between complex hierarchical components.
 - **Widget-Based Composition**:
     - **Architecture**: Graphical components implement the `iGfxWidget` base class. Complex boards are composed of multiple widgets (e.g., `HeaderWidget`, `ServiceListWidget`, `ScrollingTextWidget`).
     - **Deduplication Pattern**: Widgets calculate state changes during `tick()`, but only trigger expensive hardware SPI transfers if the visual state has actually moved, minimizing SPI bus saturation.
@@ -130,8 +134,8 @@
 ### 5.10 `iDataSource` (The Data Contract)
 - **Role**: Abstraction for external API connectivity, separating parsing from presentation.
 - **Methods**:
-    - `updateData()`: Enqueues a pointer to `this` instance onto the `DataWorker` queue, instantly returning `UPD_PENDING` (9). The centralized `DataWorker` processes the queue sequentially to protect network sockets and heap memory.
-    - `executeFetch()`: The internal blocking HTTP/parsing payload called exclusively by the `DataWorker` task.
+    - `updateData()`: Requests an update from the `DataManager`. Depending on dynamic priority (e.g., Tier 1 Empty/Active vs Tier 3 Background), the fetch is scheduled appropriately. It instantly returns `UPD_PENDING` (9).
+    - `executeFetch()`: The internal blocking HTTP/parsing payload called exclusively by the `DataWorker` task. Data sources must parse their schedules during this fetch and update their own `nextFetchTime` intelligently to avoid blind polling.
     - `getLastUpdateStatus()`: Polled by Board controllers to track background fetching task progress.
     - `testConnection()`: Lightweight credential validation.
 - **Strategy**: Each board owns a specific datasource (e.g., `NationalRailDataSource`). DataSources submit themselves to the central queue, where they are executed. They parse data into an isolated background buffer before yielding across a Thread-Safe Mutex to the active render structure.
@@ -240,6 +244,7 @@ To add a new transport mode (e.g., "Ferry Board"), a developer would:
 - **Editing Workflow**: Developers can modify fonts using **FontForge** or **Fony** by editing the `.bdf` files in `modules/displayManager/fonts/source/` and running the build script to regenerate `fonts.cpp`.
 
 ## 12. Appendices & References
+- **Network Architecture Redesign**: [NetworkArchitectureReport.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/research/NetworkArchitectureReport.md)
 - **Async Data Architecture**: [AsyncDataRetrieval.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/reference/AsyncDataRetrieval.md)
 - **State Machine Reference**: [AppContextStateMachine.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/reference/AppContextStateMachine.md)
 - **Memory Strategy**: [MemoryArchitecture.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/MemoryArchitecture.md)
