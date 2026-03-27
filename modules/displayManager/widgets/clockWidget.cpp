@@ -10,6 +10,14 @@
  *
  * Module: modules/displayManager/widgets/clockWidget.cpp
  * Description: Implementation of the real-time clock drawing logic.
+ *
+ * Exported Functions/Classes:
+ * - clockWidget: Graphical widget for real-time display.
+ *   - setFont(): Update the typography.
+ *   - setBlink(): Toggle the 1Hz colon animation.
+ *   - tick(): Logic update for blink timing.
+ *   - render(): Primary drawing method.
+ *   - renderAnimationUpdate(): Targeted redraw for the colon/minutes.
  */
 
 #include "clockWidget.hpp"
@@ -60,6 +68,7 @@ void clockWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     bool minuteChanged = (timeMgr->getCurrentTime().tm_min != lastMinute);
 
     if (oldColon != showColon || minuteChanged) {
+        oldColon = showColon; // Fix: Update state to track changes
         lastMinute = timeMgr->getCurrentTime().tm_min;
         render(display);
         int renderW = (width > 0) ? width : 56;
@@ -85,10 +94,15 @@ void clockWidget::render(U8G2& display) {
 
     if (!timeMgr) return;
 
+    // Fix: Always update current time during a full render pass to keep clock fresh
+    timeMgr->updateCurrentTime();
+    const struct tm& timeinfo = timeMgr->getCurrentTime();
+    lastMinute = timeinfo.tm_min; // Keep in sync with animation updates
+
     char hourStr[3];
     char minStr[3];
-    strftime(hourStr, sizeof(hourStr), "%H", &timeMgr->getCurrentTime());
-    strftime(minStr, sizeof(minStr), "%M", &timeMgr->getCurrentTime());
+    strftime(hourStr, sizeof(hourStr), "%H", &timeinfo);
+    strftime(minStr, sizeof(minStr), "%M", &timeinfo);
 
     int hourW = display.getStrWidth(hourStr);
     int minW = display.getStrWidth(minStr);

@@ -2,6 +2,34 @@
 
 ## Execution History
 
+## 2026-03-27 - Clock Widget Real-Time Update & Colon Blink Fix (Session d986faf3)
+
+### Session Summary
+Diagnosed and resolved a "stuck clock" issue where the `clockWidget` on standard departure boards was only updating during network fetch yields. Implemented a forced `updateCurrentTime()` poll inside the widget's `render()` method to ensure real-time accuracy during the main 60Hz display loop. Simultaneously repaired the colon blinking state machine by correctly tracking `oldColon` transitions. Verified the fix using the `flash-test` protocol on physical `esp32dev` hardware.
+
+### Key Decisions
+- **Main Loop Synchronization**: Moved the primary `updateCurrentTime()` trigger into the widget's `render()` pass. This ensures the clock remains accurate without requiring a dedicated background timer or relying on intermittent network yields.
+- **State Tracking Correction**: Fixed the logical error in `renderAnimationUpdate()` where `oldColon` was never updated, which previously caused the colon to either stay static or blink erratically depending on the initial state.
+- **House Style Alignment**: Audited and updated the `clockWidget.cpp` module header and documentation to strictly adhere to v3.0 project standards.
+
+### Git Commit
+Generated commit: [TBD - To be executed]
+
+## 2026-03-27 - OLED Sleep Configuration Refactor (v2.4) (Session cf3f6db7)
+
+### Session Summary
+Migrated the \"Turn OLED Off completely in sleep\" setting from a global system configuration to a per-board configuration within the Screensaver (`SleepingBoard`) module. Implemented a robust JSON migration path (v2.3 to v2.4) and state-tracked power management in `DisplayManager` to prevent \"stuck off\" states during board transitions. Verified the implementation through hardware flashing, serial log analysis, and Playwright E2E tests.
+
+### Key Decisions
+- **Per-Board Privacy**: Finalized the decision to move OLED power management into `BoardConfig`. This allows users to have multiple clocks with different power behaviors (e.g., a "Clock" that stays on and a "Sleep" board that turns off).
+- **DisplayManager Safety**: Implemented a mandatory `setPowerSave(false)` call in `DisplayManager::showBoard()`. This acts as a centralized safety mechanism that wakes the hardware before any new board is rendered, preventing logical state leakage from the previous board.
+- **State Tracking**: Added `oledPowerSaveActive` to `DisplayManager` to eliminate redundant I2C/SPI transactions to the SSD1322 controller when the power state hasn't changed.
+- **v2.4 Migration Engine**: Added a targeted migration block in `ConfigManager` that extracts the legacy global `turnOffOledInSleep` and applies it to the first `MODE_CLOCK` board found, ensuring a seamless OTA upgrade for v2.3 users.
+- **Web UI Interaction Fix**: Resolved a JavaScript crash in the board editor where `form.elements` mapping failed for certain board types. Optimized the DOM access to use robust string-based lookups for the `oledOff` checkbox.
+
+### Git Commit
+Generated commit: 131c79c (Refactor: Migrate OLED Power Management to Per-Board Configuration)
+
 ## 2026-03-27 - Unifying DataManager Dispatch & Thread Safety (Session 56c5ef3d)
 
 ### Session Summary
