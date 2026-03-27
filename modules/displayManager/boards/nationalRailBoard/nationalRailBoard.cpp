@@ -91,8 +91,14 @@ void NationalRailBoard::onActivate() {
     // --- Step 3: Widget Binding ---
     if (context && activeLayout) {
         // Register message pools (global plus source-specific alerts)
-        activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
-        activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+        activeLayout->msgWidget.clearPools();
+        if (context->getConfigManager().getConfig().prioritiseRss) {
+            activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
+            activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+        } else {
+            activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+            activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
+        }
         
         // Initial attribution text
         activeLayout->msgWidget.setText(nrAttributionn);
@@ -207,8 +213,19 @@ int NationalRailBoard::updateData() {
         }
 
         // Trigger scrolling of calling points if they changed
-        if (data->numServices > 0 && activeLayout && data->service[0].calling[0]) {
-            activeLayout->msgWidget.setText(data->service[0].calling);
+        if (data->numServices > 0 && activeLayout) {
+            String msg = data->service[0].calling;
+            if (config.showLastSeenLocation && data->service[0].lastSeen[0]) {
+                if (msg.length() > 0) msg += ". ";
+                msg += "Last seen at ";
+                msg += data->service[0].lastSeen;
+                msg += ".";
+            }
+            if (msg.length() > 0) {
+                activeLayout->msgWidget.setText(msg.c_str());
+            } else {
+                activeLayout->msgWidget.setText(nrAttributionn);
+            }
         }
         
         // Populate services lists (row 0 and subsequent)
@@ -331,4 +348,9 @@ void NationalRailBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMil
     }
 
     if (activeLayout) activeLayout->renderAnimationUpdate(display, currentMillis);
+}
+
+bool NationalRailBoard::isScrollFinished() {
+    if (activeLayout) return activeLayout->msgWidget.isScrollFinished();
+    return true;
 }

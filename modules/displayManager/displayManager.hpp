@@ -128,6 +128,11 @@ private:
     iDisplayBoard* currentBoard; // Pointer to a board from either the pool or registry
     unsigned long lastActivity;  // Timestamp of last user/data interaction for sleep logic
     bool diagModeActive = false; // Run-time flag for hardware calibration grid
+    
+    // Upstream B2.4: Pacing and Power extensions
+    bool waitForScrollComplete = false;
+    bool turnOffOledInSleep = false;
+    bool prioritiseRss = false;
 
     /**
      * @brief Access the encapsulated hardware display instance.

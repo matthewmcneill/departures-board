@@ -50,38 +50,38 @@ This document tracks changes published by the original `gadec-uk/departures-boar
 
 ### 3. Tube Mode: Line and Direction Filtering
 - **Upstream Change:** Added options to filter London Underground arrivals by specific Tube Line and Direction (Inbound/Outbound/Any). Modifies `TfLdataClient` and web UI.
-- **Integration Status:** **REQUIRES ADAPTATION**
-- **Details:** A valuable functional addition. This will need to be manually implemented into our `TfLDataSource` component and the corresponding filter settings exposed safely via our custom native web UI.
+- **Integration Status:** **INTEGRATED**
+- **Details:** Fully implemented in `tflDataSource.cpp` and exposed via the `board-form` in our custom native web UI.
 
 ### 4. Display Layout Updates (Rail Mode) & Service Ordinals
 - **Upstream Change:** Tweaked hardcoded display coordinates for Rail mode and added an option to display service ordinal numbers (e.g., "2nd", "3rd", "4th").
-- **Integration Status:** **REJECTED (Layouts) / REQUIRES ADAPTATION (Ordinals)**
-- **Details:** We reject all hardcoded display layout changes, as v3.0 utilizes a fully dynamic, WASM-capable JSON widget layout registry. The ordinal feature can be adapted by exposing a new configuration boolean and integrating it into our custom `scrollingTextWidget` or `labelWidget` rendering pipelines.
+- **Integration Status:** **REJECTED (Layouts) / INTEGRATED (Ordinals)**
+- **Details:** We reject all hardcoded display layout changes, as v3.0 utilizes a fully dynamic, WASM-capable JSON widget layout registry. The ordinal feature was implemented in both National Rail and TfL boards, respecting the `showServiceOrdinals` boolean.
 
 ### 5. Service "Last Seen" Location Integration
 - **Upstream Change:** Added a configuration option to append the last reported track location (and timestamp) to the scrolling "Calling at" list for National Rail services.
-- **Integration Status:** **REQUIRES ADAPTATION**
-- **Details:** This enhances the situational awareness of the board. We will need to map the new SOAP properties in our Darwin XML parser and bind them dynamically into our display manager's scrolling text buffer.
+- **Integration Status:** **INTEGRATED**
+- **Details:** The Darwin XML parser captures the `lastReportedStationName` (v16+) and binds it dynamically into the `NationalRailBoard` message scroller when enabled.
 
 ### 6. Scrolling Message Pacing Control
 - **Upstream Change:** Added a toggle to force the board to wait for a scrolling message (calling points, RSS, service alerts) to fully complete its animation cycle before transitioning to the next primary service.
-- **Integration Status:** **REQUIRES ADAPTATION**
-- **Details:** Will require integrating a new configuration flag into our display state machine to gate the service transition logic `onCycleComplete`.
+- **Integration Status:** **INTEGRATED**
+- **Details:** Added `isScrollFinished()` to the `iDisplayBoard` interface and implemented gating logic in `DisplayManager::tick()`.
 
 ### 7. Enhanced Sleep Mode (Complete Display Off)
 - **Upstream Change:** Added an option to completely power down the OLED during sleep times instead of showing a screensaver/clock.
-- **Integration Status:** **REQUIRES ADAPTATION**
-- **Details:** Valuable for maximizing OLED lifespan. Needs to be wired into our hardware-specific driver wrapper (`drawingPrimitives` screen power functions).
+- **Integration Status:** **INTEGRATED**
+- **Details:** Wired `u8g2.setPowerSave(1)` into the `DisplayManager` sleep cycle via the `turnOffOledInSleep` flag.
 
 ### 8. RSS Feed Prioritization
 - **Upstream Change:** Option to force RSS headlines to display *before* standard network service messages.
-- **Integration Status:** **REQUIRES ADAPTATION**
-- **Details:** Will need to be accommodated in our `DataManager` payload structuring and the display manager's message queue logic.
+- **Integration Status:** **INTEGRATED**
+- **Details:** Implemented in all board controllers by swapping message pool registration order based on the `prioritiseRss` flag.
 
 ### 9. Weather for Tube Stations
 - **Upstream Change:** Enabled the weather widget to function when the board is operating in Tube mode.
-- **Integration Status:** **REQUIRES ADAPTATION**
-- **Details:** We need to verify that `weatherStatus` fetches correctly using the geospatial coordinates of the selected TfL station.
+- **Integration Status:** **INTEGRATED**
+- **Details:** Verified environmental weather status propagation to the `TfLBoard` UI via the `layoutTflDefault`.
 
 ### 10. Bug Fixes (NTP Startup, Brightness Persistence, OTA Release Notes)
 - **Upstream Change:** Improved NTP synchronization sequencing, fixed brightness settings not saving, and added OTA release notes visibility.

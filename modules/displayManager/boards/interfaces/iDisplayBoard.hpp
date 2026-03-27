@@ -113,6 +113,13 @@ public:
      */
     virtual class WeatherStatus& getWeatherStatus() = 0;
 
+    /**
+     * @brief Check if the board has finished its current display cycle (e.g. scrolling).
+     *        Used by DisplayManager to pace carousel transitions.
+     * @return True if the board is ready to be swapped.
+     */
+    virtual bool isScrollFinished() { return true; }
+
 protected:
     int lastUpdateStatus = -1; ///< Stores the result of the last updateData() call for inline error handling.
     int consecutiveErrors = 0; ///< Tracks the number of consecutive data fetch failures to defer error overlays.

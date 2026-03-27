@@ -271,7 +271,7 @@ bool ConfigManager::save() {
     LOG_INFO("CONFIG", "Saving configuration to /config.json...");
     JsonDocument doc;
     
-    doc[F("version")] = 2.2;
+    doc[F("version")] = 2.3;
     doc[F("hostname")] = config.hostname;
     doc[F("noScroll")] = config.noScrolling;
     doc[F("flip")] = config.flipScreen;
@@ -283,6 +283,9 @@ bool ConfigManager::save() {
     doc[F("showDate")] = config.dateEnabled;
     doc[F("clock")] = config.showClockInSleep;
     doc[F("fastRefresh")] = (config.apiRefreshRate == FASTDATAUPDATEINTERVAL);
+    doc[F("waitForScroll")] = config.waitForScrollComplete;
+    doc[F("oledOff")] = config.turnOffOledInSleep;
+    doc[F("rssFirst")] = config.prioritiseRss;
     doc[F("update")] = config.firmwareUpdatesEnabled;
     doc[F("updateDaily")] = config.dailyUpdateCheckEnabled;
     doc[F("rssUrl")] = config.rssUrl;
@@ -306,6 +309,10 @@ bool ConfigManager::save() {
         b[F("weather")] = bc.showWeather;
         b[F("brightness")] = bc.brightness;
         b[F("apiKeyId")] = bc.apiKeyId;
+        b[F("tflLine")] = bc.tflLineFilter;
+        b[F("tflDir")] = bc.tflDirectionFilter;
+        b[F("ordinals")] = bc.showServiceOrdinals;
+        b[F("lastSeen")] = bc.showLastSeenLocation;
     }
 
     String output;
@@ -358,6 +365,9 @@ void ConfigManager::loadConfig() {
         if (settings[F("fastRefresh")].is<bool>())       config.apiRefreshRate = settings[F("fastRefresh")] ? FASTDATAUPDATEINTERVAL : DATAUPDATEINTERVAL;
         if (settings[F("update")].is<bool>())            config.firmwareUpdatesEnabled = settings[F("update")];
         if (settings[F("updateDaily")].is<bool>())       config.dailyUpdateCheckEnabled = settings[F("updateDaily")];
+        if (settings[F("waitForScroll")].is<bool>())     config.waitForScrollComplete = settings[F("waitForScroll")];
+        if (settings[F("oledOff")].is<bool>())           config.turnOffOledInSleep = settings[F("oledOff")];
+        if (settings[F("rssFirst")].is<bool>())          config.prioritiseRss = settings[F("rssFirst")];
 
         // RSS
         if (settings[F("rssUrl")].is<const char*>())     strlcpy(config.rssUrl, settings[F("rssUrl")], sizeof(config.rssUrl));
@@ -391,6 +401,10 @@ void ConfigManager::loadConfig() {
                 bc.timeOffset = b[F("offset")] | 0;
                 bc.brightness = b[F("brightness")] | -1;
                 strlcpy(bc.apiKeyId, b[F("apiKeyId")] | "", sizeof(bc.apiKeyId));
+                strlcpy(bc.tflLineFilter, b[F("tflLine")] | "", sizeof(bc.tflLineFilter));
+                bc.tflDirectionFilter = b[F("tflDir")] | 0;
+                bc.showServiceOrdinals = b[F("ordinals")] | false;
+                bc.showLastSeenLocation = b[F("lastSeen")] | false;
                 
                 // Weather Toggle
                 if (b[F("weather")].is<bool>()) {
@@ -465,7 +479,13 @@ void ConfigManager::loadConfig() {
             }
 
             LOG_INFO("CONFIG", "Auto-saving upgraded configuration (v2.2)...");
-            config.configVersion = 2.2f;
+            config.configVersion = 2.3f;
+            save();
+        }
+
+        if (loadedVersion < 2.3f) {
+            LOG_INFO("CONFIG", "Upgrading configuration to v2.3 (Upstream Merge Features)...");
+            config.configVersion = 2.3f;
             save();
         }
 

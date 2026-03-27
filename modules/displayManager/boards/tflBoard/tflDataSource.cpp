@@ -358,6 +358,21 @@ void tflDataSource::value(String val) {
                 if (stationData->numServices > 0) {
                     stationData->numServices--;
                 }
+                return; // Early exit to skip other keys for this filtered service
+            }
+        }
+    } else if (currentKey == "directionName" || currentKey == "platformName") {
+        if (directionFilter > 0) {
+            String dir = val;
+            dir.toLowerCase();
+            bool match = false;
+            if (directionFilter == 1 && (dir.indexOf("inbound") >= 0 || dir.indexOf("southbound") >= 0 || dir.indexOf("eastbound") >= 0)) match = true;
+            else if (directionFilter == 2 && (dir.indexOf("outbound") >= 0 || dir.indexOf("northbound") >= 0 || dir.indexOf("westbound") >= 0)) match = true;
+            
+            if (!match) {
+                if (stationData->numServices > 0) {
+                    stationData->numServices--;
+                }
             }
         }
     } else if (currentKey == "description") {

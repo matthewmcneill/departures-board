@@ -105,6 +105,7 @@ public:
      */
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
     void configure(const struct BoardConfig& config) override;
+    bool isScrollFinished() override;
 
     // Configuration Getters/Setters
 

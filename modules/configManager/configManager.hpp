@@ -63,6 +63,12 @@ struct BoardConfig {
     bool showWeather = true;     // Enable/Disable weather overlay for this board
     int brightness = -1;         // Per-board brightness override (-1 = use global)
 
+    // --- Upstream B2.4-W3.1 Features ---
+    char tflLineFilter[32] = "";      // Tube Line (e.g. "Central")
+    int tflDirectionFilter = 0;       // 0: Any, 1: Inbound, 2: Outbound
+    bool showServiceOrdinals = false; // "2nd", "3rd" etc.
+    bool showLastSeenLocation = false;// NR specific: "Last seen at..."
+
     // --- Runtime Readiness (Computed by ConfigManager) ---
     bool complete = false;       // True if all mandatory fields are present
     int errorType = 0;           // 0: OK, 1: Missing API Keys, 2: Missing Station ID
@@ -92,7 +98,7 @@ struct Config {
     char wsdlHost[48] = "lite.realtime.nationalrail.co.uk"; // WSDL service host
     char wsdlAPI[48] = "/OpenLDBWS/wsdl.aspx?ver=2021-11-01"; // WSDL path
     char timezone[64] = "Europe/London"; // POSIX timezone string
-    float configVersion = 2.2f; // Configuration format version number (v2.2 includes multiboard migration)
+    float configVersion = 2.3f; // Configuration format version number (v2.3 Upstream Merge)
     
     // --- Display Preferences ---
     bool dateEnabled = false; // Show date in header
@@ -101,6 +107,9 @@ struct Config {
     bool hidePlatform = false; // Suppress platform columns
     bool flipScreen = false; // Rotate display 180 degrees
     int brightness = 20; // Hardware brightness level (0-255)
+    bool waitForScrollComplete = false; // Wait for message to finish before cycling board
+    bool turnOffOledInSleep = false; // Complete power down instead of clock/dim
+    bool prioritiseRss = false; // Show RSS before service messages
     
     // --- Sleep Settings ---
     bool sleepEnabled = false; // Timer-based power management
@@ -249,4 +258,4 @@ private:
 };
 
 // --- System-wide Orchestration ---
-extern ConfigManager configManager; // Global singleton for configuration handling
+// Individual modules access configuration via appContext::getConfigManager()

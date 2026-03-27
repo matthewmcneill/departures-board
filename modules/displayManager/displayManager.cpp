@@ -117,8 +117,10 @@ void DisplayManager::tick(unsigned long currentMillis) {
         // Transition TO Sleep: Dim the OLED and swap active board to the clock.
         showBoard(sleepBoard, "Screensaver sleep schedule triggered");
         u8g2.setContrast(((SleepingBoard*)sleepBoard)->getDimmedBrightness());
+        if (turnOffOledInSleep) u8g2.setPowerSave(1);
     } else if (!shouldSnooze && currentBoard == sleepBoard) {
         // Transition FROM Sleep: Restore user brightness and the last carousel board.
+        if (turnOffOledInSleep) u8g2.setPowerSave(0);
         showBoard(getDisplayBoard(activeSlotIndex), "Waking up from screensaver");
         u8g2.setContrast(brightness);
         u8g2.clearDisplay(); // Ensure clean surface for data rendering
@@ -478,6 +480,11 @@ void DisplayManager::applyConfig(const Config& config) {
     setSleepEnabled(config.sleepEnabled);
     setSleepStarts((byte)config.sleepStarts);
     setSleepEnds((byte)config.sleepEnds);
+    
+    // Save pacing/power flags for tick()
+    waitForScrollComplete = config.waitForScrollComplete;
+    turnOffOledInSleep = config.turnOffOledInSleep;
+    prioritiseRss = config.prioritiseRss;
 
     // Sync extra attributes to specialized boards
     SleepingBoard* sb = (SleepingBoard*)getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);

@@ -62,6 +62,11 @@ public:
     void addMessagePool(MessagePool* pool);
 
     /**
+     * @brief Clears all registered message pools.
+     */
+    void clearPools();
+
+    /**
      * @brief Overrides tick to handle pool transitions when a scroll finishes.
      */
     virtual void tick(uint32_t currentMillis) override;

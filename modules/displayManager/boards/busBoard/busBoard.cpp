@@ -70,10 +70,14 @@ void BusBoard::onActivate() {
         activeLayout->filterInfo.setText(""); // Currently no global filters for Bus
         
         // Configure message pools
-        if (context) {
-            activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
+        activeLayout->msgWidget.clearPools();
+        if (context->getConfigManager().getConfig().prioritiseRss) {
+            if (context) activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
+            activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+        } else {
+            activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+            if (context) activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
         }
-        activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
         
         // Set initial text (fallback)
         activeLayout->msgWidget.setText(btAttribution);
@@ -240,4 +244,9 @@ void BusBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     }
 
     if (activeLayout) activeLayout->renderAnimationUpdate(display, currentMillis);
+}
+
+bool BusBoard::isScrollFinished() {
+    if (activeLayout) return activeLayout->msgWidget.isScrollFinished();
+    return true;
 }

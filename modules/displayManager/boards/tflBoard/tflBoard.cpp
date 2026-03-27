@@ -69,10 +69,14 @@ void TfLBoard::onActivate() {
         activeLayout->filterInfo.setText(""); // Currently no global filters for TfL
         
         // Configure message pools
-        if (context) {
-            activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
+        activeLayout->msgWidget.clearPools();
+        if (context->getConfigManager().getConfig().prioritiseRss) {
+            if (context) activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
+            activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+        } else {
+            activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+            if (context) activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
         }
-        activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
         
         // Set initial text (fallback)
         activeLayout->msgWidget.setText(tflAttribution);
@@ -103,6 +107,7 @@ void TfLBoard::configure(const BoardConfig& config) {
     }
     setTubeName(config.name);
     dataSource.setFilter(config.filter);
+    dataSource.setDirectionFilter(config.tflDirectionFilter);
     
     // Inject the credentials down into the API caller so background sweeps work successfully
     dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
@@ -161,9 +166,20 @@ int TfLBoard::updateData() {
             activeLayout->servicesWidget.clearRows();
             if (data->numServices > 0) {
                 for (int i = 0; i < data->numServices; i++) {
+                    char ordinalDest[64];
+                    if (config.showServiceOrdinals) {
+                        const char* suffix = "th";
+                        if ((i+1) % 10 == 1 && (i+1) % 100 != 11) suffix = "st";
+                        else if ((i+1) % 10 == 2 && (i+1) % 100 != 12) suffix = "nd";
+                        else if ((i+1) % 10 == 3 && (i+1) % 100 != 13) suffix = "rd";
+                        snprintf(ordinalDest, sizeof(ordinalDest), "%d%s: %s", i+1, suffix, data->service[i].destination);
+                    } else {
+                        strlcpy(ordinalDest, data->service[i].destination, sizeof(ordinalDest));
+                    }
+
                     const char* rowData[3] = {
                         data->service[i].lineName,
-                        data->service[i].destination,
+                        ordinalDest,
                         data->service[i].expectedTime
                     };
                     activeLayout->servicesWidget.addRow(rowData);
@@ -247,4 +263,9 @@ void TfLBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     }
 
     if (activeLayout) activeLayout->renderAnimationUpdate(display, currentMillis);
+}
+
+bool TfLBoard::isScrollFinished() {
+    if (activeLayout) return activeLayout->msgWidget.isScrollFinished();
+    return true;
 }

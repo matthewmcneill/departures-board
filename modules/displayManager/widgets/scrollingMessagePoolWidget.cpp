@@ -30,6 +30,17 @@ void scrollingMessagePoolWidget::addMessagePool(MessagePool* pool) {
 }
 
 /**
+ * @brief Clears all registered message pools.
+ */
+void scrollingMessagePoolWidget::clearPools() {
+    pools.clear();
+    currentPoolIndex = 0;
+    currentMessageIndex = 0;
+    resetScroll();
+    setText("");
+}
+
+/**
  * @brief Searches through injected pools for the next available string.
  */
 bool scrollingMessagePoolWidget::loadNextMessage() {

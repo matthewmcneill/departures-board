@@ -91,6 +91,7 @@ private:
     char tflAppkey[50];
     char tubeId[13];
     char lineFilter[32];
+    int directionFilter = 0; // 0: Any, 1: Inbound, 2: Outbound
     tflDataSourceCallback callback;
 
     // Internal Utilities
@@ -123,6 +124,7 @@ public:
         if (filter) strlcpy(lineFilter, filter, sizeof(lineFilter)); 
         else lineFilter[0] = '\0';
     }
+    void setDirectionFilter(int direction) { directionFilter = direction; }
 
     /**
      * @brief Limit the number of results returned. Used for lightweight testing.

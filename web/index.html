@@ -1624,6 +1624,12 @@
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
                 type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180&deg;)</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
+                type="checkbox" name="waitForScroll" style="width: auto; margin:0;" /> Wait for scroll to complete before cycling boards</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
+                type="checkbox" name="oledOff" style="width: auto; margin:0;" /> Turn OLED Off completely in sleep (No Clock)</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
+                type="checkbox" name="rssFirst" style="width: auto; margin:0;" /> Show RSS headlines before service messages</label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
                 type="checkbox" id="diag-mode-toggle" onchange="app.toggleDiagMode(this)" style="width: auto; margin:0;" /> Show Calibration Grid</label>
           </div>
 
@@ -1871,10 +1877,30 @@
 
           <!-- Primary filter (e.g. Platforms / Lines) -->
           <label id="label-filter-primary">Filter<input type="text" name="filter" placeholder="Optional" /></label>
+
+          <!-- Upstream B2.4: Tube Specific Filters -->
+          <div id="tube-filters-extra" style="display: none;">
+            <label>Line Selection (TfL)
+              <input type="text" name="tflLine" placeholder="e.g. Central, Victoria" />
+            </label>
+            <label>Direction Filter
+              <select name="tflDir">
+                <option value="0">Any / All</option>
+                <option value="1">Inbound / South / East</option>
+                <option value="2">Outbound / North / West</option>
+              </select>
+            </label>
+          </div>
         </div>
 
-        <label id="label-weather" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
-            type="checkbox" name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
+        <div style="margin: 1.5rem 0 1rem 0; display:flex; flex-direction:column; gap:12px;">
+          <label id="label-weather" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
+              type="checkbox" name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
+          <label id="label-ordinals" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
+              type="checkbox" name="ordinals" style="width: auto; margin:0;" /> Show Service Ordinals (1st, 2nd, 3rd)</label>
+          <label id="label-last-seen" style="display: none; align-items: center; gap: 10px; cursor: pointer;"><input
+              type="checkbox" name="lastSeen" style="width: auto; margin:0;" /> Show 'Last Seen at...' (NR Only)</label>
+        </div>
 
         <div class="drawer" id="board-diag-drawer" style="margin-top: 1rem;">
           <div class="drawer-trigger" onclick="app.toggleBoardDiag()" style="padding: 0.75rem 0;">
@@ -2048,6 +2074,20 @@
   </dialog>
 
   <!-- ========================================================= -->
+  <!-- MODAL: GENERIC DIALOG                                     -->
+  <!-- Dynamic replacement for window.alert and window.confirm.  -->
+  <!-- ========================================================= -->
+  <dialog id="modal-generic">
+    <article>
+      <header id="modal-generic-title">Notification</header>
+      <div id="modal-generic-body" style="margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;"></div>
+      <div class="modal-button-row" id="modal-generic-buttons">
+        <!-- Buttons injected dynamically -->
+      </div>
+    </article>
+  </dialog>
+
+  <!-- ========================================================= -->
   <!-- JAVASCRIPT: APPLICATION LOGIC                               -->
   <!-- Single Page Application architecture driven by the `app`    -->
   <!-- object. Handles state, fetching, rendering, and API tests.  -->
@@ -2112,6 +2152,53 @@
 
         // Initial scan after a short delay to allow UI to settle
         setTimeout(() => this.scanWiFi(), 500);
+      },
+
+      /**
+       * @brief Replaces native alert/confirm with a custom modal.
+       * @param title Modal header text.
+       * @param body Modal body content (string or HTML).
+       * @param buttons Array of button configs: [{label, class, value}]. If null, defaults to [OK].
+       * @returns Promise resolving to the value of the clicked button.
+       */
+      showModal: function (title, body, buttons = null) {
+        return new Promise((resolve) => {
+          const modal = document.getElementById('modal-generic');
+          const titleEl = document.getElementById('modal-generic-title');
+          const bodyEl = document.getElementById('modal-generic-body');
+          const btnRow = document.getElementById('modal-generic-buttons');
+
+          titleEl.innerText = title || 'Notification';
+          bodyEl.innerHTML = body || '';
+          btnRow.innerHTML = '';
+
+          const btns = buttons || [{ label: 'OK', class: '', value: true }];
+
+          btns.forEach(b => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = b.class || '';
+            btn.innerText = b.label;
+            btn.onclick = () => {
+              modal.close();
+              resolve(b.value);
+            };
+            btnRow.appendChild(btn);
+          });
+
+          modal.showModal();
+        });
+      },
+
+      alert: function (msg, title = "System") {
+        return this.showModal(title, msg, [{ label: 'OK', class: '', value: true }]);
+      },
+
+      confirm: function (msg, title = "Confirm Action") {
+        return this.showModal(title, msg, [
+          { label: 'Cancel', class: 'secondary', value: false },
+          { label: 'Confirm', class: '', value: true }
+        ]);
       },
 
       startStatusPolling: function () {
@@ -2378,6 +2465,9 @@
         sysForm.dateEnabled.checked = cfg.system.dateEnabled;
         sysForm.noScrolling.checked = cfg.system.noScrolling;
         sysForm.fastRefresh.checked = cfg.system.fastRefresh;
+        sysForm.waitForScroll.checked = cfg.system.waitForScroll;
+        sysForm.oledOff.checked = cfg.system.oledOff;
+        sysForm.rssFirst.checked = cfg.system.rssFirst;
 
         document.getElementById('auto-update').checked = cfg.system.firmwareUpdatesEnabled;
         document.getElementById('fw-version-text').innerText = `Version: B${cfg.system.configVersion || '3.0'}`;
@@ -2611,13 +2701,13 @@
               this.editBoard(this.state.editingIndex);
             }
           } else {
-            alert('Failed to save key');
+            await this.alert('Failed to save key', 'Error');
           }
         } catch (e) { console.error(e); }
       },
 
       deleteKey: async function (id) {
-        if (!confirm('Delete this API key? This will affect any boards using it.')) return;
+        if (!await this.confirm('Delete this API key? This will affect any boards using it.')) return;
         try {
           const res = await fetch(`/api/keys?id=${id}`, { method: 'DELETE' });
           if (res.ok) {
@@ -2776,6 +2866,10 @@
         form.lon.value = b.lon || '';
         form.weather.checked = b.weather !== false;
         form.brightness.value = b.brightness || -1;
+        form.ordinals.checked = b.ordinals || false;
+        form.lastSeen.checked = b.lastSeen || false;
+        form.tflLine.value = b.tflLine || '';
+        form.tflDir.value = b.tflDir || 0;
 
         // Use a hidden input or state to preserve offset if not editable in this UI yet
         this.state.editingBoardOffset = b.offset || 0;
@@ -2822,6 +2916,8 @@
         const form = document.getElementById('board-form');
         const keySection = document.getElementById('board-key-section');
         const weatherLabel = document.getElementById('label-weather');
+        const ordinalsLabel = document.getElementById('label-ordinals');
+        const lastSeenLabel = document.getElementById('label-last-seen');
         const searchContainer = document.getElementById('station-search-container');
         const searchLabel = document.getElementById('label-station-search');
 
@@ -2851,7 +2947,9 @@
         keySection.style.display = (targetType && t !== 2) ? 'block' : 'none'; // Hide for Bus (t=2)
 
         // 2. Layout Updates
-        weatherLabel.style.display = (t !== 3 && t !== 1) ? 'flex' : 'none'; // Tube hide weather
+        if (weatherLabel) weatherLabel.style.display = (t !== 3 && t !== 1) ? 'flex' : 'none';
+        if (ordinalsLabel) ordinalsLabel.style.display = (t === 0) ? 'flex' : 'none';
+        if (lastSeenLabel) lastSeenLabel.style.display = (t === 0) ? 'flex' : 'none';
         searchContainer.style.display = (t !== 3) ? 'block' : 'none';
 
         // Screensaver / Clock specific
@@ -2884,13 +2982,19 @@
           filterSecondaryContainer.style.display = 'block';
           filterSecondaryLabel.firstChild.textContent = 'Only Show Services Calling At';
           document.getElementById('filter-secondary-input').placeholder = 'Start typing station...';
+          document.getElementById('tube-filters-extra').style.display = 'none';
+          document.getElementById('label-last-seen').style.display = 'flex';
+          document.getElementById('label-filter-primary').style.display = 'block';
         } else if (t === 1) { // Tube
           searchLabel.firstChild.textContent = 'Underground Station';
-          filterPrimaryLabel.firstChild.textContent = 'Line Filter';
-          form.filter.placeholder = 'e.g. Central, Victoria';
+          filterPrimaryLabel.firstChild.textContent = 'Legacy Filter'; // Keeping for backwards compatibility/info
+          form.filter.placeholder = 'Filter string...';
           filterSecondaryContainer.style.display = 'block';
           filterSecondaryLabel.firstChild.textContent = 'Platform / Direction Filter';
           document.getElementById('filter-secondary-input').placeholder = 'e.g. Westbound, Platform 1';
+          document.getElementById('tube-filters-extra').style.display = 'block';
+          document.getElementById('label-last-seen').style.display = 'none';
+          document.getElementById('label-filter-primary').style.display = 'none'; // Hide in favor of tflLine/tflDir
         } else if (t === 2) { // Bus
           searchLabel.firstChild.textContent = 'Bus Stop (ATCO Code)';
           filterPrimaryLabel.firstChild.textContent = 'Service Filter';
@@ -2898,9 +3002,12 @@
           busInstruction.style.display = 'block';
           busVerify.style.display = 'block';
           document.getElementById('station-search-input').placeholder = 'Enter ATCO code (e.g. 490000077V)';
+          document.getElementById('tube-filters-extra').style.display = 'none';
+          document.getElementById('label-filter-primary').style.display = 'block';
         } else if (t === 3) { // Clock
           form.name.value = form.name.value || "Clock / Screensaver";
           form.id.value = "CLOCK";
+          document.getElementById('tube-filters-extra').style.display = 'none';
         }
       },
 
@@ -2921,7 +3028,7 @@
           apiKeyId: form.apiKeyId?.value || ""
         };
 
-        if (!b.id) { alert("Please select a station first"); return; }
+        if (!b.id) { await this.alert("Please select a station first", "Missing Station"); return; }
 
         btn.disabled = true;
         const oldText = btn.innerText;
@@ -3075,9 +3182,9 @@
           document.getElementById('diag-lat').innerText = form.lat.value;
           document.getElementById('diag-lon').innerText = form.lon.value;
 
-          alert(`Verified: ${data.long_name}`);
+          await this.alert(`Verified: ${data.long_name}`, "Station Verified");
         } catch (e) {
-          alert("Could not verify ATCO code. Please check and try again.");
+          await this.alert("Could not verify ATCO code. Please check and try again.", "Error");
         } finally {
           btn.disabled = false;
           btn.innerText = oldText;
@@ -3171,6 +3278,10 @@
           weather: f.weather.checked,
           brightness: parseInt(f.brightness.value),
           apiKeyId: f.apiKeyId ? f.apiKeyId.value : '',
+          ordinals: f.ordinals.checked,
+          lastSeen: f.lastSeen.checked,
+          tflLine: f.tflLine.value,
+          tflDir: parseInt(f.tflDir.value),
           offset: this.state.editingBoardOffset || 0
         };
         if (!this.state.config) this.state.config = { boards: [] };
@@ -3181,16 +3292,16 @@
         this.renderBoards();
       },
 
-      deleteBoardFromEditor: function () {
-        if (this.state.editingIndex !== -1 && confirm('Remove this board?')) {
+      deleteBoardFromEditor: async function () {
+        if (this.state.editingIndex !== -1 && await this.confirm('Remove this board?')) {
           this.state.config.boards.splice(this.state.editingIndex, 1);
           this.closeModal('modal-board');
           this.renderBoards();
         }
       },
 
-      deleteBoard: function (index) {
-        if (confirm('Remove this board?')) { this.state.config.boards.splice(index, 1); this.renderBoards(); }
+      deleteBoard: async function (index) {
+        if (await this.confirm('Remove this board?')) { this.state.config.boards.splice(index, 1); this.renderBoards(); }
       },
 
       // ==========================================
@@ -3222,7 +3333,10 @@
             dateEnabled: sysForm.dateEnabled.checked,
             noScrolling: sysForm.noScrolling.checked,
             fastRefresh: sysForm.fastRefresh.checked,
-            firmwareUpdatesEnabled: document.getElementById('auto-update').checked
+            firmwareUpdatesEnabled: document.getElementById('auto-update').checked,
+            waitForScroll: sysForm.waitForScroll.checked,
+            oledOff: sysForm.oledOff.checked,
+            rssFirst: sysForm.rssFirst.checked
           },
           feeds: {
             rss: (document.getElementById('feed-select').value === '__custom__') ? document.getElementById('custom-feed-url').value : document.getElementById('feed-select').value,
@@ -3236,18 +3350,18 @@
         try {
           const res = await fetch('/api/saveall', { method: 'POST', body: JSON.stringify(payload) });
           if (!res.ok) throw new Error();
-          if (this.state.status.ap_mode) { alert("Success! System is rebooting to connect to " + ssid); }
-          else { alert("Settings updated successfully!"); }
-        } catch (e) { alert("Save failed. Check connection."); }
+          if (this.state.status.ap_mode) { await this.alert("Success! System is rebooting to connect to " + ssid, "Rebooting"); }
+          else { await this.alert("Settings updated successfully!", "Config Saved"); }
+        } catch (e) { await this.alert("Save failed. Check connection.", "Error"); }
         finally { btn.innerText = oldText; btn.disabled = false; }
       },
 
       reboot: async function () {
-        if (!confirm('Reboot the device?')) return;
+        if (!await this.confirm('Reboot the device?')) return;
         try {
           await fetch('/api/reboot', { method: 'POST' });
-          alert("Rebooting...");
-        } catch (e) { alert("Failed to trigger reboot."); }
+          await this.alert("Rebooting...", "System Reboot");
+        } catch (e) { await this.alert("Failed to trigger reboot.", "Error"); }
       },
 
       factoryReset: async function () {
@@ -3264,13 +3378,13 @@
 
         try {
           await fetch('/api/wifi/reset', { method: 'POST' });
-          alert("Factory reset initiated. System is erasing all data and rebooting...");
+          await this.alert("Factory reset initiated. System is erasing all data and rebooting...", "Factory Reset");
           location.reload();
-        } catch (e) { alert("Failed to trigger reset."); }
+        } catch (e) { await this.alert("Failed to trigger reset.", "Error"); }
       },
 
       checkUpdates: async function () {
-        alert("Checking for updates via GitHub... Check the device display for progress.");
+        await this.alert("Checking for updates via GitHub... Check the device display for progress.", "Update Check");
         try {
           // Note: endpoint might need verification in handlerManager
           await fetch('/api/ota/check', { method: 'POST' });
@@ -3432,7 +3546,7 @@
         const ssid = (selectVal === '__manual__') ? document.getElementById('manual-ssid-input').value : selectVal;
         const pass = document.getElementById('wifi-pass').value;
 
-        if (!ssid) { alert('Please select or enter a network first'); return; }
+        if (!ssid) { await this.alert('Please select or enter a network first', 'WiFi Configuration'); return; }
 
         btn.disabled = true;
         log.style.display = 'block';
@@ -3456,11 +3570,11 @@
         }
       },
 
-      resetWiFi: function () {
-        if (confirm('Are you sure you want to ERASE all WiFi settings? The board will reboot into Access Point mode.')) {
+      resetWiFi: async function () {
+        if (await this.confirm('Are you sure you want to ERASE all WiFi settings? The board will reboot into Access Point mode.')) {
           fetch('/api/wifi/reset', { method: 'POST' })
-            .then(() => alert('Reset command sent. Re-join the "Departures-Board" hotspot in ~10 seconds.'))
-            .catch(() => alert('Failed to send reset command.'));
+            .then(async () => await this.alert('Reset command sent. Re-join the "Departures-Board" hotspot in ~10 seconds.', 'WiFi Reset'))
+            .catch(async () => await this.alert('Failed to send reset command.', 'Error'));
         }
       },
 

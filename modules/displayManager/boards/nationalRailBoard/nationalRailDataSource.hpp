@@ -63,6 +63,7 @@ struct NationalRailService {
     char opco[50];
     char calling[NR_MAX_CALLING];
     char origin[NR_MAX_LOCATION];
+    char lastSeen[NR_MAX_LOCATION]; // Upstream B2.4-W3.1: "Last seen at..."
     char serviceMessage[NR_MAX_MSG_LEN];
     int serviceType; // TRAIN or BUS
 };

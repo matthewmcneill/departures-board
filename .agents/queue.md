@@ -3,9 +3,9 @@
 This file tracks active and pending agent sessions to prevent hardware and build conflicts.
 
 ## Lock Status
-- **Locked By**: NONE
-- **Reason**: 
-- **Since**:
+- **Locked By**: 0f93f761-5178-4c9f-bed9-d1fecc38f1f0
+- **Reason**: Compiling and flashing upstream integration
+- **Since**: 2026-03-27T11:20:44Z
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |

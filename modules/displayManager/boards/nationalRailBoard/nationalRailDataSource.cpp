@@ -601,6 +601,8 @@ void nationalRailDataSource::value(const char *val) {
         }
     } else if (tagLevel == 6 && tagName == "lt4:locationName") {
         if (stationData) strncpy(stationData->location, val, NR_MAX_LOCATION-1);
+    } else if (tagPath.endsWith("lt12:lastReportedStationName")) {
+        if (id >= 0 && stationData) strncpy(stationData->service[id].lastSeen, val, NR_MAX_LOCATION-1);
     } else if (tagPath.endsWith("nrccMessages/lt:message")) {
         messagesData.addMessage(val);
     }
