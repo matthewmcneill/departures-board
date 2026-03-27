@@ -32,10 +32,15 @@
 - [ ] have the iDataProviders give a data-expiry time so that it can tell the scheduler that it should update (for example just after the last train was expected to depart) or do it at least once every minute.
 - [x] review the whole data request queueing onto the other core for async - how we get queed - how to jump priority, how to update at the right time.
 - [ ] **Unit Testing**: Implement `unit_testing_host` scenarios for `drawText` to verify fast-path logic and rough-cut truncation accuracy under extreme string lengths.
+- [ ] **Unit Testing**: Implement `ConfigManager` migration scenarios to verify v2.3 -> v2.4 legacy `turnOffOledInSleep` to per-board `oledOff` mapping.
 - [ ] **Simulator Parity**: Update the WebAssembly `layoutsim` mock data injection (`syncData()` in `main.cpp`) to accurately populate the `location` memory array rather than defaulting to `stationName`, preventing false-blank simulator displays for National Rail layouts.
-- [ ] add the max heap size to the portal system page for hardware ststus section.
+- [ ] **Simulator**: Update `layoutsim` to handle the `oledOff` property and simulate display blanking in the browser.
+- [ ] **Diagnostics**: Add real-time OLED power state (On/Off) to the web portal's hardware status section.
+- [ ] add the max heap size to the portal system page for hardware status section.
+- [ ] **Simulator**: in the WASM if the edited json omits a widget config mark it as `isVisible = false` and do not show it. (makes config show only configured widgets)
 
 ## Completed
+- [x] **OLED Sleep Refactor**: Migrated "Turn OLED Off" from global system settings to per-board `BoardConfig`. Implemented v2.4 JSON migration and state-tracked power management in `DisplayManager`.
 - [x] Implement a unified diagnostic test queue in the frontend to prevent ESP32 resource saturation and dropped connections.
 - [x] Unify the "Active Displays" diagnostic UI with the "API Keys" style (added status text labels next to dots).
 - [x] Auto-abort pending diagnostic tests when switching tabs to focus on the current context.

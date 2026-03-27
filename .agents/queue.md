@@ -3,9 +3,9 @@
 This file tracks active and pending agent sessions to prevent hardware and build conflicts.
 
 ## Lock Status
-- **Locked By**: 0f93f761-5178-4c9f-bed9-d1fecc38f1f0
-- **Reason**: Compiling and flashing upstream integration
-- **Since**: 2026-03-27T11:20:44Z
+- **Locked By**: AVAILABLE
+- **Reason**: N/A
+- **Since**: N/A
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |
@@ -19,6 +19,7 @@ This file tracks active and pending agent sessions to prevent hardware and build
 | 32798161-5bfe-4884-9fa6-75567fdaf2fe | Fix OLED Distortion & Font Corruption (NHD + Hex Fonts) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/32798161-5bfe-4884-9fa6-75567fdaf2fe/implementation_plan.md) | 2026-03-24T10:05:00Z |
 | 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
 | 6bc7738d-1ca2-431c-9c4b-8ec4e8b1ac98 | Integrate B2.4-W3.1 Upstream Features (WIP) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6bc7738d-1ca2-431c-9c4b-8ec4e8b1ac98/implementation_plan.md) | 2026-03-27T07:14:36Z |
+| c5d73558-ab93-4bbd-b6dc-879c91e7ddcc | Consolidate Location and Filters into a single dynamic widget (locationAndFiltersWidget) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/c5d73558-ab93-4bbd-b6dc-879c91e7ddcc/implementation_plan.md) | 2026-03-27T12:08:11Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |

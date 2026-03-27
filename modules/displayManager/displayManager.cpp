@@ -22,6 +22,7 @@
  * - DisplayManager::render: Forces an immediate synchronized display refresh.
  * - DisplayManager::showBoard: Switch to a new board and optionally block for an animation duration.
  * - DisplayManager::applyConfig: Provisions system state from a central config object.
+ * - DisplayManager::setPowerSave: Controls the hardware OLED power state.
  */
 
 #include "displayManager.hpp"
@@ -117,10 +118,8 @@ void DisplayManager::tick(unsigned long currentMillis) {
         // Transition TO Sleep: Dim the OLED and swap active board to the clock.
         showBoard(sleepBoard, "Screensaver sleep schedule triggered");
         u8g2.setContrast(((SleepingBoard*)sleepBoard)->getDimmedBrightness());
-        if (turnOffOledInSleep) u8g2.setPowerSave(1);
     } else if (!shouldSnooze && currentBoard == sleepBoard) {
         // Transition FROM Sleep: Restore user brightness and the last carousel board.
-        if (turnOffOledInSleep) u8g2.setPowerSave(0);
         showBoard(getDisplayBoard(activeSlotIndex), "Waking up from screensaver");
         u8g2.setContrast(brightness);
         u8g2.clearDisplay(); // Ensure clean surface for data rendering
@@ -169,12 +168,29 @@ void DisplayManager::render() {
 iDisplayBoard* DisplayManager::getCurrentBoard() { return currentBoard; }
 
 /**
+ * @brief Set the hardware power save state (OLED on/off) and track it internally.
+ * @param off True to power down the OLED, false to wake it up.
+ */
+void DisplayManager::setPowerSave(bool off) {
+    if (oledPowerSaveActive != off) {
+        oledPowerSaveActive = off;
+        u8g2.setPowerSave(off ? 1 : 0);
+    }
+}
+
+/**
  * @brief Switch to a new board and optionally block for an animation duration.
  * @param board Pointer to the board implementation to render.
  * @param durationMs Optional duration in ms to block and animate.
  */
 void DisplayManager::showBoard(iDisplayBoard* board, const char* reason, uint32_t durationMs) {
     if (currentBoard != board) {
+        // --- Step 0: Power Management Safety ---
+        // Ensure the display is active before switching to a new board.
+        // This prevents the screen from being stuck "off" if a board deactivated 
+        // while in power-save mode.
+        setPowerSave(false);
+
         // Log the transition for hardware-side diagnostics
         String msg = "showBoard() invoked for: [" + String(board ? board->getBoardName() : "NULL") + "] | Reason: " + String(reason);
         LOG_INFO("DISPLAY", msg.c_str());
@@ -359,6 +375,8 @@ iDisplayBoard* DisplayManager::getDisplayBoard(int slotIndex) {
         return &std::get<TfLBoard>(slots[slotIndex]);
     } else if (std::holds_alternative<BusBoard>(slots[slotIndex])) {
         return &std::get<BusBoard>(slots[slotIndex]);
+    } else if (std::holds_alternative<SleepingBoard>(slots[slotIndex])) {
+        return &std::get<SleepingBoard>(slots[slotIndex]);
     } else if (std::holds_alternative<DiagnosticBoard>(slots[slotIndex])) {
         return &std::get<DiagnosticBoard>(slots[slotIndex]);
     }
@@ -369,6 +387,7 @@ BoardType DisplayManager::getActiveBoardType() {
     if (std::holds_alternative<NationalRailBoard>(slots[activeSlotIndex])) return BoardType::NR_BOARD;
     if (std::holds_alternative<TfLBoard>(slots[activeSlotIndex])) return BoardType::TFL_BOARD;
     if (std::holds_alternative<BusBoard>(slots[activeSlotIndex])) return BoardType::BUS_BOARD;
+    if (std::holds_alternative<SleepingBoard>(slots[activeSlotIndex])) return BoardType::CLOCK_BOARD;
     if (std::holds_alternative<DiagnosticBoard>(slots[activeSlotIndex])) return BoardType::DIAGNOSTIC_BOARD;
     return BoardType::NR_BOARD;
 }
@@ -384,6 +403,7 @@ void DisplayManager::setBoardType(int slotIndex, BoardType type) {
         case BoardType::NR_BOARD: slots[slotIndex].emplace<NationalRailBoard>(context); break;
         case BoardType::TFL_BOARD: slots[slotIndex].emplace<TfLBoard>(context); break;
         case BoardType::BUS_BOARD: slots[slotIndex].emplace<BusBoard>(context); break;
+        case BoardType::CLOCK_BOARD: slots[slotIndex].emplace<SleepingBoard>(context); break;
         case BoardType::DIAGNOSTIC_BOARD: slots[slotIndex].emplace<DiagnosticBoard>(context); break;
     }
 }
@@ -483,12 +503,19 @@ void DisplayManager::applyConfig(const Config& config) {
     
     // Save pacing/power flags for tick()
     waitForScrollComplete = config.waitForScrollComplete;
-    turnOffOledInSleep = config.turnOffOledInSleep;
     prioritiseRss = config.prioritiseRss;
-
-    // Sync extra attributes to specialized boards
+    
+    // Sync extra attributes to specialized system boards
     SleepingBoard* sb = (SleepingBoard*)getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
     sb->setShowClock(config.showClockInSleep);
+    
+    // Scan config for the first Screensaver board and use its OLED-off setting for the system sleep screen
+    for (int i = 0; i < config.boardCount; i++) {
+        if (config.boards[i].type == MODE_CLOCK) {
+            sb->setOledOff(config.boards[i].oledOff);
+            break;
+        }
+    }
 
     // --- Step 2: Clear and Re-provision Carousel Slots ---
     clearSlots();
@@ -531,6 +558,10 @@ void DisplayManager::applyConfig(const Config& config) {
                     bb->setBusLon(bc.lon);
                     bb->setBusFilter(bc.filter);
                 }
+                break;
+            }
+            case MODE_CLOCK: {
+                setBoardType(i, BoardType::CLOCK_BOARD);
                 break;
             }
             case MODE_DIAGNOSTIC: {

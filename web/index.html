@@ -1626,8 +1626,6 @@
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
                 type="checkbox" name="waitForScroll" style="width: auto; margin:0;" /> Wait for scroll to complete before cycling boards</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
-                type="checkbox" name="oledOff" style="width: auto; margin:0;" /> Turn OLED Off completely in sleep (No Clock)</label>
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
                 type="checkbox" name="rssFirst" style="width: auto; margin:0;" /> Show RSS headlines before service messages</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
                 type="checkbox" id="diag-mode-toggle" onchange="app.toggleDiagMode(this)" style="width: auto; margin:0;" /> Show Calibration Grid</label>
@@ -1896,6 +1894,8 @@
         <div style="margin: 1.5rem 0 1rem 0; display:flex; flex-direction:column; gap:12px;">
           <label id="label-weather" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
               type="checkbox" name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
+          <label id="label-oled-off" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
+              type="checkbox" name="oledOff" style="width: auto; margin:0;" /> Turn OLED Off completely in sleep (No Clock)</label>
           <label id="label-ordinals" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
               type="checkbox" name="ordinals" style="width: auto; margin:0;" /> Show Service Ordinals (1st, 2nd, 3rd)</label>
           <label id="label-last-seen" style="display: none; align-items: center; gap: 10px; cursor: pointer;"><input
@@ -2466,7 +2466,7 @@
         sysForm.noScrolling.checked = cfg.system.noScrolling;
         sysForm.fastRefresh.checked = cfg.system.fastRefresh;
         sysForm.waitForScroll.checked = cfg.system.waitForScroll;
-        sysForm.oledOff.checked = cfg.system.oledOff;
+        sysForm.rssFirst.checked = cfg.system.rssFirst;
         sysForm.rssFirst.checked = cfg.system.rssFirst;
 
         document.getElementById('auto-update').checked = cfg.system.firmwareUpdatesEnabled;
@@ -2734,6 +2734,9 @@
             body: JSON.stringify({
               id: form.id.value,
               type: form.type.value,
+              apiKeyId: form.apiKeyId.value,
+              oledOff: form.oledOff.checked,
+              tflLine: form.tflLine.value,
               token: form.token.value
             })
           });
@@ -2868,6 +2871,7 @@
         form.brightness.value = b.brightness || -1;
         form.ordinals.checked = b.ordinals || false;
         form.lastSeen.checked = b.lastSeen || false;
+        form.elements['oledOff'].checked = b.oledOff || false;
         form.tflLine.value = b.tflLine || '';
         form.tflDir.value = b.tflDir || 0;
 
@@ -2948,6 +2952,8 @@
 
         // 2. Layout Updates
         if (weatherLabel) weatherLabel.style.display = (t !== 3 && t !== 1) ? 'flex' : 'none';
+        const oledOffLabel = document.getElementById('label-oled-off');
+        if (oledOffLabel) oledOffLabel.style.display = (t === 3) ? 'flex' : 'none';
         if (ordinalsLabel) ordinalsLabel.style.display = (t === 0) ? 'flex' : 'none';
         if (lastSeenLabel) lastSeenLabel.style.display = (t === 0) ? 'flex' : 'none';
         searchContainer.style.display = (t !== 3) ? 'block' : 'none';
@@ -3280,6 +3286,7 @@
           apiKeyId: f.apiKeyId ? f.apiKeyId.value : '',
           ordinals: f.ordinals.checked,
           lastSeen: f.lastSeen.checked,
+          oledOff: f.oledOff.checked,
           tflLine: f.tflLine.value,
           tflDir: parseInt(f.tflDir.value),
           offset: this.state.editingBoardOffset || 0
@@ -3335,7 +3342,6 @@
             fastRefresh: sysForm.fastRefresh.checked,
             firmwareUpdatesEnabled: document.getElementById('auto-update').checked,
             waitForScroll: sysForm.waitForScroll.checked,
-            oledOff: sysForm.oledOff.checked,
             rssFirst: sysForm.rssFirst.checked
           },
           feeds: {

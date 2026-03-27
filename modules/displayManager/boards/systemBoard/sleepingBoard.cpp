@@ -17,21 +17,26 @@
 #include <fonts/fonts.hpp>
 #include "../../widgets/drawingPrimitives.hpp"
 #include <timeManager.hpp>
+#include "../../displayManager.hpp"
 
 /**
  * @brief Initialize the sleep board with burn-in protection enabled.
  */
-SleepingBoard::SleepingBoard() 
-    : showClock(true), dimmedBrightness(DIMMED_BRIGHTNESS), 
-      bounceX(0), bounceY(0), lastBounce(0) {
+SleepingBoard::SleepingBoard(appContext* contextPtr) 
+    : context(contextPtr), showClock(true), dimmedBrightness(2), 
+      bounceX(0), bounceY(0), lastBounce(0), oledOff(false) {
 }
 
 /**
- * @brief Reset the bounce animation timer on activation.
+ * @brief Lifecycle hook called when the sleep board becomes active.
  */
 void SleepingBoard::onActivate() {
-    // Optimization: Reset bounce position on entry
     lastBounce = millis();
+    // Centrally managed by DisplayManager::showBoard() - setPowerSave(false) 
+    // happens before this. We selectively turn it OFF here.
+    if (oledOff && context) {
+        context->getDisplayManager().setPowerSave(true);
+    }
 }
 
 /**
@@ -39,6 +44,14 @@ void SleepingBoard::onActivate() {
  */
 void SleepingBoard::onDeactivate() {
     // No specific cleanup needed
+}
+
+/**
+ * @brief Configure the sleeping board with specific settings.
+ * @param config The configuration object for the board.
+ */
+void SleepingBoard::configure(const BoardConfig& config) {
+    oledOff = config.oledOff;
 }
 
 /**

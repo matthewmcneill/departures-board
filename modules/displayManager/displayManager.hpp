@@ -23,6 +23,7 @@
  *   - tick(): Main execution logic loop (sleep/rotate/update).
  *   - render(): Forced synchronized display refresh.
  *   - showBoard(): Explicitly transition to a specific board.
+ *   - setPowerSave(): Control hardware OLED power state (on/off).
  *   - applyConfig(): Bulk provision system state from a configuration object.
  *   - cycleNext(): Advance the board carousel.
  *   - yieldAnimationUpdate(): Logic for smooth sub-frame UI animations.
@@ -67,6 +68,7 @@ enum class BoardType {
     NR_BOARD,  // National Rail Departures
     TFL_BOARD, // London Underground / TfL Departures
     BUS_BOARD, // Local Bus Times
+    CLOCK_BOARD, // Screensaver / Clock
     DIAGNOSTIC_BOARD // Hardware Diagnostics
 };
 
@@ -92,7 +94,7 @@ enum class SystemBoardId {
  * @brief Type-safe union overlay spanning the maximum memory footprint 
  *        of any hardware Board class implementation.
  */
-using BoardVariant = std::variant<std::monostate, NationalRailBoard, TfLBoard, BusBoard, DiagnosticBoard>;
+using BoardVariant = std::variant<std::monostate, NationalRailBoard, TfLBoard, BusBoard, SleepingBoard, DiagnosticBoard>;
 
 class DisplayManager : public iConfigurable {
 private:
@@ -131,8 +133,8 @@ private:
     
     // Upstream B2.4: Pacing and Power extensions
     bool waitForScrollComplete = false;
-    bool turnOffOledInSleep = false;
     bool prioritiseRss = false;
+    bool oledPowerSaveActive = false; ///< Tracks if the hardware is currently in power-save mode
 
     /**
      * @brief Access the encapsulated hardware display instance.
@@ -141,6 +143,12 @@ private:
     U8G2& getDisplay() { return u8g2; }
 
 public:
+    /**
+     * @brief Set the hardware power save state (OLED on/off) and track it internally.
+     * @param off True to power down the OLED, false to wake it up.
+     */
+    void setPowerSave(bool off);
+
     /**
      * @brief Set the global display brightness.
      * @param level Hardware level (0-255).

@@ -68,6 +68,7 @@ struct BoardConfig {
     int tflDirectionFilter = 0;       // 0: Any, 1: Inbound, 2: Outbound
     bool showServiceOrdinals = false; // "2nd", "3rd" etc.
     bool showLastSeenLocation = false;// NR specific: "Last seen at..."
+    bool oledOff = false;             // Turn OLED off completely when this board is active
 
     // --- Runtime Readiness (Computed by ConfigManager) ---
     bool complete = false;       // True if all mandatory fields are present
@@ -98,7 +99,7 @@ struct Config {
     char wsdlHost[48] = "lite.realtime.nationalrail.co.uk"; // WSDL service host
     char wsdlAPI[48] = "/OpenLDBWS/wsdl.aspx?ver=2021-11-01"; // WSDL path
     char timezone[64] = "Europe/London"; // POSIX timezone string
-    float configVersion = 2.3f; // Configuration format version number (v2.3 Upstream Merge)
+    float configVersion = 2.4f; // Configuration format version number (v2.4 Per-Board OLED Off)
     
     // --- Display Preferences ---
     bool dateEnabled = false; // Show date in header
@@ -108,7 +109,6 @@ struct Config {
     bool flipScreen = false; // Rotate display 180 degrees
     int brightness = 20; // Hardware brightness level (0-255)
     bool waitForScrollComplete = false; // Wait for message to finish before cycling board
-    bool turnOffOledInSleep = false; // Complete power down instead of clock/dim
     bool prioritiseRss = false; // Show RSS before service messages
     
     // --- Sleep Settings ---

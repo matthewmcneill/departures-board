@@ -66,9 +66,6 @@ String ConfigManager::loadFile(String fName) {
 /**
  * @brief Load sensitive tokens (NR token, OWM token, TfL App Key) from `/apikeys.json`.
  */
-/**
- * @brief Load sensitive tokens (NR token, OWM token, TfL App Key) from `/apikeys.json`.
- */
 void ConfigManager::loadApiKeys() {
   LOG_INFO("CONFIG", "Loading API keys from /apikeys.json...");
   JsonDocument doc;
@@ -79,6 +76,8 @@ void ConfigManager::loadApiKeys() {
     
     DeserializationError error = deserializeJson(doc, contents);
     if (!error) {
+        // --- Step 1: Migration Check ---
+        // Validate the JSON version and handle legacy field mapping if needed.
         JsonObject root = doc.as<JsonObject>();
         float version = root[F("version")] | 1.0f;
 
@@ -215,7 +214,7 @@ void ConfigManager::writeDefaultConfig() {
     JsonDocument doc;
     
     doc[F("hostname")] = "DeparturesBoard";
-    doc[F("version")] = 2.2; // Current config format version
+    doc[F("version")] = 2.4; // Current config format version
     doc[F("brightness")] = 20;
     doc[F("sleep")] = false;
     doc[F("clock")] = true;
@@ -271,7 +270,7 @@ bool ConfigManager::save() {
     LOG_INFO("CONFIG", "Saving configuration to /config.json...");
     JsonDocument doc;
     
-    doc[F("version")] = 2.3;
+    doc[F("version")] = 2.4;
     doc[F("hostname")] = config.hostname;
     doc[F("noScroll")] = config.noScrolling;
     doc[F("flip")] = config.flipScreen;
@@ -284,7 +283,6 @@ bool ConfigManager::save() {
     doc[F("clock")] = config.showClockInSleep;
     doc[F("fastRefresh")] = (config.apiRefreshRate == FASTDATAUPDATEINTERVAL);
     doc[F("waitForScroll")] = config.waitForScrollComplete;
-    doc[F("oledOff")] = config.turnOffOledInSleep;
     doc[F("rssFirst")] = config.prioritiseRss;
     doc[F("update")] = config.firmwareUpdatesEnabled;
     doc[F("updateDaily")] = config.dailyUpdateCheckEnabled;
@@ -313,6 +311,7 @@ bool ConfigManager::save() {
         b[F("tflDir")] = bc.tflDirectionFilter;
         b[F("ordinals")] = bc.showServiceOrdinals;
         b[F("lastSeen")] = bc.showLastSeenLocation;
+        b[F("oledOff")] = bc.oledOff;
     }
 
     String output;
@@ -366,7 +365,6 @@ void ConfigManager::loadConfig() {
         if (settings[F("update")].is<bool>())            config.firmwareUpdatesEnabled = settings[F("update")];
         if (settings[F("updateDaily")].is<bool>())       config.dailyUpdateCheckEnabled = settings[F("updateDaily")];
         if (settings[F("waitForScroll")].is<bool>())     config.waitForScrollComplete = settings[F("waitForScroll")];
-        if (settings[F("oledOff")].is<bool>())           config.turnOffOledInSleep = settings[F("oledOff")];
         if (settings[F("rssFirst")].is<bool>())          config.prioritiseRss = settings[F("rssFirst")];
 
         // RSS
@@ -405,6 +403,7 @@ void ConfigManager::loadConfig() {
                 bc.tflDirectionFilter = b[F("tflDir")] | 0;
                 bc.showServiceOrdinals = b[F("ordinals")] | false;
                 bc.showLastSeenLocation = b[F("lastSeen")] | false;
+                bc.oledOff = b[F("oledOff")] | false;
                 
                 // Weather Toggle
                 if (b[F("weather")].is<bool>()) {

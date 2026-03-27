@@ -35,7 +35,7 @@
 ## 4. Data Design
 *(For detailed memory strategies, see [Memory Architecture](reference/MemoryArchitecture.md) and [Memory Management](reference/MemoryManagement.md).)*
 - **Data Models/Schema**:
-    - **`BoardConfig`**: A JSON-serialized structure defining a display board's type (Rail, Bus, Tube), its unique identifier (CRS/Naptan), geographical coordinates (`lat`/`lon`), and localized feature toggles (e.g., `showWeather`).
+    - **`BoardConfig`**: A JSON-serialized structure defining a display board's type (Rail, Bus, Tube, Clock), its unique identifier (CRS/Naptan), geographical coordinates (`lat`/`lon`), and localized feature toggles (e.g., `showWeather`, `oledOff`).
     - **`rdService`**: A fixed-size C++ struct used for internal service representation, containing destination, timing, status, and mode-specific metadata (e.g., train length or tube line name).
     - **`WeatherStatus`**: An injectable object containing Condition IDs, temperature, and day/night flags, owned per-board to support localized weather.
 - **Data Storage**:
@@ -72,7 +72,7 @@
     - **`Config` Struct**: A master container for all user preferences and board configurations.
     - **Consumer Registry**: Implements an `iConfigurable` registration pattern, allowing managers (like `DisplayManager`) to be notified when the configuration is updated via the Web UI.
 - **Data Integrity**: 
-    - Supports **Schema Migration** (e.g., v1.x flat config to v2.x array-based boards).
+    - Supports **Schema Migration** (e.g., v1.x flat config to v2.x array-based boards; v2.3 global OLED power save to v2.4 per-board `oledOff`).
     - Validates mandatory fields (`CRS`, `Naptan`) before marking a board as `complete`.
 
 ### 5.3 `displayManager` (Rendering & Carousel)

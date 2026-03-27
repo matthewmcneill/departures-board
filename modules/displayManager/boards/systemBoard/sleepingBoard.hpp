@@ -42,12 +42,10 @@ private:
     int bounceY;              ///< Internal vertical offset for burn-in protection
     unsigned long lastBounce; ///< Timestamp of the last position shift
     WeatherStatus weatherStatus;
-
-protected:
-    SleepingBoard();
-    friend class DisplayManager;
+    bool oledOff;             ///< Whether to power down the OLED when active
 
 public:
+    SleepingBoard(appContext* contextPtr = nullptr);
     const char* getBoardName() const override { return "SYS: Sleep Clock"; }
 
     /**
@@ -56,7 +54,7 @@ public:
      */
     void onActivate() override;
     void onDeactivate() override;
-    void configure(const struct BoardConfig& config) override { (void)config; }
+    void configure(const struct BoardConfig& config) override;
     void tick(uint32_t ms) override;
 
     /**
@@ -71,6 +69,9 @@ public:
 
     void setDimmedBrightness(int level) { dimmedBrightness = level; }
     int getDimmedBrightness() const { return dimmedBrightness; }
+
+    void setOledOff(bool off) { oledOff = off; }
+    bool getOledOff() const { return oledOff; }
 
     /**
      * @brief Inject the application context.

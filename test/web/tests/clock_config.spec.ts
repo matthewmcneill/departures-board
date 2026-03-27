@@ -14,7 +14,7 @@ test.describe('Screensaver Clock Configuration', () => {
         wifi: { ssid: "TestWiFi", passExists: true },
         keys: [],
         boards: [
-          { name: "My Clock", type: 3, id: "CLOCK", brightness: 50 }
+          { name: "My Clock", type: 3, id: "CLOCK", brightness: 50, oledOff: true }
         ]
       };
       await route.fulfill({ json });
@@ -66,6 +66,10 @@ test.describe('Screensaver Clock Configuration', () => {
     // Verify Latitude and Longitude are hidden
     await expect(page.locator('#diag-row-lat')).not.toBeVisible();
     await expect(page.locator('#diag-row-lon')).not.toBeVisible();
+
+    // Verify "OLED Off" checkbox is visible and active
+    await expect(page.locator('#label-oled-off')).toBeVisible();
+    await expect(page.locator('input[name="oledOff"]')).toBeChecked();
   });
 
   test('should styled range inputs with orange accent color', async ({ page }) => {
@@ -101,5 +105,26 @@ test.describe('Screensaver Clock Configuration', () => {
     expect(savePayload).not.toBeNull();
     const clockBoard = savePayload.boards.find((b: any) => b.type === 3);
     expect(clockBoard.brightness).toBe(100);
+  });
+
+  test('should send oledOff toggle in save payload', async ({ page }) => {
+    await page.click('a[data-target="tab-displays"]');
+    await page.locator('.board-slot:has-text("My Clock")').click();
+
+    // Intercept save call
+    let savePayload: any = null;
+    await page.route('**/api/saveall', async route => {
+      savePayload = route.request().postDataJSON();
+      await route.fulfill({ json: { status: 'ok' } });
+    });
+
+    // Toggle OLED Off
+    await page.uncheck('input[name="oledOff"]');
+    await page.click('#modal-board button[type="submit"]');
+    await page.click('#save-btn');
+
+    expect(savePayload).not.toBeNull();
+    const clockBoard = savePayload.boards.find((b: any) => b.type === 3);
+    expect(clockBoard.oledOff).toBe(false);
   });
 });

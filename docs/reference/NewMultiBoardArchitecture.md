@@ -167,14 +167,14 @@ Currently, `loadConfig()` (in `modules/displayManager/displayManager.hpp`) parse
   "brightness": 20,
   "sleepStarts": 23,
   "boards": [
-    { "type": 0, "id": "PAD", "lat": 51.517, "lon": -0.176, "weather": true },
-    { "type": 2, "id": "490000077E", "lat": 51.503, "lon": -0.005, "weather": true },
-    { "type": 1, "id": "940GZZLUKSX", "lat": 0, "lon": 0, "weather": false }
+    { "type": 0, "id": "PAD", "lat": 51.517, "lon": -0.176, "weather": true, "oledOff": false },
+    { "type": 3, "id": "CLOCK", "lat": 51.503, "lon": -0.005, "weather": false, "oledOff": true },
+    { "type": 1, "id": "940GZZLUKSX", "lat": 0, "lon": 0, "weather": false, "oledOff": false }
   ]
 }
 ```
 > [!NOTE]
-> The `weather` toggle and `lat`/`lon` coordinates are now stored per-board. This allows different transport modes (which may be miles apart) to fetch accurate local weather data.
+> The `weather` toggle, `lat`/`lon` coordinates, and the `oledOff` (OLED power-save) flag are now stored per-board. This allows different transport modes to rotate through sleep states independently (e.g., turning the display off only during the screensaver cycle).
 
 ### 4.2 Schema Migration (Backward Compatibility)
 When a user updates their firmware via OTA, they will have the old flat `config.json` on their device. If we try to parse `settings["boards"].as<JsonArray>()`, it will fail or return null, crashing the board on reboot.
@@ -204,7 +204,10 @@ if (settings["boards"].isNull()) {
     // ...
 }
 ```
-This ensures zero disruption for existing users. They will upgrade the firmware, the board will boot, detect the flat schema, instantiate their single active board into slot `0` of the Carousel, and act exactly as it did before until they visit the Web GUI to add a second board.
+This ensures zero disruption for existing users. 
+
+### 4.2.1 v2.3 to v2.4 Migration (OLED Power Management)
+In v2.3 and prior, the `turnOffOledInSleep` flag was a global system setting. In v2.4, this has been moved to the `BoardConfig`. The migration engine automatically transfers the legacy global toggle to the first `MODE_CLOCK` board found in the user's carousel, ensuring their power-saving preference is preserved during the upgrade.
 
 ### 4.3 Web GUI UX Changes (`index.htm`)
 The current web interface (`web/index.htm`) acts like a traditional HTML `<form>`, with hardcoded `<input>` fields for the National Rail CRS, the Tube Naptan ID, etc., mapped to the singular file state.
