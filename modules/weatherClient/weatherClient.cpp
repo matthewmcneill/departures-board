@@ -95,9 +95,9 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
     bgStatus.status = WeatherUpdateStatus::NO_DATA;
     parsingComplete = false;
 
-    LOG_INFO("DATA", "Weather Client: Enqueuing fetch to DataWorker");
+    LOG_INFO("DATA", "Weather Client: Requesting priority fetch from DataManager");
     fetchPending = true;
-    appContext.getDataWorker().enqueueRequest(this);
+    appContext.getDataManager().requestPriorityFetch(this);
     return true;
 }
 
@@ -118,7 +118,7 @@ void weatherClient::executeFetch() {
     std::unique_ptr<WiFiClient> httpClient(new (std::nothrow) WiFiClient());
 
     #define WRAP_UP_ERROR() { \
-        setNextWeatherUpdate(millis() + (1000 * 60)); \
+        setNextFetchTime(millis() + (1000 * 60)); \
         xSemaphoreTake(weatherMutex, portMAX_DELAY); \
         if (activeStatus) *activeStatus = bgStatus; \
         xSemaphoreGive(weatherMutex); \
@@ -238,7 +238,7 @@ void weatherClient::executeFetch() {
 
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "Success - took %lums", static_cast<unsigned long>(millis()-perfTimer));
     bgStatus.status = WeatherUpdateStatus::READY;
-    setNextWeatherUpdate(millis() + (1000 * 60 * 15)); // Update every 15 mins on success
+    setNextFetchTime(millis() + (1000 * 60 * 15)); // Update every 15 mins on success
     
     xSemaphoreTake(weatherMutex, portMAX_DELAY);
     if (activeStatus) {

@@ -40,7 +40,7 @@
 #include <timeManager.hpp>
 #include "systemManager.hpp"
 #include <messaging/messagePool.hpp>
-#include <dataWorker.hpp>
+#include <dataManager.hpp>
 
 /**
  * @brief High-level states for the AppContext Hierarchical State Machine.
@@ -67,7 +67,7 @@ private:
     WifiManager wifiManager;        ///< WiFi configuration and connectivity manager
     TimeManager timeManager;        ///< System clock and NTP manager
     MessagePool globalMessagePool;  ///< Shared pool for scrolling status messages
-    dataWorker networkWorker;       ///< Centralized queue for background HTTP fetches
+    dataManager networkManager;     ///< Centralized queue for background HTTP fetches
     AppState currentState;          ///< Current tracked system state
     bool webServerInitialized;      ///< Checks if webServer was safely started
 
@@ -106,8 +106,8 @@ public:
     TimeManager& getTimeManager() { return timeManager; }
     /** @brief Get the news feed external API client. */
     rssClient& getRss() { return rss; }
-    /** @brief Get the centralized background data worker. */
-    dataWorker& getDataWorker() { return networkWorker; }
+    /** @brief Get the centralized background data manager. */
+    dataManager& getDataManager() { return networkManager; }
     /** @brief Get the shared message pool for scrolling text. */
     MessagePool& getGlobalMessagePool() { return globalMessagePool; }
     /** @brief Get the current high-level state of the application. */

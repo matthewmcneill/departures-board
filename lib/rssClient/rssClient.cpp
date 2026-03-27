@@ -25,6 +25,9 @@
 #include <WiFiClient.h>
 #include <logger.hpp>
 #include <memory>
+#include <appContext.hpp>
+
+extern class appContext appContext;
 
 /**
  * @brief Implements the iConfigurable interface.
@@ -65,29 +68,26 @@ void rssClient::trim(char* str) {
  * @return Connection status constant.
  */
 int rssClient::loadFeed(String url) {
-    if (fetchTaskHandle != nullptr) {
-        LOG_INFO("DATA", "RSS Client: Task already running");
-        return 9; // UPD_PENDING
-    }
-
     activeUrl = url;
-    lastRssUpdateResult = 9; // UPD_PENDING
-    bgNumRssTitles = 0;
-
-    LOG_INFO("DATA", "RSS Client: Spawning FreeRTOS task on Core 0");
-    xTaskCreatePinnedToCore(fetchTask, "RSS_Fetch", 8192, this, tskIDLE_PRIORITY + 1, &fetchTaskHandle, 0);
-    return 9; // UPD_PENDING
+    return updateData();
 }
 
-/**
- * @brief Static FreeRTOS Entry Point for background data processing.
- * @param pvParameters Pointer to the executing rssClient instance.
- */
-void rssClient::fetchTask(void* pvParameters) {
-    rssClient* client = static_cast<rssClient*>(pvParameters);
-    client->executeFetch();
-    client->fetchTaskHandle = nullptr;
-    vTaskDelete(NULL);
+int rssClient::updateData() {
+    if (activeUrl.length() == 0 && strlen(rssURL) > 0) activeUrl = String(rssURL);
+    if (lastRssUpdateResult == UPD_PENDING) return UPD_PENDING;
+
+    LOG_INFO("DATA", "RSS Client: Requesting priority fetch from DataManager");
+    lastRssUpdateResult = UPD_PENDING;
+    appContext.getDataManager().requestPriorityFetch(this);
+    return UPD_PENDING;
+}
+
+int rssClient::testConnection(const char* token, const char* stationId) {
+    if (stationId && strlen(stationId) > 0) activeUrl = String(stationId);
+    else if (strlen(rssURL) > 0) activeUrl = String(rssURL);
+    
+    executeFetch();
+    return (lastRssUpdateResult == 0) ? UPD_SUCCESS : lastRssUpdateResult;
 }
 
 /**
@@ -102,7 +102,7 @@ void rssClient::executeFetch() {
     if (!http || !client || !clientSecure) {
         LOG_ERROR("DATA", "RSS Client: Memory allocation failed for clients!");
         lastRssUpdateResult = 3; // UPD_DATA_ERROR
-        nextRssUpdate = millis() + 300000;
+        setNextFetchTime(millis() + 30000);
         return;
     }
 
@@ -128,7 +128,7 @@ void rssClient::executeFetch() {
             if (!parser) {
                 LOG_ERROR("DATA", "RSS Client: Memory allocation failed for parser!");
                 lastRssUpdateResult = 3; // UPD_DATA_ERROR
-                nextRssUpdate = millis() + 300000;
+                setNextFetchTime(millis() + 30000);
                 return;
             }
             parser->setListener(this);
@@ -164,7 +164,7 @@ void rssClient::executeFetch() {
                 snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Timed out during data receive operation - %ld bytes received", dataReceived);
                 LOG_WARN("DATA", lastErrorMessage);
                 lastRssUpdateResult = 6; // UPD_TIMEOUT
-                nextRssUpdate = millis() + 300000;
+                setNextFetchTime(millis() + 30000);
                 return;
             }
             snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Success: %ld bytes took %lums with %d redirects", dataReceived, static_cast<unsigned long>(millis()-perfTimer), redirectCount);
@@ -176,7 +176,7 @@ void rssClient::executeFetch() {
                 strlcpy(rssTitle[i], bgRssTitle[i], MAX_RSS_TITLE_SIZE);
             }
             lastRssUpdateResult = 0; // UPD_SUCCESS
-            nextRssUpdate = millis() + 600000;
+            setNextFetchTime(millis() + 600000); // 10 minutes on success
             xSemaphoreGive(rssMutex);
 #ifdef ENABLE_DEBUG_LOG
             UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
@@ -195,9 +195,8 @@ void rssClient::executeFetch() {
                 strcpy(lastErrorMessage, "HTTP Redirect without Location header!");
                 LOG_WARN("DATA", lastErrorMessage);
                 lastRssUpdateResult = 4; // UPD_HTTP_ERROR
-                nextRssUpdate = millis() + 300000;
+                setNextFetchTime(millis() + 30000);
                 return;
-                break;
             }
             url = newUrl;
             redirectCount++;
@@ -206,14 +205,13 @@ void rssClient::executeFetch() {
             LOG_WARN("DATA", lastErrorMessage);
             http->end();
             lastRssUpdateResult = 4; // UPD_HTTP_ERROR
-            nextRssUpdate = millis() + 300000;
+            setNextFetchTime(millis() + 30000);
             return;
-            break;
         }
     }
     // never get here
     lastRssUpdateResult = 4;
-    nextRssUpdate = millis() + 300000;
+    setNextFetchTime(millis() + 30000);
     return;
 }
 
@@ -221,7 +219,7 @@ void rssClient::executeFetch() {
  * @brief Retrieves the last error message encountered during RSS fetch operations.
  * @return A string containing the error description.
  */
-const char* rssClient::getLastError() {
+const char* rssClient::getLastError() const {
     return lastErrorMessage;
 }
 

@@ -132,7 +132,10 @@ void setup(void) {
 void loop(void) {
   static unsigned long lastSerialHeartbeat = 0;
   if (millis() - lastSerialHeartbeat > 10000) {
-    LOG_INFO("HEARTBEAT", "System is alive and ticking.");
+    char diagMsg[128];
+    snprintf(diagMsg, sizeof(diagMsg), "Alive | Heap: %lu (Max Block: %lu) | Temp: %.1fC", 
+             (unsigned long)ESP.getFreeHeap(), (unsigned long)ESP.getMaxAllocHeap(), temperatureRead());
+    LOG_INFO("HEARTBEAT", diagMsg);
     lastSerialHeartbeat = millis();
   }
   appContext.tick();

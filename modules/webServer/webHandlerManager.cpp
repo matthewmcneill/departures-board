@@ -443,6 +443,9 @@ public:
     int updateData() override { return 0; }
     int testConnection(const char*, const char*) override { return 0; }
     const char* getLastErrorMsg() const override { return ""; }
+    uint32_t getNextFetchTime() override { return 0; }
+    uint8_t getPriorityTier() override { return TIER_CRITICAL; } // Test connections must run immediately
+    void setNextFetchTime(uint32_t) override {}
 };
 
 void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const String& body) {
@@ -459,15 +462,19 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
     ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, "", false, ""};
     ApiTestDataSource* testSource = new ApiTestDataSource(params);
 
-    if (!appContext.getDataWorker().enqueueRequest(testSource)) {
-        request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full\"}");
+    appContext.getDataManager().requestPriorityFetch(testSource);
+
+    // Yield gracefully until the Background DataManager payload finishes, with absolute 10s timeout
+    int maxWait = 10000 / 50;
+    int cycles = 0;
+    while(!params->done && cycles < maxWait) { vTaskDelay(pdMS_TO_TICKS(50)); cycles++; }
+
+    if (!params->done) {
+        request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
         delete testSource;
         delete params;
         return;
     }
-
-    // Yield gracefully until the Background DataWorker payload finishes
-    while(!params->done) { vTaskDelay(pdMS_TO_TICKS(50)); }
 
     request->send(200, "application/json", params->jsonObj);
     delete testSource;
@@ -629,15 +636,19 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
     ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, stationId, false, ""};
     ApiTestDataSource* testSource = new ApiTestDataSource(params);
 
-    // Hand execution to DataWorker Core 0 queue to shield from OOM concurrent TLS
-    if (!appContext.getDataWorker().enqueueRequest(testSource)) {
-        request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full\"}");
+    // Hand execution to DataManager Core 0 queue to shield from OOM concurrent TLS
+    appContext.getDataManager().requestPriorityFetch(testSource);
+
+    int maxWait = 10000 / 50;
+    int cycles = 0;
+    while(!params->done && cycles < maxWait) { vTaskDelay(pdMS_TO_TICKS(50)); cycles++; }
+    
+    if (!params->done) {
+        request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
         delete testSource;
         delete params;
         return;
     }
-
-    while(!params->done) { vTaskDelay(pdMS_TO_TICKS(50)); }
 
     request->send(200, "application/json", params->jsonObj);
     delete testSource;

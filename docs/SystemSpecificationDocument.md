@@ -20,6 +20,7 @@
     - **Connectivity**: Requires a persistent 2.4GHz WiFi connection for real-time updates.
 
 ## 3. System Architecture
+*(Detailed discussion available in [Architecture and Encapsulation](reference/ArchitectureAndEncapsulation.md))*
 - **Architectural Pattern**: **Centralized Orchestration with Hierarchical State Machine (HSM)**. The system avoids global state by using a central `appContext` that manages the lifecycle and inter-dependency of all system managers.
 - **Design Philosophy**: **Composition over Inheritance**. UI logic is decoupled from data logic using a plugin-based architecture where `iDisplayBoard` instances are composed of reusable `iGfxWidget` components.
 - **Component Diagram**:
@@ -32,6 +33,7 @@
     - **Memory Strategy**: **Static Allocation for Core Logic**; `std::variant` for board pooling; `std::unique_ptr` for transient network clients.
 
 ## 4. Data Design
+*(For detailed memory strategies, see [Memory Architecture](reference/MemoryArchitecture.md) and [Memory Management](reference/MemoryManagement.md).)*
 - **Data Models/Schema**:
     - **`BoardConfig`**: A JSON-serialized structure defining a display board's type (Rail, Bus, Tube), its unique identifier (CRS/Naptan), geographical coordinates (`lat`/`lon`), and localized feature toggles (e.g., `showWeather`).
     - **`rdService`**: A fixed-size C++ struct used for internal service representation, containing destination, timing, status, and mode-specific metadata (e.g., train length or tube line name).
@@ -56,6 +58,7 @@
 ## 5. Detailed Component/Module Design
 
 ### 5.1 `appContext` (Central Orchestrator)
+*(See the [App Context State Machine](reference/AppContextStateMachine.md) reference for a detailed state transition diagram.)*
 - **Role**: Servant as the "System Hub", it owns the lifecycle of all core managers and acts as the primary dependency injection (DI) provider.
 - **Architecture**: Implements a **Hierarchical State Machine (HSM)** to manage top-level application states (`BOOTING`, `WIFI_SETUP`, `BOARD_SETUP`, `RUNNING`). 
 - **Key Logic**:
@@ -73,6 +76,7 @@
     - Validates mandatory fields (`CRS`, `Naptan`) before marking a board as `complete`.
 
 ### 5.3 `displayManager` (Rendering & Carousel)
+*(Detailed discussions available in [Display System Architecture](reference/DisplaySystemArchitecture.md) and [New Multi-Board Architecture](reference/NewMultiBoardArchitecture.md).)*
 - **Role**: Hardware display orchestrator, power manager, and board lifecycle controller.
 - **Displays Model (Board Persistent Storage)**:
     - **Static Memory Pool**: Utilizes a type-safe memory pool `std::variant<std::monostate, NationalRailBoard, TfLBoard, BusBoard> slots[MAX_BOARDS]` to pre-allocate memory for all possible board instances. This strictly avoids runtime heap fragmentation and ensures long-term stability.
@@ -97,6 +101,7 @@
     - **Status Tracking**: Monitors persistent WiFi errors and manages the "Alternate Station" schedule logic.
 
 ### 5.5 `weatherClient` (Stateless Integration)
+*(See [Weather System Design](reference/WeatherSystemDesign.md) for architectural specifics on data integration.)*
 - **Role**: Fetches and parses weather data from the OpenWeatherMap REST API.
 - **Architecture**: 
     - **Stateless Design**: The client does not store results internally; it populates a passed **`WeatherStatus`** reference owned by a specific board.
@@ -132,6 +137,7 @@
 - **Architectural Policy (Widgets vs. Primitives)**: To optimize RAM and execution efficiency on the EPS32, stateful `iGfxWidget` composition (such as `labelWidget`) is strictly reserved for data-driven, customizable **Transport Layouts**. Static **System Boards** (Splash, WiFi Wizard, Error screens) must deliberately bypass the widget ecosystem and render directly using lightweight `U8G2` primitives. This prevents the ~140 byte static RAM overhead per string instance from exhausting memory on screens that require zero runtime flexibility.
 
 ### 5.10 `iDataSource` (The Data Contract)
+*(For detailed scheduling behavior, see [Async Data Retrieval](reference/AsyncDataRetrieval.md).)*
 - **Role**: Abstraction for external API connectivity, separating parsing from presentation.
 - **Methods**:
     - `updateData()`: Requests an update from the `DataManager`. Depending on dynamic priority (e.g., Tier 1 Empty/Active vs Tier 3 Background), the fetch is scheduled appropriately. It instantly returns `UPD_PENDING` (9).
@@ -145,6 +151,7 @@
 - **Logic**: Allocates exactly `MAX_BOARDS` slots of the largest board size at boot. This allows the system to switch between complex board types (Rail vs. Bus) without ever calling `new` or `delete` on the heap during operation, ensuring long-term stability.
 
 ## 6. User Interface Design
+*(See [Web Interface Design](reference/WebInterfaceDesign.md), [Visual Designer Code Generation Options](reference/VisualDesignerCodeGenerationOptions.md), and the [Embedded Web Design Agent Skill](reference/EmbeddedWebDesignAgentSkill.md) for in-depth UI/UX rationales.)*
 - **Design Philosophy**: 
     - **Minimalist Footprint**: Avoids heavy frameworks (e.g., Bootstrap 5, jQuery) in favor of **Vanilla ES6+ JS** and minimalistic, custom CSS, keeping the total uncompressed payload strictly under 20KB. This is a critical embedded systems design choice:
         - **Flash Memory Bloat**: Generalized frameworks like Bootstrap require ~200KB of storage, wasting massive amounts of the ESP32's application partition needed for core logic and OTA buffers.
@@ -159,6 +166,7 @@
     - **Sequential Lifecycle Orchestration**: The portal implements a **`testQueue`** to serialize diagnostic requests (API keys, WiFi, Feeds). This prevents the ESP32's network stack from being overwhelmed by simultaneous SSL handshakes or high-load parsing.
 
 ## 7. Security & Authentication
+*(For implementation specifics on credential management, see the [Password Field Implementation Guide](reference/PasswordFieldImplementationGuide.md).)*
 - **Identity Management**: The system relies on local network security. There is no multi-user identity model; access to the portal is granted to any user on the same WiFi network or connected to the device's Access Point.
 - **Authorization**: Configuration changes are protected by standard HTTP POST validation; however, no administrative roles are currently implemented.
 - **Data Protection**:
@@ -173,6 +181,7 @@
     - **Input Validation**: `ArduinoJson` and strict frontend type-checking mitigate malformed payload injections.
 
 ## 8. Infrastructure and Deployment
+*(Refer to the [Testing Approach](reference/TestingApproach.md) reference for details on local simulation and Playwright E2E tests.)*
 - **Deployment Architecture**: The system is deployed to **ESP32** microcontrollers (dual-core and single-core variants supported). Flash partitioning typically reserves ~2MB for app code and ~1MB for **LittleFS** (web assets and configuration).
 - **CI/CD Pipeline**:
     - **Automated Web Verification**: `run_web_tests.py` executes **Playwright E2E** tests against the portal source. This includes "Mocked API" tests for UI logic and "Live Device" tests for ESP32 parity.
@@ -244,10 +253,23 @@ To add a new transport mode (e.g., "Ferry Board"), a developer would:
 - **Editing Workflow**: Developers can modify fonts using **FontForge** or **Fony** by editing the `.bdf` files in `modules/displayManager/fonts/source/` and running the build script to regenerate `fonts.cpp`.
 
 ## 12. Appendices & References
-- **Network Architecture Redesign**: [NetworkArchitectureReport.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/research/NetworkArchitectureReport.md)
-- **Async Data Architecture**: [AsyncDataRetrieval.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/reference/AsyncDataRetrieval.md)
-- **State Machine Reference**: [AppContextStateMachine.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/reference/AppContextStateMachine.md)
-- **Memory Strategy**: [MemoryArchitecture.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/MemoryArchitecture.md)
+- **Historical Context**:
+    - [Network Architecture Report](reference/NetworkArchitectureReport.md)
+    - [National Rail OpenLDBWS API History](reference/NationalRailAPIHistory.md)
+    - [Historical Session Mapping](reference/HistoricalSessionMapping.md)
+- **Detailed Subsystem References** (also linked inline):
+    - [App Context State Machine](reference/AppContextStateMachine.md)
+    - [Architecture and Encapsulation](reference/ArchitectureAndEncapsulation.md)
+    - [Async Data Retrieval](reference/AsyncDataRetrieval.md)
+    - [Display System Architecture](reference/DisplaySystemArchitecture.md)
+    - [Embedded Web Design Agent Skill](reference/EmbeddedWebDesignAgentSkill.md)
+    - [Memory Architecture](reference/MemoryArchitecture.md)
+    - [Memory Management](reference/MemoryManagement.md)
+    - [New Multi-Board Architecture](reference/NewMultiBoardArchitecture.md)
+    - [Password Field Implementation Guide](reference/PasswordFieldImplementationGuide.md)
+    - [Testing Approach](reference/TestingApproach.md)
+    - [Visual Designer Code Generation Options](reference/VisualDesignerCodeGenerationOptions.md)
+    - [Weather System Design](reference/WeatherSystemDesign.md)
+    - [Web Interface Design](reference/WebInterfaceDesign.md)
 - **External Documentation**: 
-    - [National Rail OpenLDBWS API Wiki](file:///Users/mcneillm/Documents/Projects/departures-board/docs/NationalRailAPIHistory.md)
     - [TfL Unified API Documentation](https://api-portal.tfl.gov.uk/api-details)

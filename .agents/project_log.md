@@ -2,6 +2,35 @@
 
 ## Execution History
 
+## 2026-03-27 - Unifying DataManager Dispatch & Thread Safety (Session 56c5ef3d)
+
+### Session Summary
+Finalized the stabilization of the new `DataManager` architecture by diagnosing intermittent multi-thread hardware crashes (`LoadProhibited`) resulting from unsynchronized memory mapping between the Core 0 network fetcher and Core 1 OLED render matrices. Completed full 5-minute physical hardware validation displaying zero missed frames and perfect Priority Queue interrupts for live Web Portal E2E API tests.
+
+### Key Decisions
+- **RAII Mutex Envelopes**: Eliminated visual tearing and `LoadProhibited` segfaults by implementing explicit `lockData()` and `unlockData()` interfaces inside `iDataSource` using FreeRTOS `SemaphoreHandle_t`. The Core 0 Double-Buffer performs instant microsecond copies while Core 1 locks across its 30ms hardware rendering cycle.
+- **Dual-Dispatch Unification**: Corrected a deadlock occurring within `webServer` where transient `ApiTestDataSource` objects were dropped by the queue. Consolidated the `workerTaskLoop` logic so predictive polling and sudden hardware interruptions resolve through a single, strict `executeFetch()` dispatch block.
+- **Predictive Backoff Net**: Forced a global 15-second backoff in `DataManager` strictly guaranteeing that data handlers returning early on `HTTP 401/403` do not infinite-loop the core parser interval. 
+- **Diagnostics Extension**: Injected real-time Free Heap mapping and internal SoC thermals out bounding across the `departuresBoard::loop` Heartbeat.
+
+### Git Commit
+Generated commit: [TBD - Captured below]
+
+## 2026-03-26 - Display Output Robustness and Binding Data Paths (Session 453f32fb)
+
+### Session Summary
+Systematically rooted out and resolved visual leakage and missing memory data injection issues rendering artifacts across the display pipeline. Resolved the broken clipping masks by implementing 8-bit wrap-around safeguards and forced strict display state encapsulation using a new `U8g2StateSaver` RAII pattern. Synchronized the WebAssembly simulator mock data mapping logic to mirror physical hardware extraction.
+
+### Key Decisions
+- **RAII Display Isolator**: Forced all `iGfxWidget` subclasses to wrap hardware drawing interactions utilizing `U8g2StateSaver`. This unconditionally prevents cascading memory failures (like incorrect font sizes and dirty clipping bounds) when layout hierarchies are deeply traversed.
+- **Darwin Buffer Remediation**: Identified that the National Rail XML parsing pipeline was misassigned to `location` while the rendering layer mapped to an empty `stationName` array. Upgraded the `nationalRailBoard` controller to bypass the discrepancy directly instead of introducing generic mirroring buffers.
+- **Boundary Mask Wrap Limits**: Repaired the `setClipWindow` primitive across all scrolling data panels by constraining right-side edges to `255px`. Previously, subtracting offset from `256` flipped the 8-bit unsigned integer to `0`, fully deleting the masking geometry during scroll.
+- **WASM Payload Accuracy**: Updated `mockDataManager` handling in the physical simulator layout to match the correct internal XML layout formats.
+
+### Git Commit
+Generated commit: 06d0b2c
+
+
 ## 2026-03-23 - Thread-Safe Reconfiguration & Boot Stability (Session eaf7823b)
 
 ### Session Summary

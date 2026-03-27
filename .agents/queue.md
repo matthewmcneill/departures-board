@@ -5,7 +5,7 @@ This file tracks active and pending agent sessions to prevent hardware and build
 ## Lock Status
 - **Locked By**: NONE
 - **Reason**: 
-- **Since**: 
+- **Since**:
 
 ## Pending Queue
 | Session ID | Task | Plan Link | Queued At |
@@ -18,11 +18,13 @@ This file tracks active and pending agent sessions to prevent hardware and build
 | 61262f31-29fc-494f-b0b3-d94bad7f27fa | Adding Expected Time Column | N/A | 2026-03-23T22:46:42Z |
 | 32798161-5bfe-4884-9fa6-75567fdaf2fe | Fix OLED Distortion & Font Corruption (NHD + Hex Fonts) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/32798161-5bfe-4884-9fa6-75567fdaf2fe/implementation_plan.md) | 2026-03-24T10:05:00Z |
 | 9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70 | Graphical WiFi widget with signal strength and delegated rendering | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/9c4faedc-c8c7-45e8-b3bf-c8effcd4cf70/implementation_plan.md) | 2026-03-16T14:56:11Z |
-| 56c5ef3d-6d3b-418a-ac5e-323d7e6b7226 | Refactor dataWorker to Priority-Aware, Schedule-Driven dataManager | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/56c5ef3d-6d3b-418a-ac5e-323d7e6b7226/implementation_plan.md) | 2026-03-26T23:03:08Z |
+| 6bc7738d-1ca2-431c-9c4b-8ec4e8b1ac98 | Integrate B2.4-W3.1 Upstream Features (WIP) | [implementation_plan.md](file:///Users/mcneillm/.gemini/antigravity/brain/6bc7738d-1ca2-431c-9c4b-8ec4e8b1ac98/implementation_plan.md) | 2026-03-27T07:14:36Z |
 
 ## Execution History
 | Session ID | Task | Result | Finished At |
 | :--- | :--- | :--- | :--- |
+| 56c5ef3d-6d3b-418a-ac5e-323d7e6b7226 | Refactoring Network Data Architecture | Success | 2026-03-26T23:36:00Z |
+| 453f32fb-912c-442c-8add-c6faf299ad89 | Fix missing header widgets and Data Bindings | Success | 2026-03-26T23:09:12Z |
 | bd5ae513-e626-4fe7-b401-9c7d8184d55d | Refactor Text Primitives and Integrate into Layout JSON | Success | 2026-03-24T12:13:00Z |
 | 470d6a16-dd63-42c0-bc27-62a58dac6dd2 | WebServer Refactoring & Multi-Board Background Sync | Success | 2026-03-22T22:00:00Z |
 | c7ca7a4a-8640-47db-9237-6e8681f3c64d | Implementing iButton and TouchSensor | Success | 2026-03-22T18:15:00Z |

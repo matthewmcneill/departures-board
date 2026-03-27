@@ -31,14 +31,14 @@
 #include <ArduinoJson.h>
 #include <appContext.hpp>
 
-#include "../interfaces/iDataSource.hpp"
+#include "../../../dataManager/iDataSource.hpp"
 
 extern class appContext appContext;
 
 nationalRailDataSource::nationalRailDataSource() 
     : loadingWDSL(false), tagLevel(0), isTestMode(false), id(-1), coaches(0), addedStopLocation(false), 
       filterPlatforms(false), keepRoute(false), nrTimeOffset(0), callback(nullptr),
-      messagesData(4), renderMessages(4) {
+      messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
     renderData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
     if (stationData) memset(stationData.get(), 0, sizeof(NationalRailStation));
@@ -112,10 +112,18 @@ int nationalRailDataSource::updateData() {
         return UPD_PENDING;
     }
     
-    LOG_INFO("DATA", "NR Source: Enqueuing fetch to DataWorker");
+    LOG_INFO("DATA", "NR Source: Requesting priority fetch from DataManager");
     taskStatus = UPD_PENDING;
-    appContext.getDataWorker().enqueueRequest(this);
+    appContext.getDataManager().requestPriorityFetch(this);
     return UPD_PENDING;
+}
+
+uint8_t nationalRailDataSource::getPriorityTier() {
+    // If we've never successfully loaded data, it's critically empty -> High Priority
+    if (renderData && renderData->numServices == 0) {
+        return TIER_HIGH;
+    }
+    return TIER_MEDIUM;
 }
 
 /**
@@ -368,7 +376,20 @@ void nationalRailDataSource::executeFetch() {
     
     delete xStation;
     
-    LOG_INFO("DATA", "NR Source: executeFetch() finished successfully.");
+    // Dynamic Scheduling Calculation
+    uint32_t now = millis();
+    uint32_t interval = BASELINE_MIN_INTERVAL;
+    
+    if (renderData && renderData->numServices > 0) {
+        // Very simplistic intelligent polling placeholder:
+        // We could parse renderData->service[0].sTime or etd to find exactly when to wake up.
+        // For now, if we have services, we enforce a baseline wait of 45 seconds to conserve API limits.
+        interval = 45000;
+    }
+    
+    setNextFetchTime(now + interval);
+
+    LOG_INFO("DATA", "NR Source: executeFetch() finished successfully. Next fetch in " + String(interval) + "ms.");
 #ifdef ENABLE_DEBUG_LOG
     UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
     LOG_DEBUG("DATA", "NR Task Stack High Water Mark: " + String(hwm) + " words");

@@ -29,12 +29,12 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 
-#include <boards/interfaces/iDataSource.hpp>
+#include <iDataSource.hpp>
 
 #define MAX_RSS_TITLES 5
 #define MAX_RSS_TITLE_SIZE 140
 
-class rssClient: public xmlListener, public iConfigurable {
+class rssClient: public xmlListener, public iConfigurable, public iDataSource {
 
     private:
 
@@ -49,15 +49,14 @@ class rssClient: public xmlListener, public iConfigurable {
         
         bool rssEnabled = false;
         bool rssAddedtoMsgs = false;
-        unsigned long nextRssUpdate = 0;
+        uint32_t nextFetchTimeMillis = 0;
         volatile int lastRssUpdateResult = 0;
         char rssURL[128] = "";
         char rssName[48] = "";
 
         char bgRssTitle[MAX_RSS_TITLES][MAX_RSS_TITLE_SIZE]; // Background storage for active XML extraction
         int bgNumRssTitles = 0; // Length counter for background array
-        
-        TaskHandle_t fetchTaskHandle = nullptr; // Track the active FreeRTOS thread
+
         SemaphoreHandle_t rssMutex; // Thread-safe memory copy protection lock
         
         String activeUrl = ""; // Thread-local scoped copy of target URL
@@ -102,8 +101,8 @@ class rssClient: public xmlListener, public iConfigurable {
         bool getRssAddedtoMsgs() const { return rssAddedtoMsgs; }
         void setRssAddedtoMsgs(bool val) { rssAddedtoMsgs = val; }
 
-        unsigned long getNextRssUpdate() const { return nextRssUpdate; }
-        void setNextRssUpdate(unsigned long val) { nextRssUpdate = val; }
+        unsigned long getNextRssUpdate() const { return nextFetchTimeMillis; }
+        void setNextRssUpdate(unsigned long val) { nextFetchTimeMillis = val; }
 
         int getLastRssUpdateResult() const { return lastRssUpdateResult; }
         void setLastRssUpdateResult(int val) { lastRssUpdateResult = val; }
@@ -134,7 +133,7 @@ class rssClient: public xmlListener, public iConfigurable {
  * @brief Retrieves the last error message encountered during RSS fetch operations.
  * @return A string containing the error description.
  */
-        const char* getLastError();
+        const char* getLastError() const;
         char rssTitle[MAX_RSS_TITLES][MAX_RSS_TITLE_SIZE];
         int numRssTitles = 0;
 
@@ -143,17 +142,16 @@ class rssClient: public xmlListener, public iConfigurable {
          */
         virtual void reapplyConfig(const Config& config) override;
 
+        // --- iDataSource Interface Methods ---
+        int updateData() override;
+        int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+        uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
+        uint8_t getPriorityTier() override { return TIER_LOW; } // RSS is low priority background data
+        void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
+        const char* getLastErrorMsg() const override { return getLastError(); }
+        void executeFetch() override;
+
     private:
-        /**
-         * @brief Internal blocking method that executes the HTTP protocol and coordinates XML parse.
-         */
-        void executeFetch();
-        
-        /**
-         * @brief Static FreeRTOS Entry Point for background data processing.
-         * @param pvParameters Pointer to the executing rssClient instance.
-         */
-        static void fetchTask(void* pvParameters);
 };
 
 extern rssClient* rss;

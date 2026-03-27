@@ -51,6 +51,11 @@ NationalRailBoard::NationalRailBoard(appContext* contextPtr)
     nrTimeOffset = 0;
     stationLat = 0;
     stationLon = 0;
+
+    // Register this board's source with the predictive DataManager
+    if (context) {
+        context->getDataManager().registerSource(&dataSource);
+    }
 }
 
 /**
@@ -132,7 +137,9 @@ void NationalRailBoard::tick(uint32_t ms) {
     if (ms > nextViaToggle) {
         viaToggle = !viaToggle;
         nextViaToggle = ms + 4000;
+        dataSource.lockData();
         populateServices(); // Repopulate to flip via points
+        dataSource.unlockData();
     }
 
     if (activeLayout) activeLayout->tick(ms);
@@ -182,6 +189,7 @@ int NationalRailBoard::updateData() {
     }
     
     if (lastUpdateStatus == 0) { // UPD_SUCCESS
+        dataSource.lockData();
         // Update header once we have the station name
         NationalRailStation* data = dataSource.getStationData();
         if (activeLayout) {
@@ -205,6 +213,7 @@ int NationalRailBoard::updateData() {
         
         // Populate services lists (row 0 and subsequent)
         populateServices();
+        dataSource.unlockData();
     }
     return lastUpdateStatus;
 }
@@ -242,6 +251,7 @@ void NationalRailBoard::render(U8G2& display) {
     }
 
     if (activeLayout) {
+        dataSource.lockData();
         NationalRailStation* data = dataSource.getStationData();
         if (data->numServices > 0) {
             activeLayout->row0Widget.setVisible(true);
@@ -258,6 +268,7 @@ void NationalRailBoard::render(U8G2& display) {
             activeLayout->noDataLabel.setVisible(true);
         }
         activeLayout->render(display);
+        dataSource.unlockData();
     }
 }
 

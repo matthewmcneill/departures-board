@@ -72,3 +72,34 @@ while (httpClient->available() && !parsingComplete) {
 ```
 
 By manually ticking `vTaskDelay(1)` every 500 stream bites, the parser pauses execution to hand the context switch back cleanly to the FreeRTOS generalized scheduler. The Wi-Fi subsystem then borrows that microsecond slice safely to process its TCP/IP packets before passing the context back to the XML parser. The complexity trade-off is almost non-existent for the codebase (roughly 4 lines of logic per fetcher) and adds mere dozens of milliseconds to payload processing while gaining ubiquitous ESP32 family firmware stability!
+
+## 6. Thread Safety & Mutex Synchronization (Core 0 vs Core 1)
+
+With asynchronous tasks running on Core 0 and the UI updating on Core 1 at up to 60fps, managing shared memory between the cores is paramount. The system leverages a **Double Buffering + RAII Mutex** strategy to eliminate data tearing without blocking execution.
+
+### The Double Buffering Approach
+Network requests (web-gets) take roughly 1 to 2 seconds to download and parse large JSON/XML payloads. **During this entire 2-second cycle, the network thread does NOT hold a lock.** It streams all data into a hidden background array (`stationData`).
+
+Once the parse perfectly completes, `executeFetch()` acquires the lock just long enough to perform a blazing-fast memory swap:
+```cpp
+xSemaphoreTake(dataMutex, portMAX_DELAY);
+memcpy(renderData.get(), stationData.get(), sizeof(NationalRailStation)); // Instant copy
+xSemaphoreGive(dataMutex);
+```
+This forces Core 0 to hold the mutex for merely **~10 microseconds**.
+
+### The Rendering Lock
+The `render()` loop on Core 1 physically pushes strings to the OLED screen via SPI. This rendering pass takes between **16ms to 30ms** per frame. The lock is held throughout this duration:
+```cpp
+dataSource.lockData(); 
+activeLayout->render(display);
+dataSource.unlockData();
+```
+
+### Collision Handling
+Because both layers acquire the lock gracefully, deadlocks and visual tearing are mathematically impossible:
+
+1. **If Core 0 tries to copy while UI is rendering:** Core 0 will wait an imperceptible max of 30ms for the UI to yield the lock. Delaying a 45,000ms background network interval by 30ms is entirely unnoticeable to the user or system logic.
+2. **If Core 1 tries to render while Core 0 is copying:** Core 1 will wait ~10 microseconds for the `memcpy` to clear. This wait is virtually instantaneous and will not drop a 60fps (16.6ms) animation frame.
+
+Without this Mutex envelope, if Core 1 was reading a string from memory to draw it while Core 0 was simultaneously overwriting that pointer, Core 1 could read past a shifted null-terminator. This generates a **LoadProhibited Exception** and instantly crashes the microcontroller.

@@ -31,7 +31,7 @@
 #include <memory>
 #include <appContext.hpp>
 
-#include "../interfaces/iDataSource.hpp"
+#include "../../../dataManager/iDataSource.hpp"
 
 extern class appContext appContext;
 
@@ -46,7 +46,7 @@ extern class appContext appContext;
 /**
  * @brief Constructs a new busDataSource object.
  */
-busDataSource::busDataSource() : callback(nullptr), messagesData(4), renderMessages(4) {
+busDataSource::busDataSource() : callback(nullptr), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::unique_ptr<BusStop>(new (std::nothrow) BusStop());
     renderData = std::unique_ptr<BusStop>(new (std::nothrow) BusStop());
     if (stationData) memset(stationData.get(), 0, sizeof(BusStop));
@@ -83,10 +83,15 @@ int busDataSource::updateData() {
         return UPD_PENDING;
     }
     
-    LOG_INFO("DATA", "Bus Source: Enqueuing fetch to DataWorker");
+    LOG_INFO("DATA", "Bus Source: Requesting priority fetch from DataManager");
     taskStatus = UPD_PENDING;
-    appContext.getDataWorker().enqueueRequest(this);
+    appContext.getDataManager().requestPriorityFetch(this);
     return UPD_PENDING;
+}
+
+uint8_t busDataSource::getPriorityTier() {
+    if (renderData && renderData->numServices == 0) return TIER_HIGH;
+    return TIER_MEDIUM;
 }
 
 /**
@@ -103,6 +108,7 @@ void busDataSource::executeFetch() {
     if (!httpsClient) {
         LOG_ERROR("DATA", "Bus Board: Memory allocation failed for client!");
         taskStatus = UPD_DATA_ERROR;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -119,6 +125,7 @@ void busDataSource::executeFetch() {
         strcpy(lastErrorMsg, "Connection timeout");
         LOG_WARN("DATA", lastErrorMsg);
         taskStatus = UPD_NO_RESPONSE;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -138,6 +145,7 @@ void busDataSource::executeFetch() {
         strcpy(lastErrorMsg, "Response timeout");
         LOG_WARN("DATA", lastErrorMsg);
         taskStatus = UPD_TIMEOUT;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -148,10 +156,12 @@ void busDataSource::executeFetch() {
         if (statusLine.indexOf(F("401")) > 0 || statusLine.indexOf(F("429")) > 0) {
             strcpy(lastErrorMsg, "Not Authorized");
             taskStatus = UPD_UNAUTHORISED;
+            setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
             return;
         } else {
             strlcpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg));
             taskStatus = UPD_HTTP_ERROR;
+            setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
             return;
         }
     }
@@ -172,6 +182,7 @@ void busDataSource::executeFetch() {
     if (!xBusStop) {
         LOG_ERROR("DATA", "Bus Board: Memory allocation failed for xBusStop!");
         taskStatus = UPD_DATA_ERROR;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -329,9 +340,14 @@ void busDataSource::executeFetch() {
         }
         LOG_DEBUG("DATA", "----------------");
 #endif
+        uint32_t interval = BASELINE_MIN_INTERVAL;
+        if (renderData && renderData->numServices > 0) interval = 45000;
+        setNextFetchTime(millis() + interval);
+        LOG_INFO("DATA", "Bus Source: executeFetch() finished. Next fetch in " + String(interval) + "ms.");
         return;
     }
     taskStatus = UPD_DATA_ERROR;
+    setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
     return;
 }
 

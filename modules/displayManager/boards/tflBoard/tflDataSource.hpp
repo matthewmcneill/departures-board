@@ -25,7 +25,7 @@
 #ifndef TFL_DATA_SOURCE_HPP
 #define TFL_DATA_SOURCE_HPP
 
-#include "../interfaces/iDataSource.hpp"
+#include "../../../dataManager/iDataSource.hpp"
 #include "JsonListener.h"
 #include "JsonStreamingParser.h"
 #include "../../messaging/messagePool.hpp"
@@ -75,6 +75,9 @@ private:
 
     char lastErrorMsg[128];
 
+    uint32_t nextFetchTimeMillis;
+    static const uint32_t BASELINE_MIN_INTERVAL = 30000;
+
     // API Details
     const char* apiHost = "api.tfl.gov.uk";
     String currentKey;
@@ -104,6 +107,9 @@ public:
     int getLastUpdateStatus() const { return taskStatus; }
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
     int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+    uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
+    uint8_t getPriorityTier() override;
+    void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
     // Configuration & Data Access
     /**

@@ -36,7 +36,7 @@ appContext* _instance = nullptr; // Global static pointer for yield callback ada
  */
 void yieldCallbackWrapper() {
     // Prevent the background data fetcher from concurrently driving the U8G2 hardware
-    if (strcmp(pcTaskGetName(NULL), "Data_Worker") == 0) return;
+    if (strcmp(pcTaskGetName(NULL), "Data_Manager") == 0) return;
     
     if (_instance) _instance->getDisplayManager().yieldAnimationUpdate();
 }
@@ -142,7 +142,9 @@ void appContext::begin() {
 #endif
 
     // Initialize Centralized Data Fetch Worker
-    networkWorker.init(false); // Enable queue debug logging if true
+    networkManager.init(false); // Enable queue debug logging if true
+    networkManager.registerSource(&weather);
+    networkManager.registerSource(&rss);
 
     LOG_INFO("SYSTEM", "Network state: SSID=" + String(WiFi.SSID()) + ", IP=" + WiFi.localIP().toString());
 

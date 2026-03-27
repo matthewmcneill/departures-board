@@ -12,7 +12,7 @@
 - [/] need to review all password masking. (Stage 1: Implemented logic to prevent overwriting keys/passwords if the placeholder is unchanged. Stage 2: Refining grey stars indicator UI).
 - [ ] make an ota widget and remove the OTA overlay board
 - [ ] Add diagnostic UI to expose real-time FreeRTOS TWDT (Watchdog) metrics and background task states for each data fetcher.
-- [ ] Implement C++ unit testing for the new `dataWorker` module to verify queue behavior on connection timeouts and duplicate fetch requests.
+- [ ] Implement C++ unit testing for the new `dataManager` module to verify priority queue behavior on connection timeouts and duplicate fetch requests.
 - [ ] Add unit testing for the SystemManager Round-Robin update multiplexing queue to monitor data load distributions across high board counts.
 - [ ] Implement a real-time 'Background Polling Log' in the web portal diagnostic UI for visibility into distributed update ticks.
 - [ ] add an 'X' close button to the top right of the keys detailed form (acts as cancel).
@@ -30,9 +30,10 @@
 - [ ] Add unit test or manual verification suite for `determineInitialTab` across all state transitions to ensure long-term stability as more tabs are added.
 - [ ] consider how we add validation to the filter strings to the portal to ensure that the filters make sense.
 - [ ] have the iDataProviders give a data-expiry time so that it can tell the scheduler that it should update (for example just after the last train was expected to depart) or do it at least once every minute.
-- [ ] review the whole data request queueing onto the other core for async - how we get queed - how to jump priority, how to update at the right time.
+- [x] review the whole data request queueing onto the other core for async - how we get queed - how to jump priority, how to update at the right time.
 - [ ] **Unit Testing**: Implement `unit_testing_host` scenarios for `drawText` to verify fast-path logic and rough-cut truncation accuracy under extreme string lengths.
 - [ ] **Simulator Parity**: Update the WebAssembly `layoutsim` mock data injection (`syncData()` in `main.cpp`) to accurately populate the `location` memory array rather than defaulting to `stationName`, preventing false-blank simulator displays for National Rail layouts.
+- [ ] add the max heap size to the portal system page for hardware ststus section.
 
 ## Completed
 - [x] Implement a unified diagnostic test queue in the frontend to prevent ESP32 resource saturation and dropped connections.

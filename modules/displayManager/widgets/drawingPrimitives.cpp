@@ -102,7 +102,7 @@ void drawText(U8G2& display, const char *message, int x, int y, int w, int h, Te
     if (align == TextAlign::CENTER) {
       drawX += (w - textW) / 2;
     } else if (align == TextAlign::RIGHT) {
-      drawX += (w - textW);
+      drawX += (w - textW) - 1; // Shift left by 1 pixel to prevent clipping overhang
     }
   }
 

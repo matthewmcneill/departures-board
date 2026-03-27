@@ -45,6 +45,11 @@ BusBoard::BusBoard(appContext* contextPtr)
     busName[0] = '\0';
     busFilter[0] = '\0';
     enableBus = false;
+
+    // Register this board's source with the predictive DataManager
+    if (context) {
+        context->getDataManager().registerSource(&dataSource);
+    }
 }
 
 /**
@@ -143,6 +148,7 @@ int BusBoard::updateData() {
     }
     
     if (lastUpdateStatus == 0) { // UPD_SUCCESS
+        dataSource.lockData();
         BusStop* data = dataSource.getStationData();
         if (activeLayout) {
             activeLayout->servicesWidget.clearRows();
@@ -157,6 +163,7 @@ int BusBoard::updateData() {
                 }
             }
         }
+        dataSource.unlockData();
     }
     return lastUpdateStatus;
 }
@@ -194,6 +201,7 @@ void BusBoard::render(U8G2& display) {
     }
 
     if (activeLayout) {
+        dataSource.lockData();
         BusStop* data = dataSource.getStationData();
         if (data->numServices > 0) {
             activeLayout->servicesWidget.setVisible(true);
@@ -208,6 +216,7 @@ void BusBoard::render(U8G2& display) {
             activeLayout->noDataLabel.setVisible(true);
         }
         activeLayout->render(display);
+        dataSource.unlockData();
     }
 }
 

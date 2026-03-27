@@ -75,7 +75,7 @@ void ConfigManager::loadApiKeys() {
 
   if (LittleFS.exists("/apikeys.json")) {
     String contents = loadFile("/apikeys.json");
-    LOG_DEBUG("CONFIG", String("Dumping /apikeys.json:\n") + contents);
+    // LOG_DEBUG("CONFIG", String("Dumping /apikeys.json:\n") + contents);  << emits secure content, do not leave in and compiled code.
     
     DeserializationError error = deserializeJson(doc, contents);
     if (!error) {

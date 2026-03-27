@@ -43,6 +43,11 @@ TfLBoard::TfLBoard(appContext* contextPtr)
     tflAppkey[0] = '\0';
     tubeId[0] = '\0';
     tubeName[0] = '\0';
+
+    // Register this board's source with the predictive DataManager
+    if (context) {
+        context->getDataManager().registerSource(&dataSource);
+    }
 }
 
 /**
@@ -150,6 +155,7 @@ int TfLBoard::updateData() {
 
     // --- Step 5: Data Push to UI ---
     if (lastUpdateStatus == 0) { // UPD_SUCCESS
+        dataSource.lockData();
         TflStation* data = dataSource.getStationData();
         if (activeLayout) {
             activeLayout->servicesWidget.clearRows();
@@ -164,6 +170,7 @@ int TfLBoard::updateData() {
                 }
             }
         }
+        dataSource.unlockData();
     }
     return lastUpdateStatus;
 }
@@ -201,6 +208,7 @@ void TfLBoard::render(U8G2& display) {
     }
 
     if (activeLayout) {
+        dataSource.lockData();
         TflStation* data = dataSource.getStationData();
         if (data->numServices > 0) {
             activeLayout->servicesWidget.setVisible(true);
@@ -215,6 +223,7 @@ void TfLBoard::render(U8G2& display) {
             activeLayout->noDataLabel.setVisible(true);
         }
         activeLayout->render(display);
+        dataSource.unlockData();
     }
 }
 

@@ -28,7 +28,7 @@
 #ifndef BUS_DATA_SOURCE_HPP
 #define BUS_DATA_SOURCE_HPP
 
-#include "../interfaces/iDataSource.hpp"
+#include "../../../dataManager/iDataSource.hpp"
 #include "../../messaging/messagePool.hpp"
 #include <JsonListener.h>
 #include <JsonStreamingParser.h>
@@ -77,6 +77,8 @@ private:
     MessagePool messagesData;             // Local message pool for background processing
     MessagePool renderMessages;           // Safe message pool for the UI
     char lastErrorMsg[128];               // Most recent error message
+    uint32_t nextFetchTimeMillis;         // Millis timestamp for next loop wake
+    static const uint32_t BASELINE_MIN_INTERVAL = 30000;
     
     SemaphoreHandle_t dataMutex;          // Thread-safe lock protecting data transfers
     volatile int taskStatus;              // Cross-thread execution status tracking (e.g., UPD_PENDING)
@@ -159,6 +161,9 @@ public:
      * @return const char* Pointer to the error message string.
      */
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
+    uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
+    uint8_t getPriorityTier() override;
+    void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
     /**
      * @brief Performs a lightweight connection and authentication test.

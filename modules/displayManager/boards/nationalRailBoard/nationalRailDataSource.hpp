@@ -25,7 +25,7 @@
 #ifndef NATIONAL_RAIL_DATA_SOURCE_HPP
 #define NATIONAL_RAIL_DATA_SOURCE_HPP
 
-#include "../interfaces/iDataSource.hpp"
+#include "../../../dataManager/iDataSource.hpp"
 #include "../xmlListener/xmlListener.hpp"
 #include "../../messaging/messagePool.hpp"
 #include <memory>
@@ -140,11 +140,21 @@ public:
     nationalRailDataSource();
     virtual ~nationalRailDataSource() = default;
 
+    // DataManager Scheduling Implementations
+    uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
+    uint8_t getPriorityTier() override;
+    void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
+
+private:
+    uint32_t nextFetchTimeMillis;
+    static const uint32_t BASELINE_MIN_INTERVAL = 30000;
+
     /**
      * @brief Manually set the SOAP address. Used to bypass WSDL download in test mode.
      */
     void setSoapAddress(const char* host, const char* api);
 
+public:
     // iDataSource Implementation
     int updateData() override;
     int getLastUpdateStatus() const { return taskStatus; }
@@ -159,6 +169,10 @@ public:
     NationalRailStation* getStationData() { return renderData.get(); }
     MessagePool* getMessagesData() { return &renderMessages; }
     void cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen);
+
+    // iDataSource Mutex controls
+    void lockData() override { if(dataMutex) xSemaphoreTake(dataMutex, portMAX_DELAY); }
+    void unlockData() override { if(dataMutex) xSemaphoreGive(dataMutex); }
 
     // xmlListener Implementation
     void startTag(const char *tagName) override;

@@ -28,11 +28,11 @@
 #include <appContext.hpp>
 
 // Status codes mapping
-#include "../interfaces/iDataSource.hpp"
+#include "../../../dataManager/iDataSource.hpp"
 
 extern class appContext appContext;
 
-tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4), renderMessages(4) {
+tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     renderData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     if (stationData) memset(stationData.get(), 0, sizeof(TflStation));
@@ -60,10 +60,15 @@ int tflDataSource::updateData() {
         return UPD_PENDING;
     }
     
-    LOG_INFO("DATA", "TfL Source: Enqueuing fetch to DataWorker");
+    LOG_INFO("DATA", "TfL Source: Requesting priority fetch from DataManager");
     taskStatus = UPD_PENDING;
-    appContext.getDataWorker().enqueueRequest(this);
+    appContext.getDataManager().requestPriorityFetch(this);
     return UPD_PENDING;
+}
+
+uint8_t tflDataSource::getPriorityTier() {
+    if (renderData && renderData->numServices == 0) return TIER_HIGH;
+    return TIER_MEDIUM;
 }
 
 /**
@@ -83,6 +88,7 @@ void tflDataSource::executeFetch() {
     if (!xStation || !parser || !httpsClient) {
         LOG_ERROR("DATA", "TfL Board: Memory allocation failed!");
         taskStatus = UPD_DATA_ERROR;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -94,6 +100,7 @@ void tflDataSource::executeFetch() {
 
     if (!httpsClient->connect(apiHost, 443)) {
         taskStatus = UPD_NO_RESPONSE;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -118,6 +125,7 @@ void tflDataSource::executeFetch() {
     while(!httpsClient->available() && retry < 40) { delay(200); retry++; }
     if (retry >= 40) {
         taskStatus = UPD_TIMEOUT;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -125,6 +133,7 @@ void tflDataSource::executeFetch() {
     if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
         httpsClient->stop();
         taskStatus = UPD_HTTP_ERROR;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -168,6 +177,7 @@ void tflDataSource::executeFetch() {
     if (isTestMode) {
         snprintf(lastErrorMsg, sizeof(lastErrorMsg), "AUTH SUCCESS %lums", (unsigned long)(millis()-perfTimer));
         taskStatus = UPD_SUCCESS;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
@@ -249,6 +259,11 @@ void tflDataSource::executeFetch() {
         LOG_DEBUG("DATA", "----------------");
 #endif
     }
+    
+    uint32_t interval = BASELINE_MIN_INTERVAL;
+    if (renderData && renderData->numServices > 0) interval = 45000;
+    setNextFetchTime(millis() + interval);
+    LOG_INFO("DATA", "TfL Source: executeFetch() finished. Next fetch in " + String(interval) + "ms.");
     return;
 }
 
