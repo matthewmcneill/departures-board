@@ -2,6 +2,32 @@
 
 ## Execution History
 
+## 2026-03-28 - Optimizing ESP32 Memory Footprint (Ad-hoc Session)
+
+### Session Summary
+Diagnosed the ESP32 RAM usage and successfully refactored `portalBuilder.py` to ensure Web Portal assets (`index.html`, `rss.json`) are decoupled into a dedicated `portalAssets.cpp` compilation unit rather than being injected directly into the `webHandlerManager` header file. Confirmed that the `72KB` active RAM footprint is standard operating behavior and verified that the Flash asset linking is functioning natively.
+
+### Key Decisions
+- **Compilation Unit Isolation**: Updated `portalBuilder.py` to produce a separate `.cpp` file for asset definitions to prevent duplicate symbol instantiations in C++.
+- **Flash Validation**: Correctly analyzed the memory map (esp-idf `0x3F41...` ranges) via `xtensa-esp32-elf-nm`, confirming that assets are safely residing in Flash (`.rodata`/DROM) and are not consuming SRAM, despite `nm` outputting a `D` (data) segment tag.
+
+### Git Commit
+Generated commit: 7b8b123
+
+## 2026-03-28 - Clock Widget Extension & WASM Schema Validation (Session 2c2d6708)
+
+### Session Summary
+Implemented support for the `HH_MM_SS` format and custom secondary font allocations in the `clockWidget`. Architected a seamless C++ to WASM registry mapping mechanism that enables the layout simulator to introspect C++ types. 
+
+### Key Decisions
+- **U8g2 Baseline Alignment**: Implemented font-safe `getAscent()` arithmetic to vertically match the seconds digits directly to the primary hours/minutes baseline, avoiding hardcoded coordinate offsets.
+- **Secondary Font Hydration**: Decoupled the structural representation of the widget's "seconds" from its font size, enabling layouts to specify `"format": "HH_MM_SS"` and an optional `"secondaryFont"`.
+- **WASM Schema Introspection**: Refactored `gen_sim_registry.py` and `DesignerRegistry` to embed C++ types during compilation, ensuring the simulator UI models unmapped components with fully populated default JSON properties on-click.
+- **Blink State Consolidation**: Disabled the continuous colon 500ms flash toggle on the seconds separator, bringing it in line with official National Rail specifications where only the HH::MM colon flashes.
+
+### Git Commit
+Generated commit: 388b36f
+
 ## 2026-03-27 - Clock Widget Real-Time Update & Colon Blink Fix (Session d986faf3)
 
 ### Session Summary

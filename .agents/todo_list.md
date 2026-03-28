@@ -38,6 +38,7 @@
 - [ ] **Diagnostics**: Add real-time OLED power state (On/Off) to the web portal's hardware status section.
 - [ ] add the max heap size to the portal system page for hardware status section.
 - [ ] **Simulator**: in the WASM if the edited json omits a widget config mark it as `isVisible = false` and do not show it. (makes config show only configured widgets)
+- [ ] **Schedule Migration**: Review the original v1/v2 `config.json` format. Critically assess how existing `sleepEnabled`, `sleepStarts`, and `sleepEnds` fields should be automatically migrated into the new Schedule/Screensaver paradigm when we update the settings json parsing logic.
 
 ## Completed
 - [x] **OLED Sleep Refactor**: Migrated "Turn OLED Off" from global system settings to per-board `BoardConfig`. Implemented v2.4 JSON migration and state-tracked power management in `DisplayManager`.

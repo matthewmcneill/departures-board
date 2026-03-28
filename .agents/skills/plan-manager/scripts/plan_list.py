@@ -5,6 +5,8 @@ import sys
 
 def list_plans():
     show_all = "--all" in sys.argv
+    use_stdout = "--stdout" in sys.argv
+
     base_dir = "/Users/mcneillm/Documents/Projects/departures-board/.agents/plans"
     lockfile = os.path.join(base_dir, "lock.md")
     output_file = os.path.join(base_dir, "plan_list_view.md")
@@ -113,10 +115,13 @@ def list_plans():
         
     output_lines.append("\n*Tip: Use **`/plan-load [Plan ID]`** to resume a session's rich context. Add **`--all`** to see archives.*")
     
-    with open(output_file, "w") as f:
-        f.write("\n".join(output_lines))
-        
-    print(f"Generated successfully to {output_file}")
+    if use_stdout:
+        print("\n".join(output_lines))
+    else:
+        with open(output_file, "w") as f:
+            f.write("\n".join(output_lines))
+        print(f"Generated successfully to {output_file}")
 
 if __name__ == "__main__":
+
     list_plans()

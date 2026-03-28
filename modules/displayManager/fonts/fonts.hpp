@@ -36,6 +36,6 @@ extern const uint8_t NatRailClockSmall7[];
 extern const uint8_t NatRailClockLarge9[];
 extern const uint8_t Underground10[];
 extern const uint8_t UndergroundClock8[];
-extern const uint8_t WeatherIcons16[];
-extern const uint8_t WeatherIcons11[];
-extern const uint8_t WifiIcons11[];
+extern const uint8_t WeatherIcons16[]; // 16x16 weather condition symbols
+extern const uint8_t WeatherIcons11[]; // 11x11 weather condition symbols
+extern const uint8_t WifiIcons11[];    // 11x11 WiFi signal strength and status icons

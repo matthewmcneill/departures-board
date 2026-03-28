@@ -1,8 +1,8 @@
 ---
 name: Fix OLED Distortion & Font Corruption (NHD + Hex Fonts)
-description: Legacy migrated plan.
+description: "[SUPERSEDED] Resolved via U8g2StateSaver and clipping safeguards."
 created: 2026-03-24T10:05:00Z
-status: READY
+status: DONE
 ---
 
 # Migrated Plan

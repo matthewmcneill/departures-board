@@ -1,8 +1,8 @@
 ---
 name: Universal Context Header Design (Pending Concept Selection)
-description: Legacy migrated plan.
+description: "[SUPERSEDED] Fixed with the new locationAndFiltersWidget."
 created: 2026-03-20T07:11:00Z
-status: READY
+status: DONE
 ---
 
 # Migrated Plan

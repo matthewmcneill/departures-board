@@ -1,8 +1,8 @@
 ---
 name: Adding Expected Time Column
-description: Legacy migrated plan.
+description: "[SUPERSEDED] Expected column already exists in NR widgets/layouts."
 created: 2026-03-23T22:46:42Z
-status: READY
+status: DONE
 ---
 
 # Migrated Plan

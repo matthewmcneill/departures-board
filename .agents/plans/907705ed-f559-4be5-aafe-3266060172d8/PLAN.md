@@ -1,8 +1,8 @@
 ---
 name: Persistent Integrated Terminals for Dev Tasks (VS Code Tasks & Monitor)
-description: Legacy migrated plan.
+description: "[WIP] Moving to active development per user request."
 created: 2026-03-27T17:13:57Z
-status: READY
+status: WIP
 ---
 
 # Migrated Plan

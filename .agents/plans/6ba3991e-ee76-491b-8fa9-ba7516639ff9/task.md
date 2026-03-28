@@ -10,5 +10,6 @@
 - [x] Compile WifiIcons11.txt to u8g2 font array
 - [x] Integrate new font into `wifiStatusWidget.cpp` logic (RSSI states)
 - [x] Update `tools/layoutsim/src/WiFi.h` mock if needed to test RSSI
-- [/] Verify new widget in layout simulator
-- [x] Provide full update and request review
+- [x] Verify new widget in layout simulator
+- [x] House-keeping for style and documentation
+- [x] Provide full update and final wrap

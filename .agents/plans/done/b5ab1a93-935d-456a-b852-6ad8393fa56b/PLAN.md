@@ -1,8 +1,8 @@
 ---
 name: Fix Device Hangs and Network Robustness (non-blocking yields & empty-ID guards)
-description: Legacy migrated plan.
+description: "[SUPERSEDED] Solved by dataWorker queue and system-wide yields."
 created: 2026-03-18T18:59:54Z
-status: READY
+status: DONE
 ---
 
 # Migrated Plan

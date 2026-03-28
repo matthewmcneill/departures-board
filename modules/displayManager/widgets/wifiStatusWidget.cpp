@@ -34,6 +34,10 @@ wifiStatusWidget::wifiStatusWidget(int _x, int _y)
     lastRssiCategory = getRssiCategory();
 }
 
+/**
+ * @brief Categorizes the current WiFi RSSI into a 1-4 signal strength scale.
+ * @return Returns 1 (poor) to 4 (excellent), or -1 if disconnected.
+ */
 int wifiStatusWidget::getRssiCategory() {
     if (WiFi.status() != WL_CONNECTED) return -1;
     int rssi = WiFi.RSSI();
