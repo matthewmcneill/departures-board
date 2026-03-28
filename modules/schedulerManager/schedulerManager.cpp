@@ -10,6 +10,7 @@
  * Module: modules/schedulerManager/schedulerManager.cpp
  * Description: Implementation of the scheduler logic. Evaluates the current system time 
  *              against configured rules and manual overrides.
+ *              Updated in v3.0 to include robust change detection and logging.
  *
  * Exported Functions/Classes:
  * - schedulerManager::schedulerManager: Constructor initializes context reference.
@@ -126,6 +127,7 @@ std::vector<int> schedulerManager::getActiveBoards() {
     }
 
     // --- Step 4: Change Detection & Logging ---
+    if (activeSlots != lastActiveBoards) {
         lastActiveBoards = activeSlots;
         
         char timestamp[10];

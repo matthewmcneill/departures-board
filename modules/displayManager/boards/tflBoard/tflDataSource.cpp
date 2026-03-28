@@ -32,6 +32,8 @@
 
 extern class appContext appContext;
 
+const char* tflDataSource::serviceNumbers[TFL_MAX_FETCH] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
+
 tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     renderData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
@@ -211,6 +213,13 @@ void tflDataSource::executeFetch() {
     if (stationData) {
         std::sort(stationData->service, stationData->service + stationData->numServices, compareTimes);
         if (stationData->numServices > TFL_MAX_SERVICES) stationData->numServices = TFL_MAX_SERVICES;
+
+        // --- Step 2: Zero-Copy Position Numbering ---
+        // Assign stable pointers to position strings ("1", "2", ...) to avoid
+        // stack-allocated string corruption in the UI layer.
+        for (int i = 0; i < stationData->numServices; i++) {
+            stationData->service[i].orderNum = serviceNumbers[i % TFL_MAX_FETCH];
+        }
 
         // Populate expectedTime strings
         for (int i=0; i<stationData->numServices; i++) {

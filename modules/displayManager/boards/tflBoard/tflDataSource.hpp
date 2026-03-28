@@ -8,7 +8,8 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/tflBoard/tflDataSource.hpp
- * Description: TfL data source implementing iDataSource.
+ * Description: TfL data source implementing iDataSource. Fetches arrival data
+ *              from the TfL Unified API.
  *
  * Exported Functions/Classes:
  * - tflDataSource: Data client for TfL Unified API.
@@ -20,6 +21,7 @@
  *   - setTestMode(): Enable lightweight auth-only validation mode.
  *   - executeFetch(): Internal synchronous HTTPS pipeline.
  *   - fetchTask(): FreeRTOS static entry point for pinning JSON parse.
+ *   - serviceNumbers: Static array of stable pointers for numbering (1-20).
  */
 
 #ifndef TFL_DATA_SOURCE_HPP
@@ -45,6 +47,7 @@
  * @brief Data structure for a single London Underground service.
  */
 struct TflService {
+    const char* orderNum; // Stable pointer to position number (1, 2, 3...)
     char destination[TFL_MAX_LOCATION];
     char lineName[TFL_MAX_LOCATION]; 
     char expectedTime[11];
@@ -98,6 +101,7 @@ private:
     bool pruneFromPhrase(char* input, const char* target);
     void replaceWord(char* input, const char* target, const char* replacement);
     static bool compareTimes(const TflService& a, const TflService& b);
+    static const char* serviceNumbers[TFL_MAX_FETCH]; ///< Stable pointers for zero-copy numbering ("1", "2", ...)
 
 public:
     tflDataSource();

@@ -7,7 +7,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/busBoard/busDataSource.hpp
+ * Module: modules/displayManager/boards/busBoard/busDataSource.hpp
  * Description: Bus-specific data source implementing iDataSource.
  *              Fetches and parses bus arrival information from bustimes.org.
  *
@@ -23,6 +23,7 @@
  * - busDataSource::cleanFilter: Cleans a raw filter string.
  *   - executeFetch(): Internal synchronous HTTPS scraping pipeline.
  *   - fetchTask(): FreeRTOS static entry point for pinning HTML scraping.
+ *   - serviceNumbers: Static array of stable pointers for numbering (1-20).
  */
 
 #ifndef BUS_DATA_SOURCE_HPP
@@ -46,6 +47,7 @@
  * @brief Represents a single bus service arrival.
  */
 struct BusService {
+    const char* orderNum;                 // Stable pointer to position number (1, 2, 3...)
     char sTime[6];                        // Scheduled arrival time (HH:MM)
     char destination[BUS_MAX_LOCATION];   // Bus destination name
     char routeNumber[BUS_MAX_LOCATION];   // Bus route number/ID
@@ -130,6 +132,9 @@ private:
      * @return true if matches.
      */
     bool serviceMatchesFilter(const char* filter, const char* serviceId);
+
+    static bool compareTimes(const BusService& a, const BusService& b);
+    static const char* serviceNumbers[BUS_MAX_FETCH]; ///< Stable pointers for zero-copy numbering ("1", "2", ...)
 
     // Configuration
     char busAtco[13];                  // ATCO code for the bus stop

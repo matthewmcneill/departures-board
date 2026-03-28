@@ -169,20 +169,13 @@ int TfLBoard::updateData() {
             activeLayout->servicesWidget.clearRows();
             if (data->numServices > 0) {
                 for (int i = 0; i < data->numServices; i++) {
-                    char ordinalDest[64];
-                    if (config.showServiceOrdinals) {
-                        const char* suffix = "th";
-                        if ((i+1) % 10 == 1 && (i+1) % 100 != 11) suffix = "st";
-                        else if ((i+1) % 10 == 2 && (i+1) % 100 != 12) suffix = "nd";
-                        else if ((i+1) % 10 == 3 && (i+1) % 100 != 13) suffix = "rd";
-                        snprintf(ordinalDest, sizeof(ordinalDest), "%d%s: %s", i+1, suffix, data->service[i].destination);
-                    } else {
-                        strlcpy(ordinalDest, data->service[i].destination, sizeof(ordinalDest));
-                    }
-
-                    const char* rowData[3] = {
+                    // --- Step 3: Populate 4-Column Layout ---
+                    // Column Order: 0: OrderNum, 1: Line, 2: Destination, 3: Time
+                    // The orderNum is a stable pointer assigned by the DataSource.
+                    const char* rowData[4] = {
+                        config.showServiceOrdinals ? data->service[i].orderNum : "",
                         data->service[i].lineName,
-                        ordinalDest,
+                        data->service[i].destination,
                         data->service[i].expectedTime
                     };
                     activeLayout->servicesWidget.addRow(rowData);

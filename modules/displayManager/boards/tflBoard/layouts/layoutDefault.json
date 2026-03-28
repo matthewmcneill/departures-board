@@ -36,12 +36,17 @@
       "visible": true,
       "columns": [
         {
+          "width": 16,
+          "align": 0,
+          "label": "No"
+        },
+        {
           "width": 60,
           "align": 0,
           "label": "Line"
         },
         {
-          "width": 140,
+          "width": 124,
           "align": 0,
           "label": "Destination"
         },

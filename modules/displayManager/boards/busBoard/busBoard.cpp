@@ -161,7 +161,11 @@ int BusBoard::updateData() {
             activeLayout->servicesWidget.clearRows();
             if (data->numServices > 0) {
                 for (int i = 0; i < data->numServices; i++) {
-                    const char* rowData[3] = {
+                    // --- Step 3: Populate 4-Column Layout ---
+                    // Column Order: 0: OrderNum, 1: Route, 2: Destination, 3: Time
+                    // The orderNum is a stable pointer assigned by the DataSource.
+                    const char* rowData[4] = {
+                        config.showServiceOrdinals ? data->service[i].orderNum : "",
                         data->service[i].routeNumber,
                         data->service[i].destination,
                         data->service[i].expectedTime[0] != '\0' ? data->service[i].expectedTime : data->service[i].sTime

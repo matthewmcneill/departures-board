@@ -14,11 +14,12 @@
   - [x] Update `displayManager.cpp` to replace unconditional rotation with the `getActiveBoards()` query.
   - [x] Update `displayManager::cycleNext()` to use `carouselIntervalSecs`.
 
-- [ ] **Phase 4: Web Portal**
-  - [ ] Restructure `#tab-schedule` in `web/index.html` to match the Mobile-First wireframe.
-  - [ ] Implement JS `saveAll()` serialization for the `ScheduleRule` array.
-  - [ ] Add the "Target Missing" warning state for orphaned rules.
+- [x] **Phase 4: Web Portal**
+  - [x] Restructure `#tab-schedule` in `web/index.html` to match the Mobile-First wireframe.
+  - [x] Implement JS `saveAll()` serialization for the `ScheduleRule` array.
+  - [x] Add the "Target Missing" warning state for orphaned rules.
 
-- [ ] **Phase 5: Verification**
+- [/] **Phase 5: Verification**
   - [ ] Run Playwright tests on Web UI.
   - [ ] Verify manual override logic and timeout behavior on ESP32 device.
+  - [ ] Verify carousel interval behavior on ESP32 device.

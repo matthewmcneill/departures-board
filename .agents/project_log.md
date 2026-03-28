@@ -2,6 +2,20 @@
 
 ## Execution History
 
+## 2026-03-28 - TfL & Bus Board Memory Safety & Layout Upgrade (Session 2e1382f8)
+
+### Session Summary
+Successfully resolved a critical memory corruption issue in the TfL and Bus board firmware by refactoring data structures to a zero-copy architecture. Upgraded both boards to a high-fidelity 4-column layout (Order, Line/Route, Destination, Time) to match London transport standards. Replaced dangerous stack-allocated string pointers with static, persistent pointers for service numbering.
+
+### Key Decisions
+- **Zero-Copy Numbering**: Implemented a `static const char*` array (`serviceNumbers`) in `TflDataSource` and `BusDataSource`. This provides persistent, zero-overhead pointers for service position numbers ("1" through "20"), eliminating dangling pointers in the `serviceListWidget`.
+- **High-Fidelity Layouts**: Updated `layoutDefault.json` and `layoutDefault.cpp` for both boards to a 4-column structure. Refactored `updateData()` in both board controllers to pass the `orderNum` pointer to the `serviceListWidget` conditionally based on the `config.showServiceOrdinals` setting.
+- **Architectural Cleanup**: Fixed a syntax error in `modules/schedulerManager/schedulerManager.cpp` (missing `if` condition for change detection) that was blocking compilation and corrected loop scope issues in `TfLBoard::updateData()`.
+- **House Style Alignment**: Audited and updated all modified modules to strictly adhere to v3.0 project standards, including Doxygen headers and step-by-step functional comments.
+
+### Git Commit
+Generated commit: [TBD]
+
 ## 2026-03-28 - Boot Sequence Optimization & Fetch Guarding (Session bb169fad)
 
 ### Session Summary

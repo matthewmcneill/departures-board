@@ -35,6 +35,8 @@
 
 extern class appContext appContext;
 
+const char* busDataSource::serviceNumbers[BUS_MAX_FETCH] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
+
 // HTML Scraper parsing states
 #define PBT_START 0
 #define PBT_HEADER 1
@@ -297,7 +299,14 @@ void busDataSource::executeFetch() {
     // --- Step 5: Finalize and compare results ---
     httpsClient->stop();
     xBusStop->numServices = id;
-    for (int i=0; i<xBusStop->numServices; i++) replaceWord(xBusStop->service[i].destination, "&amp;", "&");
+    
+    // --- Step 2: Zero-Copy Position Numbering ---
+    // Assign stable pointers to position strings ("1", "2", ...) from the static 
+    // library to avoid stack-allocated string corruption in the UI widgets.
+    for (int i = 0; i < xBusStop->numServices; i++) {
+        xBusStop->service[i].orderNum = serviceNumbers[i % BUS_MAX_FETCH];
+        replaceWord(xBusStop->service[i].destination, "&amp;", "&");
+    }
 
     if (stationData) {
         if (xBusStop->numServices != stationData->numServices) stationData->boardChanged = true;
@@ -332,6 +341,14 @@ void busDataSource::executeFetch() {
         LOG_DEBUG("DATA", "Bus Task Stack High Water Mark: " + String(hwm) + " words");
         LOG_DEBUG("DATA", "--- Bus Data ---");
         for (int i = 0; i < renderData->numServices; i++) {
+            // --- Step 3: Populate 4-Column Layout ---
+            // Column Order: 0: OrderNum, 1: Route, 2: Destination, 3: Time
+            const char* rowData[4] = {
+                renderData->service[i].orderNum,
+                renderData->service[i].routeNumber,
+                renderData->service[i].destination,
+                renderData->service[i].expectedTime[0] != '\0' ? renderData->service[i].expectedTime : renderData->service[i].sTime
+            };
             char debugMsg[256];
             snprintf(debugMsg, sizeof(debugMsg), "Service %d: [%s] to %s (Sch: %s, Exp: %s)", 
                      i, renderData->service[i].routeNumber, renderData->service[i].destination, 
