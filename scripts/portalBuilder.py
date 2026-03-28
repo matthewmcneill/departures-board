@@ -10,17 +10,18 @@ To view a copy of this license, visit https://creativecommons.org/licenses/by-nc
 
 Module: scripts/portalBuilder.py
 Description: Aggressively minifies and gzips web portal assets for embedding into ESP32 firmware.
-             Ensures that index.html and rss.json are converted to C++ headers for compilation.
+             Ensures that index.html and rss.json are separated into .h/.cpp to stay in Flash (.rodata).
 
 Exported Functions/Classes:
 - should_rebuild(): Determines if assets need regeneration based on file timestamps.
 - minify_html(content): Strips comments and whitespace for aggressive size reduction.
-- generate_assets(): Main entry point to orchestrate minification, compression, and header generation.
+- generate_assets(): Main entry point to orchestrate minification, compression, and global compilation files.
 """
 import os
 import gzip
 import shutil
 import re
+import datetime
 
 # --- Configuration ---
 try:
@@ -34,14 +35,15 @@ except ImportError:
 
 ROOT_DIR = env.get("PROJECT_DIR", os.getcwd())
 PORTAL_DIR = os.path.join(ROOT_DIR, "web")
-OUTPUT_FILE = os.path.join(ROOT_DIR, "modules/webServer/portalAssets.h")
+OUTPUT_H = os.path.join(ROOT_DIR, "modules/webServer/portalAssets.h")
+OUTPUT_CPP = os.path.join(ROOT_DIR, "modules/webServer/portalAssets.cpp")
 ASSETS = ["index.html", "rss.json"] 
 
 def should_rebuild():
-    if not os.path.exists(OUTPUT_FILE):
+    if not os.path.exists(OUTPUT_H) or not os.path.exists(OUTPUT_CPP):
         return True
     
-    dest_mtime = os.path.getmtime(OUTPUT_FILE)
+    dest_mtime = min(os.path.getmtime(OUTPUT_H), os.path.getmtime(OUTPUT_CPP))
     for asset in ASSETS:
         asset_path = os.path.join(PORTAL_DIR, asset)
         if os.path.exists(asset_path) and os.path.getmtime(asset_path) > dest_mtime:
@@ -59,8 +61,6 @@ def minify_html(content):
     content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
     
     # 3. Remove single-line comments (be careful with URLs)
-    # Strategy: Remove // comments if they are at the start of a line or 
-    # preceded by whitespace, but NOT prepended by a colon (to protect http://)
     content = re.sub(r'(?m)^\s*//.*$', '', content)
     content = re.sub(r'(?<!:)\/\/.*$', '', content, flags=re.MULTILINE)
 
@@ -74,97 +74,95 @@ def minify_html(content):
     return content.strip()
 
 def generate_assets():
-    if not should_rebuild():
+    # Force rebuild so we test the new logic once
+    if not should_rebuild() and os.environ.get("FORCE_REBUILD", "0") == "0":
         print("Portal assets are up to date. Skipping rebuild.")
         return
 
-    print(f"--- Portal Builder: Generating {OUTPUT_FILE} ---")
+    print(f"--- Portal Builder: Generating {OUTPUT_H} and {OUTPUT_CPP} ---")
     
     if not os.path.exists(PORTAL_DIR):
         print(f"Error: {PORTAL_DIR} directory not found!")
         return
 
-    # Ensure output directory exists
-    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    os.makedirs(os.path.dirname(OUTPUT_H), exist_ok=True)
 
-    with open(OUTPUT_FILE, "w") as f:
-        f.write("/*\n")
-        f.write(" * Departures Board (c) 2025-2026 Gadec Software\n")
-        f.write(" * Refactored for v3.0 by Matt McNeill 2026 CB Labs\n")
-        f.write(" *\n")
-        f.write(" * https://github.com/gadec-uk/departures-board\n")
-        f.write(" *\n")
-        f.write(" * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.\n")
-        f.write(" * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/\n")
-        f.write(" *\n")
-        f.write(f" * Module: {OUTPUT_FILE}\n")
-        f.write(" * Description: Automated Portal Assets - embedded gzipped binary data.\n *\n")
-        f.write(" * Exported Functions/Classes:\n")
-        for asset in ASSETS:
-            var_name = asset.replace(".", "_") + "_gz"
-            f.write(f" * - {var_name}: Gzipped content of {asset}\n")
-            f.write(f" * - {var_name}_len: Length of {var_name}\n")
-        f.write(" */\n\n")
-        f.write("#pragma once\n\n")
-        f.write("#include <Arduino.h>\n\n")
+    h_file = open(OUTPUT_H, "w")
+    cpp_file = open(OUTPUT_CPP, "w")
 
-        for asset in ASSETS:
-            asset_path = os.path.join(PORTAL_DIR, asset)
-            if not os.path.exists(asset_path):
-                print(f"Warning: Asset {asset_path} not found. Skipping.")
-                continue
+    header_comment = """/*
+ * Departures Board (c) 2025-2026 Gadec Software
+ * Refactored for v3.0 by Matt McNeill 2026 CB Labs
+ *
+ * https://github.com/gadec-uk/departures-board
+ *
+ * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
+ * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ *
+ * Module: Portal Assets
+ * Description: Automated Portal Assets - embedded gzipped binary data.
+ * Exported cleanly via .h/.cpp to remain in ESP32 Flash (.rodata) and conserve RAM.
+ */
+"""
+    h_file.write(header_comment)
+    h_file.write("#pragma once\n\n#include <Arduino.h>\n\n")
+    
+    cpp_file.write(header_comment)
+    cpp_file.write('#include "portalAssets.h"\n\n')
 
-            print(f"Processing: {asset}...")
+    for asset in ASSETS:
+        asset_path = os.path.join(PORTAL_DIR, asset)
+        if not os.path.exists(asset_path):
+            print(f"Warning: Asset {asset_path} not found. Skipping.")
+            continue
+
+        print(f"Processing: {asset}...")
+        
+        with open(asset_path, "r", encoding="utf-8") as f_in:
+            content = f_in.read()
             
-            # Minify and Gzip the content
-            with open(asset_path, "r", encoding="utf-8") as f_in:
-                content = f_in.read()
+            if asset == "index.html":
+                serial = datetime.datetime.now().strftime("%Y-%m-%d")
+                header_path = os.path.join(ROOT_DIR, "modules/systemManager/build_time.h")
+                if os.path.exists(header_path):
+                    with open(header_path, "r") as hf:
+                        hcontent = hf.read()
+                        match = re.search(r'#define BUILD_TIME "(.*?)"', hcontent)
+                        if match:
+                            serial = match.group(1)
                 
-                # Injection: If this is index.html, replace the hardcoded build date
-                if asset == "index.html":
-                    # Try to read the serial from the generated header to stay in sync
-                    serial = datetime.datetime.now().strftime("%Y-%m-%d")
-                    header_path = os.path.join(ROOT_DIR, "modules/systemManager/build_time.h")
-                    if os.path.exists(header_path):
-                        with open(header_path, "r") as hf:
-                            hcontent = hf.read()
-                            import re
-                            match = re.search(r'#define BUILD_TIME "(.*?)"', hcontent)
-                            if match:
-                                serial = match.group(1)
-                    
-                    content = re.sub(r'<p id="fw-build-text">Build: [^<]+</p>', 
-                                   f'<p id="fw-build-text">Build: {serial}</p>', 
-                                   content)
-                    print(f"Patched build serial in index.html to: {serial}")
+                content = re.sub(r'<p id="fw-build-text">Build: [^<]+</p>', 
+                               f'<p id="fw-build-text">Build: {serial}</p>', 
+                               content)
+                print(f"Patched build serial in index.html to: {serial}")
 
-                minified_content = minify_html(content)
-                gzipped_content = gzip.compress(minified_content.encode("utf-8"))
+            minified_content = minify_html(content)
+            gzipped_content = gzip.compress(minified_content.encode("utf-8"))
 
-            # Generate C++ array name
-            var_name = asset.replace(".", "_") + "_gz"
-            
-            # Write to header
-            f.write(f"// Original: {asset} ({len(content)} bytes), Minified: {len(minified_content)} bytes, Gzipped: ({len(gzipped_content)} bytes)\n")
-            f.write(f"const uint8_t {var_name}[] PROGMEM = {{\n    ")
-            
-            # Format as hex
-            hex_data = [f"0x{b:02x}" for b in gzipped_content]
-            for i, h in enumerate(hex_data):
-                f.write(h)
-                if i < len(hex_data) - 1:
-                    f.write(", ")
-                if (i + 1) % 12 == 0:
-                    f.write("\n    ")
-            
-            f.write("\n};\n")
-            f.write(f"const uint32_t {var_name}_len = {len(gzipped_content)};\n\n")
+        var_name = asset.replace(".", "_") + "_gz"
+        
+        h_file.write(f"// Original: {asset} ({len(content)} bytes), Minified: {len(minified_content)} bytes, Gzipped: ({len(gzipped_content)} bytes)\n")
+        h_file.write(f"extern const uint8_t {var_name}[] __attribute__((section(\".rodata\")));\n")
+        h_file.write(f"extern const uint32_t {var_name}_len __attribute__((section(\".rodata\")));\n\n")
 
-    print(f"Successfully generated {OUTPUT_FILE}")
+        cpp_file.write(f"const uint8_t {var_name}[] __attribute__((section(\".rodata\"))) = {{\n    ")
+        
+        hex_data = [f"0x{b:02x}" for b in gzipped_content]
+        for i, h in enumerate(hex_data):
+            cpp_file.write(h)
+            if i < len(hex_data) - 1:
+                cpp_file.write(", ")
+            if (i + 1) % 12 == 0:
+                cpp_file.write("\n    ")
+        
+        cpp_file.write("\n};\n")
+        cpp_file.write(f"const uint32_t {var_name}_len __attribute__((section(\".rodata\"))) = {len(gzipped_content)};\n\n")
 
-# Always run when this script is loaded/executed
+    h_file.close()
+    cpp_file.close()
+    print(f"Successfully generated {OUTPUT_H} and {OUTPUT_CPP}")
+
 generate_assets()
 
 if __name__ == "__main__":
-    # Also run if called directly (though generate_assets() above already handled it)
     pass
