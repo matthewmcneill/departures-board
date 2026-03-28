@@ -62,6 +62,11 @@ Physical interaction with the hardware suspends the schedule in favor of a full 
 - Instead of unconditionally rotating `activeBoardIndex = (activeBoardIndex + 1) % config.boardCount`, it will query `appContext::getSchedulerManager()->getActiveBoards()` and rotate solely through that valid subset.
 - Update the rotation pacing logic to use `config.carouselIntervalSecs` instead of any hardcoded intervals, allowing user configuration of the carousel rotation speed.
 
+#### [MODIFY] [configManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.cpp)
+- **`save()`**: Add `manualOverrideTimeoutSecs`, `carouselIntervalSecs`, and the `schedules` array to the JSON output.
+- **`loadConfig()`**: Map the new JSON keys back to the `Config` struct.
+- **`writeDefaultConfig()`**: Initialize the new scheduling fields with sensible defaults (60s override, 120s carousel).
+
 #### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
 - Hook into the existing `buttonHandler` (or physical GPIO interrupt system). 
 - When the button is pressed to skip a board, invoke `appContext::getSchedulerManager()->triggerManualOverride()`.
@@ -69,10 +74,14 @@ Physical interaction with the hardware suspends the schedule in favor of a full 
 ### Web Portal Integration
 
 #### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/web/index.html)
-- Transform the `#tab-schedule` placeholder into a functional UI designed for Mobile-First usage (Pico CSS).
-- **Logic**: 
-  - Expand the JS `saveAll()` payload to serialize the array of `ScheduleRule` objects back to the C++ backend.
-  - **Orphan Handling**: If a rule targets a `boardIndex` that is now empty, render the rule with a red warning badge ("Target Missing").
+- **HTML**: Replace the `#tab-schedule` placeholder with a functional list view.
+- **HTML**: Add `modal-schedule` for rule editing (Selection, Range, Target).
+- **CSS**: Add `.schedule-rule-card` styles for mobile-first readability.
+- **JS**: 
+  - Implement `renderSchedules()` to dynamically build the list from `app.state.config.schedules`.
+  - Implement `addScheduleRule()`, `editScheduleRule()`, and `deleteScheduleRule()`.
+  - Update `saveAll()` to include the scheduling parameters in the payload.
+  - **Legacy Migration**: Detect `sleepEnabled` / `sleepStarts/Ends` on load; if present and rules are empty, offer a one-click migration to the new rule system.
 
 #### UI Wireframe (Mobile View - List Paradigm)
 ```text

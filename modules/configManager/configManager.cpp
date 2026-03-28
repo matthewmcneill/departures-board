@@ -222,6 +222,18 @@ void ConfigManager::writeDefaultConfig() {
     doc[F("flip")] = false;
     doc[F("TZ")] = TimeManager::ukTimezone;
     doc[F("mode")] = config.defaultBoardIndex;
+    doc[F("overrideTimeout")] = 60;
+    doc[F("carouselInterval")] = 120;
+
+    JsonArray schedules = doc[F("schedules")].to<JsonArray>();
+    for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
+        JsonObject s = schedules.add<JsonObject>();
+        s[F("startH")] = 0;
+        s[F("startM")] = 0;
+        s[F("endH")] = 23;
+        s[F("endM")] = 59;
+        s[F("board")] = -1;
+    }
 
     JsonArray boards = doc[F("boards")].to<JsonArray>();
 
@@ -290,6 +302,19 @@ bool ConfigManager::save() {
     doc[F("rssName")] = config.rssName;
     doc[F("weatherKeyId")] = config.weatherKeyId;
     doc[F("mode")] = config.defaultBoardIndex;
+    doc[F("overrideTimeout")] = config.manualOverrideTimeoutSecs;
+    doc[F("carouselInterval")] = config.carouselIntervalSecs;
+
+    JsonArray schedules = doc[F("schedules")].to<JsonArray>();
+    for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
+        const ScheduleRule& r = config.schedules[i];
+        JsonObject s = schedules.add<JsonObject>();
+        s[F("startH")] = r.startHour;
+        s[F("startM")] = r.startMinute;
+        s[F("endH")] = r.endHour;
+        s[F("endM")] = r.endMinute;
+        s[F("board")] = r.boardIndex;
+    }
 
     JsonArray boards = doc[F("boards")].to<JsonArray>();
     for (int i = 0; i < config.boardCount; i++) {
@@ -366,6 +391,28 @@ void ConfigManager::loadConfig() {
         if (settings[F("updateDaily")].is<bool>())       config.dailyUpdateCheckEnabled = settings[F("updateDaily")];
         if (settings[F("waitForScroll")].is<bool>())     config.waitForScrollComplete = settings[F("waitForScroll")];
         if (settings[F("rssFirst")].is<bool>())          config.prioritiseRss = settings[F("rssFirst")];
+        
+        // Scheduling and carousel defaults
+        config.manualOverrideTimeoutSecs = settings[F("overrideTimeout")] | 60;
+        config.carouselIntervalSecs = settings[F("carouselInterval")] | 120;
+
+        if (settings[F("schedules")].is<JsonArray>()) {
+            JsonArray schedules = settings[F("schedules")].as<JsonArray>();
+            int count = 0;
+            for (JsonObject s : schedules) {
+                if (count >= MAX_SCHEDULE_RULES) break;
+                ScheduleRule& r = config.schedules[count++];
+                r.startHour = s[F("startH")] | 0;
+                r.startMinute = s[F("startM")] | 0;
+                r.endHour = s[F("endH")] | 23;
+                r.endMinute = s[F("endM")] | 59;
+                r.boardIndex = s[F("board")] | -1;
+            }
+            // Fill remaining if needed
+            for (int i = count; i < MAX_SCHEDULE_RULES; i++) {
+                config.schedules[i].boardIndex = -1;
+            }
+        }
 
         // RSS
         if (settings[F("rssUrl")].is<const char*>())     strlcpy(config.rssUrl, settings[F("rssUrl")], sizeof(config.rssUrl));
