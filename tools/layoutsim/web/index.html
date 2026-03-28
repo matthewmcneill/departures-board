@@ -209,13 +209,58 @@
         .validation-status.error { color: #f44336; background: #2a1a1a; }
         .controls { display: flex; align-items: center; gap: 15px; font-size: 0.85rem; }
         .status { font-size: 0.7rem; color: #666; margin-left: 20px; }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+        .status-ok { background-color: rgba(76, 175, 80, 0.1); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.3); }
+        .status-warn { background-color: rgba(255, 152, 0, 0.1); color: #ffb74d; border: 1px solid rgba(255, 152, 0, 0.3); cursor: help; animation: pulse-warn 2s infinite; }
+        .rebuild-banner {
+            background-color: #d32f2f;
+            color: #fff;
+            padding: 12px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            z-index: 1000;
+            border-bottom: 2px solid #b71c1c;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+        }
+        .rebuild-banner .instruction {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-top: 2px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
     </style>
 </head>
 <body>
+    <div id="rebuild-banner" class="rebuild-banner">
+        <div>⚠️ WASM ENGINE OUT OF SYNC: Layout headers have been modified!</div>
+        <div class="instruction">Run: python3 tools/layoutsim/scripts/build_wasm.py</div>
+    </div>
     <header class="header-bar">
         <h1>Layout Designer</h1>
-        <div class="controls">
-            <select id="layoutSelector" style="background:#333; color:white; border:1px solid #444; padding:4px 8px; border-radius:4px; outline:none; font-size:0.8rem; cursor:pointer;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div id="integrity-status" class="status-badge"></div>
+            <div id="auto-filename" style="font-size: 0.8rem; color: #888; font-family: monospace;"></div>
+            <select id="layout-selector" style="background:#333; color:white; border:1px solid #444; padding:4px 8px; border-radius:4px; outline:none; font-size:0.8rem; cursor:pointer;">
                 <option value="auto">(Auto-detect)</option>
             </select>
             <span class="status" id="status">Loading...</span>
@@ -269,7 +314,7 @@
         const debugOverlayEl = document.getElementById('debugOverlay');
         const elementListEl = document.getElementById('elementList');
         const inspectorContentEl = document.getElementById('inspectorContent');
-        const layoutSelector = document.getElementById('layoutSelector');
+        const layoutSelector = document.getElementById('layout-selector');
         const showBoxesToggle = document.getElementById('showBoxes');
         
         let engine;
@@ -279,7 +324,7 @@
         let lastLayoutJson = '';     // Last KNOWN GOOD layout applied to engine
         let lastDataJson = '';
         
-        let activeLayoutPath = 'tools/layoutsim/layout.json';
+        let activeLayoutPath = 'modules/displayManager/boards/nationalRailBoard/layouts/layoutDefault.json';
         let selectedId = null;
 
         // --- WASM Lifecycle ---
@@ -308,15 +353,40 @@
             await initLayoutList();
             await reloadLayout();
             await reloadData();
+            await checkIntegrity(); // Initial check
             requestAnimationFrame(tick);
 
             setInterval(async () => {
                 await reloadLayout();
                 await reloadData();
-            }, 500);
+                await checkIntegrity();
+            }, 2000);
         }).catch(err => {
             statusEl.innerText = 'Error: ' + err.message;
         });
+
+        async function checkIntegrity() {
+            try {
+                const response = await fetch('/api/integrity-check');
+                const data = await response.json();
+                const badge = document.getElementById('integrity-status');
+                const banner = document.getElementById('rebuild-banner');
+                
+                if (data.status === 'OK') {
+                    badge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #4caf50;"></span> WASM In Sync';
+                    badge.className = 'status-badge status-ok';
+                    badge.title = 'The WASM engine is perfectly synchronized with your C++ layout headers.';
+                    banner.style.display = 'none';
+                } else {
+                    badge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #ff9800;"></span> Rebuild Required';
+                    badge.className = 'status-badge status-warn';
+                    badge.title = 'Layout headers have changed! Run tools/layoutsim/scripts/build_wasm.py to synchronize the simulator.';
+                    banner.style.display = 'flex';
+                }
+            } catch (err) {
+                console.warn('Integrity check failed', err);
+            }
+        }
 
         // --- Layout Discovery ---
         async function initLayoutList() {
@@ -389,7 +459,7 @@
 
         async function reloadData() {
             try {
-                const response = await fetch('/tools/layoutsim/data.json', { cache: 'no-store' });
+                const response = await fetch(`/api/mock-data?layout=${lastLayoutPath}`, { cache: 'no-store' });
                 if (!response.ok) return;
                 const json = await response.text();
                 if (json !== lastDataJson) {
@@ -447,7 +517,7 @@
                         } else if (config && config.geometry) {
                             x = config.geometry.x; y = config.geometry.y; width = config.geometry.w; height = config.geometry.h;
                         }
-                        addElementToUI(targetGroup, grid, w.id, 'widget', x, y, width, height, config, w.validation_status);
+                        addElementToUI(targetGroup, grid, w.id, 'widget', x, y, width, height, config, w.validation_status, w.type);
                     });
                 }
 
@@ -486,7 +556,7 @@
             } catch (e) { console.error('Overlay error:', e); }
         }
 
-        function addElementToUI(container, grid, id, type, x, y, w, h, config, status) {
+        function addElementToUI(container, grid, id, type, x, y, w, h, config, status, cppType) {
             const item = document.createElement('div');
             item.className = `element-item ${type}`;
             if (id === selectedId) item.classList.add('active');
@@ -523,13 +593,60 @@
                 document.querySelectorAll('.element-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
                 
-                let titleHtml = `<div style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; color: #ff9800; font-family: sans-serif;"><strong>${id}</strong> <span style="font-size: 0.7rem; color: #888; margin-left:10px;">${type}</span></div>`;
+                let titleHtml = `<div style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; color: #ff9800; font-family: sans-serif;"><strong>${id}</strong> <span style="font-size: 0.7rem; color: #888; margin-left:10px;">${cppType || type}</span></div>`;
                 let statusHtml = '';
                 if (status === 'unmapped') statusHtml = `<div style="color: #f44336; margin-bottom: 10px; font-size: 0.75rem; font-family: sans-serif;">❌ Validation: Ignored (Not in Registry)</div>`;
                 else if (status === 'missing_style') statusHtml = `<div style="color: #ff9800; margin-bottom: 10px; font-size: 0.75rem; font-family: sans-serif;">⚠️ Validation: Missing Style</div>`;
                 else if (status === 'valid') statusHtml = `<div style="color: #4caf50; margin-bottom: 10px; font-size: 0.75rem; font-family: sans-serif;">✅ Validation: Valid Alignment</div>`;
 
-                let codeContent = config ? JSON.stringify(config, null, 2) : `// ${id} is defined in C++ but not styled in the active layout JSON.\n{\n  "id": "${id}"\n}`;
+                let finalType = cppType || config?.type || type;
+                let fullConfig = {
+                    id: id,
+                    type: finalType,
+                    geometry: {
+                        x: x !== undefined ? x : 0,
+                        y: y !== undefined ? y : 0,
+                        w: w !== undefined ? w : 10,
+                        h: h !== undefined ? h : 10
+                    },
+                    visible: config && config.visible !== undefined ? config.visible : true
+                };
+
+                if (finalType === 'labelWidget') {
+                    fullConfig.text = config?.text || "Label";
+                    fullConfig.font = config?.font || "NatRailSmall9";
+                } else if (finalType === 'scrollingTextWidget') {
+                    fullConfig.text = config?.text || "Scrolling Text";
+                    fullConfig.font = config?.font || "NatRailSmall9";
+                } else if (finalType === 'clockWidget') {
+                    fullConfig.blink = config?.blink !== undefined ? config.blink : true;
+                    fullConfig.format = config?.format || "HH_MM";
+                    fullConfig.font = config?.font || "UndergroundClock8";
+                    if (fullConfig.format === "HH_MM_SS") {
+                       fullConfig.secondaryFont = config?.secondaryFont || "NatRailClockSmall7";
+                    }
+                } else if (finalType === 'locationAndFiltersWidget') {
+                    fullConfig.font = config?.font || "NatRailSmall9";
+                } else if (finalType === 'serviceListWidget') {
+                    fullConfig.font = config?.font || "NatRailTall12";
+                    fullConfig.skipRows = config?.skipRows || 0;
+                    fullConfig.maxRows = config?.maxRows !== undefined ? config.maxRows : -1;
+                    fullConfig.columns = config?.columns || [
+                        { width: 24, align: 0, label: "No" },
+                        { width: 40, align: 0, label: "Time" },
+                        { width: 120, align: 0, label: "Dest" },
+                        { width: 16, align: 1, label: "Plat" },
+                        { width: 55, align: 2, label: "Expected" }
+                    ];
+                } else if (finalType === 'scrollingMessagePoolWidget') {
+                    fullConfig.font = config?.font || "NatRailSmall9";
+                }
+
+                let codeContent = JSON.stringify(fullConfig, null, 2);
+
+                if (status === "unmapped") {
+                    codeContent = `// ${id} is present in JSON but ignored because it is not mapped in C++.\n` + codeContent;
+                }
 
                 inspectorContentEl.innerHTML = titleHtml + statusHtml + `<pre style="margin:0;">${codeContent}</pre>`;
                 item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

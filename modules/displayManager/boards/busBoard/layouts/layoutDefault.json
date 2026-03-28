@@ -2,28 +2,16 @@
   "layout": "iBusLayout",
   "widgets": [
     {
-      "id": "stationName",
-      "type": "labelWidget",
+      "id": "locationAndFilters",
+      "type": "locationAndFiltersWidget",
       "geometry": {
         "x": 0,
         "y": 0,
-        "w": 150,
+        "w": 236,
         "h": 12
       },
       "visible": true,
       "font": "Underground10"
-    },
-    {
-      "id": "filterInfo",
-      "type": "scrollingTextWidget",
-      "geometry": {
-        "x": 150,
-        "y": 0,
-        "w": 86,
-        "h": 12
-      },
-      "visible": true,
-      "font": "NatRailSmall9"
     },
     {
       "id": "wifiWarning",

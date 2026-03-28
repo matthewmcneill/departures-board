@@ -71,7 +71,7 @@ DisplayManager::DisplayManager()
       activeSlotIndex(0), brightness(20), flipScreen(false), 
       sleepEnabled(false), sleepStarts(23), sleepEnds(8), 
       currentBoard(nullptr), lastActivity(0), forcedSleep(false),
-      wifiWarning(0, 56), otaUpdateAvailable(false) {
+      wifiWarning(0, 56) {
 }
 
 /**

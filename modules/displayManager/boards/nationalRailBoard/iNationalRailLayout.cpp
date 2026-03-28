@@ -14,10 +14,8 @@
 
 iNationalRailLayout::iNationalRailLayout(appContext* context)
     : iBoardLayout(context),
-      stationName(0, 0, 0, 0),
-      filterInfo(0, 0, 0, 0),
+      locationAndFilters(0, 0, 0, 0),
       weather(context, 0, 0, 0, 0),
-      otaStatus(context, 0, 0, 0, 0),
       wifiWarning(0, 0),
       sysClock(&context->getTimeManager(), 0, 0, 0, 0),
       row0Widget(0, 0, 0, 0),

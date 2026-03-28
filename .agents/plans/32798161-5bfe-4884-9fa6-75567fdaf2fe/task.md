@@ -1,0 +1,19 @@
+# Task List
+- [x] Investigate discrepancy between JSON and C++.
+- [x] Update `tools/layoutsim/scripts/gen_layout_cpp.py` to support:
+    - [x] `scrollDurationMs`
+    - [x] `scrollDwellMs`
+    - [x] `skipRows`
+    - [x] `maxRows`
+    - [x] Improved widget ID mapping.
+- [x] Run the generator script for all National Rail layouts (via PIO integration).
+- [x] Investigate and fix display distortion on physical hardware.
+    - [x] Analyze hardware photo for mapping artifacts.
+    - [x] Test alternative SSD1322 driver configurations (NHD variant restored).
+    - [x] Fix font generation to use binary safe hex arrays.
+- [x] Implement Volatile Diagnostic Mode.
+    - [x] Add `setDiagMode` to `DisplayManager`.
+    - [x] Add `/api/system/diag` endpoint to `WebHandlerManager`.
+    - [x] Add "Show Calibration Grid" toggle to Web Portal (System Tab).
+- [x] Re-flash the device and verify the layout matches the simulator.
+- [x] (Optional) Propose adding the generator to `platformio.ini` to prevent future drift.

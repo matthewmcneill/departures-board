@@ -2,24 +2,12 @@
   "layout": "iNationalRailLayout",
   "widgets": [
     {
-      "id": "stationName",
-      "type": "labelWidget",
+      "id": "locationAndFilters",
+      "type": "locationAndFiltersWidget",
       "geometry": {
         "x": 0,
         "y": 0,
-        "w": 100,
-        "h": 12
-      },
-      "visible": true,
-      "font": "NatRailSmall9"
-    },
-    {
-      "id": "filterInfo",
-      "type": "scrollingTextWidget",
-      "geometry": {
-        "x": 100,
-        "y": 0,
-        "w": 83,
+        "w": 192,
         "h": 11
       },
       "visible": true,
@@ -29,20 +17,9 @@
       "id": "weather",
       "type": "weatherWidget",
       "geometry": {
-        "x": 183,
+        "x": 192,
         "y": 0,
-        "w": 11,
-        "h": 11
-      },
-      "visible": true
-    },
-    {
-      "id": "otaStatus",
-      "type": "otaStatusWidget",
-      "geometry": {
-        "x": 194,
-        "y": 0,
-        "w": 11,
+        "w": 12,
         "h": 11
       },
       "visible": true
@@ -51,9 +28,9 @@
       "id": "wifiWarning",
       "type": "wifiStatusWidget",
       "geometry": {
-        "x": 205,
+        "x": 204,
         "y": 0,
-        "w": 11,
+        "w": 12,
         "h": 11
       },
       "visible": true
@@ -67,7 +44,10 @@
         "w": 40,
         "h": 11
       },
-      "visible": true
+      "visible": true,
+      "format": "HH_MM",
+      "blink": true,
+      "secondaryFont": "NatRailClockSmall7"
     },
     {
       "id": "row0Widget",
@@ -99,12 +79,12 @@
           "label": "Dest"
         },
         {
-          "width": 26,
+          "width": 16,
           "align": 1,
           "label": "Plat"
         },
         {
-          "width": 45,
+          "width": 55,
           "align": 2,
           "label": "Expected"
         }
@@ -141,12 +121,12 @@
           "label": "Dest"
         },
         {
-          "width": 26,
+          "width": 16,
           "align": 1,
           "label": "Plat"
         },
         {
-          "width": 45,
+          "width": 55,
           "align": 2,
           "label": "Expected"
         }

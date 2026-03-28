@@ -26,6 +26,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
+#include <freertos/semphr.h>
 #include <vector>
 #include "iDataSource.hpp"
 
@@ -52,8 +53,17 @@ public:
      */
     void requestPriorityFetch(iDataSource* source);
 
+    /**
+     * @brief Formally removes a source from the background registry.
+     *        If the source is currently being fetched, this will block 
+     *        unitl the fetch is complete to prevent use-after-free.
+     */
+    void unregisterSource(iDataSource* source);
+
 private:
     std::vector<iDataSource*> registry;
+    SemaphoreHandle_t registryMutex;  // Protects the registry vector across cores
+    volatile iDataSource* currentlyExecuting; // Tracks the active fetch target
     QueueHandle_t priorityEventQueue; // FreeRTOS queue holding priority events
     TaskHandle_t workerTaskHandle;
     bool debugEnabled;

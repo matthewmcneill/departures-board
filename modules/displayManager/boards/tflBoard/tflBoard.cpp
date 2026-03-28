@@ -54,6 +54,9 @@ TfLBoard::TfLBoard(appContext* contextPtr)
  * @brief Cleanup layout allocations.
  */
 TfLBoard::~TfLBoard() {
+    if (context) {
+        context->getDataManager().unregisterSource(&dataSource);
+    }
     if (activeLayout) delete activeLayout;
 }
 
@@ -65,8 +68,8 @@ void TfLBoard::onActivate() {
     dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
     
     if (activeLayout) {
-        activeLayout->stationName.setText(tubeName);
-        activeLayout->filterInfo.setText(""); // Currently no global filters for TfL
+        activeLayout->locationAndFilters.setLocation(tubeName);
+        activeLayout->locationAndFilters.setFilters(""); // Currently no global filters for TfL
         
         // Configure message pools
         activeLayout->msgWidget.clearPools();

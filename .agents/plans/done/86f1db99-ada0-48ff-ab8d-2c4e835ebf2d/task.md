@@ -1,0 +1,23 @@
+# Task: Debugging Feed Test Failures
+
+- [x] Researching current state and failure symptoms <!-- id: 0 -->
+    - [x] Open serial console to monitor device logs <!-- id: 1 -->
+    - [x] Open web portal at 192.168.86.152/portal <!-- id: 2 -->
+    - [x] Navigate tabs to trigger feed tests <!-- id: 3 -->
+    - [x] Correlate serial logs with portal behavior <!-- id: 4 -->
+- [x] Identifying root cause <!-- id: 5 -->
+- [x] Proposing fix <!-- id: 6 -->
+    - [x] Create implementation plan <!-- id: 8 -->
+    - [x] Get user approval for plan <!-- id: 9 -->
+    - [x] Debug the Weather Feed issue (identifying crash or request drop).
+- [x] Implement logic and stability fixes.
+- [x] Regenerated web assets and deploy firmware.
+- [x] Verify TfL, Weather, and RSS tests work properly.
+- [x] Implementing fixes <!-- id: 10 -->
+    - [x] Update TfL board test logic (C++) <!-- id: 11 -->
+    - [x] Update Web Server board test handler (C++) <!-- id: 12 -->
+    - [x] Hardcode Pen-y-darren coordinates for Weather test (C++) <!-- id: 14 -->
+    - [x] Update portal UI for Weather test labels (HTML) <!-- id: 15 -->
+    - [x] Implement grey-dot "NOT CONFIGURED" status for RSS (JS/HTML) <!-- id: 16 -->
+    - [x] Debug RSS HTTP ERROR vs Serial "Success" discrepancy <!-- id: 17 -->
+- [x] Verifying fixes <!-- id: 7 -->

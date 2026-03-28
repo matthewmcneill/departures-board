@@ -56,6 +56,9 @@ BusBoard::BusBoard(appContext* contextPtr)
  * @brief Rejects layout allocations.
  */
 BusBoard::~BusBoard() {
+    if (context) {
+        context->getDataManager().unregisterSource(&dataSource);
+    }
     if (activeLayout) delete activeLayout;
 }
 
@@ -66,8 +69,8 @@ void BusBoard::onActivate() {
     dataSource.configure(busAtco, busFilter);
     
     if (activeLayout) {
-        activeLayout->stationName.setText(busName);
-        activeLayout->filterInfo.setText(""); // Currently no global filters for Bus
+        activeLayout->locationAndFilters.setLocation(busName);
+        activeLayout->locationAndFilters.setFilters(""); // Currently no global filters for Bus
         
         // Configure message pools
         activeLayout->msgWidget.clearPools();

@@ -462,6 +462,7 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
     ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, "", false, ""};
     ApiTestDataSource* testSource = new ApiTestDataSource(params);
 
+    appContext.getDataManager().registerSource(testSource);
     appContext.getDataManager().requestPriorityFetch(testSource);
 
     // Yield gracefully until the Background DataManager payload finishes, with absolute 10s timeout
@@ -471,12 +472,14 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
 
     if (!params->done) {
         request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
+        appContext.getDataManager().unregisterSource(testSource);
         delete testSource;
         delete params;
         return;
     }
 
     request->send(200, "application/json", params->jsonObj);
+    appContext.getDataManager().unregisterSource(testSource);
     delete testSource;
     delete params;
 }
@@ -637,6 +640,7 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
     ApiTestDataSource* testSource = new ApiTestDataSource(params);
 
     // Hand execution to DataManager Core 0 queue to shield from OOM concurrent TLS
+    appContext.getDataManager().registerSource(testSource);
     appContext.getDataManager().requestPriorityFetch(testSource);
 
     int maxWait = 10000 / 50;
@@ -645,12 +649,14 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
     
     if (!params->done) {
         request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
+        appContext.getDataManager().unregisterSource(testSource);
         delete testSource;
         delete params;
         return;
     }
 
     request->send(200, "application/json", params->jsonObj);
+    appContext.getDataManager().unregisterSource(testSource);
     delete testSource;
     delete params;
 }

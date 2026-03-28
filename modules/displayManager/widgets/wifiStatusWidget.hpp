@@ -34,6 +34,9 @@ private:
     unsigned long disconnectTime = 0;
     bool blinkState = true;
     unsigned long lastBlinkMs = 0;
+    int lastRssiCategory = 4; // 1-4 for bars, -1 for disconnected
+
+    int getRssiCategory();
 
 public:
     /**

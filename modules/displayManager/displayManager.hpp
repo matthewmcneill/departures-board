@@ -112,10 +112,7 @@ private:
     SleepingBoard sleepingBoard;
     DiagnosticBoard diagnosticBoard;
     
-    // Global Feature Overlays
     wifiStatusWidget wifiWarning;
-    bool otaUpdateAvailable;
-
     appContext* context; ///< Reference to parent context for DI
 
     // Display configuration set by ConfigManager
@@ -257,16 +254,6 @@ public:
      * @param active True to snooze immediately.
      */
     void setForcedSleep(bool active);
-
-    /**
-     * @brief Instruct the DisplayManager to render the OTA update icon.
-     */
-    void setOtaUpdateAvailable(bool available) { otaUpdateAvailable = available; }
-
-    /**
-     * @brief Check if an OTA update is pending.
-     */
-    bool isOtaUpdateAvailable() const { return otaUpdateAvailable; }
 
     /**
      * @brief Check if the display is currently in a sleep/clock state.

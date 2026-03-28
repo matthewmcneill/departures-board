@@ -28,9 +28,20 @@
  * @param _y Y coordinate for the icon.
  */
 wifiStatusWidget::wifiStatusWidget(int _x, int _y)
-    : iGfxWidget(_x, _y, 7, 7) {
+    : iGfxWidget(_x, _y, 11, 11) {
     // Determine initial state
     wasConnected = (WiFi.status() == WL_CONNECTED);
+    lastRssiCategory = getRssiCategory();
+}
+
+int wifiStatusWidget::getRssiCategory() {
+    if (WiFi.status() != WL_CONNECTED) return -1;
+    int rssi = WiFi.RSSI();
+    // In emulator or great signal, it's 0 to -50.
+    if (rssi < -85) return 1;
+    if (rssi < -75) return 2;
+    if (rssi < -65) return 3;
+    return 4;
 }
 
 /**
@@ -70,8 +81,16 @@ void wifiStatusWidget::tick(uint32_t currentMillis) {
 void wifiStatusWidget::render(U8G2& display) {
     if (!isVisible) return;
     
-    if (WiFi.status() != WL_CONNECTED && blinkState) {
-        drawText(display, "\x7F", x, y, width, height, TextAlign::CENTER, false, NatRailSmall9);
+    if (WiFi.status() != WL_CONNECTED) {
+        if (blinkState) drawText(display, "X", x, y, width, height, TextAlign::CENTER, false, WifiIcons11);
+    } else {
+        int cat = getRssiCategory();
+        const char* icon = "4";
+        if (cat == 1) icon = "1";
+        else if (cat == 2) icon = "2";
+        else if (cat == 3) icon = "3";
+        
+        drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, WifiIcons11);
     }
 }
 
@@ -84,31 +103,49 @@ void wifiStatusWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMill
     if (!isVisible) return;
     
     bool currentlyConnected = (WiFi.status() == WL_CONNECTED);
+    int currentRssiCat = getRssiCategory();
 
     bool prevBlinkState = blinkState;
     tick(currentMillis);
 
+    bool needsRedraw = false;
+
     // --- Transition: Restored ---
     if (currentlyConnected && !wasConnected) {
         wasConnected = true;
-        blankArea(display, x, y, width, height);
-        display.updateDisplayArea(x / 8, y / 8, (width+7) / 8, (height+7) / 8);
+        lastRssiCategory = currentRssiCat;
+        needsRedraw = true;
     } 
+    // --- Transition: RSSI Changed while Connected ---
+    else if (currentlyConnected && wasConnected && currentRssiCat != lastRssiCategory) {
+        lastRssiCategory = currentRssiCat;
+        needsRedraw = true;
+    }
     // --- Transition: Offline / Blinking ---
     else if (!currentlyConnected) {
         if (wasConnected) {
             // First time we detected the swap
             wasConnected = false;
-            drawText(display, "\x7F", x, y, width, height, TextAlign::CENTER, false, NatRailSmall9);
-            display.updateDisplayArea(x / 8, y / 8, (width+7) / 8, (height+7) / 8);
+            lastRssiCategory = -1;
+            needsRedraw = true;
         } else if (blinkState != prevBlinkState) {
             // Blinking timer triggered a swap
-            if (blinkState) {
-                drawText(display, "\x7F", x, y, width, height, TextAlign::CENTER, false, NatRailSmall9);
-            } else {
-                blankArea(display, x, y, width, height);
-            }
-            display.updateDisplayArea(x / 8, y / 8, (width+7) / 8, (height+7) / 8);
+            needsRedraw = true;
         }
+    }
+
+    if (needsRedraw) {
+        blankArea(display, x, y, width, height);
+        
+        if (!currentlyConnected) {
+            if (blinkState) drawText(display, "X", x, y, width, height, TextAlign::CENTER, false, WifiIcons11);
+        } else {
+            const char* icon = "4";
+            if (currentRssiCat == 1) icon = "1";
+            else if (currentRssiCat == 2) icon = "2";
+            else if (currentRssiCat == 3) icon = "3";
+            drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, WifiIcons11);
+        }
+        display.updateDisplayArea(x / 8, y / 8, (width+7) / 8, (height+7) / 8);
     }
 }

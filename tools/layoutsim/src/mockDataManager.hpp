@@ -52,7 +52,6 @@ private:
     
     int weatherConditionId = 800; // Default clear
     bool weatherIsNight = false;
-    bool otaUpdateAvailable = false;
     
     MockService services[MOCK_MAX_SERVICES];
     int serviceCount = 0;
@@ -116,10 +115,6 @@ public:
             weatherIsNight = weather["isNight"] | false;
         }
 
-        if (!doc["otaAvailable"].isNull()) {
-            otaUpdateAvailable = doc["otaAvailable"] | false;
-        }
-
         JsonArray msgs = doc["messages"];
         if (!msgs.isNull()) {
             messageCount = 0;
@@ -177,7 +172,6 @@ public:
 
     int getWeatherConditionId() const { return weatherConditionId; }
     bool getWeatherIsNight() const { return weatherIsNight; }
-    bool getOtaUpdateAvailable() const { return otaUpdateAvailable; }
 };
 
 #endif // MOCK_DATA_MANAGER_HPP

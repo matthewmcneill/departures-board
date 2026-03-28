@@ -16,10 +16,12 @@ class appContext;
 class weatherWidget : public iGfxWidget {
 private:
     appContext* context;
+    const uint8_t* font;
 
 public:
     weatherWidget(appContext* _context, int _x, int _y, int _w = 16, int _h = 16);
 
+    void setFont(const uint8_t* _font) { font = _font; }
     void tick(uint32_t currentMillis) override {}
     void render(U8G2& display) override;
 };

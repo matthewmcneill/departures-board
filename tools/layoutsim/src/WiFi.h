@@ -15,7 +15,7 @@
 #define MOCK_WIFI_H
 
 #include <stdint.h>
-
+#include "Arduino.h"
 enum wl_status_t {
     WL_IDLE_STATUS,
     WL_NO_SSID_AVAIL,
@@ -28,9 +28,21 @@ enum wl_status_t {
 
 class MockWiFi {
 public:
-    wl_status_t status() { return WL_CONNECTED; }
+    wl_status_t status() { 
+        // 5 states total, 5 seconds each. State 0 is disconnected.
+        int state = (millis() / 5000) % 5;
+        if (state == 0) return WL_DISCONNECTED;
+        return WL_CONNECTED; 
+    }
     const char* SSID() { return "Simulator-WiFi"; }
-    int8_t RSSI() { return -50; }
+    int8_t RSSI() { 
+        int state = (millis() / 5000) % 5;
+        // States 1..4 map to distinct RSSI bands: -86, -76, -66, -50
+        if (state == 1) return -86;
+        if (state == 2) return -76;
+        if (state == 3) return -66;
+        return -50; 
+    }
 };
 
 extern MockWiFi WiFi;

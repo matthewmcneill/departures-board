@@ -16,11 +16,12 @@ The Layout Simulator is a powerful, live-reloading tool that allows you to previ
 
 ### How to Run the Simulator
 1. Open a terminal and navigate to the repository root.
-2. Start the development server:
+2. Start the development server using the provided Python script from the repo root:
    ```bash
    python3 tools/layoutsim/scripts/dev_server.py
    ```
-3. Open the provided link in your browser: `http://localhost:8000/`
+3. The server will start on port 8000 by default. Access the simulator via the full URL:
+   `http://localhost:8000/tools/layoutsim/web/index.html`
 
 ### Rebuilding the Widget Registry
 The Layout Simulator is inextricably linked to the physical C++ headers of your displays (e.g. `iNationalRailLayout.hpp`). If you add or rename a physical `iGfxWidget` variable in your C++ interface, you must rebuild the simulator so it can dynamically extract the updated "Element Explorer" widget registry from the C++ AST.
@@ -148,6 +149,24 @@ A marquee-style scrolling text element.
   "id": "scrollMsg",
   "type": "scrollingTextWidget",
   "geometry": { "x": 0, "y": 64, "w": 256, "h": 12 },
+  "font": "NatRailSmall9"
+}
+```
+
+### `locationAndFiltersWidget`
+A consolidated widget that dynamically manages space between a fixed station name and scrolling filter info.
+- **Behavior**: The station name is truncated if it exceeds 60% of the widget width. Filter info scrolls if it exceeds the remaining space.
+- **Additional Properties**:
+
+| Property | Type | Required | Default | Description |
+| -------- | ---- | -------- | ------- | ----------- |
+| `font` | String | Yes | - | Shared typography for both fields. |
+
+```json
+{
+  "id": "locationAndFilters",
+  "type": "locationAndFiltersWidget",
+  "geometry": { "x": 0, "y": 0, "w": 183, "h": 12 },
   "font": "NatRailSmall9"
 }
 ```

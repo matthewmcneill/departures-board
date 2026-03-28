@@ -1,0 +1,16 @@
+{
+  "header": {
+    "title": "341 to Waterloo",
+    "callingPoint": "via Angel",
+    "platform": ""
+  },
+  "services": [
+    ["1 min", "11:15", "Waterloo", "", "Approaching"],
+    ["5 mins", "11:20", "Waterloo", "", "On time"],
+    ["12 mins", "11:35", "Angel", "", "Delayed"]
+  ],
+  "messages": [
+    "Board from the front door.",
+    "Have your Oyster card ready."
+  ]
+}

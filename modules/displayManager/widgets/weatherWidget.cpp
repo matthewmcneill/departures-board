@@ -14,9 +14,10 @@
 #include "drawingPrimitives.hpp"
 
 extern const uint8_t WeatherIcons16[];
+extern const uint8_t WeatherIcons11[];
 
 weatherWidget::weatherWidget(appContext* _context, int _x, int _y, int _w, int _h)
-    : iGfxWidget(_x, _y, _w, _h), context(_context) {}
+    : iGfxWidget(_x, _y, _w, _h), context(_context), font(WeatherIcons11) {}
 
 void weatherWidget::render(U8G2& display) {
     if (!isVisible || !context) return;
@@ -30,5 +31,5 @@ void weatherWidget::render(U8G2& display) {
     blankArea(display, x, y, width, height);
     
     char icon[2] = { ws.getIconChar(), '\0' };
-    drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, WeatherIcons16);
+    drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, font);
 }

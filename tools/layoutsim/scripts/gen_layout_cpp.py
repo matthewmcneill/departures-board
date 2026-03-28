@@ -52,8 +52,7 @@ def gen_layout(json_path):
     
     # Mapping from JSON ID to C++ member variable names in base classes
     widget_map = {
-        "stationName": "stationName",
-        "filterInfo": "filterInfo",
+        "locationAndFilters": "locationAndFilters",
         "weather": "weather",
         "otaStatus": "otaStatus",
         "wifiWarning": "wifiWarning",
@@ -132,6 +131,13 @@ public:
         if "blink" in w:
             blink = "true" if w["blink"] else "false"
             constructor_body.append(f"    {wid}.setBlink({blink});")
+
+        if "format" in w:
+            # Assuming clockWidget since it's the only one using 'format' right now
+            constructor_body.append(f"    {wid}.setFormat(clockWidget::ClockFormat::{w['format']});")
+
+        if "secondaryFont" in w:
+            constructor_body.append(f"    {wid}.setSecondaryFont({w['secondaryFont']});")
 
         if (json_id == "services" or json_id == "servicesWidget" or json_id == "row0Widget") and "columns" in w:
             cols = w["columns"]

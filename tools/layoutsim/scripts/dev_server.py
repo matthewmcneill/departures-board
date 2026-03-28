@@ -19,21 +19,31 @@ import json
 import glob
 
 # Configuration Constants
-PORT = 8001 # HTTP listener port for the development server
+PORT = 8000 # HTTP listener port for the development server
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR = os.path.dirname(SCRIPT_DIR)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(TOOLS_DIR))
+BOARD_DIR = os.path.join(PROJECT_ROOT, "modules", "displayManager", "boards")
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=PROJECT_ROOT, **kwargs)
 
     def end_headers(self):
-        # Disable caching for hot-reloading
-        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-        self.send_header('Pragma', 'no-cache')
-        self.send_header('Expires', '0')
+        """
+        Add CORS headers to all responses.
+        """
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type')
         super().end_headers()
+
+    def do_OPTIONS(self):
+        """
+        Handle preflight requests.
+        """
+        self.send_response(200)
+        self.end_headers()
 
     def do_GET(self):
         """
@@ -45,41 +55,139 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             return
         elif self.path == '/api/layouts':
+            layouts = self.get_all_layouts()
+            print(f"[API] Found {len(layouts)} layouts")
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
             self.end_headers()
-            layouts = self.get_all_layouts()
             self.wfile.write(json.dumps(layouts).encode())
-        elif self.path == '/api/latest-layout':
+            return
+        elif self.path == '/api/integrity-check':
+            current_hash = self.get_current_headers_hash()
+            stored_hash = self.get_stored_registry_hash()
+            status = "OK" if current_hash == stored_hash else "OUT_OF_SYNC"
+            
+            result = {
+                "status": status,
+                "current": current_hash,
+                "stored": stored_hash
+            }
+            
             self.send_response(200)
-            self.send_header('Content-header', 'text/plain')
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
             self.end_headers()
+            self.wfile.write(json.dumps(result).encode())
+            return
+        elif self.path.startswith('/api/mock-data'):
+            import urllib.parse
+            query = urllib.parse.urlparse(self.path).query
+            params = urllib.parse.parse_qs(query)
+            layout_path = params.get('layout', [''])[0]
+            
+            # Map layout directory to mock data file
+            mock_file = "nationalRailBoard.json"
+            if "busBoard" in layout_path: mock_file = "busBoard.json"
+            elif "tflBoard" in layout_path: mock_file = "tflBoard.json"
+            elif "systemBoard" in layout_path: mock_file = "nationalRailBoard.json" # Fallback
+            
+            full_mock_path = os.path.join(PROJECT_ROOT, "tools/layoutsim/mock_data", mock_file)
+            
+            # Default to NR if no specific mock found
+            if not os.path.exists(full_mock_path):
+                full_mock_path = os.path.join(PROJECT_ROOT, "tools/layoutsim/mock_data", "nationalRailBoard.json")
+
+
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+            self.end_headers()
+            
+            with open(full_mock_path, 'rb') as f:
+                self.wfile.write(f.read())
+            return
+        elif self.path == '/api/latest-layout':
             latest = self.get_latest_layout()
+            print(f"[API] Latest layout: {latest}")
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+            self.end_headers()
             self.wfile.write(latest.encode())
+            return
         else:
             # Default behavior: serve files from PROJECT_ROOT
+            # print(f"[HTTP] GET {self.path}")
             super().do_GET()
 
     def get_all_layouts(self):
         """
-        Scans the project directory for custom JSON board layouts.
-        Returns:
-            list: A collection of layout dictionaries containing formatting names and paths.
+        Scans layout directories for JSON files.
         """
-        pattern = os.path.join(PROJECT_ROOT, "modules/displayManager/boards/*/layouts/*.json")
-        files = glob.glob(pattern)
-        results = []
-        for f in sorted(files):
-            rel_path = os.path.relpath(f, PROJECT_ROOT)
-            # Make a pretty name e.g. "nationalRailBoard - layoutDefault"
-            parts = rel_path.split(os.sep)
-            board = parts[3]
-            layout = os.path.splitext(parts[5])[0]
-            results.append({
-                "name": f"{board} - {layout}",
-                "path": rel_path
-            })
-        return results
+        layouts = []
+        for board in os.listdir(BOARD_DIR):
+            board_path = os.path.join(BOARD_DIR, board)
+            if not os.path.isdir(board_path):
+                continue
+            layout_dir = os.path.join(board_path, "layouts")
+            if os.path.exists(layout_dir):
+                for f in os.listdir(layout_dir):
+                    if f.endswith(".json"):
+                        layouts.append({
+                            "name": f"{board} - {f.replace('.json', '')}",
+                            "path": os.path.join(layout_dir, f)
+                        })
+        return sorted(layouts, key=lambda x: x["name"])
+
+    def get_current_headers_hash(self):
+        """
+        Calculates the MD5 hash of all layout headers and the registry script.
+        Must match the logic in gen_sim_registry.py.
+        """
+        import hashlib
+        import glob
+        headers = sorted(glob.glob(os.path.join(BOARD_DIR, "*", "i*Layout.hpp")))
+        hashes = []
+        import re
+        for header in headers:
+            with open(header, "r") as f:
+                content = f.read()
+            # Match logic in gen_sim_registry.py: only hash if it contains a layout class
+            if re.search(r"class\s+(i[A-Za-z0-9_]+Layout)\s*:", content):
+                hashes.append(content)
+        
+        script_path = os.path.join(PROJECT_ROOT, "tools/layoutsim/scripts/gen_sim_registry.py")
+        if os.path.exists(script_path):
+            with open(script_path, "r") as f:
+                hashes.append(f.read())
+                
+        combined = "".join(hashes).encode()
+        return hashlib.md5(combined).hexdigest()
+
+    def get_stored_registry_hash(self):
+        """
+        Reads the embedded hash from the generated C++ header.
+        """
+        import re
+        registry_path = os.path.join(PROJECT_ROOT, "tools/layoutsim/src/generated_registry.hpp")
+        if not os.path.exists(registry_path):
+            return "MISSING"
+            
+        with open(registry_path, "r") as f:
+            content = f.read()
+            match = re.search(r'#define SIM_REGISTRY_HASH "([a-f0-9]+)"', content)
+            if match:
+                return match.group(1)
+        return "UNKNOWN"
 
     def get_latest_layout(self):
         """
@@ -90,7 +198,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pattern = os.path.join(PROJECT_ROOT, "modules/displayManager/boards/*/layouts/*.json")
         files = glob.glob(pattern)
         if not files:
-            return "tools/layoutsim/layout.json"
+            return "modules/displayManager/boards/nationalRailBoard/layouts/layoutDefault.json"
+
         
         # Sort by mtime descending
         latest_file = max(files, key=os.path.getmtime)
@@ -102,8 +211,8 @@ def run():
     """
     print(f"Starting Layout Simulator Dev Server on http://localhost:{PORT}")
     print(f"Project Root: {PROJECT_ROOT}")
-    print("Open in browser: http://localhost:8000/")
     
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         try:
             httpd.serve_forever()

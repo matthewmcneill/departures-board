@@ -143,7 +143,7 @@ void systemManager::tick() {
 
         // Rotational Background Data Fetching Logic
         if (millis() > nextRoundRobinUpdate && wifiConnected && context->getAppState() == AppState::RUNNING) {
-            displayMgr.setOtaUpdateAvailable(true);
+            // Omitted OTA flag toggle 
             
             const BoardConfig& bgConfig = config.boards[backgroundUpdateIndex];
             iDisplayBoard* bgBoard = displayMgr.getDisplayBoard(backgroundUpdateIndex);
@@ -181,7 +181,7 @@ void systemManager::tick() {
                 }
             } // Handle Result Codes
                 if (lastUpdateResult == 0 || lastUpdateResult == 1) { // UPD_SUCCESS, UPD_NO_CHANGE
-                    displayMgr.setOtaUpdateAvailable(false);
+                    // Omitted OTA flag toggle
                     lastDataLoadTime = millis();
                     noDataLoaded = false;
                     dataLoadSuccess++;
@@ -217,7 +217,6 @@ void systemManager::tick() {
                 } else {
                     lastLoadFailure = millis();
                     dataLoadFailure++;
-                    displayMgr.setOtaUpdateAvailable(false);
                 }
         } else if (millis() > nextRoundRobinUpdate && context->getAppState() == AppState::RUNNING) {
             // Log once per minute why we aren't updating if WiFi is down

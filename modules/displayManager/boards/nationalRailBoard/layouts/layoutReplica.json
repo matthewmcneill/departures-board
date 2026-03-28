@@ -1,28 +1,144 @@
 {
   "layout": "iNationalRailLayout",
   "widgets": [
-    { "id": "msgWidget", "type": "scrollingMessagePoolWidget", "geometry": { "x": 0, "y": 0, "w": 200, "h": 12 }, "visible": true, "font": "NatRailSmall9" },
-    { "id": "sysClock", "type": "clockWidget", "geometry": { "x": 200, "y": 0, "w": 56, "h": 12 }, "visible": true },
-    { 
-      "id": "row0Widget", "type": "serviceListWidget", "geometry": { "x": 0, "y": 12, "w": 256, "h": 14 }, "visible": true, "font": "NatRailTall12",
-      "skipRows": 0, "maxRows": 1,
+    {
+      "id": "locationAndFilters",
+      "type": "locationAndFiltersWidget",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "w": 10,
+        "h": 10
+      },
+      "visible": true,
+      "font": "NatRailSmall9"
+    },
+    {
+      "id": "msgWidget",
+      "type": "scrollingMessagePoolWidget",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 12
+      },
+      "visible": true,
+      "font": "NatRailSmall9"
+    },
+    {
+      "id": "sysClock",
+      "type": "clockWidget",
+      "geometry": {
+        "x": 98,
+        "y": 52,
+        "w": 60,
+        "h": 12
+      },
+      "visible": true,
+      "blink": false,
+      "format": "HH_MM_SS",
+      "font": "NatRailClockLarge9"
+    },
+    {
+      "id": "row0Widget",
+      "type": "serviceListWidget",
+      "geometry": {
+        "x": 0,
+        "y": 12,
+        "w": 256,
+        "h": 14
+      },
+      "visible": true,
+      "font": "NatRailTall12",
+      "skipRows": 0,
+      "maxRows": 1,
       "columns": [
-        { "width": 0, "align": 0 },
-        { "width": 60, "align": 0 },
-        { "width": 0, "align": 0 },
-        { "width": 196, "align": 0 }
+        {
+          "width": 0,
+          "align": 0
+        },
+        {
+          "width": 60,
+          "align": 0
+        },
+        {
+          "width": 0,
+          "align": 0
+        },
+        {
+          "width": 196,
+          "align": 0
+        }
       ]
     },
-    { 
-      "id": "servicesWidget", "type": "serviceListWidget", "geometry": { "x": 0, "y": 26, "w": 256, "h": 38 }, "visible": true,
+    {
+      "id": "servicesWidget",
+      "type": "serviceListWidget",
+      "geometry": {
+        "x": 0,
+        "y": 26,
+        "w": 256,
+        "h": 38
+      },
+      "visible": true,
       "skipRows": 1,
       "columns": [
-        { "width": 20, "align": 0, "label": "No" },
-        { "width": 35, "align": 0, "label": "Time" },
-        { "width": 25, "align": 2, "label": "Plat" },
-        { "width": 176, "align": 0, "label": "Dest" }
+        {
+          "width": 20,
+          "align": 0,
+          "label": "No"
+        },
+        {
+          "width": 35,
+          "align": 0,
+          "label": "Time"
+        },
+        {
+          "width": 25,
+          "align": 2,
+          "label": "Plat"
+        },
+        {
+          "width": 176,
+          "align": 0,
+          "label": "Dest"
+        }
       ]
     },
-    { "id": "noDataLabel", "type": "labelWidget", "geometry": { "x": 10, "y": 40, "w": 256, "h": 15 }, "visible": false, "font": "NatRailTall12", "text": "No services found." }
+    {
+      "id": "noDataLabel",
+      "type": "labelWidget",
+      "geometry": {
+        "x": 10,
+        "y": 40,
+        "w": 256,
+        "h": 15
+      },
+      "visible": false,
+      "font": "NatRailTall12",
+      "text": "No services found."
+    },
+    {
+      "id": "wifiWarning",
+      "type": "wifiStatusWidget",
+      "geometry": {
+        "x": 0,
+        "y": 53,
+        "w": 12,
+        "h": 11
+      },
+      "visible": true
+    },
+    {
+      "id": "weather",
+      "type": "weatherWidget",
+      "geometry": {
+        "x": 13,
+        "y": 53,
+        "w": 11,
+        "h": 11
+      },
+      "visible": true
+    }
   ]
 }

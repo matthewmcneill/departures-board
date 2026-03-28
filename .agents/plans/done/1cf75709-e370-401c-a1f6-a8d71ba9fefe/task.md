@@ -1,0 +1,27 @@
+# House Style Documentation Correction
+
+- [/] Audit and repair Widget documentation
+    - [x] `headerWidget.hpp` / `.cpp`
+    - [x] `serviceListWidget.hpp` / `.cpp`
+    - [x] `clockWidget.hpp` / `.cpp`
+    - [x] `progressBarWidget.hpp` / `.cpp`
+    - [x] `wifiStatusWidget.hpp` / `.cpp`
+    - [x] `scrollingTextWidget.hpp` / `.cpp`
+    - [x] `scrollingMessagePoolWidget.hpp` / `.cpp`
+    - [x] `imageWidget.hpp` / `.cpp`
+    - [x] `systemMessageWidget.hpp` / `.cpp`
+- [/] Audit and repair Board documentation
+    - [x] `nationalRailBoard.hpp` / `.cpp`
+    - [x] `tflBoard.hpp` / `.cpp`
+    - [x] `busBoard.hpp` / `.cpp`
+- [x] `loadingBoard.hpp` / `.cpp`
+    - [x] `sleepingBoard.hpp` / `.cpp`
+- [x] Audit and repair Core documentation
+    - [x] `displayManager.hpp` / `.cpp`
+    - [x] `messagePool.hpp` / `.cpp`
+- [x] `iDisplayBoard.hpp`
+- [x] `iGfxWidget.hpp`
+    - [x] `iBoardLayout.hpp`
+    - [x] `iDataSource.hpp`
+- [x] Final verification build
+- [x] Final manual review of house-style adherence

@@ -29,7 +29,7 @@
  * @brief Initialize the clock with its time manager and layout.
  */
 clockWidget::clockWidget(TimeManager* _timeMgr, int _x, int _y, int _w, int _h, const uint8_t* _font)
-    : iGfxWidget(_x, _y, _w, _h), showColon(true), oldColon(true), blinkEnabled(true), lastBlinkMs(0), lastMinute(-1), font(_font), timeMgr(_timeMgr) {
+    : iGfxWidget(_x, _y, _w, _h), showColon(true), oldColon(true), blinkEnabled(true), lastBlinkMs(0), lastMinute(-1), lastSecond(-1), format(ClockFormat::HH_MM), font(_font), secondaryFont(nullptr), timeMgr(_timeMgr) {
     if (font == nullptr) font = UndergroundClock8;
 }
 
@@ -39,6 +39,14 @@ clockWidget::clockWidget(TimeManager* _timeMgr, int _x, int _y, int _w, int _h, 
  */
 void clockWidget::setFont(const uint8_t* newFont) {
     font = newFont;
+}
+
+void clockWidget::setSecondaryFont(const uint8_t* newFont) {
+    secondaryFont = newFont;
+}
+
+void clockWidget::setFormat(ClockFormat newFormat) {
+    format = newFormat;
 }
 
 /**
@@ -66,10 +74,15 @@ void clockWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     
     timeMgr->updateCurrentTime();
     bool minuteChanged = (timeMgr->getCurrentTime().tm_min != lastMinute);
+    bool secondChanged = false;
+    if (format == ClockFormat::HH_MM_SS) {
+        secondChanged = (timeMgr->getCurrentTime().tm_sec != lastSecond);
+    }
 
-    if (oldColon != showColon || minuteChanged) {
+    if (oldColon != showColon || minuteChanged || secondChanged) {
         oldColon = showColon; // Fix: Update state to track changes
         lastMinute = timeMgr->getCurrentTime().tm_min;
+        lastSecond = timeMgr->getCurrentTime().tm_sec;
         render(display);
         int renderW = (width > 0) ? width : 56;
         int renderH = (height > 0) ? height : 14;
@@ -98,18 +111,36 @@ void clockWidget::render(U8G2& display) {
     timeMgr->updateCurrentTime();
     const struct tm& timeinfo = timeMgr->getCurrentTime();
     lastMinute = timeinfo.tm_min; // Keep in sync with animation updates
+    lastSecond = timeinfo.tm_sec;
 
     char hourStr[3];
     char minStr[3];
+    char secStr[3];
     strftime(hourStr, sizeof(hourStr), "%H", &timeinfo);
     strftime(minStr, sizeof(minStr), "%M", &timeinfo);
+    strftime(secStr, sizeof(secStr), "%S", &timeinfo);
 
     int hourW = display.getStrWidth(hourStr);
     int minW = display.getStrWidth(minStr);
     int colonW = display.getStrWidth(":");
 
+    int secW = 0;
+    int secColonW = 0;
+    
+    if (format == ClockFormat::HH_MM_SS) {
+        if (secondaryFont) {
+            display.setFont(secondaryFont);
+        }
+        secW = display.getStrWidth(secStr);
+        secColonW = display.getStrWidth(":");
+        display.setFont(font); // restore main font
+    }
+
     // Calculate total width using the colon's width as the fixed gap, plus 1px padding on each side
     int totalW = hourW + colonW + minW + 2;
+    if (format == ClockFormat::HH_MM_SS) {
+        totalW += secColonW + secW + 2;
+    }
     int startX = x + (renderW - totalW) / 2;
 
     // We use setFontPosTop globally in v3.0, so to vertically center text in renderH:
@@ -117,6 +148,14 @@ void clockWidget::render(U8G2& display) {
     // and split it into top and bottom padding.
     int fontHeight = display.getAscent() - display.getDescent();
     int drawY = y + (renderH - fontHeight) / 2;
+
+    int mainBaselineY = drawY + display.getAscent();
+    int secDrawY = drawY;
+    if (format == ClockFormat::HH_MM_SS && secondaryFont) {
+        display.setFont(secondaryFont);
+        secDrawY = mainBaselineY - display.getAscent();
+        display.setFont(font);
+    }
 
     // Clearing the area prevents trailing artifacts
     blankArea(display, x, y, renderW, renderH);
@@ -131,4 +170,20 @@ void clockWidget::render(U8G2& display) {
     
     // Draw minutes
     display.drawStr(startX + hourW + colonW + 2, drawY, minStr);
+
+    // Draw seconds
+    if (format == ClockFormat::HH_MM_SS) {
+        int currentX = startX + hourW + colonW + 2 + minW + 1;
+        
+        // The second colon separating minutes and seconds is standard continuous (non-blinking)
+        if (secondaryFont) display.setFont(secondaryFont);
+        display.drawStr(currentX, secDrawY, ":");
+        if (secondaryFont) display.setFont(font);
+        
+        currentX += secColonW + 1;
+        
+        if (secondaryFont) display.setFont(secondaryFont);
+        display.drawStr(currentX, secDrawY, secStr);
+        if (secondaryFont) display.setFont(font);
+    }
 }

@@ -89,8 +89,24 @@ The application communicates over the serial port at a baud rate of **115200**.
   ```
 
 ---
-
-## Appendix: Agentic Coding and the `/.agents` Folder
+ 
+ ## Layout Simulator
+ 
+ To speed up UI development without needing physical hardware for every change, the project includes a **WebAssembly-based Layout Simulator**. This allows you to preview and debug your JSON layout definitions in real-time in your browser.
+ 
+ ### Running the Simulator
+ 1.  Ensure you have Python 3 installed.
+ 2.  Start the development server from the repo root:
+     ```bash
+     python3 tools/layoutsim/scripts/dev_server.py
+     ```
+ 3.  Access the simulator at: [http://localhost:8000/tools/layoutsim/web/index.html](http://localhost:8000/tools/layoutsim/web/index.html)
+ 
+ For detailed information on creating layouts, widget APIs, and rebuilding the WASM engine, see the [Display Layouts Reference](DisplayLayoutsReference.md).
+ 
+ ---
+ 
+ ## Appendix: Agentic Coding and the `/.agents` Folder
 
 This project supports **Antigravity Workflows** for agentic coding. If you are using the Antigravity extension, the `/.agents` folder contains metadata and rules that guide the AI's behavior and maintain project context across sessions.
 

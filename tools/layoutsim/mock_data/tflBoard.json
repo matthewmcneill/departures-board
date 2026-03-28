@@ -1,0 +1,21 @@
+{
+  "header": {
+    "title": "Hackney Wick",
+    "callingPoint": "via Stratford",
+    "platform": "2"
+  },
+  "weather": {
+    "id": 800,
+    "isNight": false
+  },
+  "services": [
+    ["1 min", "11:15", "Stratford", "2", "On time"],
+    ["5 mins", "11:20", "Richmond", "1", "On time"],
+    ["12 mins", "11:35", "Clapham Junction", "1", "Delayed"],
+    ["15 mins", "11:45", "Stratford", "2", "On time"]
+  ],
+  "messages": [
+    "A good service is operating on the London Overground.",
+    "Please mind the gap."
+  ]
+}

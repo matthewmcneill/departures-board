@@ -19,14 +19,13 @@
 #define I_NATIONAL_RAIL_LAYOUT_HPP
 
 #include "../interfaces/iBoardLayout.hpp"
-#include <widgets/labelWidget.hpp>
-#include <widgets/serviceListWidget.hpp>
-#include <widgets/scrollingMessagePoolWidget.hpp>
-#include <widgets/scrollingTextWidget.hpp>
+#include <widgets/locationAndFiltersWidget.hpp>
 #include <widgets/clockWidget.hpp>
 #include <widgets/wifiStatusWidget.hpp>
 #include <widgets/weatherWidget.hpp>
-#include <widgets/otaStatusWidget.hpp>
+#include <widgets/serviceListWidget.hpp>
+#include <widgets/scrollingMessagePoolWidget.hpp>
+#include <widgets/labelWidget.hpp>
 
 class appContext;
 
@@ -37,10 +36,8 @@ class appContext;
 class iNationalRailLayout : public iBoardLayout {
 public:
     // The Superset of widgets permitted on this board type (Public for Controller access)
-    labelWidget stationName;        // Primary station identity
-    scrollingTextWidget filterInfo; // Meta-data (via, platform)
+    locationAndFiltersWidget locationAndFilters; // Combined station identity and meta-data
     weatherWidget weather;          // Weather status
-    otaStatusWidget otaStatus;      // Firmware update status
     wifiStatusWidget wifiWarning;   // Connectivity status
     clockWidget sysClock;           // System clock
     serviceListWidget row0Widget;   // Specialized Row 0 widget
@@ -61,10 +58,8 @@ public:
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void tick(uint32_t currentMillis) override {
-        stationName.tick(currentMillis);
-        filterInfo.tick(currentMillis);
+        locationAndFilters.tick(currentMillis);
         weather.tick(currentMillis);
-        otaStatus.tick(currentMillis);
         wifiWarning.tick(currentMillis);
         sysClock.tick(currentMillis);
         row0Widget.tick(currentMillis);
@@ -78,10 +73,8 @@ public:
      * @param display Reference to U8g2 context.
      */
     virtual void render(U8G2& display) override {
-        stationName.render(display);
-        filterInfo.render(display);
+        locationAndFilters.render(display);
         weather.render(display);
-        otaStatus.render(display);
         wifiWarning.render(display);
         sysClock.render(display);
         row0Widget.render(display);
@@ -96,10 +89,8 @@ public:
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {
-        stationName.renderAnimationUpdate(display, currentMillis);
-        filterInfo.renderAnimationUpdate(display, currentMillis);
+        locationAndFilters.renderAnimationUpdate(display, currentMillis);
         weather.renderAnimationUpdate(display, currentMillis);
-        otaStatus.renderAnimationUpdate(display, currentMillis);
         wifiWarning.renderAnimationUpdate(display, currentMillis);
         sysClock.renderAnimationUpdate(display, currentMillis);
         row0Widget.renderAnimationUpdate(display, currentMillis);

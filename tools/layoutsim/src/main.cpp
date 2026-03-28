@@ -79,14 +79,10 @@ void syncData() {
     auto& mdm = MockDataManager::getInstance();
     
     // --- Step 1: Sync Header Components ---
-    iGfxWidget* stationName = DesignerRegistry::getInstance().getWidget("stationName");
-    if (stationName) {
-        ((labelWidget*)stationName)->setText(mdm.getStationTitle());
-    }
-    
-    iGfxWidget* filterInfo = DesignerRegistry::getInstance().getWidget("filterInfo");
-    if (filterInfo) {
-        ((scrollingTextWidget*)filterInfo)->setText(mdm.getStationCalling());
+    iGfxWidget* laf = DesignerRegistry::getInstance().getWidget("locationAndFilters");
+    if (laf) {
+        ((locationAndFiltersWidget*)laf)->setLocation(mdm.getStationTitle());
+        ((locationAndFiltersWidget*)laf)->setFilters(mdm.getStationCalling());
     }
     
     // --- Step 2: Sync Mock Hardware Layout Sub-Components ---
@@ -181,10 +177,17 @@ const char* getLayoutMetadata() {
     
     if (g_layoutParser) {
         auto const& validation = g_layoutParser->getValidationStatus();
+        auto const& entries = DesignerRegistry::getInstance().getAllEntries();
+        
         for (auto const& [name, status] : validation) {
             JsonObject w = widgetsArr.add<JsonObject>();
             w["id"] = name.c_str();
             w["validation_status"] = status.c_str();
+            
+            auto it = entries.find(name);
+            if (it != entries.end()) {
+                w["type"] = it->second.typeClass.c_str();
+            }
             
             if (status != "unmapped") {
                 iGfxWidget* widget = DesignerRegistry::getInstance().getWidget(name);

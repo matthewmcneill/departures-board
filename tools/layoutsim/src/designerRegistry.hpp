@@ -27,8 +27,14 @@
 #include "iGfxWidget.hpp"
 
 class DesignerRegistry {
+public:
+    struct WidgetEntry {
+        iGfxWidget* widget;
+        std::string typeClass;
+    };
+
 private:
-    std::map<std::string, iGfxWidget*> widgets;
+    std::map<std::string, WidgetEntry> widgets;
 
 public:
     /**
@@ -44,9 +50,10 @@ public:
      * @brief Maps a string ID to an instantiated graphics widget
      * @param id The layout JSON component ID string
      * @param widget The generic widget pointer assigned to this ID
+     * @param typeClass The exact C++ derived class of this widget map
      */
-    void registerWidget(const std::string& id, iGfxWidget* widget) {
-        widgets[id] = widget;
+    void registerWidget(const std::string& id, iGfxWidget* widget, const std::string& typeClass = "") {
+        widgets[id] = {widget, typeClass};
     }
 
     /**
@@ -57,17 +64,28 @@ public:
     iGfxWidget* getWidget(const std::string& id) {
         auto it = widgets.find(id);
         if (it != widgets.end()) {
-            return it->second;
+            return it->second.widget;
         }
         return nullptr;
     }
 
     /**
-     * @brief Returns a standard map containing all mapped components
+     * @brief Returns a standard map containing all mapped components and their types
      * @return Const reference to the registry mappings map
      */
-    const std::map<std::string, iGfxWidget*>& getAllWidgets() const {
+    const std::map<std::string, WidgetEntry>& getAllEntries() const {
         return widgets;
+    }
+
+    /**
+     * @brief Returns a standard map containing all mapped components (for layoutParser compatibility if needed)
+     */
+    std::map<std::string, iGfxWidget*> getAllWidgets() const {
+        std::map<std::string, iGfxWidget*> res;
+        for (const auto& pair : widgets) {
+            res[pair.first] = pair.second.widget;
+        }
+        return res;
     }
 
     /**

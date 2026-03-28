@@ -47,3 +47,4 @@ test-results/
 # Debugging
 *build_log*.txt
 *build_log*.log
+logs/

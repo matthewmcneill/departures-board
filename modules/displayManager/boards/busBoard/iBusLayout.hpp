@@ -20,8 +20,7 @@
 
 class appContext;
 #include "../interfaces/iBoardLayout.hpp"
-#include <widgets/labelWidget.hpp>
-#include <widgets/scrollingTextWidget.hpp>
+#include <widgets/locationAndFiltersWidget.hpp>
 #include <widgets/serviceListWidget.hpp>
 #include <widgets/scrollingMessagePoolWidget.hpp>
 #include <widgets/labelWidget.hpp>
@@ -32,8 +31,7 @@ class appContext;
  */
 class iBusLayout : public iBoardLayout {
 public:
-    labelWidget stationName;
-    scrollingTextWidget filterInfo;
+    locationAndFiltersWidget locationAndFilters;
     wifiStatusWidget wifiWarning;
     serviceListWidget servicesWidget;
     scrollingMessagePoolWidget msgWidget;
@@ -41,8 +39,7 @@ public:
 
     iBusLayout(appContext* context) 
         : iBoardLayout(context),
-          stationName(0, 0, 0, 0),
-          filterInfo(0, 0, 0, 0),
+          locationAndFilters(0, 0, 0, 0),
           wifiWarning(0, 0),
           servicesWidget(0, 0, 0, 0),
           msgWidget(0, 0, 0, 0),
@@ -60,8 +57,7 @@ public:
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void tick(uint32_t currentMillis) override {
-        stationName.tick(currentMillis);
-        filterInfo.tick(currentMillis);
+        locationAndFilters.tick(currentMillis);
         wifiWarning.tick(currentMillis);
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
@@ -73,8 +69,7 @@ public:
      * @param display Reference to U8g2.
      */
     virtual void render(U8G2& display) override {
-        stationName.render(display);
-        filterInfo.render(display);
+        locationAndFilters.render(display);
         wifiWarning.render(display);
         servicesWidget.render(display);
         msgWidget.render(display);
@@ -87,8 +82,7 @@ public:
      * @param currentMillis Current system time in milliseconds.
      */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {
-        stationName.renderAnimationUpdate(display, currentMillis);
-        filterInfo.renderAnimationUpdate(display, currentMillis);
+        locationAndFilters.renderAnimationUpdate(display, currentMillis);
         wifiWarning.renderAnimationUpdate(display, currentMillis);
         servicesWidget.renderAnimationUpdate(display, currentMillis);
         msgWidget.renderAnimationUpdate(display, currentMillis);

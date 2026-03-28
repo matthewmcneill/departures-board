@@ -35,8 +35,22 @@ public:
     void configure(const struct BoardConfig& config) override {}
     WeatherStatus& getWeatherStatus() override {
         static WeatherStatus ws;
+        ws.status = WeatherUpdateStatus::READY;
+        
+        int weatherIds[] = {800, 801, 802, 803, 804, 300, 500, 200, 600, 700};
+        int numStates = sizeof(weatherIds) / sizeof(weatherIds[0]);
+        
+        // Cycle every 3 seconds (3000ms)
+        uint32_t currentMillis = millis();
+        int cyclePhase = (currentMillis / 3000) % (numStates * 2);
+        
+        ws.conditionId = weatherIds[cyclePhase % numStates];
+        // The second half of the sequence sets isNight to true
+        ws.isNight = (cyclePhase >= numStates); 
+
         return ws;
     }
+
 };
 
 class DisplayManager {
@@ -53,13 +67,6 @@ public:
      * @brief Access the simulated board abstraction bridging to dummy weather data.
      */
     iDisplayBoard* getCurrentBoard() { return &mockBoard; }
-
-    /**
-     * @brief Check if an OTA update is pending (mocked)
-     */
-    bool isOtaUpdateAvailable() {
-        return MockDataManager::getInstance().getOtaUpdateAvailable();
-    }
 };
 
 extern DisplayManager displayManager; // Global mock display instance

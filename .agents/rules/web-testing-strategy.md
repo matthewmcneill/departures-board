@@ -33,7 +33,7 @@ This rule defines the mandatory 3-phase testing workflow for all web portal deve
 
 ### Requirements
 - You MUST flash the device only AFTER Phase 2 is successful.
-- **Pre-requisite**: Check `.agents/queue.md` for hardware availability (refer to `queue-enforcement.md`).
+- **Pre-requisite**: Check `.agents/plans/lock.md` for hardware availability (refer to `queue-enforcement.md`).
 - **Commands**:
     - Flash: `pio device upload`
     - Monitor: `pio device monitor`

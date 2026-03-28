@@ -1,0 +1,44 @@
+# Task: Refine Display Boards Portal UI (V2)
+
+- [x] Planning
+    - [x] Review user feedback on Board Editor UI
+    - [x] Update `implementation_plan.md` with refined requirements
+- [x] Implementation
+    - [x] Restore session context and evaluate progress (Crash Recovery)
+    - [x] Remove "Transport Mode" radio from `modal-board`
+    - [x] Implement Unified Rail Configuration (Filters, Search, Diagnostics)
+    - [x] Implement Unified Tube Configuration (Filters, Search, Diagnostics)
+    - [x] Implement Unified Bus Configuration (Filters, Search, Diagnostics)
+    - [x] Implement API key filtering by board type and auto-selection
+    - [x] Add [Test] and [Delete] buttons to `modal-board`
+    - [x] Implement detailed diagnostic data pull printout in diagnostics drawer
+    - [x] Rename "Save" buttons to "Apply" across all modals
+- [x] Verification
+    - [x] Update Playwright tests for new UI structure
+    - [x] Run Playwright tests
+    - [x] Verify on live hardware
+    - [x] Update walkthrough.md with new recording
+    - [x] Flash firmware and monitor serial output
+- [x] UI Refinements (Round 2)
+    - [x] Research legacy Tube/Bus logic
+    - [x] Split Filter/Platform fields in Board Editor
+    - [x] Implement TfL Search API for Tube mode
+    - [x] Implement Bus ATCO manual entry and "Verify" logic
+    - [x] Add help links/instructions for Bus setup
+- [x] Bus UI Polish (User Feedback)
+    - [x] Hide API Key selection for Bus boards
+    - [x] Preserve ATCO code in input after verification
+    - [x] Refine "Verify" button placement and state updates
+- [x] UI Bugfixes (User Feedback)
+    - [x] Fix station search suggestions layout (secondary filter)
+- [x] Display List Evolution (Slot Grid)
+    - [x] Design and propose implementation plan
+    - [x] Implement `.board-slots` grid and `.board-slot` styles
+    - [x] Add `TRANSPORT_LOGOS` SVG constants
+    - [x] Update `renderBoards` to show slots + reorder buttons
+    - [x] Verify UI and functionality
+- [x] Debugging
+    - [x] Investigate Splash Screen Hang / Bootloop
+    - [x] Analyze Serial Logs
+    - [x] Identify and Fix Regression
+    - [x] Re-verify on Hardware

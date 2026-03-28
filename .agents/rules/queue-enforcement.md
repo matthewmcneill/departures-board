@@ -6,25 +6,27 @@ This rule ensures that NO agent session performs a build or flash operation if t
 When working in parallel, multiple agents might try to access the ESP32 hardware or the `build/` directory simultaneously. This leads to failures and corrupted builds.
 
 ## Requirements
-Before running ANY of the following commands:
+Before running ANY of the following compilation or hardware commands:
 - `pio run`
 - `pio device upload`
 - `pio device monitor`
 - `npm run build`
 - `npx next build`
 
-You MUST:
-1.  Read `.agents/queue.md`.
-2.  If **Locked By** is NOT `NONE` and is NOT your current session ID:
-    - ABORT the command.
-    - Notify the user: "Hardware is currently locked by Session [ID]. I've added myself to the queue."
-    - Add your current session to the "Pending Queue" if not already present.
-3.  If **Locked By** is `NONE`:
-    - Set **Locked By** to your session ID.
-    - Set the **Reason** (e.g., "Building firmware").
-    - Proceed with the command.
-4.  After the command finishes (Success or Failure):
-    - If you were the one holding the lock, you MAY keep it if you have more commands to run, OR release it if you are done.
+You MUST ensure you hold the Hardware Lock.
+
+1.  **Check the Lock**: Use `/plan-list` (or view `.agents/plans/lock.md` strictly as read-only) to check the `## Lock Status`.
+2.  **If Locked by Another Session**: 
+    - ABORT the compilation command immediately.
+    - Notify the user: "Hardware is currently locked by Session [ID]. The task has safely been placed in the queue."
+    - Run the `/plan-queue` workflow to systematically place your `implementation_plan.md` into the pending queue.
+3.  **If the Lock is Free**: 
+    - You MUST run the `/plan-start` workflow natively to formally and securely claim the lock.
+    - DO NOT manually edit the `lock.md` file yourself.
+    - Once `/plan-start` completes successfully, you may proceed with the compilation commands.
+4.  **Releasing the Lock**: 
+    - The lock must remain held until all development and verification is seamlessly completed.
+    - Release the lock ONLY by running the terminal `/plan-wrap` workflow at the very end of your active task.
 
 ## Handling Conflicts
 If you encounter a lock, do NOT attempt to force it unless the user explicitly tells you to or uses `/queue-release`.

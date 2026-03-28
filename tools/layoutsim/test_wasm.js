@@ -16,7 +16,7 @@ createLayoutEngine().then(Module => {
     const applyMockData = Module.cwrap('applyMockData', 'void', ['string']);
     const fs = require('fs');
     const layoutStr = fs.readFileSync('modules/displayManager/boards/nationalRailBoard/layouts/layoutDefault.json', 'utf8');
-    const dataStr = fs.readFileSync('tools/layoutsim/data.json', 'utf8');
+    const dataStr = fs.readFileSync('tools/layoutsim/mock_data/nationalRailBoard.json', 'utf8');
     applyMockData(dataStr);
     const result = applyLayout(layoutStr);
     console.log("Layout Parser Result:", result);

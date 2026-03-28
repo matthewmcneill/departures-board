@@ -24,6 +24,7 @@
 #include "serviceListWidget.hpp"
 #include "clockWidget.hpp"
 #include "labelWidget.hpp"
+#include "locationAndFiltersWidget.hpp"
 #include "fonts.hpp"
 
 enum class PrimitiveType {
@@ -52,6 +53,8 @@ private:
         if (name == "NatRailClockLarge9") return NatRailClockLarge9;
         if (name == "Underground10") return Underground10;
         if (name == "UndergroundClock8") return UndergroundClock8;
+        if (name == "WeatherIcons16") return WeatherIcons16;
+        if (name == "WeatherIcons11") return WeatherIcons11;
         return nullptr;
     }
 
@@ -72,8 +75,8 @@ public:
             loadLayoutProfile(layoutName, tm, mp);
         }
 
-        auto const& widgetMap = DesignerRegistry::getInstance().getAllWidgets();
-        for (auto const& [name, widget] : widgetMap) {
+        auto const& widgetEntries = DesignerRegistry::getInstance().getAllEntries();
+        for (auto const& [name, entry] : widgetEntries) {
             validationStatus[name] = "missing_style";
         }
 
@@ -112,6 +115,10 @@ public:
                             ((serviceListWidget*)widget)->setFont(f);
                         } else if (typeStr == "scrollingMessagePoolWidget") {
                             ((scrollingMessagePoolWidget*)widget)->setFont(f);
+                        } else if (typeStr == "locationAndFiltersWidget") {
+                            ((locationAndFiltersWidget*)widget)->setFont(f);
+                        } else if (typeStr == "weatherWidget") {
+                            ((weatherWidget*)widget)->setFont(f);
                         }
                     }
                 }
@@ -131,6 +138,30 @@ public:
                     std::string typeStr = typeStrPtr ? typeStrPtr : "";
                     if (typeStr == "clockWidget") {
                         ((clockWidget*)widget)->setBlink(w["blink"].as<bool>());
+                    }
+                }
+
+                if (w["format"].is<const char*>()) {
+                    const char* typeStrPtr = w["type"];
+                    std::string typeStr = typeStrPtr ? typeStrPtr : "";
+                    if (typeStr == "clockWidget") {
+                        std::string fmtStr = w["format"].as<const char*>();
+                        if (fmtStr == "HH_MM_SS") {
+                            ((clockWidget*)widget)->setFormat(clockWidget::ClockFormat::HH_MM_SS);
+                        } else {
+                            ((clockWidget*)widget)->setFormat(clockWidget::ClockFormat::HH_MM);
+                        }
+                    }
+                }
+
+                if (w["secondaryFont"].is<const char*>()) {
+                    const uint8_t* f = getFontByName(w["secondaryFont"].as<const char*>());
+                    if (f) {
+                        const char* typeStrPtr = w["type"];
+                        std::string typeStr = typeStrPtr ? typeStrPtr : "";
+                        if (typeStr == "clockWidget") {
+                            ((clockWidget*)widget)->setSecondaryFont(f);
+                        }
                     }
                 }
                 

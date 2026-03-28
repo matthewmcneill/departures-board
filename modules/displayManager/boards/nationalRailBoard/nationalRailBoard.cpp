@@ -62,6 +62,9 @@ NationalRailBoard::NationalRailBoard(appContext* contextPtr)
  * @brief Cleanup layout allocations.
  */
 NationalRailBoard::~NationalRailBoard() {
+    if (context) {
+        context->getDataManager().unregisterSource(&dataSource);
+    }
     if (activeLayout) delete activeLayout;
 }
 
@@ -199,7 +202,7 @@ int NationalRailBoard::updateData() {
         // Update header once we have the station name
         NationalRailStation* data = dataSource.getStationData();
         if (activeLayout) {
-            activeLayout->stationName.setText(data->location);
+            activeLayout->locationAndFilters.setLocation(data->location);
             
             String filterText = "";
             if (callingStation[0] != '\0') {
@@ -209,7 +212,7 @@ int NationalRailBoard::updateData() {
                 if (filterText.length() > 0) filterText += " ";
                 filterText += "[Plat " + String(platformFilter) + "]";
             }
-            activeLayout->filterInfo.setText(filterText.c_str());
+            activeLayout->locationAndFilters.setFilters(filterText.c_str());
         }
 
         // Trigger scrolling of calling points if they changed

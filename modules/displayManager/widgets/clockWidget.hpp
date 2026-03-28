@@ -27,32 +27,59 @@
 class TimeManager;
 
 class clockWidget : public iGfxWidget {
+public:
+    /**
+     * @brief Formats supported by the clock widget.
+     */
+    enum class ClockFormat {
+        HH_MM,    ///< Standard hour and minute display (e.g., 14:36)
+        HH_MM_SS  ///< Full display including seconds (e.g., 14:36:50)
+    };
+
 private:
     bool showColon;
     bool oldColon;
     bool blinkEnabled;
     uint32_t lastBlinkMs;
     int lastMinute;
+    int lastSecond;
+    ClockFormat format;
     const uint8_t* font;
+    const uint8_t* secondaryFont;
     TimeManager* timeMgr; ///< Pointer to the injected TimeManager instance
 
 public:
     /**
      * @brief Construct a new clock widget.
+     * @param _timeMgr Pointer to the time manager dependency.
      * @param _x X position.
      * @param _y Y position.
      * @param _w Width (-1 for auto).
      * @param _h Height (-1 for auto).
-     * @param _font Pointer to the u8g2 font to use.
+     * @param _font Pointer to the primary u8g2 font to use.
      */
     clockWidget(TimeManager* _timeMgr, int _x, int _y, int _w = -1, int _h = -1, const uint8_t* _font = nullptr);
 
     /**
-     * @brief Update the font used by the clock.
+     * @brief Update the primary font used by the clock.
      * @param newFont Pointer to the new u8g2 font array.
-     * @designer_prop font font = "Underground10" - The typography for the clock.
+     * @designer_prop font font = "Underground10" - The main typography for the clock.
      */
     void setFont(const uint8_t* newFont);
+
+    /**
+     * @brief Update the secondary font used for the seconds component.
+     * @param newFont Pointer to the new u8g2 font array (or nullptr to use the primary font).
+     * @designer_prop font secondaryFont = "" - Optional secondary font for the seconds digits.
+     */
+    void setSecondaryFont(const uint8_t* newFont);
+
+    /**
+     * @brief Set the format of the clock display.
+     * @param newFormat The ClockFormat enum value.
+     * @designer_prop enum format = "HH_MM"(HH_MM), "HH_MM_SS"(HH_MM_SS) - The time format.
+     */
+    void setFormat(ClockFormat newFormat);
 
     /**
      * @brief Toggle the blinking colon animation.
