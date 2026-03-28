@@ -128,8 +128,8 @@ void DisplayManager::tick(unsigned long currentMillis) {
     }
 
     // --- Step 2: Adaptive Schedule Check ---
-    // If we're not snoozing, periodically ensure our current board is still valid.
-    if (!shouldSnooze && currentMillis - lastScheduleCheck > 3000UL) {
+    // If we're not snoozing and system is running, periodically ensure our current board is still valid.
+    if (!shouldSnooze && context->getAppState() == AppState::RUNNING && currentMillis - lastScheduleCheck > 3000UL) {
         lastScheduleCheck = currentMillis;
         std::vector<int> activeBoards = context->getSchedulerManager().getActiveBoards();
         if (!activeBoards.empty()) {
@@ -152,7 +152,11 @@ void DisplayManager::tick(unsigned long currentMillis) {
     if (currentBoard != nullptr) currentBoard->tick(currentMillis);
 
     // --- Step 3: Carousel Auto-Rotation Pacing ---
-    if (!shouldSnooze && currentBoard != nullptr && !diagModeActive && context != nullptr) {
+    // rotation only occurs in Running state and when showing a carousel board (not a system overlay)
+    bool isCarouselBoard = (currentBoard == getDisplayBoard(activeSlotIndex));
+
+    if (!shouldSnooze && context->getAppState() == AppState::RUNNING && 
+        isCarouselBoard && !diagModeActive && context != nullptr) {
         const Config& config = context->getConfigManager().getConfig();
         if (config.boardCount > 1) { 
             // Only rotate if the interval has passed

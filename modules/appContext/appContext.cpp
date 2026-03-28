@@ -268,13 +268,13 @@ void appContext::tick() {
                     load->setHeading("Departures Board");
                     load->setBuildTime(sysManager.getBuildTime().c_str());
                     int progress = 50;
-                    load->setProgress("Setting the system clock...", progress);
+                    load->setProgress("Setting the system clock...", progress, 500);
                     displayManager.showBoard(load, "Setting Clock Base");
 
                     timeManager.initialize([&]() {
                         progress += 5;
                         if (progress > 80) progress = 45; // loop the progress bar back to avoid overflow visually
-                        load->setProgress("Setting the system clock...", progress);
+                        load->setProgress("Setting the system clock...", progress, 500);
                         displayManager.showBoard(load, "Setting Clock Tick", 600);
                     });
                 } else {
