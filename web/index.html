@@ -8,7 +8,7 @@
   This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
   To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  
-  Module: portal/index.html
+  Module: web/index.html
   Description: Unified Configuration Portal for the ESP32 Departures Board.
 
   =============================================================================
@@ -401,7 +401,10 @@
     }
 
     /* Global Icon Scaling: Ensures all symbol-based SVGs fill their parents correctly */
-    .icon svg, .eye-btn svg, .type-card .icon svg, .provider-logo svg {
+    .icon svg,
+    .eye-btn svg,
+    .type-card .icon svg,
+    .provider-logo svg {
       width: 100%;
       height: 100%;
       display: block;
@@ -594,8 +597,13 @@
       width: 100%;
       margin-bottom: 1.5rem;
     }
-    .compact-row label { flex: 1; margin: 0; }
-    .compact-row button { 
+
+    .compact-row label {
+      flex: 1;
+      margin: 0;
+    }
+
+    .compact-row button {
       flex: 0 0 auto;
       height: 48px;
       padding: 0 1rem;
@@ -607,6 +615,7 @@
       appearance: textfield;
       -moz-appearance: textfield;
     }
+
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button {
       -webkit-appearance: none;
@@ -1424,23 +1433,32 @@
   <!-- SVG Symbol Library: Centralized high-fidelity logos for deduplication and payload optimization -->
   <svg style="display: none;">
     <symbol id="rail-logo" viewBox="0 0 90.7 90.7">
-      <path fill="#003366" d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z" />
+      <path fill="#003366"
+        d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z" />
     </symbol>
     <symbol id="tube-logo" viewBox="0 0 100 100">
-      <path d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z" fill="#0019A8" />
+      <path
+        d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z"
+        fill="#0019A8" />
     </symbol>
     <symbol id="bus-logo" viewBox="0 0 615.3 500">
-      <path fill="#E1251B" d="M469.5,250c0,89.1-72.3,161.3-161.3,161.3-89.1,0-161.3-72.2-161.3-161.3s72.2-161.3,161.3-161.3C397.2,88.7,469.5,160.9,469.5,250 M308.1,0C170,0,58.1,111.9,58.1,250C58.1,388.1,170,500,308.1,500c138.1,0,250-111.9,250-250C558.1,111.9,446.2,0,308.1,0" /><rect y="199.5" fill="#E1251B" width="615.3" height="101.1" />
+      <path fill="#E1251B"
+        d="M469.5,250c0,89.1-72.3,161.3-161.3,161.3-89.1,0-161.3-72.2-161.3-161.3s72.2-161.3,161.3-161.3C397.2,88.7,469.5,160.9,469.5,250 M308.1,0C170,0,58.1,111.9,58.1,250C58.1,388.1,170,500,308.1,500c138.1,0,250-111.9,250-250C558.1,111.9,446.2,0,308.1,0" />
+      <rect y="199.5" fill="#E1251B" width="615.3" height="101.1" />
     </symbol>
     <symbol id="weather-logo" viewBox="0 0 24 24">
-      <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" />
+      <path
+        d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" />
     </symbol>
     <symbol id="clock-logo" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" fill="none" />
-      <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+        stroke-linejoin="round" fill="none" />
     </symbol>
     <symbol id="key-logo" viewBox="0 0 24 24">
-      <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="currentColor" />
+      <path
+        d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"
+        fill="currentColor" />
     </symbol>
     <symbol id="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -1528,8 +1546,12 @@
                 autocomplete="new-password" />
               <button type="button" class="eye-btn" disabled onclick="app.togglePass('wifi-pass', this)"
                 title="Toggle Visibility">
-                <svg class="eye-on" viewBox="0 0 24 24"><use href="#eye-on" /></svg>
-                <svg class="eye-off" viewBox="0 0 24 24"><use href="#eye-off" /></svg>
+                <svg class="eye-on" viewBox="0 0 24 24">
+                  <use href="#eye-on" />
+                </svg>
+                <svg class="eye-off" viewBox="0 0 24 24">
+                  <use href="#eye-off" />
+                </svg>
               </button>
             </div>
           </label>
@@ -1723,20 +1745,24 @@
       <article>
         <header>
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <span>Schedule & Auto-Power</span>
+            <span>Display Schedule</span>
             <button class="outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; text-transform: none;"
               onclick="app.addScheduleRule()">+ Add Rule</button>
           </div>
         </header>
         <div class="instruction-box" style="margin-bottom: 1.5rem;">
           Define <b>Time Rules</b> to control which boards are active during the day.
-          If multiple rules overlap, the system will carousel between them.
-          Leave empty to show all boards at all times.
+          If multiple rules overlap, the system will carousel between them based on the carousel interval.
+          During times when no boards are scheduled the display will carousel through all configured boards.
+          <br>
+          When you press the device button the schedule will be overridden, allowing the user to click to any board.
+          The override will eventually timeout and return to the schedule.
         </div>
 
         <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
           <label style="flex:1">Manual Override Timeout
-            <select id="schedule-override-timeout" onchange="app.state.config.manualOverrideTimeoutSecs = parseInt(this.value); app.saveAll()">
+            <select id="schedule-override-timeout"
+              onchange="app.state.config.manualOverrideTimeoutSecs = parseInt(this.value); app.saveAll()">
               <option value="30">30 Seconds</option>
               <option value="60">1 Minute</option>
               <option value="300">5 Minutes</option>
@@ -1745,7 +1771,8 @@
             </select>
           </label>
           <label style="flex:1">Carousel Interval
-            <select id="schedule-carousel-interval" onchange="app.state.config.carouselIntervalSecs = parseInt(this.value); app.saveAll()">
+            <select id="schedule-carousel-interval"
+              onchange="app.state.config.carouselIntervalSecs = parseInt(this.value); app.saveAll()">
               <option value="30">30 Seconds</option>
               <option value="60">1 Minute</option>
               <option value="120">2 Minutes</option>
@@ -1797,11 +1824,14 @@
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
                 type="checkbox" name="flip" style="width: auto; margin:0;" /> Flip Screen (180&deg;)</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
-                type="checkbox" name="waitForScroll" style="width: auto; margin:0;" /> Wait for scroll to complete before cycling boards</label>
+                type="checkbox" name="waitForScroll" style="width: auto; margin:0;" /> Wait for scroll to complete
+              before cycling boards</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
-                type="checkbox" name="rssFirst" style="width: auto; margin:0;" /> Show RSS headlines before service messages</label>
+                type="checkbox" name="rssFirst" style="width: auto; margin:0;" /> Show RSS headlines before service
+              messages</label>
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin:0;"><input
-                type="checkbox" id="diag-mode-toggle" onchange="app.toggleDiagMode(this)" style="width: auto; margin:0;" /> Show Calibration Grid</label>
+                type="checkbox" id="diag-mode-toggle" onchange="app.toggleDiagMode(this)"
+                style="width: auto; margin:0;" /> Show Calibration Grid</label>
           </div>
 
           <div class="instruction-box" style="margin-bottom: 0.5rem; margin-top: 1rem;">
@@ -1943,22 +1973,30 @@
       <header>Select Board Type</header>
       <div class="type-grid">
         <div class="type-card" onclick="app.editBoard(-1, 0)">
-          <span class="icon"><svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg></span>
+          <span class="icon"><svg viewBox="0 0 90.7 90.7">
+              <use href="#rail-logo" />
+            </svg></span>
           <h5>Rail</h5>
           <p>National Rail</p>
         </div>
         <div class="type-card" onclick="app.editBoard(-1, 1)">
-          <span class="icon"><svg viewBox="0 0 100 100"><use href="#tube-logo" /></svg></span>
+          <span class="icon"><svg viewBox="0 0 100 100">
+              <use href="#tube-logo" />
+            </svg></span>
           <h5>Tube</h5>
           <p>TfL Arrivals</p>
         </div>
         <div class="type-card" onclick="app.editBoard(-1, 2)">
-          <span class="icon"><svg viewBox="0 0 615.3 500"><use href="#bus-logo" /></svg></span>
+          <span class="icon"><svg viewBox="0 0 615.3 500">
+              <use href="#bus-logo" />
+            </svg></span>
           <h5>Bus</h5>
           <p>Bus / Tram</p>
         </div>
         <div class="type-card" onclick="app.editBoard(-1, 3)">
-          <span class="icon"><svg viewBox="0 0 24 24"><use href="#clock-logo" /></svg></span>
+          <span class="icon"><svg viewBox="0 0 24 24">
+              <use href="#clock-logo" />
+            </svg></span>
           <h5>Clock</h5>
           <p>Screensaver</p>
         </div>
@@ -2014,10 +2052,14 @@
         <label>Display Name<input type="text" name="name" required /></label>
 
         <div class="compact-row">
-           <label style="font-size:0.85rem; color:var(--text-muted);">Latitude<input type="number" step="any" name="lat" style="margin-top:0.2rem;"/></label>
-           <label style="font-size:0.85rem; color:var(--text-muted);">Longitude<input type="number" step="any" name="lon" style="margin-top:0.2rem;"/></label>
-           <button type="button" class="outline" id="btn-location-api" onclick="app.fetchLocationFromStationAPI()">Find</button>
-           <button type="button" class="outline" style="display:none;" id="btn-location-gps" onclick="app.fetchDeviceGeolocation()">Locate</button>
+          <label style="font-size:0.85rem; color:var(--text-muted);">Latitude<input type="number" step="any" name="lat"
+              style="margin-top:0.2rem;" /></label>
+          <label style="font-size:0.85rem; color:var(--text-muted);">Longitude<input type="number" step="any" name="lon"
+              style="margin-top:0.2rem;" /></label>
+          <button type="button" class="outline" id="btn-location-api"
+            onclick="app.fetchLocationFromStationAPI()">Find</button>
+          <button type="button" class="outline" style="display:none;" id="btn-location-gps"
+            onclick="app.fetchDeviceGeolocation()">Locate</button>
         </div>
 
         <div id="board-type-section" style="display: none;">
@@ -2033,7 +2075,8 @@
         <label id="label-board-brightness" style="display: none;">Brightness Override (Clock)
           <input type="range" name="brightness" min="-1" max="255" oninput="app.updateBoardBrightness(this.value)" />
           <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Set to minimum (-1) to use the
-            <b>Global System Brightness</b>.</p>
+            <b>Global System Brightness</b>.
+          </p>
         </label>
 
         <div id="board-filters-section">
@@ -2075,9 +2118,11 @@
           <label id="label-weather" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
               type="checkbox" name="weather" checked style="width: auto; margin:0;" /> Show Weather Overlay</label>
           <label id="label-oled-off" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
-              type="checkbox" name="oledOff" style="width: auto; margin:0;" /> Turn OLED Off completely in sleep (No Clock)</label>
+              type="checkbox" name="oledOff" style="width: auto; margin:0;" /> Turn OLED Off completely in sleep (No
+            Clock)</label>
           <label id="label-ordinals" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input
-              type="checkbox" name="ordinals" style="width: auto; margin:0;" /> Show Service Ordinals (1st, 2nd, 3rd)</label>
+              type="checkbox" name="ordinals" style="width: auto; margin:0;" /> Show Service Ordinals (1st, 2nd,
+            3rd)</label>
           <label id="label-last-seen" style="display: none; align-items: center; gap: 10px; cursor: pointer;"><input
               type="checkbox" name="lastSeen" style="width: auto; margin:0;" /> Show 'Last Seen at...' (NR Only)</label>
         </div>
@@ -2149,18 +2194,24 @@
       <header>Select Key Type</header>
       <div class="type-grid">
         <div class="type-card" onclick="app.addKey('rail')">
-          <span class="icon"><svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg></span>
+          <span class="icon"><svg viewBox="0 0 90.7 90.7">
+              <use href="#rail-logo" />
+            </svg></span>
           <h5>National Rail</h5>
           <p>Darwin LDBWS API</p>
         </div>
         <div class="type-card" onclick="app.addKey('tfl')">
-          <span class="icon"><svg viewBox="0 0 100 100"><use href="#tube-logo" /></svg></span>
+          <span class="icon"><svg viewBox="0 0 100 100">
+              <use href="#tube-logo" />
+            </svg></span>
           <h5>TfL</h5>
           <p>Tube/Bus Arrivals</p>
         </div>
 
         <div class="type-card" onclick="app.addKey('owm')">
-          <span class="icon"><svg viewBox="0 0 24 24" style="fill: var(--warning);"><use href="#weather-logo" /></svg></span>
+          <span class="icon"><svg viewBox="0 0 24 24" style="fill: var(--warning);">
+              <use href="#weather-logo" />
+            </svg></span>
           <h5>Weather</h5>
           <p>OpenWeatherMap</p>
         </div>
@@ -2197,8 +2248,12 @@
             <input type="password" name="token" id="key-token-input" style="margin-top:0;" autocomplete="new-password"
               oninput="app.validateKeyInput()" />
             <button type="button" class="eye-btn" disabled onclick="app.togglePass('key-token-input', this)">
-              <svg class="eye-on" viewBox="0 0 24 24"><use href="#eye-on" /></svg>
-              <svg class="eye-off" viewBox="0 0 24 24"><use href="#eye-off" /></svg>
+              <svg class="eye-on" viewBox="0 0 24 24">
+                <use href="#eye-on" />
+              </svg>
+              <svg class="eye-off" viewBox="0 0 24 24">
+                <use href="#eye-off" />
+              </svg>
             </button>
           </div>
         </label>
@@ -2722,7 +2777,7 @@
 
         title.innerText = isNew ? 'Add Schedule Rule' : 'Edit Schedule Rule';
         form.index.value = index;
-        
+
         // Time format for <input type="time"> is HH:mm
         form.startTime.value = `${this.pad(rule.startH)}:${this.pad(rule.startM)}`;
         form.endTime.value = `${this.pad(rule.endH)}:${this.pad(rule.endM)}`;
@@ -2774,17 +2829,17 @@
         this.saveAll();
       },
 
-      migrateLegacySleep: function() {
+      migrateLegacySleep: function () {
         if (!this.state.config) return;
         const cfg = this.state.config;
         const hasSchedules = cfg.schedules && cfg.schedules.some(s => s.board !== -1);
-        
+
         if (cfg.system?.sleepEnabled && !hasSchedules) {
           console.log("Migrating legacy sleep settings to schedule...");
           const startH = cfg.system.sleepEnds || 7;
           const endH = cfg.system.sleepStarts || 23;
           const boardIdx = cfg.boards.findIndex(b => b.id) || 0;
-          
+
           cfg.schedules[0] = { startH: startH, startM: 0, endH: endH, endM: 0, board: boardIdx };
           cfg.system.sleepEnabled = false;
         }
@@ -3448,18 +3503,18 @@
         } else {
           form.name.value = s.name;
           form.id.value = s.crsCode || s.id || '';
-          
+
           let lat = s.latitude || 0;
           let lon = s.longitude || 0;
 
           // Item 5 Fix: TfL Fallback if Rail API returns zero
           if ((!lat || lat === 0) && document.getElementById('board-type-select').value === "0") {
-             console.log("Rail API returned zero coords, attempting TfL sync for " + s.name);
-             const fallback = await this.syncRailCoordsFromTfL(s.name || s.crsCode);
-             if (fallback) {
-               lat = fallback.lat;
-               lon = fallback.lon;
-             }
+            console.log("Rail API returned zero coords, attempting TfL sync for " + s.name);
+            const fallback = await this.syncRailCoordsFromTfL(s.name || s.crsCode);
+            if (fallback) {
+              lat = fallback.lat;
+              lon = fallback.lon;
+            }
           }
 
           if (lat && lat !== 0) form.lat.value = lat;
@@ -3477,20 +3532,20 @@
         }
       },
 
-      fetchLocationFromStationAPI: async function() {
+      fetchLocationFromStationAPI: async function () {
         const form = document.getElementById('board-form');
         const type = parseInt(form.type.value);
         const btn = document.getElementById('btn-location-api');
-        
-        if (type === 2) { 
-           return this.handleVerifyAtco();
+
+        if (type === 2) {
+          return this.handleVerifyAtco();
         }
-        
+
         let query = document.getElementById('station-search-input').value.trim();
         if (!query) query = form.id.value || form.name.value;
         if (!query) {
-           await this.alert('Please enter a station name or code first!', 'Warning');
-           return;
+          await this.alert('Please enter a station name or code first!', 'Warning');
+          return;
         }
 
         btn.disabled = true;
@@ -3500,11 +3555,11 @@
         try {
           let url;
           if (type === 1) { // TfL
-             const apiKeyId = document.getElementById('board-key-select').value;
-             const key = this.state.keys.find(k => k.id === apiKeyId)?.token || "";
-             url = `https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(query)}?modes=tube,dlr&maxResults=1&app_key=${key}`;
+            const apiKeyId = document.getElementById('board-key-select').value;
+            const key = this.state.keys.find(k => k.id === apiKeyId)?.token || "";
+            url = `https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(query)}?modes=tube,dlr&maxResults=1&app_key=${key}`;
           } else { // Rail
-             url = `/stationpicker?q=${encodeURIComponent(query)}`;
+            url = `/stationpicker?q=${encodeURIComponent(query)}`;
           }
 
           const res = await fetch(url);
@@ -3513,25 +3568,25 @@
           let lat = 0, lon = 0;
 
           if (type === 1) {
-             if (data.matches && data.matches.length > 0) {
-                lat = data.matches[0].lat;
-                lon = data.matches[0].lon;
-             } else throw new Error("Station not found");
+            if (data.matches && data.matches.length > 0) {
+              lat = data.matches[0].lat;
+              lon = data.matches[0].lon;
+            } else throw new Error("Station not found");
           } else {
-             if (data.payload?.stations && data.payload.stations.length > 0) {
-                lat = data.payload.stations[0].latitude;
-                lon = data.payload.stations[0].longitude;
-             }
-             
-             // Item 6 Fix: TfL Fallback for Find button
-             if (!lat || lat === 0) {
-                console.log("Find: Rail API returned zero, attempting TfL fallback...");
-                const fallback = await this.syncRailCoordsFromTfL(query);
-                if (fallback) {
-                  lat = fallback.lat;
-                  lon = fallback.lon;
-                }
-             }
+            if (data.payload?.stations && data.payload.stations.length > 0) {
+              lat = data.payload.stations[0].latitude;
+              lon = data.payload.stations[0].longitude;
+            }
+
+            // Item 6 Fix: TfL Fallback for Find button
+            if (!lat || lat === 0) {
+              console.log("Find: Rail API returned zero, attempting TfL fallback...");
+              const fallback = await this.syncRailCoordsFromTfL(query);
+              if (fallback) {
+                lat = fallback.lat;
+                lon = fallback.lon;
+              }
+            }
           }
 
           // Defensive: don't overwrite with 0 if previous valid value exists
@@ -3542,7 +3597,7 @@
           const diagLon = document.getElementById('diag-lon');
           if (diagLat) diagLat.innerText = form.lat.value;
           if (diagLon) diagLon.innerText = form.lon.value;
-        } catch(e) {
+        } catch (e) {
           await this.alert('Could not resolve location: ' + e.message, 'Error');
         } finally {
           btn.disabled = false;
@@ -3550,23 +3605,23 @@
         }
       },
 
-      syncRailCoordsFromTfL: async function(query) {
-         try {
-           const apiKeyId = document.getElementById('board-key-select').value;
-           const key = this.state.keys.find(k => k.id === apiKeyId)?.token || "";
-           // Search national-rail specifically for coordinates
-           const url = `https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(query)}?modes=national-rail&maxResults=1&app_key=${key}`;
-           const res = await fetch(url);
-           if (!res.ok) return null;
-           const data = await res.json();
-           if (data.matches && data.matches.length > 0) {
-              return { lat: data.matches[0].lat, lon: data.matches[0].lon };
-           }
-         } catch(e) { console.warn("TfL sync failed", e); }
-         return null;
+      syncRailCoordsFromTfL: async function (query) {
+        try {
+          const apiKeyId = document.getElementById('board-key-select').value;
+          const key = this.state.keys.find(k => k.id === apiKeyId)?.token || "";
+          // Search national-rail specifically for coordinates
+          const url = `https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(query)}?modes=national-rail&maxResults=1&app_key=${key}`;
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (data.matches && data.matches.length > 0) {
+            return { lat: data.matches[0].lat, lon: data.matches[0].lon };
+          }
+        } catch (e) { console.warn("TfL sync failed", e); }
+        return null;
       },
 
-      fetchDeviceGeolocation: async function() {
+      fetchDeviceGeolocation: async function () {
         if (!navigator.geolocation) {
           await this.alert('Geolocation is not supported by your browser.', 'Error');
           return;
@@ -4257,12 +4312,14 @@
       <header>
         <span id="schedule-modal-title">Edit Schedule Rule</span>
         <button class="modal-close-btn" onclick="app.closeModal('modal-schedule')">
-          <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
         </button>
       </header>
       <form id="schedule-form" onsubmit="app.saveScheduleRule(event)">
         <input type="hidden" name="index" />
-        
+
         <label>Active Time Range</label>
         <div class="time-selection-row">
           <label>Start<input type="time" name="startTime" required /></label>

@@ -13,7 +13,9 @@
  *
  * Exported Functions/Classes:
  * - ConfigManager::loadConfig: Load settings from /config.json.
+ * - ConfigManager::saveConfig: Persist active settings to /config.json.
  * - ConfigManager::loadApiKeys: Load secrets from /apikeys.json.
+ * - ConfigManager::saveApiKeys: Persist secrets to /apikeys.json.
  * - ConfigManager::writeDefaultConfig: Generate skeleton configuration.
  * - ConfigManager::saveFile: LittleFS write wrapper.
  * - ConfigManager::loadFile: LittleFS read wrapper.
@@ -540,6 +542,9 @@ void ConfigManager::loadConfig() {
       } else {
         LOG_ERROR("CONFIG", String("Failed to parse /config.json: ") + error.c_str());
       }
+      
+      // Always validate after loading to establish 'complete' flags
+      validate();
   } else {
     LOG_WARN("CONFIG", "/config.json not found. Creating default config.");
     writeDefaultConfig();
@@ -585,8 +590,8 @@ void ConfigManager::validate() {
 
         // --- Cross-Validation: API Key Registry Check ---
         if (bc.complete) {
-            // Bus does not require a key currently
-            if (bc.type != MODE_BUS) {
+            // Bus and Clock types do not require a network API key registry check.
+            if (bc.type != MODE_BUS && bc.type != MODE_CLOCK) {
                 ApiKey* key = getKeyById(bc.apiKeyId);
                 if (!key) {
                     bc.complete = false;

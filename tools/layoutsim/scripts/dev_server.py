@@ -17,6 +17,8 @@ import os
 import sys
 import json
 import glob
+import logging
+from datetime import datetime
 
 # Configuration Constants
 PORT = 8000 # HTTP listener port for the development server
@@ -24,6 +26,35 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR = os.path.dirname(SCRIPT_DIR)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(TOOLS_DIR))
 BOARD_DIR = os.path.join(PROJECT_ROOT, "modules", "displayManager", "boards")
+
+# Logging Configuration
+TIMESTAMP = datetime.now().strftime("%y%m%d-%H%M%S")
+LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOG_FILE = os.path.join(LOG_DIR, f"simserver-{TIMESTAMP}.log")
+LATEST_LOG = os.path.join(LOG_DIR, "simserver_latest.log")
+
+# Configure logging: File (Detailed) and Console (Minimal)
+file_handler = logging.FileHandler(LOG_FILE)
+latest_handler = logging.FileHandler(LATEST_LOG, mode='w')
+console_handler = logging.StreamHandler(sys.stdout)
+
+# Detailed format for files
+file_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+file_handler.setFormatter(file_formatter)
+latest_handler.setFormatter(file_formatter)
+
+# Simple format for console
+console_formatter = logging.Formatter('%(message)s')
+console_handler.setFormatter(console_formatter)
+console_handler.setLevel(logging.WARNING) # Silence console spam by default
+
+logger = logging.getLogger("simserver")
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.addHandler(latest_handler)
+logger.addHandler(console_handler)
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -56,7 +87,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         elif self.path == '/api/layouts':
             layouts = self.get_all_layouts()
-            print(f"[API] Found {len(layouts)} layouts")
+            logger.info(f"[API] Found {len(layouts)} layouts")
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
@@ -115,7 +146,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         elif self.path == '/api/latest-layout':
             latest = self.get_latest_layout()
-            print(f"[API] Latest layout: {latest}")
+            logger.info(f"[API] Latest layout: {latest}")
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
@@ -126,8 +157,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         else:
             # Default behavior: serve files from PROJECT_ROOT
-            # print(f"[HTTP] GET {self.path}")
+            # logger.info(f"[HTTP] GET {self.path}")
             super().do_GET()
+
+    def log_message(self, format, *args):
+        """
+        Redirect HTTP server logs to the file instead of stderr.
+        """
+        logger.info("%s - - [%s] %s" %
+                         (self.address_string(),
+                          self.log_date_time_string(),
+                          format%args))
 
     def get_all_layouts(self):
         """
@@ -211,13 +251,16 @@ def run():
     """
     print(f"Starting Layout Simulator Dev Server on http://localhost:{PORT}")
     print(f"Project Root: {PROJECT_ROOT}")
+    logger.info(f"--- Session Start: {TIMESTAMP} ---")
+    logger.info(f"Logging to: {LOG_FILE}")
     
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("\nShutting down server.")
+            print("\nShutting down Layout Simulator server.")
+            logger.info("Server shutdown via KeyboardInterrupt.")
             sys.exit(0)
 
 if __name__ == "__main__":

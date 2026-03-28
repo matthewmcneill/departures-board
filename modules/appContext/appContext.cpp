@@ -14,6 +14,8 @@
  * - appContext::appContext: Constructor initializes core state.
  * - appContext::begin: Master initialization sequence for all hardware and software services.
  * - appContext::tick: Central administrative loop for high-level tasks.
+ * - appContext::reapplyConfig: Globally triggers a refresh across all managers.
+ * - appContext::getAppState: Accessor for the core system state.
  * - yieldCallbackWrapper: Global yield relay for non-blocking I/O.
  * - raildataYieldWrapper: Global progress callback relay for National Rail.
  */

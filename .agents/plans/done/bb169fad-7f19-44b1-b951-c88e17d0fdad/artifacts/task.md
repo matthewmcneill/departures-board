@@ -1,0 +1,6 @@
+- `[x]` Implement `appContext` boot sequence deferral
+- `[x]` Implement `systemManager` board switch guard
+- `[x]` Implement `weatherClient` silent skip for missing keys
+- `[x]` Implement `rssClient` empty URL guard
+- `[ ]` Save execution context and wait for hardware lock
+- `[ ]` Final verification (Build/Flash/Monitor)

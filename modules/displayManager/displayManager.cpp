@@ -23,6 +23,10 @@
  * - DisplayManager::showBoard: Switch to a new board and optionally block for an animation duration.
  * - DisplayManager::applyConfig: Provisions system state from a central config object.
  * - DisplayManager::setPowerSave: Controls the hardware OLED power state.
+ * - DisplayManager::resumeDisplays: Wakes the display and returns to the carousel.
+ * - DisplayManager::cycleNext: Advances the active board in the carousel.
+ * - DisplayManager::setBrightness: Hardware OLED intensity control.
+ * - DisplayManager::setFlipScreen: 180-degree rotation control.
  */
 
 #include "displayManager.hpp"

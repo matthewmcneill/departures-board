@@ -10,10 +10,14 @@
  * Module: modules/schedulerManager/schedulerManager.hpp
  * Description: Evaluates the system schedule rules against current time to 
  *              determine which display boards should be active. Handles manual 
- *              override button states.
+ *              override button states and provides the source of truth for 
+ *              active display contexts.
  *
  * Exported Functions/Classes:
- * - schedulerManager: The class handling schedule lifecycle and overrides.
+ * - schedulerManager: The core manager for time-based display scheduling.
+ *   - begin(): Initializes the manager and logs the starting rules.
+ *   - triggerManualOverride(): Wakes the system or overrides the schedule.
+ *   - getActiveBoards(): Returns the current list of allowed board indices.
  */
 
 #pragma once
@@ -31,6 +35,11 @@ public:
      * @param ctx Pointer to the global application context.
      */
     schedulerManager(appContext* ctx);
+    
+    /**
+     * @brief Initializes the manager state and performs initial rule evaluation logging.
+     */
+    void begin();
 
     /**
      * @brief Trigger the manual override state, resetting the idle timeout.
@@ -47,4 +56,5 @@ private:
     appContext* context;              ///< Application context reference
     bool isManualOverrideActive;      ///< Flag for button override
     unsigned long overrideTimestamp;  ///< Idle tracker for override timeout
+    std::vector<int> lastActiveBoards; ///< Previously active board list for logging
 };

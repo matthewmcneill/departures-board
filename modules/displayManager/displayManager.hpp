@@ -132,6 +132,7 @@ private:
     bool waitForScrollComplete = false;
     bool prioritiseRss = false;
     bool oledPowerSaveActive = false; ///< Tracks if the hardware is currently in power-save mode
+    unsigned long lastScheduleCheck = 0; ///< Throttling for scheduler evaluation in tick()
 
     /**
      * @brief Access the encapsulated hardware display instance.
