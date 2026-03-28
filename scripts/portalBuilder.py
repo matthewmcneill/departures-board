@@ -119,10 +119,26 @@ def generate_assets():
             # Minify and Gzip the content
             with open(asset_path, "r", encoding="utf-8") as f_in:
                 content = f_in.read()
+                
+                # Injection: If this is index.html, replace the hardcoded build date
+                if asset == "index.html":
+                    # Try to read the serial from the generated header to stay in sync
+                    serial = datetime.datetime.now().strftime("%Y-%m-%d")
+                    header_path = os.path.join(ROOT_DIR, "modules/systemManager/build_time.h")
+                    if os.path.exists(header_path):
+                        with open(header_path, "r") as hf:
+                            hcontent = hf.read()
+                            import re
+                            match = re.search(r'#define BUILD_TIME "(.*?)"', hcontent)
+                            if match:
+                                serial = match.group(1)
+                    
+                    content = re.sub(r'<p id="fw-build-text">Build: [^<]+</p>', 
+                                   f'<p id="fw-build-text">Build: {serial}</p>', 
+                                   content)
+                    print(f"Patched build serial in index.html to: {serial}")
+
                 minified_content = minify_html(content)
-                # Debug: Write minified content to a temp file for inspection
-                with open("/tmp/minified_index.html", "w") as f_debug:
-                    f_debug.write(minified_content)
                 gzipped_content = gzip.compress(minified_content.encode("utf-8"))
 
             # Generate C++ array name

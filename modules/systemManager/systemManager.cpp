@@ -24,6 +24,7 @@
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
 #include <wifiManager.hpp> // Added as per instruction
 #include <buttonHandler.hpp>
+#include "build_time.h"
 
 /**
  * @brief Initialize default system state.
@@ -239,6 +240,9 @@ void systemManager::tick() {
  * @return String formatted build timestamp.
  */
 String systemManager::getBuildTime() {
+#ifdef BUILD_TIME
+  return String(BUILD_TIME);
+#else
   char timestamp[22];
   char buildtime[11];
   struct tm tm = {};
@@ -247,6 +251,7 @@ String systemManager::getBuildTime() {
   strptime(timestamp,"%b %d %Y %H:%M:%S",&tm);
   sprintf(buildtime,"%02d%02d%02d%02d%02d",tm.tm_year-100,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min);
   return String(buildtime);
+#endif
 }
 
 /**

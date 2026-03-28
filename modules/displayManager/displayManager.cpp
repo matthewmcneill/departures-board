@@ -35,6 +35,7 @@
 #include <boards/systemBoard/sleepingBoard.hpp>
 #include "configManager.hpp"
 #include <appContext.hpp>
+#include "../systemManager/build_time.h"
 
 // DisplayManager singleton will be owned by appContext
 
@@ -247,7 +248,11 @@ iDisplayBoard* DisplayManager::getSystemBoard(SystemBoardId id) {
             return &splashBoard;
         case SystemBoardId::SYS_BOOT_LOADING:
             loadingBoard.setHeading("Departures Board");
+#ifdef BUILD_TIME
+            loadingBoard.setBuildTime(BUILD_TIME);
+#else
             loadingBoard.setBuildTime(String(__DATE__ " " __TIME__).c_str());
+#endif
             return &loadingBoard;
         case SystemBoardId::SYS_WIFI_WIZARD:
             wizardBoard.setWizardIp(WiFi.softAPIP());
