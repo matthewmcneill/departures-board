@@ -193,15 +193,28 @@
 
     input[type="text"],
     input[type="password"],
-    select,
-    input[type="range"] {
+    input[type="number"],
+    select {
       width: 100%;
-      padding: 0.75rem;
+      padding: 0.8rem 1rem;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--bg);
       color: var(--text);
       font-size: 1rem;
+      margin-top: 0.4rem;
+      accent-color: var(--primary);
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+      outline: none;
+    }
+
+    input[type="range"] {
+      width: 100%;
       margin-top: 0.4rem;
       accent-color: var(--primary);
     }
@@ -387,6 +400,13 @@
       transform: translateY(-2px);
     }
 
+    /* Global Icon Scaling: Ensures all symbol-based SVGs fill their parents correctly */
+    .icon svg, .eye-btn svg, .type-card .icon svg, .provider-logo svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
     /* --- Drawer Styles --- */
     .drawer {
       border-top: 1px solid var(--border);
@@ -556,13 +576,41 @@
 
     dialog {
       border: none;
-      border-radius: 20px;
+      border-radius: 12px;
       padding: 0;
       background: var(--bg);
       color: var(--text);
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
       width: 90%;
-      max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .compact-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .compact-row label { flex: 1; margin: 0; }
+    .compact-row button { 
+      flex: 0 0 auto;
+      height: 48px;
+      padding: 0 1rem;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
 
     dialog::backdrop {
@@ -818,9 +866,12 @@
     }
 
     .type-card .icon {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-      display: block;
+      margin: 0 auto 0.75rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
     }
 
     .type-card h5 {
@@ -1295,6 +1346,35 @@
 <!-- ========================================================= -->
 
 <body class="">
+  <!-- SVG Symbol Library: Centralized high-fidelity logos for deduplication and payload optimization -->
+  <svg style="display: none;">
+    <symbol id="rail-logo" viewBox="0 0 90.7 90.7">
+      <path fill="#003366" d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z" />
+    </symbol>
+    <symbol id="tube-logo" viewBox="0 0 100 100">
+      <path d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z" fill="#0019A8" />
+    </symbol>
+    <symbol id="bus-logo" viewBox="0 0 615.3 500">
+      <path fill="#E1251B" d="M469.5,250c0,89.1-72.3,161.3-161.3,161.3-89.1,0-161.3-72.2-161.3-161.3s72.2-161.3,161.3-161.3C397.2,88.7,469.5,160.9,469.5,250 M308.1,0C170,0,58.1,111.9,58.1,250C58.1,388.1,170,500,308.1,500c138.1,0,250-111.9,250-250C558.1,111.9,446.2,0,308.1,0" /><rect y="199.5" fill="#E1251B" width="615.3" height="101.1" />
+    </symbol>
+    <symbol id="weather-logo" viewBox="0 0 24 24">
+      <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" />
+    </symbol>
+    <symbol id="clock-logo" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" fill="none" />
+      <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    </symbol>
+    <symbol id="key-logo" viewBox="0 0 24 24">
+      <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="currentColor" />
+    </symbol>
+    <symbol id="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </symbol>
+    <symbol id="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M2 2l20 20M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+    </symbol>
+  </svg>
   <div class="container">
     <div class="ap-banner">Setup Mode: Access Point Active</div>
     <div class="top-bar">
@@ -1373,13 +1453,8 @@
                 autocomplete="new-password" />
               <button type="button" class="eye-btn" disabled onclick="app.togglePass('wifi-pass', this)"
                 title="Toggle Visibility">
-                <svg class="eye-on" viewBox="0 0 24 24">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-                <svg class="eye-off" viewBox="0 0 24 24">
-                  <path d="M2 2l20 20M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                </svg>
+                <svg class="eye-on" viewBox="0 0 24 24"><use href="#eye-on" /></svg>
+                <svg class="eye-off" viewBox="0 0 24 24"><use href="#eye-off" /></svg>
               </button>
             </div>
           </label>
@@ -1770,22 +1845,22 @@
       <header>Select Board Type</header>
       <div class="type-grid">
         <div class="type-card" onclick="app.editBoard(-1, 0)">
-          <span class="icon">🚆</span>
+          <span class="icon"><svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg></span>
           <h5>Rail</h5>
           <p>National Rail</p>
         </div>
         <div class="type-card" onclick="app.editBoard(-1, 1)">
-          <span class="icon">🚇</span>
+          <span class="icon"><svg viewBox="0 0 100 100"><use href="#tube-logo" /></svg></span>
           <h5>Tube</h5>
           <p>TfL Arrivals</p>
         </div>
         <div class="type-card" onclick="app.editBoard(-1, 2)">
-          <span class="icon">🚌</span>
+          <span class="icon"><svg viewBox="0 0 615.3 500"><use href="#bus-logo" /></svg></span>
           <h5>Bus</h5>
           <p>Bus / Tram</p>
         </div>
         <div class="type-card" onclick="app.editBoard(-1, 3)">
-          <span class="icon">⏰</span>
+          <span class="icon"><svg viewBox="0 0 24 24"><use href="#clock-logo" /></svg></span>
           <h5>Clock</h5>
           <p>Screensaver</p>
         </div>
@@ -1839,6 +1914,13 @@
         </div>
 
         <label>Display Name<input type="text" name="name" required /></label>
+
+        <div class="compact-row">
+           <label style="font-size:0.85rem; color:var(--text-muted);">Latitude<input type="number" step="any" name="lat" style="margin-top:0.2rem;"/></label>
+           <label style="font-size:0.85rem; color:var(--text-muted);">Longitude<input type="number" step="any" name="lon" style="margin-top:0.2rem;"/></label>
+           <button type="button" class="outline" id="btn-location-api" onclick="app.fetchLocationFromStationAPI()">Find</button>
+           <button type="button" class="outline" style="display:none;" id="btn-location-gps" onclick="app.fetchDeviceGeolocation()">Locate</button>
+        </div>
 
         <div id="board-type-section" style="display: none;">
           <label>Transport Mode<select name="type" id="board-type-select"
@@ -1937,10 +2019,8 @@
                 <td id="diag-tz">-</td>
               </tr>
             </table>
-            <!-- Hidden inputs to store IDs and coords -->
+            <!-- Hidden inputs to store IDs -->
             <input type="hidden" name="id" />
-            <input type="hidden" name="lat" />
-            <input type="hidden" name="lon" />
           </div>
         </div>
 
@@ -1971,37 +2051,18 @@
       <header>Select Key Type</header>
       <div class="type-grid">
         <div class="type-card" onclick="app.addKey('rail')">
-          <span class="icon"
-            style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
-            <svg viewBox="4.9 4.9 80.9 80.9" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#003366"
-                d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z" />
-            </svg>
-          </span>
+          <span class="icon"><svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg></span>
           <h5>National Rail</h5>
           <p>Darwin LDBWS API</p>
         </div>
         <div class="type-card" onclick="app.addKey('tfl')">
-          <span class="icon"
-            style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z"
-                fill="#0019A8" />
-            </svg>
-          </span>
+          <span class="icon"><svg viewBox="0 0 100 100"><use href="#tube-logo" /></svg></span>
           <h5>TfL</h5>
           <p>Tube/Bus Arrivals</p>
         </div>
 
         <div class="type-card" onclick="app.addKey('owm')">
-          <span class="icon"
-            style="display:flex; justify-content:center; margin-bottom:0.5rem; width:2rem; height:2rem;">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="var(--warning)">
-              <path
-                d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" />
-            </svg>
-          </span>
+          <span class="icon"><svg viewBox="0 0 24 24" style="fill: var(--warning);"><use href="#weather-logo" /></svg></span>
           <h5>Weather</h5>
           <p>OpenWeatherMap</p>
         </div>
@@ -2038,13 +2099,8 @@
             <input type="password" name="token" id="key-token-input" style="margin-top:0;" autocomplete="new-password"
               oninput="app.validateKeyInput()" />
             <button type="button" class="eye-btn" disabled onclick="app.togglePass('key-token-input', this)">
-              <svg class="eye-on" viewBox="0 0 24 24">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-              <svg class="eye-off" viewBox="0 0 24 24">
-                <path d="M2 2l20 20M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              </svg>
+              <svg class="eye-on" viewBox="0 0 24 24"><use href="#eye-on" /></svg>
+              <svg class="eye-off" viewBox="0 0 24 24"><use href="#eye-off" /></svg>
             </button>
           </div>
         </label>
@@ -2099,17 +2155,17 @@
     const MAX_BOARDS = 6; // Matching platformio.ini
 
     const PROVIDER_LOGOS = {
-      rail: '<svg viewBox="4.9 4.9 80.9 80.9" xmlns="http://www.w3.org/2000/svg"><path fill="#003366" d="M25.8,25.7l20.5,9.4H14.5v6.4h32L30.9,49H14.5v6.3h16.4l19.5,9.4H65l-20.5-9.4h31.9V49H44.5l15.6-7.6h16.3 V35H60l-19.5-9.4H25.8 M4.9,45.3C4.9,23,23,4.9,45.3,4.9S85.8,23,85.8,45.3S67.7,85.8,45.3,85.8C23,85.8,4.9,67.7,4.9,45.3z"/></svg>',
-      tfl: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M 10 50 A 40 40 0 1 1 90 50 A 40 40 0 1 1 10 50 Z M 26 50 A 24 24 0 1 0 74 50 A 24 24 0 1 0 26 50 Z M 2 42 L 98 42 L 98 58 L 2 58 Z" fill="#0019A8" /></svg>',
-      owm: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>',
-      other: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>'
+      rail: '<svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg>',
+      tfl: '<svg viewBox="0 0 100 100"><use href="#tube-logo" /></svg>',
+      owm: '<svg viewBox="0 0 24 24"><use href="#weather-logo" /></svg>',
+      other: '<svg viewBox="0 0 24 24"><use href="#key-logo" /></svg>'
     };
 
     const TRANSPORT_LOGOS = {
-      0: PROVIDER_LOGOS.rail, // Rail
-      1: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 615.3 500"><path d="m469.5 250c0 89.1-72.3 161.3-161.3 161.3-89.1 0-161.3-72.2-161.3-161.3s72.1-161.3 161.2-161.3 161.4 72.2 161.4 161.3m-161.4-250c-138.1 0-250 111.9-250 250s111.9 250 250 250 250-111.9 250-250-111.9-250-250-250" fill="#e1251f"/><rect y="199.5" width="615.3" height="101.1" fill="#000f9f"/></svg>', // Tube
-      2: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 615.327 500"><path fill="#E1251B" d="M469.463,249.985c0,89.079-72.266,161.309-161.338,161.309c-89.101,0-161.302-72.229-161.302-161.309   c0-89.065,72.2-161.279,161.302-161.279C397.197,88.706,469.463,160.921,469.463,249.985 M308.125,0   C170.034,0,58.103,111.924,58.103,249.985C58.103,388.062,170.034,500,308.125,500c138.062,0,249.985-111.938,249.985-250.015   C558.111,111.924,446.187,0,308.125,0"/><rect y="199.517" fill="#E1251B" width="615.327" height="101.127"/></svg>', // Bus
-      3: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' // Clock
+      0: PROVIDER_LOGOS.rail,
+      1: PROVIDER_LOGOS.tfl,
+      2: '<svg viewBox="0 0 615.3 500"><use href="#bus-logo" /></svg>',
+      3: '<svg viewBox="0 0 24 24"><use href="#clock-logo" /></svg>'
     };
 
     // ==========================================
@@ -2734,9 +2790,6 @@
             body: JSON.stringify({
               id: form.id.value,
               type: form.type.value,
-              apiKeyId: form.apiKeyId.value,
-              oledOff: form.oledOff.checked,
-              tflLine: form.tflLine.value,
               token: form.token.value
             })
           });
@@ -2974,6 +3027,11 @@
         if (diagRowTime) diagRowTime.style.display = (t === 3) ? 'table-row' : 'none';
         if (diagRowTz) diagRowTz.style.display = (t === 3) ? 'table-row' : 'none';
 
+        const btnLocationApi = document.getElementById('btn-location-api');
+        const btnLocationGps = document.getElementById('btn-location-gps');
+        if (btnLocationApi) btnLocationApi.style.display = (t !== 3) ? 'block' : 'none';
+        if (btnLocationGps) btnLocationGps.style.display = (t === 3) ? 'block' : 'none';
+
         // Default resets
         filterSecondaryContainer.style.display = 'none';
         busInstruction.style.display = 'none';
@@ -3134,7 +3192,7 @@
         } catch (e) { console.error('Station search failed', e); }
       },
 
-      onStationSelect: function (s, isSecondary = false) {
+      onStationSelect: async function (s, isSecondary = false) {
         const form = document.getElementById('board-form');
         if (isSecondary) {
           form.secondaryId.value = s.crsCode || s.id || '';
@@ -3144,8 +3202,22 @@
         } else {
           form.name.value = s.name;
           form.id.value = s.crsCode || s.id || '';
-          form.lat.value = s.latitude || 0;
-          form.lon.value = s.longitude || 0;
+          
+          let lat = s.latitude || 0;
+          let lon = s.longitude || 0;
+
+          // Item 5 Fix: TfL Fallback if Rail API returns zero
+          if ((!lat || lat === 0) && document.getElementById('board-type-select').value === "0") {
+             console.log("Rail API returned zero coords, attempting TfL sync for " + s.name);
+             const fallback = await this.syncRailCoordsFromTfL(s.name || s.crsCode);
+             if (fallback) {
+               lat = fallback.lat;
+               lon = fallback.lon;
+             }
+          }
+
+          if (lat && lat !== 0) form.lat.value = lat;
+          if (lon && lon !== 0) form.lon.value = lon;
 
           document.getElementById('diag-id').innerText = form.id.value;
           document.getElementById('diag-lat').innerText = form.lat.value;
@@ -3159,11 +3231,124 @@
         }
       },
 
+      fetchLocationFromStationAPI: async function() {
+        const form = document.getElementById('board-form');
+        const type = parseInt(form.type.value);
+        const btn = document.getElementById('btn-location-api');
+        
+        if (type === 2) { 
+           return this.handleVerifyAtco();
+        }
+        
+        let query = document.getElementById('station-search-input').value.trim();
+        if (!query) query = form.id.value || form.name.value;
+        if (!query) {
+           await this.alert('Please enter a station name or code first!', 'Warning');
+           return;
+        }
+
+        btn.disabled = true;
+        const oldText = btn.innerText;
+        btn.innerText = '...';
+
+        try {
+          let url;
+          if (type === 1) { // TfL
+             const apiKeyId = document.getElementById('board-key-select').value;
+             const key = this.state.keys.find(k => k.id === apiKeyId)?.token || "";
+             url = `https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(query)}?modes=tube,dlr&maxResults=1&app_key=${key}`;
+          } else { // Rail
+             url = `/stationpicker?q=${encodeURIComponent(query)}`;
+          }
+
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("API request failed");
+          const data = await res.json();
+          let lat = 0, lon = 0;
+
+          if (type === 1) {
+             if (data.matches && data.matches.length > 0) {
+                lat = data.matches[0].lat;
+                lon = data.matches[0].lon;
+             } else throw new Error("Station not found");
+          } else {
+             if (data.payload?.stations && data.payload.stations.length > 0) {
+                lat = data.payload.stations[0].latitude;
+                lon = data.payload.stations[0].longitude;
+             }
+             
+             // Item 6 Fix: TfL Fallback for Find button
+             if (!lat || lat === 0) {
+                console.log("Find: Rail API returned zero, attempting TfL fallback...");
+                const fallback = await this.syncRailCoordsFromTfL(query);
+                if (fallback) {
+                  lat = fallback.lat;
+                  lon = fallback.lon;
+                }
+             }
+          }
+
+          // Defensive: don't overwrite with 0 if previous valid value exists
+          if (lat && lat !== 0) form.lat.value = lat;
+          if (lon && lon !== 0) form.lon.value = lon;
+
+          const diagLat = document.getElementById('diag-lat');
+          const diagLon = document.getElementById('diag-lon');
+          if (diagLat) diagLat.innerText = form.lat.value;
+          if (diagLon) diagLon.innerText = form.lon.value;
+        } catch(e) {
+          await this.alert('Could not resolve location: ' + e.message, 'Error');
+        } finally {
+          btn.disabled = false;
+          btn.innerText = oldText;
+        }
+      },
+
+      syncRailCoordsFromTfL: async function(query) {
+         try {
+           const apiKeyId = document.getElementById('board-key-select').value;
+           const key = this.state.keys.find(k => k.id === apiKeyId)?.token || "";
+           // Search national-rail specifically for coordinates
+           const url = `https://api.tfl.gov.uk/StopPoint/Search/${encodeURIComponent(query)}?modes=national-rail&maxResults=1&app_key=${key}`;
+           const res = await fetch(url);
+           if (!res.ok) return null;
+           const data = await res.json();
+           if (data.matches && data.matches.length > 0) {
+              return { lat: data.matches[0].lat, lon: data.matches[0].lon };
+           }
+         } catch(e) { console.warn("TfL sync failed", e); }
+         return null;
+      },
+
+      fetchDeviceGeolocation: async function() {
+        if (!navigator.geolocation) {
+          await this.alert('Geolocation is not supported by your browser.', 'Error');
+          return;
+        }
+        const btn = document.getElementById('btn-location-gps');
+        const oldText = btn.innerText;
+        btn.innerText = '...';
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition((pos) => {
+          const form = document.getElementById('board-form');
+          form.lat.value = pos.coords.latitude.toFixed(6);
+          form.lon.value = pos.coords.longitude.toFixed(6);
+          btn.innerText = oldText;
+          btn.disabled = false;
+        }, async (err) => {
+          await this.alert('Failed to get location: ' + err.message, 'Error');
+          btn.innerText = oldText;
+          btn.disabled = false;
+        }, { timeout: 10000 });
+      },
+
       handleVerifyAtco: async function () {
         const input = document.getElementById('station-search-input');
-        const atco = input.value.trim();
-        const btn = document.getElementById('btn-verify-atco');
         const form = document.getElementById('board-form');
+        // Prefer explicit ID when verifying, fallback to input query
+        const atco = form.id.value || input.value.trim();
+        const btn = document.getElementById('btn-verify-atco');
 
         if (!atco) return;
 

@@ -9,17 +9,16 @@
  *
  * Module: modules/webServer/webHandlerManager.cpp
  * Description: Implementation of the modern web portal handlers.
+ * Provides a RESTful API for system configuration, hardware monitoring, and 
+ * network lifecycle management.
  *
  * Exported Functions/Classes:
- * - WebHandlerManager::WebHandlerManager: Constructor.
- * - WebHandlerManager::begin: Route registration.
- * - WebHandlerManager::handlePortalRoot: Serves the main web index.html.
- * - WebHandlerManager::handleGetStatus: Returns system health, connectivity metrics, time and timezone.
- * - WebHandlerManager::handleGetConfig: Returns the unified project configuration as JSON.
- * - WebHandlerManager::handleSaveAll: Atomic validation and save of all portal settings.
- * - WebHandlerManager::handleReboot: Restarts the ESP32 device.
- * - WebHandlerManager::handleOTACheck: Triggers a manual firmware update check.
- * - WebHandlerManager::handleRSSJson: Serves the gzipped rss.json asset.
+ * - WebHandlerManager: Principal class for web service lifecycle management.
+ *   - begin(): Registers all routes with the AsyncWebServer.
+ *   - handlePortalRoot(): Serves gzipped SPA assets with concurrency protection.
+ *   - handleGetStatus(): Evaluates hardware health and connectivity metrics.
+ *   - handleGetConfig(): Serializes unified project configuration.
+ *   - handleSaveAll(): Performs atomic validation and persistence of settings.
  */
 
 #include "webHandlerManager.hpp"
@@ -35,9 +34,20 @@
 #include "../displayManager/boards/busBoard/busDataSource.hpp"
 #include "../../lib/rssClient/rssClient.hpp"
 #include "../weatherClient/weatherClient.hpp"
+#include <atomic>
 
 extern class appContext appContext;
 
+// Static atomic counter to track active high-memory web requests (e.g. serving 152KB HTML or large JSON)
+// This serializes delivery to protect the 34KB max heap block limit from concurrent mobile connections.
+static std::atomic<int> activeHighMemRequests{0}; // Shared atomic for thread-safe session tracking
+const int MAX_CONCURRENT_HIGH_MEM = 1; // Limit for memory-intensive web responses
+
+/**
+ * @brief Constructor for the WebHandlerManager.
+ * @param server Reference to the AsyncWebServer.
+ * @param config Reference to the ConfigManager.
+ */
 WebHandlerManager::WebHandlerManager(AsyncWebServer& server, ConfigManager& config) 
     : _server(server), _config(config) {
 }
@@ -123,8 +133,35 @@ void WebHandlerManager::begin() {
  * @brief Serves the main web index.html file (gzipped from flash).
  */
 void WebHandlerManager::handlePortalRoot(AsyncWebServerRequest *request) {
-    LOG_INFO("WEB_API", "Serving /web/index.html (gzipped)");
-    sendGzipFlash(request, index_html_gz, index_html_gz_len, "text/html");
+    char logBuf[128];
+    uint32_t freeHeap = ESP.getFreeHeap();
+    uint32_t maxBlock = ESP.getMaxAllocHeap();
+    
+    snprintf(logBuf, sizeof(logBuf), "Serving /web/index.html (gzipped) | Heap: %u | MaxBlock: %u", freeHeap, maxBlock);
+    LOG_INFO("WEB_API", logBuf);
+
+    // Serialization Guard: If another high-memory request is active, or heap is dangerously low, 
+    // reject the request to prevent a system crash. Mobile browsers often open multiple 
+    // concurrent sockets which would otherwise exhaust the 34KB heap blocks.
+    if (activeHighMemRequests >= MAX_CONCURRENT_HIGH_MEM || maxBlock < 20000) {
+        LOG_WARN("WEB_API", "Heavy request rejected (Heap/Concurrency Guard)");
+        request->send(503, "text/plain", "Busy - Retry in 1s");
+        return;
+    }
+
+    activeHighMemRequests++;
+    
+    // Create the response and decrement the counter when it is finished/closed
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+    response->addHeader("Content-Encoding", "gzip");
+    
+    // Decoupled decrement: The response object is destroyed when the request is finalized.
+    // We utilize the onDisconnect callback to ensure the semaphore is released safely.
+    request->onDisconnect([]() {
+        if (activeHighMemRequests > 0) activeHighMemRequests--;
+    });
+
+    request->send(response);
 }
 
 /**
@@ -136,6 +173,7 @@ void WebHandlerManager::handleGetStatus(AsyncWebServerRequest *request) {
     doc["heap"] = ESP.getFreeHeap();
     doc["total_heap"] = ESP.getHeapSize();
     doc["max_alloc"] = ESP.getMaxAllocHeap();
+    doc["min_heap"] = ESP.getMinFreeHeap();
     doc["temp"] = temperatureRead();
     doc["uptime"] = millis() / 1000;
     doc["rssi"] = WiFi.RSSI();
@@ -173,7 +211,26 @@ void WebHandlerManager::handleGetStatus(AsyncWebServerRequest *request) {
  * @brief API Handler for GET /api/config. Returns the unified project configuration as JSON.
  */
 void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
-    LOG_INFO("WEB_API", "GET /api/config called - building unified JSON");
+    char logBuf[128];
+    uint32_t maxBlock = ESP.getMaxAllocHeap();
+    snprintf(logBuf, sizeof(logBuf), "GET /api/config | MaxBlock: %u", maxBlock);
+    LOG_INFO("WEB_API", logBuf);
+
+    // Serialization Guard: JSON generation for the full config is memory-intensive.
+    // If another high-memory task is running, wait for it to protect the heap.
+    if (activeHighMemRequests >= MAX_CONCURRENT_HIGH_MEM || maxBlock < 18000) {
+        LOG_WARN("WEB_API", "Config request rejected (Heap/Concurrency Guard)");
+        request->send(503, "text/plain", "Busy - Retry in 1s");
+        return;
+    }
+
+    activeHighMemRequests++;
+    
+    // Ensure the semaphore is released even if the connection is terminated prematurely.
+    request->onDisconnect([]() {
+        if (activeHighMemRequests > 0) activeHighMemRequests--;
+    });
+
     const Config& config = _config.getConfig();
     JsonDocument doc;
 

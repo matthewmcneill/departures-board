@@ -9,20 +9,15 @@
  *
  * Module: modules/webServer/webHandlerManager.hpp
  * Description: Decoupled manager for modern web portal endpoints and assets.
+ *Handles route registration, asset serving, and JSON API orchestration.
  *
  * Exported Functions/Classes:
- * - WebHandlerManager: Class for registering and handling portal-specific HTTP routes.
- *   - begin(): Registers all routes with the ESP32 WebServer.
- *   - handlePortalRoot(): Serves gzipped SPA assets from PROGMEM.
- *   - handleGetStatus(): Returns JSON representing hardware health.
- *   - handleGetConfig(): Returns unified System/Keys/Boards configuration.
- *   - handleSaveAll(): Atomic validation and save of portal settings.
- *   - handleWiFiScan(): Returns JSON list of local SSIDs/RSSI.
- *   - handleWiFiTest(): Asynchronous non-blocking connection verification.
- *   - handleWiFiReset(): Erases NVS/LittleFS credentials and reboots to AP.
- *   - handleRSSJson(): Serves the bundled JSON list of RSS feeds.
- *   - handleReboot(): API handler to restart the physical device.
- *   - handleOTACheck(): API handler to trigger a manual check for firmware updates.
+ * - WebHandlerManager: Principal class for web service lifecycle management.
+ *   - begin(): Registers all routes with the AsyncWebServer.
+ *   - handlePortalRoot(): Serves gzipped SPA assets with concurrency protection.
+ *   - handleGetStatus(): Evaluates hardware health and connectivity metrics.
+ *   - handleGetConfig(): Serializes unified project configuration.
+ *   - handleSaveAll(): Performs atomic validation and persistence of settings.
  */
 
 #pragma once
@@ -49,8 +44,8 @@ public:
     void begin();
 
 private:
-    AsyncWebServer& _server;
-    ConfigManager& _config;
+    AsyncWebServer& _server; // Reference to the underlying network server
+    ConfigManager& _config;   // Reference to the global configuration coordinator
 
     // --- Route Handlers ---
     
