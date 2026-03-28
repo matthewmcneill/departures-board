@@ -61,6 +61,15 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
         return true; 
     }
 
+    // Check if we already have valid data for this exact location that is still fresh
+    if (status.isValid() && 
+        status.lat == bgStatus.lat && 
+        status.lon == bgStatus.lon && 
+        activeStatus == &status &&
+        millis() < nextWeatherUpdate) {
+        return true;
+    }
+
     String apiKey = "";
     if (overrideToken && strlen(overrideToken) > 0) {
         apiKey = String(overrideToken);

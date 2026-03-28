@@ -2072,6 +2072,13 @@
             </select></label>
         </div>
 
+        <div id="board-layout-section" style="margin-top: 1rem;">
+          <label>Display Layout<select name="layout" id="board-layout-select">
+              <option value="">Default (System Base)</option>
+              <option value="replica">Replica (High Fidelity)</option>
+            </select></label>
+        </div>
+
         <label id="label-board-brightness" style="display: none;">Brightness Override (Clock)
           <input type="range" name="brightness" min="-1" max="255" oninput="app.updateBoardBrightness(this.value)" />
           <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Set to minimum (-1) to use the
@@ -3208,7 +3215,7 @@
         this.state.editingIndex = index;
         let b;
         if (index === -1) {
-          b = { name: '', type: type || 0, id: '', filter: '', secId: '', secName: '', lat: 0, lon: 0, weather: true, apiKeyId: '', offset: 0 };
+          b = { name: '', type: type || 0, id: '', filter: '', secId: '', secName: '', lat: 0, lon: 0, weather: true, apiKeyId: '', offset: 0, layout: '' };
         } else {
           b = this.state.config.boards[index];
         }
@@ -3228,6 +3235,7 @@
         form.elements['oledOff'].checked = b.oledOff || false;
         form.tflLine.value = b.tflLine || '';
         form.tflDir.value = b.tflDir || 0;
+        if (form.layout) form.layout.value = b.layout || '';
 
         // Use a hidden input or state to preserve offset if not editable in this UI yet
         this.state.editingBoardOffset = b.offset || 0;
@@ -3311,6 +3319,9 @@
         if (ordinalsLabel) ordinalsLabel.style.display = (t === 0) ? 'flex' : 'none';
         if (lastSeenLabel) lastSeenLabel.style.display = (t === 0) ? 'flex' : 'none';
         searchContainer.style.display = (t !== 3) ? 'block' : 'none';
+        
+        const layoutSection = document.getElementById('board-layout-section');
+        if (layoutSection) layoutSection.style.display = (t !== 3) ? 'block' : 'none';
 
         // Screensaver / Clock specific
         const brightnessLabel = document.getElementById('label-board-brightness');
@@ -3775,6 +3786,7 @@
           oledOff: f.oledOff.checked,
           tflLine: f.tflLine.value,
           tflDir: parseInt(f.tflDir.value),
+          layout: f.layout ? f.layout.value : '',
           offset: this.state.editingBoardOffset || 0
         };
         if (!this.state.config) this.state.config = { boards: [] };

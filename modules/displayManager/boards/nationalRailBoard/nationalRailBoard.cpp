@@ -40,8 +40,8 @@ NationalRailBoard::NationalRailBoard(appContext* contextPtr)
       viaToggle(false),
       nextViaToggle(0) {
     
-    // Instantiate default view
-    activeLayout = new layoutNrDefault(context);
+    // Ensure activeLayout is explicitly null until configure() is called
+    activeLayout = nullptr;
 
     nrToken[0] = '\0';
     crsCode[0] = '\0';
@@ -120,6 +120,18 @@ void NationalRailBoard::onDeactivate() {}
  */
 void NationalRailBoard::configure(const BoardConfig& config) {
     this->config = config;
+
+    // Destroy existing layout to prevent heap leaks on consecutive updates
+    if (activeLayout) { delete activeLayout; activeLayout = nullptr; }
+
+    // Evaluate requested layout against available subclasses
+    if (strcmp(config.layout, "replica") == 0) {
+        activeLayout = new layoutNrReplica(context);
+    } else {
+        // Fallback or "default"
+        activeLayout = new layoutNrDefault(context); 
+    }
+
     if (context) {
         ApiKey* key = context->getConfigManager().getKeyById(config.apiKeyId);
         if (key) setNrToken(key->token);

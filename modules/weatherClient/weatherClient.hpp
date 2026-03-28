@@ -63,7 +63,7 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
         const char* getLastErrorMsg() const override { return lastErrorMsg; }
         int testConnection(const char* token = nullptr, const char* stationId = nullptr) override { return 0; }
         uint32_t getNextFetchTime() override { return nextWeatherUpdate; }
-        uint8_t getPriorityTier() override { return TIER_LOW; } // Weather is low priority
+        uint8_t getPriorityTier() override { return activeApiKey.length() == 0 ? 255 : TIER_LOW; } // Weather is low priority
         void setNextFetchTime(uint32_t forceTimeMillis) override { nextWeatherUpdate = forceTimeMillis; }
 
         bool getWeatherEnabled() const { return weatherEnabled; }

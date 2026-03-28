@@ -38,8 +38,8 @@ BusBoard::BusBoard(appContext* contextPtr)
       lastUpdate(0), 
       needsRefresh(true) {
     
-    // Instantiate default view
-    activeLayout = new layoutBusDefault(context);
+    // Ensure activeLayout is explicitly null until configure() is called
+    activeLayout = nullptr;
 
     busAtco[0] = '\0';
     busName[0] = '\0';
@@ -101,6 +101,14 @@ void BusBoard::onDeactivate() {
  */
 void BusBoard::configure(const BoardConfig& config) {
     this->config = config;
+
+    // Destroy existing layout to prevent heap leaks on consecutive updates
+    if (activeLayout) { delete activeLayout; activeLayout = nullptr; }
+    
+    // Evaluate requested layout against available subclasses
+    // (No alternatives yet for Bus, fallback to default)
+    activeLayout = new layoutBusDefault(context);
+
     setBusAtco(config.id);
     setBusName(config.name);
     setBusLat(config.lat);

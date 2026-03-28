@@ -37,8 +37,8 @@ TfLBoard::TfLBoard(appContext* contextPtr)
       activeLayout(nullptr),
       lastUpdate(0) {
     
-    // Instantiate default view
-    activeLayout = new layoutTflDefault(context);
+    // Ensure activeLayout is explicitly null until configure() is called
+    activeLayout = nullptr;
 
     tflAppkey[0] = '\0';
     tubeId[0] = '\0';
@@ -98,6 +98,14 @@ void TfLBoard::onDeactivate() {}
  */
 void TfLBoard::configure(const BoardConfig& config) {
     this->config = config;
+
+    // Destroy existing layout to prevent heap leaks on consecutive updates
+    if (activeLayout) { delete activeLayout; activeLayout = nullptr; }
+    
+    // Evaluate requested layout against available subclasses
+    // (No alternatives yet for TfL, fallback to default)
+    activeLayout = new layoutTflDefault(context);
+
     if (context) {
         ApiKey* key = context->getConfigManager().getKeyById(config.apiKeyId);
         if (key) setTflAppkey(key->token);

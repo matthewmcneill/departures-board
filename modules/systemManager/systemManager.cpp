@@ -194,7 +194,7 @@ void systemManager::tick() {
                     
                     const BoardConfig& activeBC = config.boards[activeIndex];
                     
-                    if (weather.getWeatherEnabled() && activeBC.showWeather && millis() > weather.getNextWeatherUpdate()) {
+                    if (weather.getWeatherEnabled() && activeBC.showWeather) {
                         iDisplayBoard* active = displayMgr.getDisplayBoard(activeIndex);
                         if (active) {
                             WeatherStatus& ws = active->getWeatherStatus();

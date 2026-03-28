@@ -339,6 +339,7 @@ bool ConfigManager::save() {
         b[F("ordinals")] = bc.showServiceOrdinals;
         b[F("lastSeen")] = bc.showLastSeenLocation;
         b[F("oledOff")] = bc.oledOff;
+        b[F("layout")] = bc.layout;
     }
 
     String output;
@@ -438,21 +439,22 @@ void ConfigManager::loadConfig() {
                     bc.type = (BoardTypes)(b[F("type")] | 0);
                 }
 
-                strlcpy(bc.id, b[F("id")] | "", sizeof(bc.id));
-                strlcpy(bc.name, b[F("name")] | "", sizeof(bc.name));
+                strlcpy(bc.id, b[F("id")].as<String>().c_str(), sizeof(bc.id));
+                strlcpy(bc.name, b[F("name")].as<String>().c_str(), sizeof(bc.name));
                 bc.lat = b[F("lat")] | 0.0f;
                 bc.lon = b[F("lon")] | 0.0f;
-                strlcpy(bc.filter, b[F("filter")] | "", sizeof(bc.filter));
-                strlcpy(bc.secondaryId, b[F("secId")] | "", sizeof(bc.secondaryId));
-                strlcpy(bc.secondaryName, b[F("secName")] | "", sizeof(bc.secondaryName));
+                strlcpy(bc.filter, b[F("filter")].as<String>().c_str(), sizeof(bc.filter));
+                strlcpy(bc.secondaryId, b[F("secId")].as<String>().c_str(), sizeof(bc.secondaryId));
+                strlcpy(bc.secondaryName, b[F("secName")].as<String>().c_str(), sizeof(bc.secondaryName));
                 bc.timeOffset = b[F("offset")] | 0;
                 bc.brightness = b[F("brightness")] | -1;
-                strlcpy(bc.apiKeyId, b[F("apiKeyId")] | "", sizeof(bc.apiKeyId));
-                strlcpy(bc.tflLineFilter, b[F("tflLine")] | "", sizeof(bc.tflLineFilter));
+                strlcpy(bc.apiKeyId, b[F("apiKeyId")].as<String>().c_str(), sizeof(bc.apiKeyId));
+                strlcpy(bc.tflLineFilter, b[F("tflLine")].as<String>().c_str(), sizeof(bc.tflLineFilter));
                 bc.tflDirectionFilter = b[F("tflDir")] | 0;
                 bc.showServiceOrdinals = b[F("ordinals")] | false;
                 bc.showLastSeenLocation = b[F("lastSeen")] | false;
                 bc.oledOff = b[F("oledOff")] | false;
+                strlcpy(bc.layout, b[F("layout")].as<String>().c_str(), sizeof(bc.layout));
                 
                 // Weather Toggle
                 if (b[F("weather")].is<bool>()) {

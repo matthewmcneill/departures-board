@@ -28,6 +28,7 @@
 #include <logger.hpp>
 #include <wifiManager.hpp>
 #include <WiFi.h>
+#include <esp_task_wdt.h>
 #include <appContext.hpp>
 #include "../displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp"
 #include "../displayManager/boards/tflBoard/tflDataSource.hpp"
@@ -292,7 +293,13 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
         b["offset"] = bc.timeOffset;
         b["weather"] = bc.showWeather;
         b["brightness"] = bc.brightness;
-        b["apiKeyId"] = bc.apiKeyId; // Added missing field
+        b["apiKeyId"] = bc.apiKeyId;
+        b["tflLine"] = bc.tflLineFilter;
+        b["tflDir"] = bc.tflDirectionFilter;
+        b["ordinals"] = bc.showServiceOrdinals;
+        b["lastSeen"] = bc.showLastSeenLocation;
+        b["oledOff"] = bc.oledOff;
+        b["layout"] = bc.layout;
     }
 
     // --- WiFi Config (Secure) ---
@@ -342,17 +349,23 @@ void WebHandlerManager::handleSaveAll(AsyncWebServerRequest *request, const Stri
                 if (config.boardCount >= MAX_BOARDS) break;
                 BoardConfig& bc = config.boards[config.boardCount++];
                 bc.type = (BoardTypes)(b["type"] | 0);
-                strlcpy(bc.id, b["id"] | "", sizeof(bc.id));
-                strlcpy(bc.name, b["name"] | "", sizeof(bc.name));
+                strlcpy(bc.id, b["id"].as<String>().c_str(), sizeof(bc.id));
+                strlcpy(bc.name, b["name"].as<String>().c_str(), sizeof(bc.name));
                 bc.lat = b["lat"] | 0.0f;
                 bc.lon = b["lon"] | 0.0f;
-                strlcpy(bc.filter, b["filter"] | "", sizeof(bc.filter));
-                strlcpy(bc.secondaryId, b["secId"] | "", sizeof(bc.secondaryId));
-                strlcpy(bc.secondaryName, b["secName"] | "", sizeof(bc.secondaryName));
+                strlcpy(bc.filter, b["filter"].as<String>().c_str(), sizeof(bc.filter));
+                strlcpy(bc.secondaryId, b["secId"].as<String>().c_str(), sizeof(bc.secondaryId));
+                strlcpy(bc.secondaryName, b["secName"].as<String>().c_str(), sizeof(bc.secondaryName));
                 bc.timeOffset = b["offset"] | 0;
                 bc.showWeather = b["weather"] | true;
                 bc.brightness = b["brightness"] | -1;
-                strlcpy(bc.apiKeyId, b["apiKeyId"] | "", sizeof(bc.apiKeyId));
+                strlcpy(bc.apiKeyId, b["apiKeyId"].as<String>().c_str(), sizeof(bc.apiKeyId));
+                strlcpy(bc.tflLineFilter, b["tflLine"].as<String>().c_str(), sizeof(bc.tflLineFilter));
+                bc.tflDirectionFilter = b["tflDir"] | 0;
+                bc.showServiceOrdinals = b["ordinals"] | false;
+                bc.showLastSeenLocation = b["lastSeen"] | false;
+                bc.oledOff = b["oledOff"] | false;
+                strlcpy(bc.layout, b["layout"].as<String>().c_str(), sizeof(bc.layout));
             }
         }
 
@@ -560,7 +573,14 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
     // Yield gracefully until the Background DataManager payload finishes, with absolute 10s timeout
     int maxWait = 10000 / 50;
     int cycles = 0;
-    while(!params->done && cycles < maxWait) { vTaskDelay(pdMS_TO_TICKS(50)); cycles++; }
+    while(!params->done && cycles < maxWait) { 
+        // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
+        // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
+        // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
+        esp_task_wdt_reset(); 
+        vTaskDelay(pdMS_TO_TICKS(50)); 
+        cycles++; 
+    }
 
     if (!params->done) {
         request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
@@ -737,7 +757,14 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
 
     int maxWait = 10000 / 50;
     int cycles = 0;
-    while(!params->done && cycles < maxWait) { vTaskDelay(pdMS_TO_TICKS(50)); cycles++; }
+    while(!params->done && cycles < maxWait) { 
+        // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
+        // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
+        // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
+        esp_task_wdt_reset();
+        vTaskDelay(pdMS_TO_TICKS(50)); 
+        cycles++; 
+    }
     
     if (!params->done) {
         request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");

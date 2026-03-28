@@ -34,6 +34,7 @@ class appContext;
 #include <configManager.hpp>
 #include "iNationalRailLayout.hpp"
 #include "layouts/layoutDefault.hpp"
+#include "layouts/layoutReplica.hpp"
 
 class NationalRailBoard : public iDisplayBoard {
 private:

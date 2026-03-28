@@ -69,6 +69,7 @@ struct BoardConfig {
     bool showServiceOrdinals = false; // "2nd", "3rd" etc.
     bool showLastSeenLocation = false;// NR specific: "Last seen at..."
     bool oledOff = false;             // Turn OLED off completely when this board is active
+    char layout[32] = "";             // Target layout ID, defaults to empty (i.e., 'default')
 
     // --- Runtime Readiness (Computed by ConfigManager) ---
     bool complete = false;       // True if all mandatory fields are present
