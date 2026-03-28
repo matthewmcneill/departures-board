@@ -127,7 +127,27 @@ void DisplayManager::tick(unsigned long currentMillis) {
         u8g2.clearDisplay(); // Ensure clean surface for data rendering
     }
 
-    // --- Step 2: Internal Logic and Rendering ---
+    // --- Step 2: Adaptive Schedule Check ---
+    // If we're not snoozing, periodically ensure our current board is still valid.
+    if (!shouldSnooze && currentMillis - lastScheduleCheck > 3000UL) {
+        lastScheduleCheck = currentMillis;
+        std::vector<int> activeBoards = context->getSchedulerManager().getActiveBoards();
+        if (!activeBoards.empty()) {
+            bool currentAllowed = false;
+            for (int idx : activeBoards) {
+                if (idx == activeSlotIndex) {
+                    currentAllowed = true;
+                    break;
+                }
+            }
+            if (!currentAllowed) {
+                LOG_INFO("DISPLAY", "Current board no longer in active schedule. Transitioning to next allowed...");
+                cycleNext();
+            }
+        }
+    }
+
+    // --- Step 3: Internal Logic and Rendering ---
     // Delegate state updates to the active board.
     if (currentBoard != nullptr) currentBoard->tick(currentMillis);
 
@@ -666,7 +686,20 @@ void DisplayManager::applyConfig(const Config& config) {
  *        away from system screens (Splash, Loading, etc).
  */
 void DisplayManager::resumeDisplays() {
-    LOG_INFO("DISPLAY", "System ready/awake. Resuming carousel displays.");
-    showBoard(getDisplayBoard(activeSlotIndex), "Context Resume: Activating default board");
+    LOG_INFO("DISPLAY", "🔘 [DISPLAY] System ready/awake. Synchronizing with scheduler...");
+    
+    // Consult the scheduler for the starting board(s)
+    std::vector<int> allowed = context->getSchedulerManager().getActiveBoards();
+    int startIdx = activeSlotIndex; // Fallback
+    
+    if (!allowed.empty()) {
+        startIdx = allowed[0];
+        LOG_INFO("DISPLAY", String("🔘 [DISPLAY] Scheduler returned active board index: ") + String(startIdx));
+    } else {
+        LOG_INFO("DISPLAY", String("🔘 [DISPLAY] No active schedule. Using default index: ") + String(startIdx));
+    }
+
+    activeSlotIndex = startIdx;
+    showBoard(getDisplayBoard(activeSlotIndex), "Context Resume: Scheduler Sync");
     u8g2.setContrast(brightness);
 }

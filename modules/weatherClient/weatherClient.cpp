@@ -105,6 +105,7 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
  * @brief Internal blocking method that executes the HTTP protocol and coordinates streaming parse.
  */
 void weatherClient::executeFetch() {
+    if (activeApiKey.length() == 0) return;
     unsigned long perfTimer = millis();
     strcpy(lastErrorMsg, "");
     

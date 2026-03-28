@@ -219,7 +219,10 @@ void appContext::begin() {
         }
     });
 
-    LOG_INFO("SYSTEM", "appContext initialization complete. Waiting for WiFi to start web components...");
+    // 10. Initialize the Scheduler
+    schedule.begin();
+
+    LOG_INFO("SYSTEM", "🔘 [SYSTEM] appContext initialization complete. Waiting for WiFi...");
 }
 
 /**
@@ -255,8 +258,10 @@ void appContext::tick() {
                 LOG_INFO("SYSTEM", "Initializing Web Server...");
                 webServer.init();
 
-                LOG_INFO("SYSTEM", "Notifying consumers to apply initial configuration...");
-                configManager.notifyConsumersToReapplyConfig(); // This calls MDNS.begin!
+                LOG_INFO("SYSTEM", "Applying critical system configuration...");
+                displayManager.applyConfig(configManager.getConfig());
+                timeManager.reapplyConfig(configManager.getConfig());
+                wifiManager.reapplyConfig(configManager.getConfig());
                 
                 LOG_INFO("SYSTEM", "Initializing System Clock...");
                 if (auto* load = static_cast<LoadingBoard*>(displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
@@ -291,6 +296,11 @@ void appContext::tick() {
                 } else {
                     currentState = AppState::RUNNING;
                     LOG_SPLASH("APP STATE: RUNNING");
+
+                    // Trigger global data refresh and peripheral provisioning now that system is stable
+                    configManager.notifyConsumersToReapplyConfig();
+                    
+                    // Let the display manager resume, which now consults the scheduler
                     displayManager.resumeDisplays();
                 }
             }

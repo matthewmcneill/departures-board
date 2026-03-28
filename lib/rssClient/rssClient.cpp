@@ -74,7 +74,12 @@ int rssClient::loadFeed(String url) {
 
 int rssClient::updateData() {
     if (activeUrl.length() == 0 && strlen(rssURL) > 0) activeUrl = String(rssURL);
-    if (lastRssUpdateResult == UPD_PENDING) return UPD_PENDING;
+    
+    if (activeUrl.length() == 0) {
+        LOG_WARN("DATA", "RSS Client: No URL configured. Skipping fetch.");
+        lastRssUpdateResult = 0; // UPD_SUCCESS (quiet skip)
+        return lastRssUpdateResult;
+    }
 
     LOG_INFO("DATA", "RSS Client: Requesting priority fetch from DataManager");
     lastRssUpdateResult = UPD_PENDING;
@@ -94,6 +99,7 @@ int rssClient::testConnection(const char* token, const char* stationId) {
  * @brief Internal blocking method that executes the HTTP protocol and coordinates XML parse.
  */
 void rssClient::executeFetch() {
+    if (activeUrl.length() == 0) return;
     String url = activeUrl;
     std::unique_ptr<HTTPClient> http(new (std::nothrow) HTTPClient());
     std::unique_ptr<WiFiClient> client(new (std::nothrow) WiFiClient());

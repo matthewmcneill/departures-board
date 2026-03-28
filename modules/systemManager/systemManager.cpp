@@ -122,7 +122,7 @@ void systemManager::tick() {
         int activeIndex = displayMgr.getActiveSlotIndex();
         
         // Detect board switch to trigger immediate update (Fast-Path override)
-        if (activeIndex != lastActiveSlotIndex) {
+        if (activeIndex != lastActiveSlotIndex && context->getAppState() == AppState::RUNNING) {
             LOG_INFO("SYSTEM", "Board switch detected. Aligning sweeper.");
             iDisplayBoard* activeBoard = displayMgr.getDisplayBoard(activeIndex);
             if (activeBoard && config.boards[activeIndex].complete) {
@@ -204,7 +204,7 @@ void systemManager::tick() {
                             } else {
                                 ws.lat = activeBC.lat;
                                 ws.lon = activeBC.lon;
-                                weather.updateWeather(ws, activeBC.apiKeyId);
+                                weather.updateWeather(ws, config.weatherKeyId);
                             }
                         }
                     }
@@ -385,8 +385,8 @@ void systemManager::updateCurrentWeather(float lat, float lon) {
             WeatherStatus& ws = active->getWeatherStatus();
             ws.lat = lat;
             ws.lon = lon;
-            const BoardConfig& bc = context->getConfigManager().getConfig().boards[activeIndex];
-            weather.updateWeather(ws, bc.apiKeyId);
+            const Config& config = context->getConfigManager().getConfig();
+            weather.updateWeather(ws, config.weatherKeyId);
         }
     }
 }
