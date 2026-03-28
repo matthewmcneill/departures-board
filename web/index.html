@@ -1336,6 +1336,81 @@
       border-color: var(--error) !important;
       background: rgba(198, 40, 40, 0.05) !important;
     }
+
+    /* --- Scheduling Tab Specifics --- */
+    .schedule-rules-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .schedule-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.2s;
+    }
+
+    .schedule-card:hover {
+      border-color: var(--primary);
+    }
+
+    .schedule-time-range {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--primary);
+      font-family: 'Courier New', monospace;
+    }
+
+    .schedule-target {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .schedule-card-left {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .schedule-card-right {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .schedule-card-right button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .target-missing {
+      color: var(--error);
+      background: rgba(198, 40, 40, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      margin-left: 0.5rem;
+    }
+
+    .time-selection-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .time-selection-row label {
+      flex: 1;
+      margin: 0;
+    }
   </style>
 </head>
 
@@ -1646,19 +1721,42 @@
     <!-- ========================================================= -->
     <section id="tab-schedule" class="tab-content">
       <article>
-        <header>Schedule & Auto-Power</header>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Coming soon: Manage display sleep
-          schedules and automatic power-off times.</p>
-        <div style="text-align: center; padding: 2.5rem; opacity: 0.5;">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round"
-            style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--primary);">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <p style="font-weight: 700; color: var(--text);">Feature under development</p>
+        <header>
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>Schedule & Auto-Power</span>
+            <button class="outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; text-transform: none;"
+              onclick="app.addScheduleRule()">+ Add Rule</button>
+          </div>
+        </header>
+        <div class="instruction-box" style="margin-bottom: 1.5rem;">
+          Define <b>Time Rules</b> to control which boards are active during the day.
+          If multiple rules overlap, the system will carousel between them.
+          Leave empty to show all boards at all times.
+        </div>
+
+        <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+          <label style="flex:1">Manual Override Timeout
+            <select id="schedule-override-timeout" onchange="app.state.config.manualOverrideTimeoutSecs = parseInt(this.value); app.saveAll()">
+              <option value="30">30 Seconds</option>
+              <option value="60">1 Minute</option>
+              <option value="300">5 Minutes</option>
+              <option value="600">10 Minutes</option>
+              <option value="1800">30 Minutes</option>
+            </select>
+          </label>
+          <label style="flex:1">Carousel Interval
+            <select id="schedule-carousel-interval" onchange="app.state.config.carouselIntervalSecs = parseInt(this.value); app.saveAll()">
+              <option value="30">30 Seconds</option>
+              <option value="60">1 Minute</option>
+              <option value="120">2 Minutes</option>
+              <option value="300">5 Minutes</option>
+              <option value="600">10 Minutes</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="schedule-rules-list" class="schedule-rules-list">
+          <!-- Populated by JS -->
         </div>
       </article>
       <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.7rem; opacity: 0.7;">
@@ -2153,6 +2251,7 @@
     const PLACEHOLDER_DOTS = "••••••••";
     const MAX_KEYS = 8; // Matching platformio.ini
     const MAX_BOARDS = 6; // Matching platformio.ini
+    const MAX_SCHEDULE_RULES = 15;
 
     const PROVIDER_LOGOS = {
       rail: '<svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg>',
@@ -2366,7 +2465,9 @@
             this.state.curatedFeeds = await rssRes.json();
           }
 
+          this.migrateLegacySleep();
           this.render();
+          this.renderSchedule();
           this.refreshEyes();
         } catch (e) { console.error('Config fetch failed'); }
       },
@@ -2419,6 +2520,12 @@
           ['Timezone', s.timezone || 'N/A']
         ];
         document.getElementById('wifi-diag-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+
+        // Update Global Schedule Settings
+        const overrideSelect = document.getElementById('schedule-override-timeout');
+        const intervalSelect = document.getElementById('schedule-carousel-interval');
+        if (overrideSelect && this.state.config) overrideSelect.value = this.state.config.manualOverrideTimeoutSecs || 60;
+        if (intervalSelect && this.state.config) intervalSelect.value = this.state.config.carouselIntervalSecs || 120;
 
         // Dynamic Hardware Diagnostics
         this.renderHardwareStatus(s);
@@ -2542,6 +2649,145 @@
         this.renderBoards();
         this.renderKeys();
         this.renderFeeds();
+        this.renderSchedule();
+      },
+
+      // ==========================================
+      // SCHEDULING LOGIC
+      // CRUD operations for time-based board filtering
+      // ==========================================
+
+      renderSchedule: function () {
+        const container = document.getElementById('schedule-rules-list');
+        if (!container) return;
+        const config = this.state.config;
+        if (!config || !config.schedules) return;
+
+        container.innerHTML = '';
+        let activeRulesCount = 0;
+
+        config.schedules.forEach((rule, index) => {
+          if (rule.board === -1) return;
+          activeRulesCount++;
+
+          const board = config.boards[rule.board];
+          const isOrphan = !board || !board.id;
+          const boardName = board ? board.name : `Board #${rule.board}`;
+
+          const card = document.createElement('div');
+          card.className = 'schedule-card';
+          card.innerHTML = `
+            <div class="schedule-card-left">
+              <div class="schedule-time-range">${this.pad(rule.startH)}:${this.pad(rule.startM)} - ${this.pad(rule.endH)}:${this.pad(rule.endM)}</div>
+              <div class="schedule-target">
+                ${boardName}
+                ${isOrphan ? '<span class="target-missing">Target Missing</span>' : ''}
+              </div>
+            </div>
+            <div class="schedule-card-right">
+              <button class="outline" onclick="app.editScheduleRule(${index})">Edit</button>
+              <button class="secondary" style="color:var(--error); border-color:rgba(198,40,40,0.2)" onclick="app.deleteScheduleRule(${index})">Delete</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+        if (activeRulesCount === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 2rem; opacity: 0.5; border: 2px dashed var(--border); border-radius: 12px;">
+              <p style="margin:0; font-size:0.9rem">No active rules.</p>
+              <p style="margin:0; font-size:0.75rem">Board will cycle through all configured displays.</p>
+            </div>
+          `;
+        }
+      },
+
+      pad: (n) => n.toString().padStart(2, '0'),
+
+      addScheduleRule: function () {
+        const config = this.state.config;
+        const index = config.schedules.findIndex(r => r.board === -1);
+        if (index === -1) {
+          this.alert('Maximum of ' + MAX_SCHEDULE_RULES + ' rules reached.', 'Schedule Full');
+          return;
+        }
+        this.editScheduleRule(index, true);
+      },
+
+      editScheduleRule: function (index, isNew = false) {
+        const rule = this.state.config.schedules[index];
+        const form = document.getElementById('schedule-form');
+        const modal = document.getElementById('modal-schedule');
+        const title = document.getElementById('schedule-modal-title');
+
+        title.innerText = isNew ? 'Add Schedule Rule' : 'Edit Schedule Rule';
+        form.index.value = index;
+        
+        // Time format for <input type="time"> is HH:mm
+        form.startTime.value = `${this.pad(rule.startH)}:${this.pad(rule.startM)}`;
+        form.endTime.value = `${this.pad(rule.endH)}:${this.pad(rule.endM)}`;
+
+        // Populate board selector
+        const select = document.getElementById('schedule-board-select');
+        select.innerHTML = '';
+        this.state.config.boards.forEach((b, i) => {
+          if (b.id || b.type === 3) { // Active or Screensaver
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = b.name || `Board #${i} (${['Rail', 'Tube', 'Bus', 'Clock'][b.type]})`;
+            select.appendChild(opt);
+          }
+        });
+
+        if (select.options.length === 0) {
+          this.alert('Please configure at least one display board first.', 'No Boards Found');
+          return;
+        }
+
+        select.value = rule.board === -1 ? select.options[0].value : rule.board;
+        modal.showModal();
+      },
+
+      saveScheduleRule: async function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const index = parseInt(form.index.value);
+        const startParts = form.startTime.value.split(':');
+        const endParts = form.endTime.value.split(':');
+
+        const rule = this.state.config.schedules[index];
+        rule.startH = parseInt(startParts[0]);
+        rule.startM = parseInt(startParts[1]);
+        rule.endH = parseInt(endParts[0]);
+        rule.endM = parseInt(endParts[1]);
+        rule.board = parseInt(form.boardIndex.value);
+
+        this.closeModal('modal-schedule');
+        this.renderSchedule();
+        this.saveAll();
+      },
+
+      deleteScheduleRule: async function (index) {
+        if (!await this.confirm('Remove this schedule rule?')) return;
+        this.state.config.schedules[index].board = -1;
+        this.renderSchedule();
+        this.saveAll();
+      },
+
+      migrateLegacySleep: function() {
+        if (!this.state.config) return;
+        const cfg = this.state.config;
+        const hasSchedules = cfg.schedules && cfg.schedules.some(s => s.board !== -1);
+        
+        if (cfg.system?.sleepEnabled && !hasSchedules) {
+          console.log("Migrating legacy sleep settings to schedule...");
+          const startH = cfg.system.sleepEnds || 7;
+          const endH = cfg.system.sleepStarts || 23;
+          const boardIdx = cfg.boards.findIndex(b => b.id) || 0;
+          
+          cfg.schedules[0] = { startH: startH, startM: 0, endH: endH, endM: 0, board: boardIdx };
+          cfg.system.sleepEnabled = false;
+        }
       },
 
       renderBoards: function () {
@@ -3527,7 +3773,9 @@
             fastRefresh: sysForm.fastRefresh.checked,
             firmwareUpdatesEnabled: document.getElementById('auto-update').checked,
             waitForScroll: sysForm.waitForScroll.checked,
-            rssFirst: sysForm.rssFirst.checked
+            rssFirst: sysForm.rssFirst.checked,
+            overrideTimeout: parseInt(document.getElementById('schedule-override-timeout').value),
+            carouselInterval: parseInt(document.getElementById('schedule-carousel-interval').value)
           },
           feeds: {
             rss: (document.getElementById('feed-select').value === '__custom__') ? document.getElementById('custom-feed-url').value : document.getElementById('feed-select').value,
@@ -3535,6 +3783,7 @@
           },
           // Keys are managed separately, but boards need their apiKeyId
           boards: this.state.config?.boards || [],
+          schedules: this.state.config?.schedules || [],
           wifi: { ssid, pass: getVal('wifi-pass') }
         };
 
@@ -4002,6 +4251,38 @@
     };
     app.init();
   </script>
+  <!-- Schedule Editor Modal -->
+  <dialog id="modal-schedule">
+    <article>
+      <header>
+        <span id="schedule-modal-title">Edit Schedule Rule</span>
+        <button class="modal-close-btn" onclick="app.closeModal('modal-schedule')">
+          <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+      <form id="schedule-form" onsubmit="app.saveScheduleRule(event)">
+        <input type="hidden" name="index" />
+        
+        <label>Active Time Range</label>
+        <div class="time-selection-row">
+          <label>Start<input type="time" name="startTime" required /></label>
+          <div style="padding-top: 1rem; font-weight: 800; color: var(--text-muted);">to</div>
+          <label>End<input type="time" name="endTime" required /></label>
+        </div>
+
+        <label>Display Board
+          <select name="boardIndex" id="schedule-board-select" required>
+            <!-- Populated by JS -->
+          </select>
+        </label>
+
+        <div class="modal-button-row">
+          <button type="button" class="secondary" onclick="app.closeModal('modal-schedule')">Cancel</button>
+          <button type="submit">Save Rule</button>
+        </div>
+      </form>
+    </article>
+  </dialog>
 </body>
 
 </html>

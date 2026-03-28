@@ -243,6 +243,8 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
     system["dateEnabled"] = config.dateEnabled;
     system["noScrolling"] = config.noScrolling;
     system["fastRefresh"] = (config.apiRefreshRate == FASTDATAUPDATEINTERVAL);
+    system["overrideTimeout"] = config.manualOverrideTimeoutSecs;
+    system["carouselInterval"] = config.carouselIntervalSecs;
     system["rssUrl"] = config.rssUrl;
     system["rssName"] = config.rssName;
 
@@ -260,6 +262,18 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
         kObj["type"] = config.keys[i].type;
         kObj["token"] = ""; // Strictly empty for security
         kObj["tokenExists"] = (strlen(config.keys[i].token) > 0);
+    }
+
+    // --- Schedules ---
+    JsonArray schedArr = doc["schedules"].to<JsonArray>();
+    for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
+        const ScheduleRule& r = config.schedules[i];
+        JsonObject s = schedArr.add<JsonObject>();
+        s["startH"] = r.startHour;
+        s["startM"] = r.startMinute;
+        s["endH"] = r.endHour;
+        s["endM"] = r.endMinute;
+        s["board"] = r.boardIndex;
     }
 
     // --- Boards ---
@@ -316,6 +330,8 @@ void WebHandlerManager::handleSaveAll(AsyncWebServerRequest *request, const Stri
             if (sys["dateEnabled"].is<bool>()) config.dateEnabled = sys["dateEnabled"];
             if (sys["noScrolling"].is<bool>()) config.noScrolling = sys["noScrolling"];
             if (sys["fastRefresh"].is<bool>()) config.apiRefreshRate = sys["fastRefresh"] ? FASTDATAUPDATEINTERVAL : DATAUPDATEINTERVAL;
+            if (sys["overrideTimeout"].is<int>()) config.manualOverrideTimeoutSecs = sys["overrideTimeout"];
+            if (sys["carouselInterval"].is<int>()) config.carouselIntervalSecs = sys["carouselInterval"];
         }
 
         // --- Step 2: Update Board Configurations (Full Replace) ---
@@ -337,6 +353,25 @@ void WebHandlerManager::handleSaveAll(AsyncWebServerRequest *request, const Stri
                 bc.showWeather = b["weather"] | true;
                 bc.brightness = b["brightness"] | -1;
                 strlcpy(bc.apiKeyId, b["apiKeyId"] | "", sizeof(bc.apiKeyId));
+            }
+        }
+
+        // --- Step 2.5: Update Schedules (Full Replace) ---
+        if (doc["schedules"].is<JsonArray>()) {
+            JsonArray schedArr = doc["schedules"];
+            int count = 0;
+            for (JsonObject s : schedArr) {
+                if (count >= MAX_SCHEDULE_RULES) break;
+                ScheduleRule& r = config.schedules[count++];
+                r.startHour = s["startH"] | 0;
+                r.startMinute = s["startM"] | 0;
+                r.endHour = s["endH"] | 23;
+                r.endMinute = s["endM"] | 59;
+                r.boardIndex = s["board"] | -1;
+            }
+            // Fill remaining with defaults
+            for (int i = count; i < MAX_SCHEDULE_RULES; i++) {
+                config.schedules[i].boardIndex = -1;
             }
         }
 
