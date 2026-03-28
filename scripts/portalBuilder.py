@@ -123,7 +123,7 @@ def generate_assets():
             
             if asset == "index.html":
                 serial = datetime.datetime.now().strftime("%Y-%m-%d")
-                header_path = os.path.join(ROOT_DIR, "modules/systemManager/build_time.h")
+                header_path = os.path.join(ROOT_DIR, "src/buildTime.hpp")
                 if os.path.exists(header_path):
                     with open(header_path, "r") as hf:
                         hcontent = hf.read()

@@ -40,6 +40,10 @@
 #define MAX_BOARDS 6
 #endif
 
+#ifndef MAX_SCHEDULE_RULES
+#define MAX_SCHEDULE_RULES 15
+#endif
+
 // --- Timing & Intervals (ms) ---
 #ifndef DATAUPDATEINTERVAL
 #define DATAUPDATEINTERVAL 150000 // Default data refresh interval

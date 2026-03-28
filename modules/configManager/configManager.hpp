@@ -86,6 +86,17 @@ struct ApiKey {
 };
 
 /**
+ * @brief Represents a single time-based routing rule mapping a time block to a display board.
+ */
+struct ScheduleRule {
+    int startHour = 0;
+    int startMinute = 0;
+    int endHour = 23;
+    int endMinute = 59;
+    int boardIndex = -1; // -1 indicates an empty/inactive rule slot
+};
+
+/**
  * @brief Container for all application configuration settings.
  */
 struct Config {
@@ -126,6 +137,11 @@ struct Config {
     int boardCount = 0;             // Number of active boards in the carousel
     int defaultBoardIndex = 0;      // Index of the board to show on startup
 
+    // --- Schedule & Carousel Settings ---
+    ScheduleRule schedules[MAX_SCHEDULE_RULES]; // Time-based routing arrays
+    int manualOverrideTimeoutSecs = 60; // How long to stay out of schedule when button is pressed
+    int carouselIntervalSecs = 120;     // Pace of rotation between active boards
+    
     char rssUrl[128] = ""; // XML feed URL
     char rssName[48] = ""; // Label for news source
     bool rssEnabled = false; // Enable headlines scroller

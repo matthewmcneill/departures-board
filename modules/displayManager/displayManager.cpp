@@ -27,15 +27,16 @@
 
 #include "displayManager.hpp"
 #include "widgets/drawingPrimitives.hpp"
-#include <timeManager.hpp>
 #include <logger.hpp>
 #include <weatherClient.hpp>
+#include <vector>
+#include <algorithm>
 #include <rssClient.hpp>
 #include <otaUpdater.hpp>
 #include <boards/systemBoard/sleepingBoard.hpp>
 #include "configManager.hpp"
 #include <appContext.hpp>
-#include "../systemManager/build_time.h"
+#include "buildTime.hpp"
 
 // DisplayManager singleton will be owned by appContext
 
@@ -129,6 +130,20 @@ void DisplayManager::tick(unsigned long currentMillis) {
     // --- Step 2: Internal Logic and Rendering ---
     // Delegate state updates to the active board.
     if (currentBoard != nullptr) currentBoard->tick(currentMillis);
+
+    // --- Step 3: Carousel Auto-Rotation Pacing ---
+    if (!shouldSnooze && currentBoard != nullptr && !diagModeActive && context != nullptr) {
+        const Config& config = context->getConfigManager().getConfig();
+        if (config.boardCount > 1) { 
+            // Only rotate if the interval has passed
+            if (currentMillis - lastActivity > (config.carouselIntervalSecs * 1000UL)) {
+                // Defer rotation if board is still animating and setting requires it
+                if (!waitForScrollComplete || currentBoard->isScrollFinished()) {
+                    cycleNext(); // Resets lastActivity internally
+                }
+            }
+        }
+    }
     
     // Trigger the actual hardware buffer transaction.
     render();
@@ -448,19 +463,44 @@ iDisplayBoard* DisplayManager::addBoard(BoardType type) {
 }
 
 /**
- * @brief Rotates the carousel index to the next initialized board.
+ * @brief Rotates the carousel index to the next scheduled board.
  * @return The new active slot index.
  */
 int DisplayManager::cycleNext() {
-    int start = activeSlotIndex;
-    do {
-        activeSlotIndex = (activeSlotIndex + 1) % MAX_BOARDS;
-        iDisplayBoard* board = getDisplayBoard(activeSlotIndex);
-        if (board != nullptr) {
-            showBoard(board, "Carousel Auto-Rotation or Manual Skip");
-            return activeSlotIndex;
+    if (!context) return activeSlotIndex;
+
+    std::vector<int> activeBoards = context->getSchedulerManager().getActiveBoards();
+    if (activeBoards.empty()) return activeSlotIndex; // Subsystem failed or list is empty
+
+    lastActivity = millis(); // Reset the auto-rotation pacing timer
+
+    // Find our current rotational position within the active subset
+    auto it = std::find(activeBoards.begin(), activeBoards.end(), activeSlotIndex);
+    
+    int nextSlotIndex = activeSlotIndex;
+    if (it != activeBoards.end()) {
+        auto nextIt = std::next(it);
+        if (nextIt == activeBoards.end()) {
+            // Reached the end of the subset, wrap back to the first active board
+            nextSlotIndex = activeBoards.front();
+        } else {
+            nextSlotIndex = *nextIt;
         }
-    } while (activeSlotIndex != start);
+    } else {
+        // Current board is no longer in the active schedule, snap to the first valid one
+        nextSlotIndex = activeBoards.front();
+    }
+
+    // Do not unnecessarily trigger an animation cycle if there is only 1 active board
+    if (nextSlotIndex == activeSlotIndex && activeBoards.size() == 1) {
+        return activeSlotIndex;
+    }
+
+    activeSlotIndex = nextSlotIndex;
+    iDisplayBoard* board = getDisplayBoard(activeSlotIndex);
+    if (board != nullptr) {
+        showBoard(board, "Carousel Auto-Rotation or Manual Skip");
+    }
     return activeSlotIndex;
 }
 

@@ -24,7 +24,8 @@
 #include <boards/nationalRailBoard/nationalRailBoard.hpp>
 #include <wifiManager.hpp> // Added as per instruction
 #include <buttonHandler.hpp>
-#include "build_time.h"
+#include "buildTime.hpp"
+#include "schedulerManager.hpp"
 
 /**
  * @brief Initialize default system state.

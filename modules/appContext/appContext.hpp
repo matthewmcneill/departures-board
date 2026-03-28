@@ -41,6 +41,7 @@
 #include "systemManager.hpp"
 #include <messaging/messagePool.hpp>
 #include <dataManager.hpp>
+#include "schedulerManager.hpp"
 
 /**
  * @brief High-level states for the AppContext Hierarchical State Machine.
@@ -68,6 +69,7 @@ private:
     TimeManager timeManager;        ///< System clock and NTP manager
     MessagePool globalMessagePool;  ///< Shared pool for scrolling status messages
     dataManager networkManager;     ///< Centralized queue for background HTTP fetches
+    schedulerManager schedule;      ///< Evaluates which display boards to show
     AppState currentState;          ///< Current tracked system state
     bool webServerInitialized;      ///< Checks if webServer was safely started
 
@@ -108,6 +110,8 @@ public:
     rssClient& getRss() { return rss; }
     /** @brief Get the centralized background data manager. */
     dataManager& getDataManager() { return networkManager; }
+    /** @brief Get the centralized scheduler manager. */
+    schedulerManager& getSchedulerManager() { return schedule; }
     /** @brief Get the shared message pool for scrolling text. */
     MessagePool& getGlobalMessagePool() { return globalMessagePool; }
     /** @brief Get the current high-level state of the application. */

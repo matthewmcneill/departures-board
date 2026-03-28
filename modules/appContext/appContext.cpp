@@ -52,7 +52,7 @@ void raildataYieldWrapper(int stage, int nServices) {
 /**
  * @brief Construct the appContext and its managed service singletons.
  */
-appContext::appContext() : globalMessagePool(4), currentState(AppState::BOOTING), webServerInitialized(false) {
+appContext::appContext() : globalMessagePool(4), schedule(this), currentState(AppState::BOOTING), webServerInitialized(false) {
     // Note: Managers are initialized via their default constructors here.
 }
 
