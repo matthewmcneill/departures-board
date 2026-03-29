@@ -1,7 +1,7 @@
 # Network Data Architecture Redesign Report (Updated)
 
 ## 1. Evaluation of the Current Approach
-The existing `dataWorker` implementation uses a FreeRTOS `QueueHandle_t` pinned to Core 0. Clients push an `iDataSource*` to the back of the queue (FIFO), and a single worker task blocks on `xQueueReceive`, executing requests sequentially. 
+The existing `dataManager` implementation uses a FreeRTOS `QueueHandle_t` pinned to Core 0. Clients push an `iDataSource*` to the back of the queue (FIFO), and a single worker task blocks on `xQueueReceive`, executing requests sequentially. 
 
 **Strengths:**
 - **Heap Protection**: Strictly serializes TLS allocations, preventing Out-Of-Memory (OOM) errors and Watchdog Timer (WDT) panics.
