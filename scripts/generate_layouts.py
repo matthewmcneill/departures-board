@@ -12,7 +12,8 @@ def generate_layouts(source, target, env):
     search_paths = [
         "modules/displayManager/boards/nationalRailBoard/layouts/*.json",
         "modules/displayManager/boards/tflBoard/layouts/*.json",
-        "modules/displayManager/boards/busBoard/layouts/*.json"
+        "modules/displayManager/boards/busBoard/layouts/*.json",
+        "modules/displayManager/boards/systemBoard/layouts/*.json"
     ]
     
     script_path = "tools/layoutsim/scripts/gen_layout_cpp.py"
