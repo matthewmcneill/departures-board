@@ -395,6 +395,12 @@ void ConfigManager::loadConfig() {
         if (settings[F("waitForScroll")].is<bool>())     config.waitForScrollComplete = settings[F("waitForScroll")];
         if (settings[F("rssFirst")].is<bool>())          config.prioritiseRss = settings[F("rssFirst")];
         
+        // v2.3 Migration: Global turnOffOledInSleep moved to per-board oledOff
+        bool legacyOledOff = false;
+        if (settings[F("turnOffOledInSleep")].is<bool>()) {
+            legacyOledOff = settings[F("turnOffOledInSleep")];
+        }
+        
         // Scheduling and carousel defaults
         config.manualOverrideTimeoutSecs = settings[F("overrideTimeout")] | 60;
         config.carouselIntervalSecs = settings[F("carouselInterval")] | 120;
@@ -448,6 +454,13 @@ void ConfigManager::loadConfig() {
                 strlcpy(bc.secondaryName, b[F("secName")].as<String>().c_str(), sizeof(bc.secondaryName));
                 bc.timeOffset = b[F("offset")] | 0;
                 bc.brightness = b[F("brightness")] | -1;
+
+                // Apply migration if board is a clock
+                if (loadedVersion < 2.4f && legacyOledOff && bc.type == MODE_CLOCK) {
+                    bc.oledOff = true;
+                } else {
+                    bc.oledOff = b[F("oledOff")] | false;
+                }
                 strlcpy(bc.apiKeyId, b[F("apiKeyId")].as<String>().c_str(), sizeof(bc.apiKeyId));
                 strlcpy(bc.tflLineFilter, b[F("tflLine")].as<String>().c_str(), sizeof(bc.tflLineFilter));
                 bc.tflDirectionFilter = b[F("tflDir")] | 0;

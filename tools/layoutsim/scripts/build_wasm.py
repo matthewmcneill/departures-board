@@ -76,6 +76,7 @@ def build():
     common_flags = [
         "-O3",
         f"-I{SRC_DIR}",
+        f"-I{os.path.join(PROJECT_ROOT, 'test', 'mocks')}",
         f"-I{U8G2_LIB_DIR}",
         f"-I{os.path.join(U8G2_LIB_DIR, 'clib')}",
         f"-I{os.path.join(PROJECT_ROOT, '.pio/libdeps/esp32dev/ArduinoJson/src')}",

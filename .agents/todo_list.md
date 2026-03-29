@@ -5,7 +5,6 @@
 - [ ] header widgets - I have a feeling this is not generalised, and is spacific to NatRail. (Still largely NR specific)
 - [ ] Fix 'Rail Station' field population to resolve CRS to human-readable names on load (currently empty until manual input).
 - [ ] Investigate missing Latitude/Longitude fields in the 'Advanced Options' tab of the Web UI.
-- [/] startup screens don't show and then the board display seems very static and is not laid out properly. need to work through this. Probably starting with the startup screens and then working through the system screens. (Queued in sessions 6cb48930, 9c4faedc, and active in cf3f6db7)
 - [ ] Add unit tests for `ConfigManager::hasConfiguredBoards()` to verify it correctly evaluates incomplete default boards as unconfigured, preventing the system from skipping the `BOARD_SETUP` sequence.
 - [ ] departuresBoard.hpp - does it have all the platformio.ini variables in it - what about max keys?  (btw we probably only need 4 max - 6 to be generous)
 - [ ] add a machine state to app context for OTA updates. If the ota update flag is checked it should go to UPDATING state before running.  In this state it should check for updates, and then do an OTA if there is one whilst displaying the OTA wizard or progress bar. Otherwise it just checks and then moves to RUNNING.  We also need to think about how a long running device periodically goes to UPDATING state to check.
@@ -41,6 +40,7 @@
 - [ ] **Schedule Migration**: Review the original v1/v2 `config.json` format. Critically assess how existing `sleepEnabled`, `sleepStarts`, and `sleepEnds` fields should be automatically migrated into the new Schedule/Screensaver paradigm when we update the settings json parsing logic.
 
 ## Completed
+- [x] startup screens don't show and then the board display seems very static and is not laid out properly. need to work through this. Probably starting with the startup screens and then working through the system screens. (Resolved: Added AppState::RUNNING guards to display scheduler and data fetchers to fix boot-time regression)
 - [x] **OLED Sleep Refactor**: Migrated "Turn OLED Off" from global system settings to per-board `BoardConfig`. Implemented v2.4 JSON migration and state-tracked power management in `DisplayManager`.
 - [x] Implement a unified diagnostic test queue in the frontend to prevent ESP32 resource saturation and dropped connections.
 - [x] Unify the "Active Displays" diagnostic UI with the "API Keys" style (added status text labels next to dots).

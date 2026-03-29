@@ -51,7 +51,45 @@ uint8_t rgba_buffer[OLED_WIDTH * OLED_HEIGHT * 4]; // Persistent RGBA pixel buff
 
 volatile int g_crashIdx = -1;
 
+#include "SystemState.hpp"
+
+// ... (other excludes)
+
 extern "C" {
+
+/**
+ * @brief Injects WiFi status into the simulation
+ * @param connected True to simulate a connected state
+ */
+EMSCRIPTEN_KEEPALIVE
+void setWifiStatus(bool connected) {
+    SystemState::getInstance().setWifiConnected(connected);
+    syncData();
+}
+
+/**
+ * @brief Injects Weather status into the simulation
+ * @param available True to simulate a reachable weather API
+ * @param temp Simulated temperature in degrees Celsius
+ */
+EMSCRIPTEN_KEEPALIVE
+void setWeatherStatus(bool available, int temp) {
+    SystemState::getInstance().setWeatherAvailable(available);
+    SystemState::getInstance().setTemperature(temp);
+    syncData();
+}
+
+/**
+ * @brief Injects OTA update progress into the simulation
+ * @param inProgress True to simulate an active download
+ * @param progress Percent complete (0-100)
+ */
+EMSCRIPTEN_KEEPALIVE
+void setOtaStatus(bool inProgress, int progress) {
+    SystemState::getInstance().setOtaInProgress(inProgress);
+    SystemState::getInstance().setOtaProgress(progress);
+    syncData();
+}
 
 /**
  * @brief Initializes the simulator dependencies

@@ -44,6 +44,10 @@
 #define MAX_SCHEDULE_RULES 15
 #endif
 
+#ifndef MAX_KEYS
+#define MAX_KEYS 8
+#endif
+
 // --- Timing & Intervals (ms) ---
 #ifndef DATAUPDATEINTERVAL
 #define DATAUPDATEINTERVAL 150000 // Default data refresh interval

@@ -1,0 +1,4 @@
+- `[x]` Claim hardware lock (`/plan-start`)
+- `[x]` Modify `scripts/generate_layouts.py` to include `systemBoard`
+- `[x]` Verify build (`pio run`)
+- `[ ]` Release hardware lock (`/plan-wrap`)
