@@ -1,7 +1,0 @@
-{
-    "name": "displayManager",
-    "version": "1.0.0",
-    "dependencies": {
-        "squix78/JsonStreamingParser": "^1.0.5"
-    }
-}

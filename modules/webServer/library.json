@@ -1,8 +1,0 @@
-{
-  "name": "webServer",
-  "version": "1.0.0",
-  "dependencies": [
-    { "name": "configManager" },
-    { "name": "wiFiConfig" }
-  ]
-}
