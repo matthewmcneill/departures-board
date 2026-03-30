@@ -184,7 +184,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     if f.endswith(".json"):
                         layouts.append({
                             "name": f"{board} - {f.replace('.json', '')}",
-                            "path": os.path.join(layout_dir, f)
+                            "path": os.path.relpath(os.path.join(layout_dir, f), PROJECT_ROOT)
                         })
         return sorted(layouts, key=lambda x: x["name"])
 

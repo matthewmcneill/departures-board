@@ -38,6 +38,7 @@
 - [ ] add the max heap size to the portal system page for hardware status section.
 - [ ] **Simulator**: in the WASM if the edited json omits a widget config mark it as `isVisible = false` and do not show it. (makes config show only configured widgets)
 - [ ] **Schedule Migration**: Review the original v1/v2 `config.json` format. Critically assess how existing `sleepEnabled`, `sleepStarts`, and `sleepEnds` fields should be automatically migrated into the new Schedule/Screensaver paradigm when we update the settings json parsing logic.
+- [ ] **Architecture**: Review `appContext.getLogger` usage. Macros should be used globally to ensure they are compiled out in production; this is a case where breaking Dependency Injection (DI) is preferred for performance.
 
 ## Completed
 - [x] startup screens don't show and then the board display seems very static and is not laid out properly. need to work through this. Probably starting with the startup screens and then working through the system screens. (Resolved: Added AppState::RUNNING guards to display scheduler and data fetchers to fix boot-time regression)

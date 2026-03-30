@@ -1,42 +1,90 @@
 {
-  "header": {
-    "title": "London Euston",
-    "callingPoint": "via Birmingham",
-    "platform": "1"
-  },
-  "services": [
-    [
-      "1st",
-      "11:15",
-      "Manchester Picc",
-      "1",
-      "On time"
+    "header": {
+        "title": "London Euston",
+        "callingPoint": "National Rail",
+        "platform": ""
+    },
+    "services": [
+        [
+            "1st",
+            "07:53",
+            "Manchester Piccadilly",
+            "14",
+            "On time"
+        ],
+        [
+            "2nd",
+            "07:54",
+            "Tring",
+            "2",
+            "On time"
+        ],
+        [
+            "3rd",
+            "07:56",
+            "Birmingham New Street",
+            "12",
+            "On time"
+        ],
+        [
+            "4th",
+            "07:58",
+            "Watford Junction",
+            "10",
+            "On time"
+        ],
+        [
+            "5th",
+            "08:00",
+            "Holyhead",
+            "9",
+            "On time"
+        ],
+        [
+            "6th",
+            "08:04",
+            "Tring",
+            "",
+            "On time"
+        ],
+        [
+            "7th",
+            "08:07",
+            "Liverpool Lime Street",
+            "",
+            "On time"
+        ],
+        [
+            "8th",
+            "08:09",
+            "Milton Keynes Central",
+            "",
+            "On time"
+        ],
+        [
+            "9th",
+            "08:10",
+            "Birmingham New Street",
+            "",
+            "On time"
+        ],
+        [
+            "10th",
+            "08:13",
+            "Manchester Piccadilly",
+            "",
+            "On time"
+        ]
     ],
-    [
-      "2nd",
-      "11:20",
-      "Birmingham New St",
-      "2",
-      "Delayed"
-    ],
-    [
-      "3rd",
-      "11:35",
-      "Glasgow Central",
-      "3",
-      "Cancelled"
-    ],
-    [
-      "4th",
-      "11:45",
-      "Liverpool Lime St",
-      "4",
-      "Exp 11:48"
+    "weather": {
+        "id": 200,
+        "isNight": false
+    },
+    "messages": [
+        "Compensation details for millions of drivers set to be revealed",
+        "'I dread the phone ringing': Inside the kennels responding to vicious XL bully attacks",
+        "Australian fugitive shot dead by police after seven months on the run",
+        "Counter-terror team join investigation after pedestrians hit by car in Derby",
+        "Seven years since Emiliano Sala's death, what has changed for the 'wild west' of football transfers?"
     ]
-  ],
-  "messages": [
-    "Welcome to London Euston station.",
-    "Please mind the gap between the train and the platform edge.",
-    "Bikes are not permitted on peak-time services."
-  ]
 }

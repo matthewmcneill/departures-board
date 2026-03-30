@@ -1,40 +1,23 @@
-/*
- * Departures Board (c) 2025-2026 Gadec Software
- * Refactored for v3.0 by Matt McNeill 2026 CB Labs
- *
- * https://github.com/gadec-uk/departures-board
- */
+#ifndef WIFI_MOCK_H
+#define WIFI_MOCK_H
 
-#ifndef MOCK_WIFI_H
-#define MOCK_WIFI_H
-
-#include <stdint.h>
 #include "Arduino.h"
-#include "SystemState.hpp"
+#include "IPAddress.h"
+#include "Network.h"
 
-enum wl_status_t {
-    WL_IDLE_STATUS,
-    WL_NO_SSID_AVAIL,
-    WL_SCAN_COMPLETED,
-    WL_CONNECTED,
-    WL_CONNECT_FAILED,
-    WL_CONNECTION_LOST,
-    WL_DISCONNECTED
-};
-
-class MockWiFi {
+/**
+ * @brief Mock implementation of WiFi for native host testing. 
+ */
+class WiFiClass {
 public:
-    wl_status_t status() { 
-        return SystemState::getInstance().isWifiConnected() ? WL_CONNECTED : WL_DISCONNECTED; 
-    }
-    const char* SSID() { return "Simulator-WiFi"; }
-    int8_t RSSI() { 
-        // Logic Injection: If connected, return -50 (good signal). 
-        // Future: could add setRssi to SystemState.
-        return -50; 
-    }
+    WiFiClass() {}
+    void begin(const char* ssid, const char* pass) {}
+    void disconnect() {}
+    wl_status_t status() { return WL_CONNECTED; }
+    IPAddress localIP() { return IPAddress(192, 168, 1, 100); }
+    String macAddress() { return "00:00:00:00:00:00"; }
 };
 
-extern MockWiFi WiFi;
+extern WiFiClass WiFi;
 
 #endif

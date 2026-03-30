@@ -1,0 +1,113 @@
+# API to Widget Mapping Strategy Review (Extended API Research)
+
+## 1. Deep Review of API Capabilities (Online Data Models)
+
+After looking up the official online documentations and schemas for the Transport APIs (TfL Unified API, National Rail Darwin LDBWS, and general SIRI-SM Bus data specifications), here is a comprehensive look at the data available versus what we currently extract.
+
+### A. TfL Unified API (`/StopPoint/{id}/Arrivals`)
+**What we currently extract:**
+- `timeToStation`, `expectedTime` (calculated)
+- `lineName`, `destination`
+- `orderNum` (Utility)
+
+**Additional Data Available in API (Not currently used):**
+- `currentLocation`: String describing where the train/bus physically is right now (e.g., *"Between Bank and St. Paul's"* or *"At Platform"*).
+- `towards`: Secondary direction string (e.g., *"Towards Edgware"*).
+- `vehicleId` / `registrationNumber`: The specific fleet number or license plate.
+- `direction`: General bearing (e.g., *"inbound"*, *"outbound"*).
+- `modeName`: Explicit transport mode (tube, bus, river-bus).
+
+### B. National Rail Darwin (LDBWS `GetDepartureBoardResponse`)
+**What we currently extract:**
+- `std` (Scheduled Time), `etd` (Estimated Time)
+- `platform`, `isCancelled`, `isDelayed`, `trainLength`
+- `operatorName` (`opco`)
+- `destination`, `via`
+- `callingPoints` (Forward journey only), `serviceMessage` 
+
+**Additional Data Available in API (Not currently used):**
+- `delayReason` / `cancelReason`: Explicit string explanations (e.g., *"Delayed due to a signaling fault at East Croydon"*).
+- `previousCallingPoints`: The journey the train took *before* arriving at the current station.
+- `isCircularRoute`: Boolean flag indicating a loop service.
+- `formation`: Coach-level information, including toilet availability, loading/capacity percentages, and disabled access per carriage (available in detailed endpoints).
+- `ata` / `atd`: Actual Time of Arrival/Departure (for real-time logging).
+
+### C. Bus APIs (SIRI-SM / BODS Standards)
+**What we currently extract:**
+- `ScheduledTime`, `ExpectedTime`
+- `RouteNumber`, `Destination`
+
+**Additional Data Available in API (Not currently used):**
+- `InCongestion`: Boolean flag indicating if the bus is stuck in traffic.
+- `OperatorName`: The specific company running the route (e.g., Stagecoach, Arriva).
+- `VehicleRef`: The bus fleet number.
+
+---
+
+## 2. Evaluation of the "Widget Super-Set" Approach
+
+Your proposed approach is to define the absolute superset of all these available data points and create a discrete, corresponding UI Widget for each (e.g., `DestinationWidget`, `PlatformWidget`, `DelayReasonWidget`, `CurrentLocationWidget`).
+
+### Pros of a Widget Super-Set:
+- **Maximum Flexibility**: A display designer could hypothetically place the "Current Location Widget" floating in the top right, and the "Destination Widget" spanning the bottom.
+- **Strong Abstraction**: Widgets don't care *where* the data came from, only that they received a string payload.
+
+### Cons & Critical Weaknesses:
+> [!WARNING]
+> **Real Estate Constraint Conflict**
+> Small monochromatic OLEDs or low-resolution TFTs lack the screen real estate to support floating, super-set UI concepts. If you build 30 distinct data widgets to match the newly discovered API fields, 85% of them will be disabled or hidden on any given screen, complicating the rendering pipeline and bloating memory overhead.
+
+> [!CAUTION]
+> **Alignment Nightmares**
+> If a departure row is composed of 6 individual, floating widgets (Line, Destination, Time, Platform, CurrentLocation, Formation), coordinating their Y-axis alignments, X-axis boundaries, and text wrapping during dynamic font resizing or scrolling will become exceptionally fragile in C++.
+
+> [!NOTE]
+> **Code Duplication**
+> We already have a `serviceListWidget` that successfully abstracts tabular string rendering logic. Breaking this back down into individual tiles per data point reverses this efficiency.
+
+---
+
+## 3. Recommended Approach: "Semantic Slots" & Tabular Profiles
+
+Seeing the vast amount of data available in the APIs (e.g., `formation`, `currentLocation`), mapping 1-to-1 to UI Widgets is unsustainable for an embedded target. I recommend a **Top-Down, Semantic Slot** approach. We should classify data based on **visual priority** rather than raw API schematic parity.
+
+We don't need distinct widgets for every API field. We need **Generic Widgets** that display **Configurable Columns** and **Scrollers**.
+
+### Conceptual Framework
+
+#### A. The Header Slot (`locationAndFiltersWidget`)
+- **Purpose**: Static, structural context.
+- **Data Mapping**: Global variables like Time, WiFi, Weather, and the `Location/Station` string.
+
+#### B. The Tabular Grid Slot (`serviceListWidget`)
+Instead of standalone widgets, the `serviceListWidget` accepts a dynamic array of `ColumnDef`. The API data is fundamentally tabular. We map the APIs to **Columns**, not Widgets.
+
+**Example 1: High Fidelity TfL Layout**
+1. **Utility Column**: Maps to `orderNum`
+2. **Identifier Column**: Maps to `lineName`
+3. **Target Column**: Maps to `destination` (Truncated)
+4. **Status Column**: Maps to `timeToStation`
+
+**Example 2: High Fidelity National Rail Layout**
+1. **Utility Column**: Maps to `platform`
+2. **Identifier Column**: Maps to `std` (Scheduled Time)
+3. **Target Column**: Maps to `destination` (Truncated)
+4. **Status Column**: Maps to `etd`
+
+*(Notice how TfL and NR use the exact same widget, but their respective DataManagers feed different API fields into the column arrays).*
+
+#### C. The Context Footer Slot (`scrollingTextWidget` / `scrollingMessagePoolWidget`)
+- **Purpose**: High-length, dynamic metadata that cannot fit in a tabular row.
+- **Data Mapping**: 
+  - NR: `callingPoints`, `delayReason`, `serviceMessage`, `formation` (e.g. "Coach A is at the front").
+  - TfL: `currentLocation` (e.g. "Next train is currently between Bank and St. Paul's"), global line disruptions.
+
+### Why this is better:
+1. **Memory Efficiency**: Pushing strings into a pre-compiled `serviceListWidget` consumes less RAM than instantiating an array of individual C++ widget objects for every data point on screen.
+2. **Handle API Expansion gracefully**: If we decide to start extracting `delayReason` or `currentLocation` from the APIs, we don't need to write new UI Widgets. We simply inject those strings into the `scrollingMessagePoolWidget` queue.
+3. **Simplified Designer UX**: The display designer only needs to define "I want a 3-column Service List, and a Scrolling Footer", rather than micro-managing the X/Y coordinates of 30 different data-specific widgets.
+
+---
+
+### Conclusion
+Your initial analysis is technically correct—the API dictates the limits. Expanding our knowledge of the APIs reveals a wealth of contextual data (delay reasons, specific current locations, coach formations). However, the UI architecture should not strictly *mirror* the API schema with discrete widgets. It should funnel the API schema into standardized visual components (Lists, Scrollers, Icons) governed by display geometry.

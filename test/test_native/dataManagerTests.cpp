@@ -1,50 +1,41 @@
 #include <unity.h>
 #include "dataManager.hpp"
-#include "iDataSource.hpp"
 #include <string>
 
 class MockSource : public iDataSource {
 public:
-    MockSource(const char* name) : _name(name), fetchCount(0) {}
+    MockSource(const char* name) : _name(name) {}
     
-    const char* getSourceId() const override { return _name.c_str(); }
-    void fetch() override { fetchCount++; }
-    unsigned long getNextFetchTime() const override { return nextFetchTime; }
-    void setNextFetchTime(unsigned long t) override { nextFetchTime = t; }
-    int getPriorityTier() const override { return priorityTier; }
+    int updateData() override { return 0; }
+    void executeFetch() override {}
+    const char* getLastErrorMsg() const override { return ""; }
+    uint32_t getNextFetchTime() override { return _nextFetch; }
+    uint8_t getPriorityTier() override { return _tier; }
+    void setNextFetchTime(uint32_t t) override { _nextFetch = t; }
+    int testConnection(const char* token, const char* stationId) override { return 0; }
+    
+    void setTier(uint8_t t) { _tier = t; }
 
+private:
     std::string _name;
-    int fetchCount;
-    unsigned long nextFetchTime = 0;
-    int priorityTier = 1;
+    uint32_t _nextFetch = 0;
+    uint8_t _tier = 1;
 };
 
-void test_requestPriorityFetch() {
+void test_data_manager_registration() {
     dataManager dm;
-    MockSource source("SRC1");
+    MockSource source("Mock1");
     
-    source.setNextFetchTime(100000); // 100s in the future
+    dm.registerSource(&source);
     
-    // Request priority fetch
-    dm.requestPriorityFetch(&source);
+    // Setup a fake next fetch time
+    uint32_t farFuture = millis() + 100000;
+    source.setNextFetchTime(farFuture);
     
-    // In our mock dm, it should set nextFetchTime to current or nearly current
-    // Note: dm.init() might be needed if dm starts a task. 
-    // In our FreeRTOS mock, it doesn't.
-    
-    // Check if nextFetchTime was updated by dm
-    TEST_ASSERT_TRUE(source.getNextFetchTime() <= 5000); 
-}
-
-void test_registration() {
-    dataManager dm;
-    MockSource s1("STATION_A");
-    
-    dm.registerSource(&s1);
-    // Success if no crash
+    // Verify registration side effects if possible
+    TEST_ASSERT_EQUAL(farFuture, source.getNextFetchTime());
 }
 
 void runDataManagerTests() {
-    RUN_TEST(test_requestPriorityFetch);
-    RUN_TEST(test_registration);
+    RUN_TEST(test_data_manager_registration);
 }

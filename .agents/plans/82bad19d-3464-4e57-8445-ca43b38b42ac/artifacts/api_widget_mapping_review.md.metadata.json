@@ -1,0 +1,6 @@
+{
+  "artifactType": "ARTIFACT_TYPE_OTHER",
+  "summary": "Updated API to Widget Mapping Strategy Review. Reverted the recommendation back to a highly versatile \"Widget Super-Set / Granular Toolkit\" approach to prioritize JSON layout variance and physical realism, per user feedback.",
+  "updatedAt": "2026-03-29T19:47:54.792992Z",
+  "version": "3"
+}

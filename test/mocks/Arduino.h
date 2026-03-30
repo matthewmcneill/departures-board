@@ -1,45 +1,83 @@
-/*
- * Departures Board (c) 2025-2026 Gadec Software
- * Refactored for v3.0 by Matt McNeill 2026 CB Labs
- *
- * https://github.com/gadec-uk/departures-board
- *
- * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
- * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
- *
- * Module: tools/layoutsim/src/Arduino.h
- * Description: Emscripten/WASM mock stub for the Arduino framework.
- */
-
 #ifndef ARDUINO_COMPAT_H
 #define ARDUINO_COMPAT_H
 
 #include <stdint.h>
 #include <string.h>
-#include <time.h> // Required for time(NULL)
+#include <time.h> 
 #include <string>
+#include <iostream>
+
+// Forward declarations or early definitions
+class String {
+private:
+    std::string data;
+public:
+    size_t write(uint8_t c) {
+        data.push_back((char)c);
+        return 1;
+    }
+    size_t write(const uint8_t *buffer, size_t size) {
+        data.append((const char*)buffer, size);
+        return size;
+    }
+    
+    const char* c_str() const { return data.c_str(); }
+    operator const char*() const { return data.c_str(); }
+
+    String() : data("") {}
+    String(const char* s) : data(s ? s : "") {}
+    String(const std::string& s) : data(s) {}
+    String(int num) : data(std::to_string(num)) {}
+    String(float num) : data(std::to_string(num)) {}
+    String(double num) : data(std::to_string(num)) {}
+    String(unsigned int num) : data(std::to_string(num)) {}
+    String(long num) : data(std::to_string(num)) {}
+    String(unsigned long num) : data(std::to_string(num)) {}
+    
+    int indexOf(String str) const { 
+        size_t pos = data.find(str.c_str());
+        return (pos == std::string::npos) ? -1 : (int)pos;
+    }
+    String substring(int start, int end = -1) const {
+        if (end == -1) return data.substr(start).c_str();
+        return data.substr(start, end - start).c_str();
+    }
+    bool startsWith(const char* s) const { return data.find(s) == 0; }
+    void toLowerCase() { for(auto &c : data) c = std::tolower(c); }
+    size_t length() const { return data.length(); }
+    void replace(String from, String to) {
+        size_t pos = 0;
+        while ((pos = data.find(from.c_str(), pos)) != std::string::npos) {
+            data.replace(pos, from.length(), to.data);
+            pos += to.length();
+        }
+    }
+    bool concat(const String& s) { data += s.data; return true; }
+    bool concat(const char* s) { if (s) data += s; return true; }
+    bool concat(int num) { data += std::to_string(num); return true; }
+    bool concat(unsigned int num) { data += std::to_string(num); return true; }
+    bool concat(long num) { data += std::to_string(num); return true; }
+    bool concat(unsigned long num) { data += std::to_string(num); return true; }
+    
+    bool operator==(const String& other) const { return data == other.data; }
+    bool operator!=(const String& other) const { return data != other.data; }
+    bool operator==(const char* other) const { return other ? data == other : false; }
+    bool operator!=(const char* other) const { return other ? data != other : true; }
+    String& operator+=(const String& other) { data += other.data; return *this; }
+    String& operator+=(const char* other) { if (other) data += other; return *this; }
+};
+
+inline String operator+(const String& lhs, const String& rhs) { String res = lhs; res += rhs; return res; }
+inline String operator+(const String& lhs, const char* rhs) { String res = lhs; res += rhs; return res; }
+inline String operator+(const char* lhs, const String& rhs) { String res(lhs); res += rhs; return res; }
+
 #include "Print.h"
+#include "Stream.h"
 
-class String : public std::string {
-public:
-    String() : std::string() {}
-    String(const char* s) : std::string(s ? s : "") {}
-    String(const std::string& s) : std::string(s) {}
-    String(int num) : std::string(std::to_string(num)) {}
-    String(float num) : std::string(std::to_string(num)) {}
-    String(double num) : std::string(std::to_string(num)) {}
-    String(unsigned int num) : std::string(std::to_string(num)) {}
-    String(long num) : std::string(std::to_string(num)) {}
-    String(unsigned long num) : std::string(std::to_string(num)) {}
-};
-
-class IPAddress {
-public:
-    IPAddress() { memset(ip, 0, 4); }
-    IPAddress(uint8_t a, uint8_t b, uint8_t c, uint8_t d) { ip[0]=a; ip[1]=b; ip[2]=c; ip[3]=d; }
-    uint8_t ip[4];
-    std::string toString() const { return std::to_string(ip[0])+"."+std::to_string(ip[1])+"."+std::to_string(ip[2])+"."+std::to_string(ip[3]); }
-};
+// Define byte as uint8_t globally.
+// This is exactly how it's done in the Arduino framework.
+typedef uint8_t byte;
+typedef bool boolean;
 
 class Printable {
 public:
@@ -51,6 +89,11 @@ public:
 #define PSTR(s) (s)
 #define F(s) (s)
 
+#define LOW 0
+#define HIGH 1
+#define INPUT 0
+#define OUTPUT 1
+
 // Mock Arduino functions
 #define yield() (void)0
 #define millis() ((uint32_t)time(NULL) * 1000)
@@ -59,6 +102,8 @@ public:
 #define digitalRead(pin) 0
 #define delay(ms) (void)0
 #define delayMicroseconds(us) (void)0
+#define configTime(off, dst, s1) (void)0
+inline bool getLocalTime(struct tm* t) { return false; }
 
 // SPI Mocks
 #define SPI_MODE0 0
@@ -94,6 +139,15 @@ public:
     size_t write(const uint8_t*, size_t) { return 0; }
 };
 extern MockWire Wire;
+
+struct MockSerialRef : public Print {
+    void begin(unsigned long baud) {}
+    virtual size_t write(uint8_t c) override { putchar(c); return 1; }
+    virtual size_t write(const uint8_t *buffer, size_t size) override { 
+        return fwrite(buffer, 1, size, stdout); 
+    }
+};
+extern MockSerialRef& Serial;
 
 class __FlashStringHelper;
 

@@ -1,0 +1,88 @@
+# API to Widget Mapping Strategy Review
+
+## 1. API Data Capabilities Review
+
+After reviewing the underlying `iDataSource` implementations across the active boards, here is the raw data reality we are working with:
+
+### TfL API (`TflStation` & `TflService`)
+- **Primary Spatio-Temporal**: `timeToStation` (seconds), `expectedTime` ("2 mins")
+- **Identifiers**: `lineName` (e.g., "Northern")
+- **Targets**: `destination`
+- **Utility**: `orderNum` (1, 2, 3...)
+- **Context**: Disruption messages (handled via `MessagePool`)
+
+### Bus API (`BusStop` & `BusService`)
+- **Primary Spatio-Temporal**: `sTime` (scheduled), `expectedTime` ("Due")
+- **Identifiers**: `routeNumber`
+- **Targets**: `destination`
+- **Utility**: `orderNum` (1, 2, 3...)
+
+### National Rail API / Darwin (`NationalRailStation` & `NationalRailService`)
+- **Primary Spatio-Temporal**: `sTime` (scheduled), `etd` ("On time", "Delayed")
+- **Location Constraints**: `platform`
+- **Identifiers**: `opco` (e.g., "Thameslink"), `serviceType` (Train or Bus)
+- **Targets**: `destination`, `via`
+- **Context/Meta**: `isCancelled`, `isDelayed`, `trainLength`, `classesAvailable`, `origin`, `lastSeen`
+- **Rich Context**: `calling` (list of stops), `serviceMessage` (delay reason)
+
+---
+
+## 2. Evaluation of the "Widget Super-Set" Approach
+
+Your proposed approach—defining the absolute superset of all available data points and creating a discrete UI Widget for each (e.g., `DestinationWidget`, `PlatformWidget`, `ViaWidget`)—is a valid **bottom-up / data-driven** philosophy.
+
+### Pros:
+- **Maximum Flexibility**: A display designer could hypothetically place the "Platform Widget" floating in the top right, and the "Destination Widget" spanning the bottom.
+- **Strong Abstraction**: Widgets don't care *where* the data came from, only that they received a string payload.
+
+### Cons & Critical Weaknesses:
+> [!WARNING]
+> **Real Estate Constraint Conflict**
+> Small monochromatic OLEDs or low-resolution TFTs lack the screen real estate to support floating, super-set UI concepts. If you build 15 distinct data widgets, 80% of them will be disabled or hidden on any given screen, complicating the rendering pipeline and bloating memory overhead.
+
+> [!CAUTION]
+> **Alignment Nightmares**
+> If a departure row is composed of 4 individual, floating widgets (Line, Destination, Time, Platform), coordinating their Y-axis alignments and X-axis boundaries during dynamic font resizing or scrolling will become exceptionally fragile.
+
+> [!NOTE]
+> **Code Duplication**
+> We already have a `serviceListWidget` that successfully abstracts tabular string rendering logic. Breaking this back down into individual tiles per data point reverses this efficiency.
+
+---
+
+## 3. Recommended Approach: Semantic Slots & Tabular Profiles
+
+Instead of a "1-to-1 Widget-to-Data" mapping, I recommend a **Top-Down, Semantic Slot** approach. We should classify data based on **visual priority** rather than raw API availability.
+
+We don't need distinct widgets for every data type. We need *Generic Widgets* that display *Configurable Columns*.
+
+### Conceptual Framework
+
+#### A. The Header Slot (`locationAndFiltersWidget`)
+- **Purpose**: Static, structural context.
+- **Data Mapping**: Global variables like Time, WiFi, Weather, and the `Location/Station` string.
+
+#### B. The Tabular Grid Slot (`serviceListWidget`)
+Instead of standalone widgets, the `serviceListWidget` accepts a dynamic array of `ColumnDef`. The API data is fundamentally tabular. We map the APIs to **Columns**, not Widgets.
+
+**Example: 4-Column High Fidelity Layout**
+1. **Utility Column**: Maps to `orderNum` or `platform`
+2. **Identifier Column**: Maps to `lineName` (TfL), `routeNumber` (Bus), or `sTime` (NR)
+3. **Target Column**: Maps to `destination` (Truncated)
+4. **Status Column**: Maps to `expectedTime` or `etd`
+
+*(Notice how TfL and NR use the exact same widget, just feeding different variables into the column arrays).*
+
+#### C. The Context Footer Slot (`scrollingTextWidget` / `scrollingMessagePoolWidget`)
+- **Purpose**: High-length, dynamic metadata that cannot fit in a tabular row.
+- **Data Mapping**: `calling` points (NR), `serviceMessage` (NR), `lastSeen` (NR), or network-wide disruption messages from the `MessagePool`.
+
+### Why this is better:
+1. **Memory Efficiency**: Pushing strings into a pre-compiled `serviceListWidget` consumes less RAM than instantiating an array of individual C++ widget objects for every data point on screen.
+2. **Simplified Designer UX**: The display designer only needs to define "I want a 3-column Service List, and a Scrolling Footer", rather than micro-managing the X/Y coordinates of a `PlatformStringWidget`.
+3. **Future Proofing**: If we add the Aviation/Flight API later, we don't need a new `TerminalWidget` and `GateWidget` – we just push `Terminal` and `Gate` strings into the `ServiceListColumn` array.
+
+---
+
+### Conclusion
+Your initial analysis is technically correct—the API dictates the limits. But the UI architecture should not *mirror* the API schema. It should squash the API schema into standardized visual components (Lists, Scrollers, Icons) governed by display geometry.

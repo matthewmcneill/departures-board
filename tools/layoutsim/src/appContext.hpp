@@ -28,6 +28,14 @@
 #include "displayManager.hpp"
 #include <string>
 
+class systemManager {
+public:
+    void setWifiConnected(bool connected) {}
+    void setWeatherAvailable(bool available) {}
+    void setOtaInProgress(bool inProgress) {}
+    void setOtaProgress(int progress) {}
+};
+
 class Config {
 public:
     bool dateEnabled = true; // Determines if the date is displayed on applicable widgets
@@ -58,6 +66,11 @@ public:
      * @return Reference to the static ConfigManager object
      */
     ConfigManager& getConfigManager() { static ConfigManager cm; return cm; }
+
+    /**
+     * @brief Retrieves the mock system manager instance
+     */
+    systemManager& getsystemManager() { static systemManager sm; return sm; }
 
     /**
      * @brief Retrieves the mock weather client instance

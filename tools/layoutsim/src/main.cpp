@@ -34,6 +34,9 @@
 #include "layoutParser.hpp"
 #include "designerRegistry.hpp"
 #include "generated_registry.hpp"
+#include "appContext.hpp"
+#include "iGfxWidget.hpp"
+#include "locationAndFiltersWidget.hpp"
 
 // OLED dimensions
 const int OLED_WIDTH = 256; // Standard physical width of the display array
@@ -51,11 +54,14 @@ uint8_t rgba_buffer[OLED_WIDTH * OLED_HEIGHT * 4]; // Persistent RGBA pixel buff
 
 volatile int g_crashIdx = -1;
 
-#include "SystemState.hpp"
+
 
 // ... (other excludes)
 
 extern "C" {
+
+// Forward Declaration
+void syncData();
 
 /**
  * @brief Injects WiFi status into the simulation
@@ -63,7 +69,7 @@ extern "C" {
  */
 EMSCRIPTEN_KEEPALIVE
 void setWifiStatus(bool connected) {
-    SystemState::getInstance().setWifiConnected(connected);
+    g_appContext.getsystemManager().setWifiConnected(connected);
     syncData();
 }
 
@@ -74,8 +80,9 @@ void setWifiStatus(bool connected) {
  */
 EMSCRIPTEN_KEEPALIVE
 void setWeatherStatus(bool available, int temp) {
-    SystemState::getInstance().setWeatherAvailable(available);
-    SystemState::getInstance().setTemperature(temp);
+    g_appContext.getsystemManager().setWeatherAvailable(available);
+    // Note: temperature is now part of the WeatherStatus object on the config directly.
+    // For the simulator logic, we just sync Data.
     syncData();
 }
 
@@ -86,8 +93,8 @@ void setWeatherStatus(bool available, int temp) {
  */
 EMSCRIPTEN_KEEPALIVE
 void setOtaStatus(bool inProgress, int progress) {
-    SystemState::getInstance().setOtaInProgress(inProgress);
-    SystemState::getInstance().setOtaProgress(progress);
+    g_appContext.getsystemManager().setOtaInProgress(inProgress);
+    g_appContext.getsystemManager().setOtaProgress(progress);
     syncData();
 }
 

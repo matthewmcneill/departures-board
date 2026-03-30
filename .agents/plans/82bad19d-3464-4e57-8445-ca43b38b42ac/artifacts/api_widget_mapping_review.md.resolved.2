@@ -1,0 +1,50 @@
+# API to Widget Mapping Strategy Review (Refined)
+
+## 1. Deep Review of API Capabilities & User Mapping Decisions
+
+Based on our review of the online API schemas (TfL, National Rail, Bus) and your feedback, here is the finalized mapping of how raw API data should be surfaced to the display designer.
+
+### A. Data Mapped to Configuration / Filters (No UI required)
+These fields are critical for the business logic of what to display, but don't need dedicated UI widgets themselves.
+*   **TfL `direction`** (e.g., "inbound", "outbound"): Used by the `tflDataSource` config filter to ensure we only show trains going one way on a platform.
+*   **TfL `towards`** (e.g., "Towards Edgware"): Can be used as a secondary filter (especially useful for complex bifurcating routes like the Northern Line) to narrow down `serviceListWidget` results.
+*   **NR `ata` / `atd`** (Actual times): Not needed for the UI, but potentially useful for the `schedulerManager` or `dataManager` to optimize polling intervals.
+
+### B. Data Mapped to the Message Pool (Dynamic Context Footer)
+Rather than creating individual textual UI widgets, these highly variable, long-form strings should be injected directly into the board's `MessagePool`. We can assign them different priorities (e.g., P0 for active delays) so the existing `scrollingMessagePoolWidget` handles them automatically.
+*   **TfL `currentLocation`**: Defines exactly where a train currently is (e.g., *"Next train is currently between Bank and St. Paul's"*).
+*   **NR `delayReason` / `cancelReason`**: Explicit explanations (e.g., *"Delayed due to a signaling fault at East Croydon"*). This should be a P0 message priority.
+*   **Bus `InCongestion`**: Can generate a warning message (e.g., *"Route 24 is currently experiencing heavy traffic"*).
+*   **Bus `OperatorName` & `VehicleRef`**: The specific company and license plate/fleet number. (Note: Currently, some boards append this to the destination string. Moving it to the scrolling message queue, or keeping it inline within the `serviceListWidget` column, is more efficient than a dedicated widget).
+
+### C. Data Mapped to Dedicated UI Widgets
+This is where the true "Widget Mapping" shines. When data is fundamentally graphical or structural, a dedicated UI widget is justified.
+*   **NR `formation`**: Coach-level information, including toilet availability, current capacity/loading percentages, and disabled access.
+    *   **Decision**: This requires a bespoke **Graphical Widget** (e.g., `TrainFormationWidget`). Highly relevant for modern displays, this widget will visually map the length of the train and the status of individual carriages, much like the physical boards at major terminals.
+
+### D. Excluded Data (Not Needed)
+*   NR `previousCallingPoints`
+*   NR `isCircularRoute`
+
+---
+
+## 2. The Hybrid Strategy: Semantic Slots + Graphical Exceptions
+
+Based on the mapping above, the architecture for the display designer becomes incredibly clear. A pure 1-to-1 "Widget Super-Set" (creating a `CurrentLocationWidget`, a `DelayWidget`, etc.) is unnecessary and detrimental.
+
+We should proceed with a **Hybrid Architectural Approach**:
+
+### Core: The Semantic Slots
+For 90% of the API data, the designer uses generic, column-based widgets and scrolling queues.
+1.  **The Header** (`locationAndFiltersWidget`): Global Time, WiFi, Weather, Station Name.
+2.  **The Tabular Grid** (`serviceListWidget`): Dynamically sized columns. The designer maps basic API strings (`timeToStation`, `destination`, `platform`) into these columns.
+3.  **The Context Footer** (`scrollingMessagePoolWidget`): The central hub for all the rich, long-form data we identified above (`delayReason`, `currentLocation`).
+
+### Exception: The Bespoke Graphical Widgets
+For the remaining 10% of API data that cannot be represented as a simple text string or requires complex visual logic, we provide the designer with dedicated, highly specific UI widgets.
+*   **`TrainFormationWidget`**: A graphical representation of the `formation` API payload.
+*   **`WeatherWidget`**: A graphical representation of the OpenWeatherMap API payload.
+*   **`ProgressBarWidget`**: Used during boot sequences.
+
+### Why this is the optimal approach:
+This hybrid model gives the layout designer immense power without crashing the ESP32. They get the flexibility of the "Widget Super-Set" (through dynamically assigning data to `serviceListWidget` columns and the `MessagePool`) without the RAM overhead and alignment nightmares of instantiating 30 different C++ widget classes. At the same time, they get access to premium, modern UI elements like the `TrainFormationWidget` to make the boards feel deeply authentic.

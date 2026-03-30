@@ -1,13 +1,7 @@
-- [x] Unify Mocks: Extract and adapt `layoutsim` stubs to `test/mocks/`
-- [x] Implement `SystemState` mock for logic injection
-- [x] Build-Time Audit: Update `departuresBoard.hpp` with `#ifndef` defaults
-- [x] Build-Time Audit: Update `platformio.ini` with environment overrides
-- [x] ConfigManager: Implement v2.3 to v2.4 migration logic
-- [x] ConfigManager: Create `configManagerTests.cpp`
-- [x] DataManager: Create `dataManagerTests.cpp`
-- [x] SystemManager: Create `systemManagerTests.cpp`
-- [x] DisplayManager: Create `drawingPrimitivesTests.cpp`
-- [x] Layout Simulator: Add "Logic Control Panel" to `index.html`
-- [x] Layout Simulator: Update WASM bridge in `main.cpp` for `SystemState`
-- [x] Data Harvester: Implement `dataHarvester.py` for API snapshots
-- [x] Verification: Established testing infrastructure; resolving final native compiler hurdles.
+# Restore Simulator Rendering
+
+- [x] Identify shadowing issue in `build_wasm.py`
+- [ ] Reorder include flags in `build_wasm.py` to prioritize real U8g2
+- [ ] Remove `U8G2_R0` and other mock-only defines from `tools/layoutsim/src/main.cpp`
+- [ ] Clean up/Revert `test/mocks/U8g2lib.h` to its original minimal state
+- [ ] Rebuild WASM and verify rendering in browser
