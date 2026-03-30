@@ -1,35 +1,43 @@
-# Restore Simulator Display Rendering
+# Implementation Plan: Simulator Logic Injection Wiring
 
-The Layout Simulator is currently showing a black display because it is inadvertently using an empty "dummy" mock for the U8g2 library instead of the real library logic. This shadowing occurred because `test/mocks/` was given priority in the include paths.
+This plan outlines the steps to connect the simulator's **Logic Injection** panel (WiFi, Weather, OTA) to the underlying C++ widgets, enabling full behavioral verification of the firmware's UI logic.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> I will be reconfiguring the WASM build to link the real U8g2 library. This will increase the WASM bundle size slightly but is necessary for pixel-accurate rendering.
+> This plan modifies core test mocks (`WiFi.h`, `systemManager`) to become stateful. This is necessary for the simulator but must be done carefully to ensure it doesn't break existing native host unit tests.
 
 ## Proposed Changes
 
-### [Simulator Engine]
+### [Simulator Engine & Mocks]
 
-#### [MODIFY] [build_wasm.py](file:///Users/mcneillm/Documents/Projects/departures-board/tools/layoutsim/scripts/build_wasm.py)
-- Reorder include flags to prioritize `U8G2_LIB_DIR` over `test/mocks`.
-- This ensures the real U8g2 library is linked instead of the empty dummy mock.
+#### [MODIFY] [WiFi.h](file:///Users/mcneillm/Documents/Projects/departures-board/test/mocks/WiFi.h)
+- Replace the hardcoded `status()` return value with a member variable.
+- Add `setStatus(wl_status_t)` and `setRSSI(int)` methods to the `WiFiClass` mock.
+
+#### [MODIFY] [appContext.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/tools/layoutsim/src/appContext.hpp)
+- Implement `systemManager` setter methods.
+- Wire these setters to update the global `WiFi` mock and the active board's `WeatherStatus`.
 
 #### [MODIFY] [main.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/tools/layoutsim/src/main.cpp)
-- Remove any local shadow defines (like `U8G2_R0`) that conflict with the real library.
+- Enhance the `syncData()` loop to ensure that when logic injection occurs, all relevant widgets are immediately refreshed.
+- Map the "OTA Progress" value to a specific `progressBarWidget` if it exists in the active layout.
 
 ### [Simulator Web UI]
 
 #### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/tools/layoutsim/web/index.html)
-- Move the **Logic Injection** panel to the far left of the `.designer-panels` container.
-- Ensure the **Element Explorer** remains in the middle and **Properties** on the far right.
+- Add an "RSSI/Signal Strength" slider to the Logic Injection panel (currently it only has a "WiFi Connected" toggle).
+- Add a "Weather Condition" selector (Clear, Rain, Snow) to exercise the different icons in `weatherWidget`.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `python3 tools/layoutsim/scripts/build_wasm.py`.
-- Verify no compilation errors are thrown now that the real (and much larger) U8g2 class is in play.
+- Build WASM: `python3 tools/layoutsim/scripts/build_wasm.py`
+- Run the dev server and use the browser subagent to:
+    - Toggle WiFi and verify the `wifiStatusWidget` icon blinks and changes.
+    - Change temperature/icon and verify the `weatherWidget` updates.
+    - Slider the OTA progress and verify a progress bar appears and fills.
 
 ### Manual Verification
-- Launch the simulator and verify that the canvas is no longer black.
-- Use the "Logic Injection" panel to confirm that changing labels or icons reflects in the rendered pixels.
+- Visually confirm that the "X" (disconnected) icon appears on the OLED when "WiFi Connected" is unchecked.
+- Verify that the BBC news ticker continues to scroll while OTA is in progress.

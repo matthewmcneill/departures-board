@@ -37,6 +37,9 @@ __pycache__/
 node_modules/
 test/web/node_modules/
 
+# Test config
+.env
+
 # Test results
 test/web/test-results/
 test/web/playwright-report/
@@ -48,4 +51,3 @@ test-results/
 *build_log*.txt
 *build_log*.log
 logs/
-.env
