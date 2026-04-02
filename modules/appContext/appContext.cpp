@@ -99,6 +99,7 @@ void appContext::begin() {
   // Prepare the loadBoard header strings natively here since we want them
   // visible from 0%
   loadBoard->setHeading("Departures Board");
+  loadBoard->setProgress("Initializing...", 0); 
   displayManager.showBoard(loadBoard, "Switching to Loading Screen");
 
   auto updateBootProgress = [&](int percentage, const char *msg) {
@@ -110,24 +111,24 @@ void appContext::begin() {
     }
   };
 
-  updateBootProgress(10, "Initializing hardware graphics...");
+  updateBootProgress(5, "Initializing hardware graphics...");
 
   // 2. Hardware Filesystem (Must be first for config)
-  updateBootProgress(30, "Starting filesystem...");
+  updateBootProgress(10, "Starting filesystem...");
   LittleFS.begin(true);
 
   // 3. Storage & Config
-  updateBootProgress(50, "Loading system configuration...");
+  updateBootProgress(15, "Loading system configuration...");
   configManager.loadApiKeys();
   configManager.loadConfig();
   const Config &config = configManager.getConfig();
 
   // 4. Networking (WiFi)
-  updateBootProgress(70, "Initializing network services...");
+  updateBootProgress(20, "Initializing network services...");
   wifiManager.begin(config.hostname);
 
   // 5. System Management (State & Refresh)
-  updateBootProgress(85, "Optimizing application state...");
+  updateBootProgress(22, "Optimizing application state...");
   // systemManager is now dismantled, logic is integrated here or in domain managers.
 
 #ifdef BUTTON_PIN
@@ -242,14 +243,25 @@ void appContext::tick() {
   yield();
 
   // 3. System state and refresh logic
-  // Migrated: sysManager.tick() logic is now integrated or handle by domain managers.
-
-  // 4. Evaluate AppState Reactively
+  // Migrated: sysManager.tick() logic is now integrated or handle by domain managers  // 4. Evaluate AppState Reactively
   if (currentState == AppState::BOOTING) {
-    // Booting ends when WiFi has completed its sequence (either STA or AP)
-    if (wifiManager.isReady()) {
-
-      // Safe to initialize web server now that network is up
+    // Phase 2: Wait for WiFi (25-50%)
+    if (!wifiManager.isReady()) {
+      static uint32_t lastWifiProgressUpdate = 0;
+      if (millis() - lastWifiProgressUpdate > 1000) {
+        lastWifiProgressUpdate = millis();
+        if (auto *load = static_cast<LoadingBoard *>(
+                displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
+          // Slowly increment progress from 25 to 50 while waiting
+          static int wifiProgress = 25;
+          if (wifiProgress < 50) wifiProgress++;
+          load->setProgress("Connecting to network...", wifiProgress, 600);
+          displayManager.showBoard(load, "WiFi Loading Update", 600);
+        }
+      }
+    } else {
+      // WiFi is ready. 
+      // Phase 3: Web Server & NTP (50-75%)
       if (!webServerInitialized) {
         LOG_INFO("SYSTEM",
                  "Network ready. IP Address: " + WiFi.localIP().toString());
@@ -267,16 +279,13 @@ void appContext::tick() {
                     SystemBoardId::SYS_BOOT_LOADING))) {
           load->setHeading("Departures Board");
           load->setBuildTime(getBuildTime().c_str());
-          int progress = 50;
-          load->setProgress("Setting the system clock...", progress, 500);
+          int ntpProgress = 50;
+          load->setProgress("Setting the system clock...", ntpProgress, 500);
           displayManager.showBoard(load, "Setting Clock Base");
 
           timeManager.initialize([&]() {
-            progress += 5;
-            if (progress > 80)
-              progress =
-                  45; // loop the progress bar back to avoid overflow visually
-            load->setProgress("Setting the system clock...", progress, 500);
+            if (ntpProgress < 75) ntpProgress += 2;
+            load->setProgress("Setting the system clock...", ntpProgress, 500);
             displayManager.showBoard(load, "Setting Clock Tick", 600);
           });
         } else {
@@ -284,6 +293,31 @@ void appContext::tick() {
         }
 
         webServerInitialized = true;
+      }
+
+      // Phase 4: Wait for First Data (75-100%)
+      if (firstLoad) {
+        if (auto *load = static_cast<LoadingBoard *>(
+                displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
+          
+          // Force a low-level fetch check to advance progress
+          if (!configManager.hasConfiguredBoards()) {
+             // No boards configured? Transition instantly.
+             firstLoad = false;
+          } else {
+             // Progress moves as data comes in
+             if (!networkManager.getNoDataLoaded()) {
+                load->setProgress("Finalizing UI...", 100, 600);
+                displayManager.showBoard(load, "Boot Finalize", 600);
+                delay(300); // Brief pause at 100% for visual satisfaction
+                firstLoad = false;
+             } else {
+                // Determine progress to 100 based on some heuristic or just stay at 90
+                load->setProgress("Fetching station data...", 90, 600);
+                displayManager.showBoard(load, "Data Loading Update", 600);
+             }
+          }
+        }
       }
 
       if (!firstLoad) {

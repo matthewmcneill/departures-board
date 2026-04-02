@@ -186,6 +186,11 @@ void dataManager::workerTaskLoop(void* pvParameters) {
             
             targetToExecute->executeFetch();
             
+            // Mark the system as having received at least some hardware data
+            if (manager->noDataLoaded) {
+                manager->noDataLoaded = false;
+            }
+            
             // SAFETY NET: Ensure nextFetchTime is always advanced to prevent tight-looping
             if (targetToExecute->getNextFetchTime() <= millis()) {
                 LOG_WARN("DATA", "DataManager: Source failed to update schedule! Forcing 15s backoff.");
