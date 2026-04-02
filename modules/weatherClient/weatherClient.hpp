@@ -140,5 +140,3 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
     public:
         void executeFetch() override;
 };
-
-extern weatherClient* currentWeather;

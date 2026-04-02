@@ -128,18 +128,6 @@ public:
   bool isWifiPersistentError() const;
 
   /**
-   * @brief Callback from data clients to update UI progress during boot.
-   */
-  void tflCallback();
-
-  /**
-   * @brief Callback from National Rail data client to keep UI responsive.
-   * @param stage Current stage (0-100 placeholder or discrete).
-   * @param nServices Number of services found.
-   */
-  void raildataCallback(int stage, int nServices);
-
-  /**
    * @brief Proxy to correctly format and trigger a weather update via the
    * weatherClient.
    * @param lat Station latitude.

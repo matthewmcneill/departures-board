@@ -11,30 +11,23 @@
 
 #include "webServer.hpp"
 #include "webHandlerManager.hpp"
+#include <Arduino.h>
 #include <LittleFS.h>
-#include <Update.h>
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
 #include <appContext.hpp>
-#include <boards/nationalRailBoard/nationalRailBoard.hpp>
-#include <boards/systemBoard/firmwareUpdateBoard.hpp>
-#include <configManager.hpp>
-#include <displayManager.hpp>
-#include <githubClient.hpp>
-#include <logger.hpp>
-#include <otaUpdater.hpp>
-#include <rssClient.hpp>
 #include <weatherClient.hpp>
-#include <wifiManager.hpp>
+#include <displayManager.hpp>
+#include <configManager.hpp>
+#include <boards/interfaces/iDisplayBoard.hpp>
+#include <logger.hpp>
 
 extern class appContext appContext;
 
-// Instantiate the global server and manager
-AsyncWebServer server(80);
-WebServerManager webServer;
+// File handle for firmware uploads
 File fsUploadFile;
 
-WebServerManager::WebServerManager() : _handlerManager(nullptr) {
+WebServerManager::WebServerManager() 
+    : _server(std::make_unique<AsyncWebServer>(80)), _handlerManager(nullptr) {
 }
 
 WebServerManager::~WebServerManager() {
@@ -45,15 +38,30 @@ WebServerManager::~WebServerManager() {
  * @brief Initializes the web server and binds all application endpoints.
  */
 void WebServerManager::init() {
-  server.on("/", HTTP_GET,
+  _server->on("/", HTTP_GET,
             [](AsyncWebServerRequest *request) { request->redirect("/web"); });
 
   // Initialize and register new portal handlers
   _handlerManager =
-      std::make_unique<WebHandlerManager>(server, appContext.getConfigManager());
+      std::make_unique<WebHandlerManager>(*_server, appContext.getConfigManager());
   _handlerManager->begin();
 
-  server.begin();
+  _server->begin();
   LOG_INFO("WEB", "Local async webserver started at http://" +
                       WiFi.localIP().toString() + ":80/");
+}
+
+void WebServerManager::updateCurrentWeather(float lat, float lon) {
+    weatherClient& weather = appContext.getWeather();
+    if (weather.getWeatherEnabled()) {
+        int activeIndex = appContext.getDisplayManager().getActiveSlotIndex();
+        iDisplayBoard* active = appContext.getDisplayManager().getDisplayBoard(activeIndex);
+        if (active) {
+            WeatherStatus& ws = active->getWeatherStatus();
+            ws.lat = lat;
+            ws.lon = lon;
+            const Config& config = appContext.getConfigManager().getConfig();
+            weather.updateWeather(ws, config.weatherKeyId);
+        }
+    }
 }

@@ -339,47 +339,8 @@ bool systemManager::isWifiPersistentError() const {
     return (millis() - wifiDisconnectTimer > 180000);
 }
 
-
-/**
- * @brief Callback from data clients to update UI progress during boot.
- */
-void systemManager::tflCallback() {
-    const Config& config = context->getConfigManager().getConfig();
-    if (firstLoad) {
-        if (startupProgressPercent < 95) {
-            startupProgressPercent += 5;
-            if (onBootProgress) {
-                BoardTypes firstType = (config.boardCount > 0) ? config.boards[0].type : MODE_RAIL;
-                if (firstType == MODE_TUBE) onBootProgress("Initialising TfL interface", startupProgressPercent);
-                else onBootProgress("Initialising BusTimes interface", startupProgressPercent);
-            }
-        }
-    } else {
-        context->getDisplayManager().yieldAnimationUpdate();
-    }
-}
-
-/**
- * @brief Callback from National Rail data client to keep UI responsive.
- */
-void systemManager::raildataCallback(int stage, int nServices) {
-    if (firstLoad) {
-        int percent = ((nServices * 20) / 40) + 80;
-        if (onBootProgress) {
-            onBootProgress("Initialising National Rail interface", percent);
-        }
-    } else {
-        context->getDisplayManager().yieldAnimationUpdate();
-    }
-}
-
 /**
  * @brief Proxy to correctly format and trigger a weather update via the weatherClient.
- */
-/**
- * @brief Proxy to correctly format and trigger a weather update via the weatherClient.
- *        Note: This legacy proxy is now partially deprecated by the direct board injection above, 
- *              but kept for manual triggers if needed.
  */
 void systemManager::updateCurrentWeather(float lat, float lon) {
     weatherClient& weather = context->getWeather();

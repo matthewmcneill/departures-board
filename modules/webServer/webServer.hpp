@@ -12,35 +12,32 @@
  *
  * Provides:
  * - WebServerManager: Encapsulates web handlers, firmware uploads, and API endpoints. 
- * - webServer: Standard instantiation of WebServerManager.
- * - server: Underlying ESP32 WebServer backend.
  */
 
 #pragma once
-
-#if defined(ESP_IDF_VERSION_MAJOR) && ESP_IDF_VERSION_MAJOR >= 5
-#include <Network.h>
-#endif
-
-#include <ESPAsyncWebServer.h>
 #include <memory>
 
+class AsyncWebServer;
 class WebHandlerManager;
 
 class WebServerManager {
 public:
     WebServerManager();
     ~WebServerManager();
+    
     /**
      * @brief Setup the physical HTTP routing endpoints and firmware upload callbacks.
      */
     void init();
 
+    /**
+     * @brief Proxy to correctly format and trigger a weather update via the weatherClient.
+     */
+    void updateCurrentWeather(float lat, float lon);
+
+    AsyncWebServer& getServer() { return *_server; }
+
 private:
+    std::unique_ptr<AsyncWebServer> _server;
     std::unique_ptr<WebHandlerManager> _handlerManager;
 };
-
-extern WebServerManager webServer;
-extern AsyncWebServer server;
-
-void updateCurrentWeather(float latitude, float longitude);

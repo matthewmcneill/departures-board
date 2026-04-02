@@ -382,6 +382,3 @@ public:
      */
     void reapplyConfig(const Config& config) override { applyConfig(config); }
 };
-
-// Global instance exposed
-extern DisplayManager displayManager;
