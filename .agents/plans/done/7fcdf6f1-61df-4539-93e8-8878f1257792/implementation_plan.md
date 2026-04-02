@@ -15,7 +15,7 @@ This plan resolves the "Legacy C-Style Preprocessor Macros (#define)" technical 
 ---
 
 ### Data Manager Core Interfaces
-#### [MODIFY] [iDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/dataManager/iDataSource.hpp)
+#### [MODIFY] [iDataSource.hpp](modules/dataManager/iDataSource.hpp)
 - Remove `#define TIER_*` and `#define UPD_*` macro definitions.
 - Define `enum class PriorityTier : uint8_t { CRITICAL = 0, HIGH = 1, MEDIUM = 2, LOW = 3 };` with Doxygen descriptions.
 - Define `enum class UpdateStatus : uint8_t { SUCCESS = 0, NO_CHANGE, NO_DATA, TIMEOUT, HTTP_ERROR, DATA_ERROR, UNAUTHORISED, NO_RESPONSE, INCOMPLETE, PENDING };` with Doxygen descriptions.
@@ -27,52 +27,52 @@ This plan resolves the "Legacy C-Style Preprocessor Macros (#define)" technical 
 ---
 
 ### Transport Data Sources
-#### [MODIFY] [nationalRailDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
-#### [MODIFY] [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
+#### [MODIFY] [nationalRailDataSource.hpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
+#### [MODIFY] [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
 - Remove `NR_MAX_*` macros and replace with `constexpr size_t NR_MAX_LOCATION = 45;`, `constexpr size_t NR_MAX_SERVICES = 9;`, etc.
 - Remove `NR_SERVICE_*` macros and replace with `enum class NrServiceType : uint8_t { OTHER = 0, TRAIN = 1, BUS = 2 };`. Create housing Doxygen comment block.
 - Update `NationalRailService` struct to use `NrServiceType serviceType`.
 - Update overridden method signatures to match `iDataSource.hpp` (`UpdateStatus` / `PriorityTier`).
 - Update `volatile int taskStatus` to `volatile UpdateStatus taskStatus`.
 
-#### [MODIFY] [busDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/busDataSource.hpp)
-#### [MODIFY] [busDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/busDataSource.cpp)
+#### [MODIFY] [busDataSource.hpp](modules/displayManager/boards/busBoard/busDataSource.hpp)
+#### [MODIFY] [busDataSource.cpp](modules/displayManager/boards/busBoard/busDataSource.cpp)
 - Convert `BUS_MAX_*` macros to `constexpr size_t`.
 - Update overridden method signatures (`updateData`, `testConnection`, `getPriorityTier`) to use the new typed enums.
 - Update `volatile int taskStatus` to typed enum.
 
-#### [MODIFY] [tflDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.hpp)
-#### [MODIFY] [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp)
+#### [MODIFY] [tflDataSource.hpp](modules/displayManager/boards/tflBoard/tflDataSource.hpp)
+#### [MODIFY] [tflDataSource.cpp](modules/displayManager/boards/tflBoard/tflDataSource.cpp)
 - Convert `TFL_MAX_*` macros to `constexpr size_t`.
 - Update overridden method signatures (`updateData`, `testConnection`, `getPriorityTier`) to use the new typed enums.
 - Update `volatile int taskStatus` to typed enum.
 
-#### [MODIFY] [weatherClient.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/weatherClient/weatherClient.hpp)
+#### [MODIFY] [weatherClient.hpp](modules/weatherClient/weatherClient.hpp)
 - Make `getPriorityTier` return `PriorityTier`.
 
 ---
 
 ### System Controller State Monitors
-#### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - Update variables storing polling updates (e.g. `lastUpdateResult`) from `int` to `UpdateStatus`.
 - Refactor equality checks checking against `9`, `0`, or `UPD_SUCCESS` to instead rigorously check against `UpdateStatus::PENDING`, `UpdateStatus::SUCCESS`, etc.
 
-#### [MODIFY] [displayManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.cpp)
+#### [MODIFY] [displayManager.cpp](modules/displayManager/displayManager.cpp)
 - Refactor the switch statement `getLastUpdateStatus()` to match strongly typed `UpdateStatus::*` enum variations.
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - Ensure all connection test validation logic (`ds.testConnection()`) parses the `UpdateStatus::SUCCESS` instead of older macros or arbitrary values.
 
 ---
 
 ### UI Configuration Constants
-#### [MODIFY] [iNationalRailLayout.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/iNationalRailLayout.cpp)
+#### [MODIFY] [iNationalRailLayout.cpp](modules/displayManager/boards/nationalRailBoard/iNationalRailLayout.cpp)
 - Replace `#define DIMMED_BRIGHTNESS 15` with an anonymous or statically scoped `constexpr uint8_t DIMMED_BRIGHTNESS = 15;`.
 
-#### [MODIFY] [sleepingBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/systemBoard/sleepingBoard.cpp)
+#### [MODIFY] [sleepingBoard.cpp](modules/displayManager/boards/systemBoard/sleepingBoard.cpp)
 - Replace `#define DIMMED_BRIGHTNESS 15` with an anonymous or statically scoped `constexpr uint8_t DIMMED_BRIGHTNESS = 15;`.
 
-#### [MODIFY] [departuresBoard.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/src/departuresBoard.hpp)
+#### [MODIFY] [departuresBoard.hpp](src/departuresBoard.hpp)
 - Convert macro configurations `MAX_BOARDS`, `MAX_SCHEDULE_RULES`, and globally used dimensions like `SCREEN_WIDTH` to modern `constexpr` type architectures.
 
 ## Resource Impact Assessment

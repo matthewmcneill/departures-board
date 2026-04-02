@@ -127,10 +127,10 @@ Let's do a better set.
 
 ### [Display Components]
 
-#### [MODIFY] [wifiStatusWidget.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/wifiStatusWidget.cpp)
+#### [MODIFY] [wifiStatusWidget.cpp](modules/displayManager/widgets/wifiStatusWidget.cpp)
 Update to fetch RSSI from `DataManager` and render the appropriate icon state.
 
-#### [NEW] [wifiIcons.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/fonts/wifiIcons.hpp)
+#### [NEW] [wifiIcons.hpp](modules/displayManager/fonts/wifiIcons.hpp)
 Define the 11x11 bitmaps for the 5 states.
 
 ## Verification Plan

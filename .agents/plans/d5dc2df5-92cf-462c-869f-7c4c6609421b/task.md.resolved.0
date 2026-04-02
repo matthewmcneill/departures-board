@@ -2,10 +2,10 @@
 
 - [ ] Load the `@.agents/skills/house-style-docs` skill and review syntax requirement.
 - [ ] Review documentation in core modules:
-    - [ ] [modules/systemManager/systemManager.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp)
-    - [ ] [modules/webServer/webServer.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/webServer/webServer.hpp)
-    - [ ] [modules/configManager/configManager.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/configManager/configManager.hpp)
-    - [ ] [src/departuresBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/src/departuresBoard.cpp)
+    - [ ] [modules/systemManager/systemManager.hpp](modules/systemManager/systemManager.hpp)
+    - [ ] [modules/webServer/webServer.hpp](modules/webServer/webServer.hpp)
+    - [ ] [modules/configManager/configManager.hpp](modules/configManager/configManager.hpp)
+    - [ ] [src/departuresBoard.cpp](src/departuresBoard.cpp)
 - [ ] Create implementation plan to outline changes.
 - [ ] Receive user approval of implementation plan.
 - [ ] Execute edits to enforce Doxygen-style comments and same-line trail comments.

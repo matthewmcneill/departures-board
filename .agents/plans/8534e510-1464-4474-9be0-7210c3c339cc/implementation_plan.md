@@ -17,13 +17,13 @@ Architectural refactor of the DisplayManager to use a Factory Pattern and dynami
 ### displayManager
 Summary: Removal of `std::variant`, concrete board headers, and conversion to polymorphic arrays.
 
-#### [MODIFY] [displayManager.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/displayManager.hpp)
+#### [MODIFY] [displayManager.hpp](modules/displayManager/displayManager.hpp)
 - Remove all `#include <boards/...>` concrete implementations.
 - Replace `BoardVariant slots[MAX_BOARDS];` with `iDisplayBoard* slots[MAX_BOARDS];` initialization to `nullptr`.
 - Replace explicit system board members (`SplashBoard splashBoard`, etc.) with pointer members (e.g., `iDisplayBoard* splashBoard`) or an array map mapped to `SystemBoardId`.
 - Add `#include "boardFactory.hpp"` dependency.
 
-#### [MODIFY] [displayManager.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/displayManager.cpp)
+#### [MODIFY] [displayManager.cpp](modules/displayManager/displayManager.cpp)
 - Update code to use pointers for display logic (e.g. `slots[i]->tick()`).
 - In `clearSlot`, implement proper cleanup (`delete slots[i]`) making sure we check for `nullptr`. 
 - Ensure `applyConfig()` leverages the `BoardFactory` to build new boards and delete old ones sequentially.
@@ -31,17 +31,17 @@ Summary: Removal of `std::variant`, concrete board headers, and conversion to po
 ### BoardFactory
 Summary: Introduction of the Factory pattern module to handle dependency instantiation.
 
-#### [NEW] [boardFactory.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boardFactory.hpp)
+#### [NEW] [boardFactory.hpp](modules/displayManager/boardFactory.hpp)
 - Define `BoardFactory` with global/static instantiation methods for `BoardType` and `SystemBoardId`.
 
-#### [NEW] [boardFactory.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boardFactory.cpp)
+#### [NEW] [boardFactory.cpp](modules/displayManager/boardFactory.cpp)
 - Centralize all `#include <boards/...>` to this isolated file, isolating `#include` cascades.
 - Implement the factory logic using `switch` statements to return new instances on the heap.
 
 ### Bootstrapping
 Summary: Ensuring memory allocations are stable at startup.
 
-#### [MODIFY] [departuresBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/src/departuresBoard.cpp)
+#### [MODIFY] [departuresBoard.cpp](src/departuresBoard.cpp)
 - Make sure that display startup initializes the system board instances via `BoardFactory` dynamically before proceeding to loop.
 
 ## Resource Impact Assessment

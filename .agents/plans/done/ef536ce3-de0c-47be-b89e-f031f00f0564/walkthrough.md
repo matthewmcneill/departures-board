@@ -5,18 +5,18 @@ I have implemented a robust automation system to ensure that both the hardware O
 ## Changes Made
 
 ### 1. Build System Automation
-- **[NEW] [build_timestamp.py](file:///Users/mcneillm/Documents/Projects/departures-board/scripts/build_timestamp.py)**: A new Python script that runs at the beginning of every build. It generates a header file `modules/systemManager/build_time.h` containing:
+- **[NEW] [build_timestamp.py](scripts/build_timestamp.py)**: A new Python script that runs at the beginning of every build. It generates a header file `modules/systemManager/build_time.h` containing:
     - `BUILD_TIME`: A unique build serial in the format `ByyyyMMddHHmmss-hash[+mod]` (e.g., `B20260328110500-7a2b5c+mod`).
     - `BUILD_DATE_PRETTY`: A human-readable date (`YYYY-MM-DD`).
 - **Git Visibility**: The script now automatically detects if there are uncommitted changes in your workspace. If any files are modified and not yet committed, it appends a `+mod` suffix to the serial. This provides an honest indicator that the build contains code not yet officially part of the referenced commit.
-- **[MODIFY] [platformio.ini](file:///Users/mcneillm/Documents/Projects/departures-board/platformio.ini)**: Registered the new script as a `pre` script for all environments.
+- **[MODIFY] [platformio.ini](platformio.ini)**: Registered the new script as a `pre` script for all environments.
 
 ### 2. Firmware Integration (C++)
-- **[MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)**: Now includes the generated header. The `getBuildTime()` function returns the full build serial.
-- **[MODIFY] [displayManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.cpp)**: Updated to use the full `BUILD_TIME` serial on the loading screen footer. 
+- **[MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)**: Now includes the generated header. The `getBuildTime()` function returns the full build serial.
+- **[MODIFY] [displayManager.cpp](modules/displayManager/displayManager.cpp)**: Updated to use the full `BUILD_TIME` serial on the loading screen footer. 
 
 ### 3. Web Portal Sync
-- **[MODIFY] [portalBuilder.py](file:///Users/mcneillm/Documents/Projects/departures-board/scripts/portalBuilder.py)**: Added a regex injection step to the asset pipeline. It now reads the `BUILD_TIME` serial from the generated C++ header and patches the web UI automatically to ensure 100% synchronization between firmware and portal.
+- **[MODIFY] [portalBuilder.py](scripts/portalBuilder.py)**: Added a regex injection step to the asset pipeline. It now reads the `BUILD_TIME` serial from the generated C++ header and patches the web UI automatically to ensure 100% synchronization between firmware and portal.
 
 ## Verification Results
 

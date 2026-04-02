@@ -12,7 +12,7 @@ No major system changes requiring specific user intervention. The fix correctly 
 ## Proposed Changes
 
 ### Simulator Pipeline (tools/layoutsim/scripts)
-#### [MODIFY] [gen_sim_registry.py](file:///Users/mcneillm/Documents/Projects/departures-board/tools/layoutsim/scripts/gen_sim_registry.py)
+#### [MODIFY] [gen_sim_registry.py](tools/layoutsim/scripts/gen_sim_registry.py)
 - Refactor the string manipulation block within `main()` to preserve the raw layout class name (e.g., `iNationalRailLayout`) instead of converting it to a formatted board name (e.g., `nationalRailBoard`).
 - This will ensure the generated conditional statements in `generated_registry.hpp` perfectly match the `"layout"` value loaded from JSON at runtime.
 

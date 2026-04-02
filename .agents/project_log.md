@@ -26,6 +26,8 @@ Successfully resolved a critical memory corruption issue in the TfL and Bus boar
 - **Architectural Cleanup**: Fixed a syntax error in `modules/schedulerManager/schedulerManager.cpp` (missing `if` condition for change detection) that was blocking compilation and corrected loop scope issues in `TfLBoard::updateData()`.
 - **House Style Alignment**: Audited and updated all modified modules to strictly adhere to v3.0 project standards, including Doxygen headers and step-by-step functional comments.
 
+**Archive**: [.agents/plans/done/2e1382f8-65d9-410b-bfaa-53dbcf9bc7bf/](.agents/plans/done/2e1382f8-65d9-410b-bfaa-53dbcf9bc7bf/)
+
 ### Git Commit
 Generated commit: 10e5e55
 
@@ -39,6 +41,8 @@ Optimized the ESP32 firmware boot sequence to reduce perceived latency and elimi
 - **Fetch Site Guarding**: Implemented "silent guards" directly inside `executeFetch()` for all data sources. This acts as a final firewall against unconfigured or early-state network requests, regardless of who invokes the update.
 - **Scheduler Suspension**: Wrap the `DisplayManager` adaptive schedule and carousel rotation in an `AppState::RUNNING` guard, preventing the display from "flickering" or swapping boards while system services are still initializing.
 - **Smooth Animation Interpolation**: Restored fluid progress bar movement by explicitly providing a `500ms` animation duration to `setProgress()` calls during the blocked clock synchronization phase.
+
+**Archive**: [.agents/plans/done/bb169fad-7f19-44b1-b951-c88e17d0fdad/](.agents/plans/done/bb169fad-7f19-44b1-b951-c88e17d0fdad/)
 
 ### Git Commit
 Generated commit: e21917d
@@ -65,6 +69,8 @@ Implemented support for the `HH_MM_SS` format and custom secondary font allocati
 - **Secondary Font Hydration**: Decoupled the structural representation of the widget's "seconds" from its font size, enabling layouts to specify `"format": "HH_MM_SS"` and an optional `"secondaryFont"`.
 - **WASM Schema Introspection**: Refactored `gen_sim_registry.py` and `DesignerRegistry` to embed C++ types during compilation, ensuring the simulator UI models unmapped components with fully populated default JSON properties on-click.
 - **Blink State Consolidation**: Disabled the continuous colon 500ms flash toggle on the seconds separator, bringing it in line with official National Rail specifications where only the HH::MM colon flashes.
+
+**Archive**: [.agents/plans/done/2c2d6708-ef88-405e-bc90-0281c833e573/](.agents/plans/done/2c2d6708-ef88-405e-bc90-0281c833e573/)
 
 ### Git Commit
 Generated commit: 388b36f
@@ -94,6 +100,8 @@ Migrated the \"Turn OLED Off completely in sleep\" setting from a global system 
 - **v2.4 Migration Engine**: Added a targeted migration block in `ConfigManager` that extracts the legacy global `turnOffOledInSleep` and applies it to the first `MODE_CLOCK` board found, ensuring a seamless OTA upgrade for v2.3 users.
 - **Web UI Interaction Fix**: Resolved a JavaScript crash in the board editor where `form.elements` mapping failed for certain board types. Optimized the DOM access to use robust string-based lookups for the `oledOff` checkbox.
 
+**Archive**: [.agents/plans/done/cf3f6db7-7ac3-4267-8341-fccc4937cf71/](.agents/plans/done/cf3f6db7-7ac3-4267-8341-fccc4937cf71/)
+
 ### Git Commit
 Generated commit: 131c79c (Refactor: Migrate OLED Power Management to Per-Board Configuration)
 
@@ -108,6 +116,8 @@ Finalized the stabilization of the new `DataManager` architecture by diagnosing 
 - **Predictive Backoff Net**: Forced a global 15-second backoff in `DataManager` strictly guaranteeing that data handlers returning early on `HTTP 401/403` do not infinite-loop the core parser interval. 
 - **Diagnostics Extension**: Injected real-time Free Heap mapping and internal SoC thermals out bounding across the `departuresBoard::loop` Heartbeat.
 
+**Archive**: [.agents/plans/done/56c5ef3d-6d3b-418a-ac5e-323d7e6b7226/](.agents/plans/done/56c5ef3d-6d3b-418a-ac5e-323d7e6b7226/)
+
 ### Git Commit
 Generated commit: c2d975f
 
@@ -121,6 +131,8 @@ Systematically rooted out and resolved visual leakage and missing memory data in
 - **Darwin Buffer Remediation**: Identified that the National Rail XML parsing pipeline was misassigned to `location` while the rendering layer mapped to an empty `stationName` array. Upgraded the `nationalRailBoard` controller to bypass the discrepancy directly instead of introducing generic mirroring buffers.
 - **Boundary Mask Wrap Limits**: Repaired the `setClipWindow` primitive across all scrolling data panels by constraining right-side edges to `255px`. Previously, subtracting offset from `256` flipped the 8-bit unsigned integer to `0`, fully deleting the masking geometry during scroll.
 - **WASM Payload Accuracy**: Updated `mockDataManager` handling in the physical simulator layout to match the correct internal XML layout formats.
+
+**Archive**: [.agents/plans/done/453f32fb-912c-442c-8add-c6faf299ad89/](.agents/plans/done/453f32fb-912c-442c-8add-c6faf299ad89/)
 
 ### Git Commit
 Generated commit: 06d0b2c
@@ -153,6 +165,8 @@ Successfully migrated the legacy blocking `WebServer` logic to completely asynch
 - **Fast-Fill Initialization**: Instantiated a priority 'Fast-Fill' interval state (`2000ms`) prioritizing aggressive queueing of offline hardware configurations (`lastUpdateStatus == -1`) universally at boot.
 - **Dynamic UX Feedback**: Overrode static drawing elements throughout transport layout structures with real-time `Loading data...` status overlays when boards accurately resolve back to `UPD_PENDING` (`9`) execution modes.
 
+**Archive**: [.agents/plans/done/470d6a16-dd63-42c0-bc27-62a58dac6dd2/](.agents/plans/done/470d6a16-dd63-42c0-bc27-62a58dac6dd2/)
+
 ### Git Commit
 Generated commit: 64db430
 
@@ -182,6 +196,8 @@ Systematically renamed all instances of "View" to "Layout" across the core displ
 - **House Style Assurance**: Guaranteed documentation standards by appending mandatory Doxygen headers for all `displayManager` methods and ensuring module descriptions.
 - **Hardware Verification**: Successfully flashed and verified on ESP32, confirming stable board initialization and data rendering under the new terminology.
 
+**Archive**: [.agents/plans/done/1cf75709-e370-401c-a1f6-a8d71ba9fefe/](.agents/plans/done/1cf75709-e370-401c-a1f6-a8d71ba9fefe/)
+
 ### Git Commit
 Generated commits: 418144a (Refactor Code), c076120 (Documentation & House Style)
 
@@ -194,6 +210,8 @@ Addressed heap fragmentation and OOM panics in `WiFiClientSecure` caused by conc
 - **Serialized Worker Task**: Created a singleton FreeRTOS queue (`dataWorker.hpp`) to enforce one-at-a-time network TLS handshakes, drastically reducing peak memory usage without sacrificing UI rendering thread availability.
 - **iDataSource Contract Upgrade**: Promoted `executeFetch()` to the public `iDataSource` abstraction, stripping autonomous `xTaskCreatePinnedToCore` logic out of individual client modules.
 - **Deduplication Blocking**: Standardized `UPD_PENDING` tracking in local source modules to prevent duplicate task queued submissions when a network request is already processing.
+
+**Archive**: [.agents/plans/done/206c4ba2-972f-4741-96a6-a4b918e935de/](.agents/plans/done/206c4ba2-972f-4741-96a6-a4b918e935de/)
 
 ### Git Commit
 Generated commit: 8a58e10
@@ -208,6 +226,8 @@ Audited the `DisplayManager` and `systemManager` coupling to ensure robust trans
 - **Semantic UI Telemetry**: Added a required `getBoardName()` string implementation to the `iDisplayBoard` contract, forcing all 11 display boards to self-identify.
 - **Contextual View Logs**: Extended `DisplayManager::showBoard(board, reason)` to accept and log the exact `reason` the viewing context changed (e.g., config save, carousel rotate, OTA interrupt).
 - **Compilation Validation**: Confirmed syntactical soundness and verified that zero overhead/errors were introduced to the `esp32dev` toolchain.
+
+**Archive**: [.agents/plans/done/deb59b03-cb96-4a9c-afff-69421abb7936/](.agents/plans/done/deb59b03-cb96-4a9c-afff-69421abb7936/)
 
 ### Git Commit
 Generated commit: [TBD - Captured in active workspace]
@@ -539,8 +559,10 @@ Generated commit: ef23372
  - **Priority Logic**: WiFi takes ultimate priority (if disconnected/AP mode), followed by Keys (if setup is missing), defaulting to Displays for existing configurations.
  - **Deferred AP Mode Switch**: Updated `updateStatusUI` to only force the WiFi tab if a connection loss occurs *after* the initial portal load.
  - **House Style Refinement**: Added Doxygen-style documentation to the new frontend logic to maintain consistency with the C++ codebase.
- 
- ### Git Commit
+
+**Archive**: [.agents/plans/done/16b784aa-e89e-432b-a85a-ff992f95c8dc/](.agents/plans/done/16b784aa-e89e-432b-a85a-ff992f95c8dc/)
+
+### Git Commit
  Generated commit: 2780ca9
  
  ### Build Statistics
@@ -558,6 +580,8 @@ Enhanced the Screensaver Clock configuration and the overall portal aesthetic. I
 - **Per-Board Brightness**: Added an `int brightness` field to `BoardConfig` (defaulting to -1 for global sync) to allow per-board display levels.
 - **Enhanced Status API**: Updated `/api/status` to return the formatted local time and timezone from the ESP32's `TimeManager`.
 
+**Archive**: [.agents/plans/done/685a3ce5-c3cd-41b8-a78a-3eea17b2e153/](.agents/plans/done/685a3ce5-c3cd-41b8-a78a-3eea17b2e153/)
+
 ### Git Commit
 Generated commit: 6acd617
 
@@ -566,6 +590,7 @@ Generated commit: 6acd617
 **Session**: 303ac83a-6266-463c-ad89-a347c37505ea
 **Action**: Include Graph Optimization Execution
 **Summary**: Optimized C++ include graph by removing heavyweight ESP32 libraries (`WiFi.h`, `LittleFS.h`) from global `.hpp` interfaces. Fixed ensuing compilation errors by restoring transitive dependencies for `Arduino.h` core types in (`systemManager.hpp`, `busDataSource.hpp`, `progressBarWidget.hpp`, `weatherClient.hpp`). Validated via `pio run -e esp32dev`.
+**Archive**: [.agents/plans/done/8a9a238e-dc7d-4e80-a935-5d897c2cd59f/](.agents/plans/done/8a9a238e-dc7d-4e80-a935-5d897c2cd59f/)
 **Commit**: 9638158
 ## Plan 00a761cb-6c18-468c-ba43-4bea43e5276d
 **Date**: 2026-04-02
@@ -579,4 +604,13 @@ Generated commit: 6acd617
 **Session**: 54ace06a-60ad-4948-93f5-b71e7a39cf9b
 **Action**: Relocating Attribution Constants
 **Summary**: Refactored `nrAttribution`, `tflAttribution`, and `btAttribution` out of the global scope in `src/departuresBoard.cpp` into their respective board implementations (`nationalRailBoard.cpp`, `tflBoard.cpp`, `busBoard.cpp`). This removes minor architectural debt and strictly encapsulates display-only text within the correct domain controllers.
+**Archive**: [.agents/plans/done/44f14aa6-4a8e-4c1d-b18d-ae7bf9ebcb11/](.agents/plans/done/44f14aa6-4a8e-4c1d-b18d-ae7bf9ebcb11/)
 **Commit**: a89c7e3
+
+## Plan 17c516ce-f569-43ec-997b-0a4881a74637
+**Date**: 2026-04-02
+**Session**: f0996eb9-83f8-4f69-a21f-1e7b8ad0cad6
+**Action**: Refactoring dataManager Logging
+**Summary**: Successfully replaced the legacy runtime `enableDebug` flags in `dataManager` with a global, compile-time `LOG_VERBOSE` (Level 5) logging tier. This architectural shift significantly reduces memory overhead and improves code maintainability by ensuring high-frequency "spam" logs are completely excluded from the binary unless explicitly enabled via `CORE_DEBUG_LEVEL`. Updated `Logger` library with the new level and unified the `dataManager` and `appContext` initialization signatures.
+**Archive**: [.agents/plans/done/17c516ce-f569-43ec-997b-0a4881a74637/](.agents/plans/done/17c516ce-f569-43ec-997b-0a4881a74637/)
+**Commit**: [Captured in session git history]

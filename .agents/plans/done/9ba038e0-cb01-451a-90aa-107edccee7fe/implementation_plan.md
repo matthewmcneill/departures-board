@@ -5,7 +5,7 @@ Preventing layout shifts when "Test Feed" buttons enter the loading state.
 ## Proposed Changes
 
 ### Portal UI
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 
 - **CSS**:
     - Update `.btn-test-action` to use `inline-flex`, `align-items: center`, `justify-content: center`, `gap: 0.5rem`, and `min-height: 44px`. This matches the approach used for the key dialog buttons.
@@ -29,7 +29,7 @@ Preventing layout shifts when "Test Feed" buttons enter the loading state.
 - **Weather Logic**:
     - Update `testWeather()` to send the currently selected key's token if available (to support testing unsaved keys).
 
-#### [NEW] [rss.json](file:///Users/mcneillm/Documents/Projects/departures-board/portal/rss.json)
+#### [NEW] [rss.json](portal/rss.json)
 ## Verification Plan
 
 ### Manual Verification

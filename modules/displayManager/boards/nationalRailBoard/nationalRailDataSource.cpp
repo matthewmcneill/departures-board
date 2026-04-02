@@ -39,10 +39,11 @@ nationalRailDataSource::nationalRailDataSource()
     : loadingWDSL(false), tagLevel(0), isTestMode(false), id(-1), coaches(0), addedStopLocation(false), 
       filterPlatforms(false), keepRoute(false), nrTimeOffset(0), callback(nullptr),
       messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
-    stationData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
-    renderData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
-    if (stationData) memset(stationData.get(), 0, sizeof(NationalRailStation));
-    if (renderData) memset(renderData.get(), 0, sizeof(NationalRailStation));
+    stationData = std::make_unique<NationalRailStation>();
+    renderData = std::make_unique<NationalRailStation>();
+    
+    memset(stationData.get(), 0, sizeof(NationalRailStation));
+    memset(renderData.get(), 0, sizeof(NationalRailStation));
     
     dataMutex = xSemaphoreCreateMutex();
     taskStatus = UpdateStatus::NO_DATA;
@@ -137,7 +138,7 @@ void nationalRailDataSource::executeFetch() {
 
     id = -1; coaches = 0; addedStopLocation = false; keepRoute = false;
 
-    WiFiClientSecure *httpsClient = new (std::nothrow) WiFiClientSecure();
+    auto httpsClient = std::make_unique<WiFiClientSecure>();
     if (!httpsClient) {
         LOG_ERROR("DATA", "NR Source: Failed to allocate WiFiClientSecure for update!");
         taskStatus = UpdateStatus::DATA_ERROR;
@@ -160,7 +161,6 @@ void nationalRailDataSource::executeFetch() {
         LOG_ERROR("DATA", "NR Source: Connection failed after retries!");
         snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SOAP connection failed");
         httpsClient->stop();
-        delete httpsClient;
         taskStatus = UpdateStatus::NO_RESPONSE;
         return;
     }
@@ -168,17 +168,16 @@ void nationalRailDataSource::executeFetch() {
     LOG_INFO("DATA", "NR Source: Connection established. Free heap: " + String(ESP.getFreeHeap()));
 
     // Allocate temporary stations on the heap AFTER SSL link is up to conserve peak heap
-    NationalRailStation* xStation = nullptr;
+    std::unique_ptr<NationalRailStation> xStation = nullptr;
     if (!isTestMode) {
-        xStation = new (std::nothrow) NationalRailStation();
+        xStation = std::make_unique<NationalRailStation>();
         if (!xStation) {
             LOG_ERROR("DATA", "NR Source: Failed to allocate memory for station data update!");
             httpsClient->stop();
-            delete httpsClient;
             taskStatus = UpdateStatus::DATA_ERROR;
             return;
         }
-        memset(xStation, 0, sizeof(NationalRailStation));
+        memset(xStation.get(), 0, sizeof(NationalRailStation));
     }
 
     String data;
@@ -243,7 +242,6 @@ void nationalRailDataSource::executeFetch() {
     while(!httpsClient->available() && retry < 80) { delay(100); retry++; }
     if (retry >= 80) {
         LOG_ERROR("DATA", "NR Source: Request timeout!");
-        delete xStation;
         taskStatus = UpdateStatus::TIMEOUT;
         return;
     }
@@ -281,14 +279,11 @@ void nationalRailDataSource::executeFetch() {
                 LOG_ERROR("DATA", "NR Source: Error Body: " + faultBody.substring(0, 300));
                 
                 httpsClient->stop();
-                delete httpsClient;
-                if (xStation) delete xStation;
                 taskStatus = UpdateStatus::HTTP_ERROR;
                 return;
             } else if (isTestMode) {
                 LOG_INFO("DATA", "NR Source: Test Mode validated HTTP 200 via fast-exit.");
                 httpsClient->stop();
-                delete httpsClient;
                 taskStatus = UpdateStatus::SUCCESS;
                 return;
             }
@@ -347,7 +342,6 @@ void nationalRailDataSource::executeFetch() {
         }
     }
     httpsClient->stop();
-    delete httpsClient;
     LOG_INFO("DATA", "NR Source: XML parse complete. Bytes: " + String(bytesRecv));
 
     // After parsing, sanitize and check changes
@@ -373,8 +367,6 @@ void nationalRailDataSource::executeFetch() {
 
     if (callback && renderData) callback(3, renderData->numServices);
     snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SUCCESS [%ld] %lums", bytesRecv, (unsigned long)(millis()-perfTimer));
-    
-    delete xStation;
     
     // Dynamic Scheduling Calculation
     uint32_t now = millis();
@@ -626,7 +618,7 @@ UpdateStatus nationalRailDataSource::refreshWsdl() {
     const char* host = cfg.wsdlHost;
     const char* api = cfg.wsdlAPI;
     
-    WiFiClientSecure *client = new (std::nothrow) WiFiClientSecure();
+    auto client = std::make_unique<WiFiClientSecure>();
     if (!client) return UpdateStatus::DATA_ERROR;
     
     client->setInsecure();
@@ -634,7 +626,6 @@ UpdateStatus nationalRailDataSource::refreshWsdl() {
     
     if (!client->connect(host, 443)) {
         LOG_ERROR("DATA", "NR Source: Failed to connect to WSDL host: " + String(host));
-        delete client;
         return UpdateStatus::NO_RESPONSE;
     }
     
@@ -665,7 +656,6 @@ UpdateStatus nationalRailDataSource::refreshWsdl() {
         }
     }
     client->stop();
-    delete client;
     
     if (soapURL.length() > 0) {
         LOG_INFO("DATA", "NR Source: Successfully discovered SOAP URL: " + soapURL);

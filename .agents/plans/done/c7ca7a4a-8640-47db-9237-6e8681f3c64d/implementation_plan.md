@@ -17,7 +17,7 @@ The objective is to introduce a unified hardware input abstraction (`iButton` in
 ### Input Module
 We will create a new directory `modules/systemManager/input/` to encapsulate this logic.
 
-#### [NEW] [iButton.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/input/iButton.hpp)
+#### [NEW] [iButton.hpp](modules/systemManager/input/iButton.hpp)
 - Define the `iButton` interface with pure virtual methods:
   - `virtual void update() = 0;` (For polling/debouncing if needed).
   - `virtual bool isPressed() = 0;`
@@ -25,21 +25,21 @@ We will create a new directory `modules/systemManager/input/` to encapsulate thi
   - `virtual bool wasLongTapped() = 0;`
   - `virtual int secsSinceLastTap() = 0;`
 
-#### [NEW] [touchSensor.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/input/touchSensor.hpp)
+#### [NEW] [touchSensor.hpp](modules/systemManager/input/touchSensor.hpp)
 - Concrete class `TouchSensor` inheriting from `iButton`.
 - Contains configuration for pins, debounce times, and long-tap threshold.
 - Translates the upstream `touchSensor.h` to our house style.
 
-#### [NEW] [touchSensor.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/input/touchSensor.cpp)
+#### [NEW] [touchSensor.cpp](modules/systemManager/input/touchSensor.cpp)
 - Implementation of the polling logic, taking the ported code from `git show upstream/main:lib/touchSensor/touchSensor.cpp` and adapting it.
 
 ### System Manager Integration
 
-#### [MODIFY] [systemManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.hpp)
+#### [MODIFY] [systemManager.hpp](modules/systemManager/systemManager.hpp)
 - Add a member `iButton* inputDevice` (dependency injected or managed internally).
 - Include standard house style documentation updates if lacking.
 
-#### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - During `SystemManager::begin()`, instantiate the `TouchSensor` if configured.
 - Call `inputDevice->update()` in `SystemManager::tick()` if it exists.
 

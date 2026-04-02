@@ -25,6 +25,7 @@
 #include "appContext.hpp"
 #include "departuresBoard.hpp"
 #include "systemManager.hpp"
+#include <memory>
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
@@ -147,10 +148,9 @@ void appContext::begin() {
   sysManager.begin(this);
 
 #ifdef BUTTON_PIN
-  // Instantiate the generic button hardware dependency and inject it into the
   // application logic
-  buttonHandler *btn = new buttonHandler(BUTTON_PIN);
-  sysManager.setInputDevice(btn);
+  auto btn = std::make_unique<buttonHandler>(BUTTON_PIN);
+  sysManager.setInputDevice(std::move(btn)); // Ownership transferred to systemManager, btn becomes nullptr
   LOG_INFO("SYSTEM",
            "Hardware input device attached on GPIO " + String(BUTTON_PIN));
 #else

@@ -7,17 +7,17 @@ Resolve "Raw Pointer Allocations and RAII Violations" technical debt by migratin
 ---
 
 ### App / System Context
-#### [MODIFY] [appContext.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/appContext/appContext.cpp)
+#### [MODIFY] [appContext.cpp](modules/appContext/appContext.cpp)
 - Refactor dynamic allocation `new buttonHandler(BUTTON_PIN)` to use `std::make_unique<buttonHandler>` and store it safely.
-#### [MODIFY] [systemManager.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - Remove `delete inputDevice;` statements, transferring ownership internally to smart pointers.
 
 ---
 
 ### Web Services
-#### [MODIFY] [webServer.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/webServer/webServer.cpp)
+#### [MODIFY] [webServer.cpp](modules/webServer/webServer.cpp)
 - Convert `new WebHandlerManager(...)` invocation to utilize `std::make_unique`.
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - Migrate `ApiTestParams` and `ApiTestDataSource` transient pointer allocations to use `std::make_unique`.
 - Update API object constructors to accept `std::unique_ptr<ApiTestParams>` and pass dependencies via `std::move()`.
 - Eliminate all manual `delete testSource;` and `delete params;` memory deallocations.
@@ -26,24 +26,24 @@ Resolve "Raw Pointer Allocations and RAII Violations" technical debt by migratin
 ---
 
 ### WiFi & Weather Clients
-#### [MODIFY] [wifiManager.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/wifiManager/wifiManager.cpp)
+#### [MODIFY] [wifiManager.cpp](modules/wifiManager/wifiManager.cpp)
 - Refactor `dnsServer = new DNSServer();` to `std::make_unique` eliminating explicit `delete dnsServer;`.
-#### [MODIFY] [weatherClient.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/weatherClient/weatherClient.cpp)
+#### [MODIFY] [weatherClient.cpp](modules/weatherClient/weatherClient.cpp)
 - Modernize C++11 standard raw allocations `std::unique_ptr<T>(new (std::nothrow) T())` directly to C++14 `std::make_unique<T>()`.
 
 ---
 
 ### Display Manager & Data Sources
-#### [MODIFY] [nationalRailDataSource.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
+#### [MODIFY] [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
 - Replace transient instances of `WiFiClientSecure`, `HTTPRequest`, and `xStation` payloads with `std::make_unique`.
 - Completely purge procedural `delete httpsClient`, `delete xStation`, and `delete client` commands mitigating risk on premature network exits.
-#### [MODIFY] [splashBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/systemBoard/splashBoard.cpp)
+#### [MODIFY] [splashBoard.cpp](modules/displayManager/boards/systemBoard/splashBoard.cpp)
 - Overhaul `splashLogo = new imageWidget(...)` into a managed `std::unique_ptr`.
-#### [MODIFY] [diagnosticBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/systemBoard/diagnosticBoard.cpp)
+#### [MODIFY] [diagnosticBoard.cpp](modules/displayManager/boards/systemBoard/diagnosticBoard.cpp)
 - Refine `activeLayout = new layoutTestDiagnostic(...)` allocation.
-#### [MODIFY] [busBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/busBoard/busBoard.cpp)
-#### [MODIFY] [tflBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/tflBoard/tflBoard.cpp)
-#### [MODIFY] [nationalRailBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
+#### [MODIFY] [busBoard.cpp](modules/displayManager/boards/busBoard/busBoard.cpp)
+#### [MODIFY] [tflBoard.cpp](modules/displayManager/boards/tflBoard/tflBoard.cpp)
+#### [MODIFY] [nationalRailBoard.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
 - Remove `delete activeLayout;` usages by altering domain property definitions to `std::unique_ptr`.
 
 ## Resource Impact Assessment

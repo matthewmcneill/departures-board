@@ -7,22 +7,22 @@ The device firmware "hangs" (animations and clock stop) when fetching data from 
 
 ### [Component] Data Sources
 
-#### [MODIFY] [busDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/busDataSource.cpp)
+#### [MODIFY] [busDataSource.cpp](modules/displayManager/boards/busBoard/busDataSource.cpp)
 - Add guard to `updateData()`: Return `UPD_NOT_CONFIGURED` if `busAtco` is empty.
 - Add `callback()` (which yields to display) in the `available()` wait loops.
 - Improve `LOG_WARN` for `UPD_HTTP_ERROR` to include the status line.
 
-#### [MODIFY] [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
+#### [MODIFY] [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
 - Add guard to `updateData()`: Return `UPD_NOT_CONFIGURED` if `crsCode` or `nrToken` is empty.
 - Add `callback()` in the `available()` wait loops.
 
-#### [MODIFY] [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp)
+#### [MODIFY] [tflDataSource.cpp](modules/displayManager/boards/tflBoard/tflDataSource.cpp)
 - Add guard to `updateData()`: Return `UPD_NOT_CONFIGURED` if `tubeId` is empty.
 - Add `callback()` in the `available()` wait loops.
 
 ### [Component] System Manager
 
-#### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - Add handling for `UPD_NOT_CONFIGURED` (assume code 9) to prevent aggressive retries when a board isn't set up yet.
 
 ## Verification Plan

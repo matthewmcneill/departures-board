@@ -10,33 +10,33 @@ There are no breaking changes or critical logic modifications. This relies purel
 
 ### System Manager
 
-#### [MODIFY] [systemManager.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp)
+#### [MODIFY] [systemManager.hpp](modules/systemManager/systemManager.hpp)
 - Add same-line trailing comments to `std::function` variables (`onBootProgress`, `onSoftReset`).
 - Add Doxygen style `@brief`, `@param`, and `@return` comments for setter injection methods:
-  - [setBootProgressCallback](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#81-85)
-  - [setSoftResetCallback](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#85-86)
-  - [setInputDevice](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#86-87)
+  - [setBootProgressCallback](modules/systemManager/systemManager.hpp#81-85)
+  - [setSoftResetCallback](modules/systemManager/systemManager.hpp#85-86)
+  - [setInputDevice](modules/systemManager/systemManager.hpp#86-87)
 - Add Doxygen style `@brief` comments for all data accessors and setters:
-  - [getWifiConnected](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#152-154)
-  - [setWifiConnected](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#154-155)
-  - [getFirstLoad](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#156-157)
-  - [setFirstLoad](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#157-158)
-  - [getStartupProgressPercent](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#159-160)
-  - [setStartupProgressPercent](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#160-163)
-  - [getNextRoundRobinUpdate](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#164-165)
-  - [setNextRoundRobinUpdate](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#165-168)
-  - [getLastDataLoadTime](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#169-170)
-  - [getDataLoadSuccess](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#170-171)
-  - [getDataLoadFailure](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#171-172)
-  - [getLastLoadFailure](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#172-173)
-  - [getLastUpdateResult](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#173-174)
-  - [getMyUrl](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp#175-176)
+  - [getWifiConnected](modules/systemManager/systemManager.hpp#152-154)
+  - [setWifiConnected](modules/systemManager/systemManager.hpp#154-155)
+  - [getFirstLoad](modules/systemManager/systemManager.hpp#156-157)
+  - [setFirstLoad](modules/systemManager/systemManager.hpp#157-158)
+  - [getStartupProgressPercent](modules/systemManager/systemManager.hpp#159-160)
+  - [setStartupProgressPercent](modules/systemManager/systemManager.hpp#160-163)
+  - [getNextRoundRobinUpdate](modules/systemManager/systemManager.hpp#164-165)
+  - [setNextRoundRobinUpdate](modules/systemManager/systemManager.hpp#165-168)
+  - [getLastDataLoadTime](modules/systemManager/systemManager.hpp#169-170)
+  - [getDataLoadSuccess](modules/systemManager/systemManager.hpp#170-171)
+  - [getDataLoadFailure](modules/systemManager/systemManager.hpp#171-172)
+  - [getLastLoadFailure](modules/systemManager/systemManager.hpp#172-173)
+  - [getLastUpdateResult](modules/systemManager/systemManager.hpp#173-174)
+  - [getMyUrl](modules/systemManager/systemManager.hpp#175-176)
 
 ---
 
 ### Web Server
 
-#### [MODIFY] [webServer.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/webServer/webServer.hpp)
+#### [MODIFY] [webServer.hpp](modules/webServer/webServer.hpp)
 - Add a same-line descriptive comment to the internal property `WebHandlerManager* _handlerManager`.
 - Add same-line descriptive comments to the exported external globals:
   - `extern WebServerManager webServer;`
@@ -48,8 +48,8 @@ There are no breaking changes or critical logic modifications. This relies purel
 
 ### Config Manager
 
-#### [MODIFY] [configManager.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/configManager/configManager.hpp)
-- Add same-line descriptions for properties of [ScheduleRule](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/configManager/configManager.hpp#93-100) struct (`startHour`, `startMinute`, `endHour`, `endMinute`).
+#### [MODIFY] [configManager.hpp](modules/configManager/configManager.hpp)
+- Add same-line descriptions for properties of [ScheduleRule](modules/configManager/configManager.hpp#93-100) struct (`startHour`, `startMinute`, `endHour`, `endMinute`).
 - Convert the malformed inline `@brief` doc for `reloadPending` to a standard same-line trailing comment.
 - Add Doxygen style `@brief` and `@return` comments for:
   - `void requestReload()`
@@ -59,7 +59,7 @@ There are no breaking changes or critical logic modifications. This relies purel
 
 ### Main Core
 
-#### [MODIFY] [departuresBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/src/departuresBoard.cpp)
+#### [MODIFY] [departuresBoard.cpp](src/departuresBoard.cpp)
 - Add a same-line comment explanation on initialization of `appContext appContext;` 
 
 ---

@@ -15,13 +15,13 @@ No user review required for architectural concerns. A visual review in the layou
 ### TfL Board Layout
 Adjust the width of the `locationAndFilters` widget to make room for the new `weather` widget.
 
-#### [MODIFY] layoutDefault.json(file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/layouts/layoutDefault.json)
+#### [MODIFY] layoutDefault.json(modules/displayManager/boards/tflBoard/layouts/layoutDefault.json)
 Shrink `locationAndFilters` width from 236 to 225. Insert the `weatherWidget` definition natively alongside the `wifiWarning` widget in the top header row.
 
 ### Bus Board Layout
 Adjust the width of the `locationAndFilters` widget to make room for the new `weather` widget.
 
-#### [MODIFY] layoutDefault.json(file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/layouts/layoutDefault.json)
+#### [MODIFY] layoutDefault.json(modules/displayManager/boards/busBoard/layouts/layoutDefault.json)
 Shrink `locationAndFilters` width from 236 to 225. Insert the `weatherWidget` definition natively alongside the `wifiWarning` widget in the top header row.
 
 ## Verification Plan

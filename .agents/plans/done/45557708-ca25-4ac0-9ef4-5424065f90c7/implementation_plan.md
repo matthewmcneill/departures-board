@@ -6,7 +6,7 @@ Implement a high-speed, minimal Darwin SOAP call to validate API keys without re
 
 ### [displayManager]
 
-#### [MODIFY] [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
+#### [MODIFY] [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
 - **Minified Payload**: When explicitly configured with a SOAP address (test mode), `updateData` will:
     - Target `ldb11.asmx`.
     - Use `GetDepartureBoardRequest` (Standard, not "WithDetails").
@@ -17,7 +17,7 @@ Implement a high-speed, minimal Darwin SOAP call to validate API keys without re
 
 ### [webServer]
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - **National Rail Test**: 
     - Use `/OpenLDBWS/ldb11.asmx` as the endpoint.
     - Use `PAD` (Paddington) for the validation query.

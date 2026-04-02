@@ -23,18 +23,21 @@
 #endif
 
 #include <ESPAsyncWebServer.h>
+#include <memory>
 
 class WebHandlerManager;
 
 class WebServerManager {
 public:
+    WebServerManager();
+    ~WebServerManager();
     /**
      * @brief Setup the physical HTTP routing endpoints and firmware upload callbacks.
      */
     void init();
 
 private:
-    WebHandlerManager* _handlerManager = nullptr;
+    std::unique_ptr<WebHandlerManager> _handlerManager;
 };
 
 extern WebServerManager webServer;

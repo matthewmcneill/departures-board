@@ -124,8 +124,8 @@ void weatherClient::executeFetch() {
     String lat = String(latBuf);
     String lon = String(lonBuf);
 
-    std::unique_ptr<JsonStreamingParser> parser(new (std::nothrow) JsonStreamingParser());
-    std::unique_ptr<WiFiClient> httpClient(new (std::nothrow) WiFiClient());
+    auto parser = std::make_unique<JsonStreamingParser>();
+    auto httpClient = std::make_unique<WiFiClient>();
 
     #define WRAP_UP_ERROR() { \
         setNextFetchTime(millis() + (1000 * 60)); \

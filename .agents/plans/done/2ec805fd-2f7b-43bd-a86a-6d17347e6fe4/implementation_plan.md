@@ -13,47 +13,47 @@ This plan outlines the steps to move the old web page infrastructure to an `arch
 
 ### Build System & Directory Structure
 
-#### [NEW] [archive/](file:///Users/mcneillm/Documents/Projects/departures-board/archive)
+#### [NEW] [archive/](archive)
 Create an `archive` directory in the repository root to house decommissioned components.
 
-#### [MOVE] [web/](file:///Users/mcneillm/Documents/Projects/departures-board/web) -> [archive/web/](file:///Users/mcneillm/Documents/Projects/departures-board/archive/web)
+#### [MOVE] [web/](web) -> [archive/web/](archive/web)
 Move the legacy HTML/JSON assets to the archive.
 
-#### [MOVE] [portal/](file:///Users/mcneillm/Documents/Projects/departures-board/portal) -> [web/](file:///Users/mcneillm/Documents/Projects/departures-board/web)
+#### [MOVE] [portal/](portal) -> [web/](web)
 Rename the modern portal source directory to `web/` (replacing the archived directory).
 
-#### [MOVE] [include/webgui/](file:///Users/mcneillm/Documents/Projects/departures-board/include/webgui) -> [archive/include/webgui/](file:///Users/mcneillm/Documents/Projects/departures-board/archive/include/webgui)
+#### [MOVE] [include/webgui/](include/webgui) -> [archive/include/webgui/](archive/include/webgui)
 Move the legacy C++ headers containing embedded web assets and handlers.
 
-#### [MODIFY] [portalBuilder.py](file:///Users/mcneillm/Documents/Projects/departures-board/scripts/portalBuilder.py)
+#### [MODIFY] [portalBuilder.py](scripts/portalBuilder.py)
 Update `PORTAL_DIR` to point to the new `web/` directory.
 
 ---
 
 ### Core Modules (C++)
 
-#### [MODIFY] [departuresBoard.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/src/departuresBoard.hpp)
+#### [MODIFY] [departuresBoard.hpp](src/departuresBoard.hpp)
 - Define `VERSION_MAJOR` and `VERSION_MINOR` here as `#define` constants.
 - Firmware and Web UI will now share this unified version since they are bundled together.
 
-#### [MODIFY] [departuresBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/src/departuresBoard.cpp)
+#### [MODIFY] [departuresBoard.cpp](src/departuresBoard.cpp)
 - Remove global `int VERSION_MAJOR` and `VERSION_MINOR` variables (replaced by header defines).
 
-#### [MODIFY] [otaUpdater.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/otaUpdater/otaUpdater.cpp)
+#### [MODIFY] [otaUpdater.cpp](lib/otaUpdater/otaUpdater.cpp)
 - Remove inclusion of legacy `../../include/webgui/index.h`.
 - Update `checkPostWebUpgrade()` to use unified `VERSION_MAJOR`/`MINOR` for asset cleanup tracking.
 - Add stubs/comments describing legacy OTA portal interactions (`/ota` and `/info` behavior) to facilitate future integration.
 
-#### [MODIFY] [otaUpdater.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/otaUpdater/otaUpdater.hpp)
+#### [MODIFY] [otaUpdater.hpp](lib/otaUpdater/otaUpdater.hpp)
 - Remove `extern int VERSION_MAJOR` and `VERSION_MINOR` declarations (now picked up via `#include <departuresBoard.hpp>`).
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - Update registration routes: change `/portal` to `/web`.
 - Update logging and captive portal redirect to use `/web`.
 - Rename all `/portal` route registrations to `/web`.
 - Update logging and captive portal redirects to use the new `/web` path.
 
-#### [MODIFY] [webServer.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webServer.cpp)
+#### [MODIFY] [webServer.cpp](modules/webServer/webServer.cpp)
 - Remove all includes pointing to `../../include/webgui/`.
 - Remove registration of legacy routes (lines 50-69, 72-100).
 - Add a permanent redirect for `/` to `/web`.
@@ -66,7 +66,7 @@ Update `PORTAL_DIR` to point to the new `web/` directory.
 
 ### Testing & Verification
 
-#### [MODIFY] [test/web/](file:///Users/mcneillm/Documents/Projects/departures-board/test/web)
+#### [MODIFY] [test/web/](test/web)
 Update Playwright tests and local dev server (`server.js`) to reflect the rename from `/portal` to `/web`.
 
 ## Verification Plan

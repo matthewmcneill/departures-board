@@ -6,7 +6,7 @@ This change introduces a "smart" initial tab selection for the web configuration
 
 ### [Web Portal]
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/web/index.html)
+#### [MODIFY] [index.html](web/index.html)
 - Add a flag `initialTabSet` to the `app.state` to prevent jumping tabs after the initial load.
 - Implement a `determineInitialTab()` logic within `app.init()` or as a callback after `fetchConfig` and `fetchStatus` complete.
 - Logic:

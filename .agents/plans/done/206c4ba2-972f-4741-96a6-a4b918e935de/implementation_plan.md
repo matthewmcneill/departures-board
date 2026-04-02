@@ -34,7 +34,7 @@ As required by the `@embedded-systems` skill, here is the impact assessment for 
 
 ### System Documentation
 
-#### [MODIFY] [SystemSpecificationDocument.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/SystemSpecificationDocument.md)
+#### [MODIFY] [SystemSpecificationDocument.md](docs/SystemSpecificationDocument.md)
 Update Section 4 (Data Design) and Section 5.10 (`iDataSource`) to document the new Centralized Worker Queue.
 - Add clear design rationale on *why* this approach was chosen (Heap peak minimization, preventing LwIP socket exhaustion).
 - Detail the flow: `updateData()` enqueues a request pointer -> `DataWorker` dequeues and calls `executeFetch()` -> Task complete.
@@ -49,25 +49,25 @@ Create a new `dataWorker` module responsible for owning the FreeRTOS Queue and t
 - **Queue Structure**: A simple struct containing a pointer to the calling `iDataSource` instance.
 - **Task Loop**: A permanent task (`tskIDLE_PRIORITY + 1`) on Core 0 that blocks on `xQueueReceive`. When an item is received, it calls the virtual `executeFetch()` method on the provided data source pointer.
 
-#### [MODIFY] [appContext.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.hpp)
-#### [MODIFY] [appContext.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.cpp)
+#### [MODIFY] [appContext.hpp](modules/appContext/appContext.hpp)
+#### [MODIFY] [appContext.cpp](modules/appContext/appContext.cpp)
 - Instantiate and initialize the `dataWorker` during the boot sequence.
 
 ---
 
 ### Data Sources Implementation
 
-#### [MODIFY] [iDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/interfaces/iDataSource.hpp)
+#### [MODIFY] [iDataSource.hpp](modules/displayManager/boards/interfaces/iDataSource.hpp)
 - Add a virtual `executeFetch()` method that the `dataWorker` can call. Currently, elements like `weatherClient` and `nationalRailDataSource` implement this internally but it must be exposed (or exposed via a friend/interface wrapper) so the worker can trigger it.
 
-#### [MODIFY] [weatherClient.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/weatherClient/weatherClient.hpp)
-#### [MODIFY] [weatherClient.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/weatherClient/weatherClient.cpp)
+#### [MODIFY] [weatherClient.hpp](modules/weatherClient/weatherClient.hpp)
+#### [MODIFY] [weatherClient.cpp](modules/weatherClient/weatherClient.cpp)
 - Remove `xTaskCreatePinnedToCore` from `updateData()`.
 - Instead, submit `this` to the `dataWorker` queue.
 - Add comprehensive Doxygen-style header comments detailing the architectural requirement of the worker queue to prevent heap exhaustion.
 
-#### [MODIFY] [nationalRailDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
-#### [MODIFY] [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
+#### [MODIFY] [nationalRailDataSource.hpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
+#### [MODIFY] [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
 - Remove `xTaskCreatePinnedToCore` from `updateData()`.
 - Instead, submit `this` to the `dataWorker` queue.
 - Add comprehensive Doxygen-style header comments detailing the architectural requirement of the worker queue.

@@ -12,6 +12,7 @@
 #ifndef DIAGNOSTIC_BOARD_HPP
 #define DIAGNOSTIC_BOARD_HPP
 
+#include <memory>
 #include "../interfaces/iDisplayBoard.hpp"
 #include "layouts/layoutDiagnostic.hpp"
 
@@ -20,7 +21,7 @@ class appContext;
 class DiagnosticBoard : public iDisplayBoard {
 private:
     appContext* context;
-    layoutTestDiagnostic* activeLayout;
+    std::unique_ptr<layoutTestDiagnostic> activeLayout;
     WeatherStatus weather;
 
 public:

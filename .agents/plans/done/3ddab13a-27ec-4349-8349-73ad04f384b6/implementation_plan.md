@@ -23,4 +23,4 @@ I have transformed the "Active Displays" section into a professional, easy-to-us
 - Confirmed Slot 1 remains solid/opaque and correctly joined to the tab.
 - Validated that "+ EMPTY SLOT" content is centered across all slots.
 
-![Final Overhauled Displays Tab](/Users/mcneillm/.gemini/antigravity/brain/3ddab13a-27ec-4349-8349-73ad04f384b6/final_displays_verification_1773867532073.png)
+![Final Overhauled Displays Tab](final_displays_verification_1773867532073.png)

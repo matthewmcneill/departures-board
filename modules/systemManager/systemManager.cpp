@@ -17,6 +17,8 @@
  *   - softResetBoard(): Performs a soft reconfiguration and reboot of the state.
  */
 
+#include <utility>
+#include <memory>
 #include "systemManager.hpp"
 #include "appContext.hpp"
 #include <logger.hpp>
@@ -40,10 +42,13 @@ systemManager::systemManager()
 }
 
 systemManager::~systemManager() {
-    if (inputDevice) {
-        delete inputDevice;
-        inputDevice = nullptr;
-    }
+    // std::unique_ptr automatically handles deallocation of inputDevice
+}
+
+void systemManager::setInputDevice(std::unique_ptr<buttonHandler> device) {
+    // Transfer unique ownership to the systemManager.
+    // After std::move, the source unique_ptr is guaranteed to be nullptr for safety.
+    inputDevice = std::move(device);
 }
 
 /**

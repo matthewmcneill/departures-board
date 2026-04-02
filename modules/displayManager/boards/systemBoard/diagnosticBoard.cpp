@@ -16,11 +16,10 @@
 
 DiagnosticBoard::DiagnosticBoard(appContext* contextPtr) 
     : context(contextPtr), activeLayout(nullptr) {
-    activeLayout = new layoutTestDiagnostic(context);
+    activeLayout = std::make_unique<layoutTestDiagnostic>(context);
 }
 
 DiagnosticBoard::~DiagnosticBoard() {
-    if (activeLayout) delete activeLayout;
 }
 
 void DiagnosticBoard::onActivate() {

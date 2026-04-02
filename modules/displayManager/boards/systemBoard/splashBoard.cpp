@@ -18,11 +18,10 @@
 SplashBoard::SplashBoard() {
     noticeMessage[0] = '\0';
     // Instantiate the graphic at runtime
-    splashLogo = new imageWidget(81, 0, gadeclogo_width, gadeclogo_height, gadeclogo_bits);
+    splashLogo = std::make_unique<imageWidget>(81, 0, gadeclogo_width, gadeclogo_height, gadeclogo_bits);
 }
 
 SplashBoard::~SplashBoard() {
-    delete splashLogo;
 }
 
 void SplashBoard::setNotice(const char* message) {

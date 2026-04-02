@@ -49,27 +49,27 @@ Please review the proposed ASCII layout for the fixed **Loading Board**.
 ## Proposed Changes
 
 ### Display Manager Component
-#### [MODIFY] [displayManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.cpp)
+#### [MODIFY] [displayManager.cpp](modules/displayManager/displayManager.cpp)
 - Rip out `resetState()`.
 - Implement `resumeDisplays()` that explicitly calls `showBoard(getDisplayBoard(activeSlotIndex))` without polling `appContext` states.
 
-#### [MODIFY] [displayManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.hpp)
+#### [MODIFY] [displayManager.hpp](modules/displayManager/displayManager.hpp)
 - Rename the method signature from `resetState` to `resumeDisplays`.
 
 ### Orchestrator Component
-#### [MODIFY] [appContext.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.cpp)
+#### [MODIFY] [appContext.cpp](modules/appContext/appContext.cpp)
 - Change line 125 inside `sysManager.setBootProgressCallback` to call `displayManager.resumeDisplays()`.
 - Ensure all other `resetState` calls are properly migrated.
 
-#### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - Ensure the soft reset routine uses the updated `resumeDisplays` command.
 
 ### UI Widget Component
-#### [MODIFY] [progressBarWidget.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/progressBarWidget.cpp)
+#### [MODIFY] [progressBarWidget.cpp](modules/displayManager/widgets/progressBarWidget.cpp)
 - Fix the internal Y-coordinate collision. Currently, the widget is 17px tall, drawing text at `Y+11` and the bar at `Y+15` (causing them to render in the exact same physical space).
 - We will anchor the text to `Y` (top of the widget bounds) and the bar to `Y + renderH - 4` (bottom of the widget bounds), granting them adequate breathing room.
 
-#### [MODIFY] [loadingBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/systemBoard/loadingBoard.cpp)
+#### [MODIFY] [loadingBoard.cpp](modules/displayManager/boards/systemBoard/loadingBoard.cpp)
 - Increase the instantiation height of `pBar` from `17` to `24` pixels to allow the text and bar to safely coexist vertically.
 - Remove the redundant `noticeMessage` string rendered at `Y=53`.
 - Shift the `buildTime` string to right-aligned at `Y=53`.

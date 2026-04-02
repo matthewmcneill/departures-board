@@ -22,11 +22,11 @@ This change modifies how the system fetches backend data. Instead of keeping ina
 ### Configuration State Manager
 Migrating a singular polling clock to a distributed hardware array matrix.
 
-#### [MODIFY] [systemManager.hpp](file:///absolute/path/to/modules/systemManager/systemManager.hpp)
+#### [MODIFY] [systemManager.hpp](modules/systemManager/systemManager.hpp)
 - Add `int backgroundUpdateIndex = 0;` to store the rotational queue index.
 - Rename `nextDataUpdate` to `nextRoundRobinUpdate` maintaining a singular timing loop.
 
-#### [MODIFY] [systemManager.cpp](file:///absolute/path/to/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - **`tick()` Round-Robin Tracking Loop**:
   - Keep the explicit fast-fetch priority logic identifying when `activeIndex` changes (improving zero-latency visual switches).
   - Rather than firing arrays consecutively, calculate a `distributedInterval` based on `(config.apiRefreshRate / config.boardCount)`.
@@ -39,15 +39,15 @@ Migrating a singular polling clock to a distributed hardware array matrix.
 ### Hardware Rendering Implementations
 Establishing fallback widget overrides when the API request falls out of bounds or is explicitly caught in the `UPD_PENDING` / Initialization pipeline context.
 
-#### [MODIFY] [nationalRailBoard.cpp](file:///absolute/path/to/modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
+#### [MODIFY] [nationalRailBoard.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
 - Mutate `render()` logical fallbacks. If `numServices <= 0`, dynamically re-read `lastUpdateStatus`:
    - If `-1` (Unitialized) or `9` (`UPD_PENDING`), override `noDataLabel` payload strictly to `"Loading data..."`.
    - Else, assume literal 0 count response matching source rules and restore `"No services found."`.
 
-#### [MODIFY] [tflBoard.cpp](file:///absolute/path/to/modules/displayManager/boards/tflBoard/tflBoard.cpp)
+#### [MODIFY] [tflBoard.cpp](modules/displayManager/boards/tflBoard/tflBoard.cpp)
 - Repeat mutation logic inside `render()`. TfL applies label: `"Loading data..."` mapping natively against `"No arrivals scheduled."`
 
-#### [MODIFY] [busBoard.cpp](file:///absolute/path/to/modules/displayManager/boards/busBoard/busBoard.cpp)
+#### [MODIFY] [busBoard.cpp](modules/displayManager/boards/busBoard/busBoard.cpp)
 - Repeat mutation logic inside `render()`. Bus Board applies mapping directly referencing `"No scheduled services."`
 
 ## Verification Plan

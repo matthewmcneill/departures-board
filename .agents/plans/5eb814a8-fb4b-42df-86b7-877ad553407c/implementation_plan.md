@@ -13,7 +13,7 @@ The objective is to fix the disjointed and confusing boot sequence progress bar.
 
 We will map the synchronous boot sequence down to 0-30%, and the system clock sync to 30-60%. We will also slightly restructure the `AppState::BOOTING` transition to ensure `WIFI_SETUP` and `BOARD_SETUP` modes immediately supersede the `firstLoad` wait.
 
-#### [MODIFY] appContext.cpp (file:///Users/mattmcneill/Personal/Projects/departures-board/modules/appContext/appContext.cpp)
+#### [MODIFY] appContext.cpp (modules/appContext/appContext.cpp)
 - **`appContext::begin()`**: Remap `updateBootProgress` percentages down to scale between `10-30%` (e.g., 5, 10, 15, 20, 25, 30).
 - **`appContext::tick()`**:
   - Update `timeManager.initialize` loop variables. Start `progress = 30` and loop from `30` to `60` (instead of 50-80).
@@ -24,10 +24,10 @@ We will map the synchronous boot sequence down to 0-30%, and the system clock sy
 
 We will fix the deadlock that currently completely hides data fetching progress.
 
-#### [MODIFY] systemManager.hpp (file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.hpp)
+#### [MODIFY] systemManager.hpp (modules/systemManager/systemManager.hpp)
 - Add `void setFirstLoad(bool state)` to control the `firstLoad` status externally if `appContext` enters a setup wizard.
 
-#### [MODIFY] systemManager.cpp (file:///Users/mattmcneill/Personal/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] systemManager.cpp (modules/systemManager/systemManager.cpp)
 - **`systemManager::tick()`**:
   - Update `if (millis() > nextRoundRobinUpdate && wifiConnected && context->getAppState() == AppState::RUNNING)` to evaluate `(context->getAppState() == AppState::RUNNING || firstLoad)`. This allows the initial data fetch to proceed while `appContext` is natively preserving the loading board in `BOOTING` mode.
   - Reposition the `firstLoad = false` setter. Currently it lives outside the fetch result logic. Move it into the `if (lastUpdateResult == 0 || lastUpdateResult == 1)` block, directly under `displayMgr.render()`.

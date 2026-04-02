@@ -35,6 +35,7 @@
 #include "../displayManager/boards/busBoard/busDataSource.hpp"
 #include "../../lib/rssClient/rssClient.hpp"
 #include "../weatherClient/weatherClient.hpp"
+#include <memory>
 #include <atomic>
 
 extern class appContext appContext;
@@ -512,8 +513,8 @@ struct ApiTestParams {
 
 class ApiTestDataSource : public iDataSource {
 public:
-    ApiTestParams* params;
-    ApiTestDataSource(ApiTestParams* p) : params(p) {}
+    std::unique_ptr<ApiTestParams> params;
+    ApiTestDataSource(std::unique_ptr<ApiTestParams> p) : params(std::move(p)) {}
     void executeFetch() override {
         bool success = false; String errorMsg = "Unsupported test type";
 
@@ -564,16 +565,26 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
         if (existing) tokenStr = existing->token;
     }
 
-    ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, "", false, ""};
-    ApiTestDataSource* testSource = new ApiTestDataSource(params);
+    auto params = std::make_unique<ApiTestParams>();
+    params->type = typeStr;
+    params->token = tokenStr;
+    params->done = false;
 
-    appContext.getDataManager().registerSource(testSource);
-    appContext.getDataManager().requestPriorityFetch(testSource);
+    // Transfer unique ownership to the DataSource.
+    // After std::move, params is guaranteed to be nullptr for safety.
+    auto testSource = std::make_unique<ApiTestDataSource>(std::move(params));
+
+    appContext.getDataManager().registerSource(testSource.get());
+    appContext.getDataManager().requestPriorityFetch(testSource.get());
 
     // Yield gracefully until the Background DataManager payload finishes, with absolute 10s timeout
     int maxWait = 10000 / 50;
     int cycles = 0;
-    while(!params->done && cycles < maxWait) { 
+    
+    // Pointer to the params inside the testSource for the wait loop
+    ApiTestParams* pRef = testSource->params.get();
+
+    while(!pRef->done && cycles < maxWait) { 
         // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
         // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
         // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
@@ -582,18 +593,14 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
         cycles++; 
     }
 
-    if (!params->done) {
+    if (!pRef->done) {
         request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
-        appContext.getDataManager().unregisterSource(testSource);
-        delete testSource;
-        delete params;
+        appContext.getDataManager().unregisterSource(testSource.get());
         return;
     }
 
-    request->send(200, "application/json", params->jsonObj);
-    appContext.getDataManager().unregisterSource(testSource);
-    delete testSource;
-    delete params;
+    request->send(200, "application/json", pRef->jsonObj);
+    appContext.getDataManager().unregisterSource(testSource.get());
 }
 
 void WebHandlerManager::handleWiFiScan(AsyncWebServerRequest *request) {
@@ -748,16 +755,27 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
         if (key) tokenStr = key->token;
     }
 
-    ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, stationId, false, ""};
-    ApiTestDataSource* testSource = new ApiTestDataSource(params);
+    auto params = std::make_unique<ApiTestParams>();
+    params->type = typeStr;
+    params->token = tokenStr;
+    params->station = stationId;
+    params->done = false;
+
+    // Transfer unique ownership to the DataSource.
+    // After std::move, params is guaranteed to be nullptr for safety.
+    auto testSource = std::make_unique<ApiTestDataSource>(std::move(params));
 
     // Hand execution to DataManager Core 0 queue to shield from OOM concurrent TLS
-    appContext.getDataManager().registerSource(testSource);
-    appContext.getDataManager().requestPriorityFetch(testSource);
+    appContext.getDataManager().registerSource(testSource.get());
+    appContext.getDataManager().requestPriorityFetch(testSource.get());
 
     int maxWait = 10000 / 50;
     int cycles = 0;
-    while(!params->done && cycles < maxWait) { 
+    
+    // Pointer to the params inside the testSource for the wait loop
+    ApiTestParams* pRef = testSource->params.get();
+
+    while(!pRef->done && cycles < maxWait) { 
         // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
         // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
         // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
@@ -766,18 +784,16 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
         cycles++; 
     }
     
-    if (!params->done) {
+    if (!pRef->done) {
         request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
-        appContext.getDataManager().unregisterSource(testSource);
-        delete testSource;
-        delete params;
+        appContext.getDataManager().unregisterSource(testSource.get());
+        // Smart pointers automatically handle cleanup
         return;
     }
 
-    request->send(200, "application/json", params->jsonObj);
-    appContext.getDataManager().unregisterSource(testSource);
-    delete testSource;
-    delete params;
+    request->send(200, "application/json", pRef->jsonObj);
+    appContext.getDataManager().unregisterSource(testSource.get());
+    // Smart pointers automatically handle cleanup
 }
 
 /**

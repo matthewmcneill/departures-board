@@ -6,27 +6,27 @@ Some feed tests (TfL, Weather, RSS) are failing or reporting incorrect status in
 
 ### [Component] Display Manager (TfL)
 
-#### [MODIFY] [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp)
+#### [MODIFY] [tflDataSource.cpp](modules/displayManager/boards/tflBoard/tflDataSource.cpp)
 - Update `testConnection` to normalize `UPD_NO_CHANGE` to `UPD_SUCCESS`. This ensures that if a board is tested and the data is identical to the previous fetch (e.g., 0 services found both times), it is reported as a success rather than a failure.
 
 ### [Component] Web Server
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - Update `handleTestBoard` to treat both `UPD_SUCCESS` and `UPD_NO_CHANGE` as a successful test result. This provides a second layer of defense for all data sources.
 
 ### [Component] Weather Feed Testing
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - In `handleTestWeather`, explicitly hardcode the coordinates for testing to **51.7487° N, 3.3816° W** (Pen-y-darren Ironworks).
 - Update the diagnostic logging to reflect these coordinates are being used for the test.
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - Update the UI text in the Feeds tab to say "Test Coordinates" instead of "Current Coordinates".
 - Include the explicit lat/lon (51.7487° N, 3.3816° W) in the description text.
 
 ### [Component] News Feed (RSS) Testing
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - Update `testFeed` and `renderFeeds` to handle the case where no feed is selected.
 - If no feed is selected (`url` is empty), ensure the status dot remains **grey** and the status text says **NOT CONFIGURED**.
 - Investigate why the portal reports an error while the serial port shows data returning (possibly a parsing or timeout issue in the web handler).

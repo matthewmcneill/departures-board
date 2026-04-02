@@ -22,6 +22,8 @@
 
 #include <Arduino.h>
 #include <functional>
+#include <memory>
+#include <utility>
 #include "../dataManager/iDataSource.hpp"
 
 class buttonHandler; // Forward declaration
@@ -32,8 +34,8 @@ class appContext;    // Forward declaration
  */
 class systemManager {
 private:
-  appContext *context;        ///< Pointer to owner for DI access
-  buttonHandler *inputDevice; ///< Generic input device for interaction
+  appContext *context;                     ///< Pointer to owner for DI access
+  std::unique_ptr<buttonHandler> inputDevice; ///< Generic input device for interaction
 
   // --- Network State ---
   bool wifiConfigured; ///< True if WiFiManager has valid credentials
@@ -85,7 +87,7 @@ public:
     onBootProgress = cb;
   }
   void setSoftResetCallback(std::function<void()> cb) { onSoftReset = cb; }
-  void setInputDevice(buttonHandler *device) { inputDevice = device; }
+  void setInputDevice(std::unique_ptr<buttonHandler> device);
 
   /**
    * @brief Main logic maintenance tick.

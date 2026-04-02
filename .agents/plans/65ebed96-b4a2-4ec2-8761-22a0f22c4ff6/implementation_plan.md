@@ -49,7 +49,7 @@ The drafting will be divided into four thematic phases to ensure logical flow an
 *   **Tasks**:
     *   Detail the CI/CD pipeline and PlatformIO build environments.
     *   Document memory management strategies (Heap vs Stack for SSL).
-    *   Finalize appendices and cross-reference with [Historical Session Mapping](file:///Users/mcneillm/Documents/Projects/departures-board/docs/HistoricalSessionMapping.md).
+    *   Finalize appendices and cross-reference with [Historical Session Mapping](docs/HistoricalSessionMapping.md).
     
 ### Phase 5: Font Architecture & Build Pipeline
 *   **Goal**: Document the custom font system and the U8G2 compression format.

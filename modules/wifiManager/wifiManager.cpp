@@ -38,6 +38,10 @@ WifiManager::WifiManager() {
     memset(currentHostname, 0, sizeof(currentHostname));
 }
 
+WifiManager::~WifiManager() {
+    // std::unique_ptr automatically handles deallocation of dnsServer
+}
+
 /**
  * @brief Load Wi-Fi credentials from wifi.json on LittleFS.
  */
@@ -157,8 +161,7 @@ void WifiManager::tick() {
                 WiFi.softAP(portalName);
                 
                 // Start DNS Hijacker
-                if (dnsServer) delete dnsServer;
-                dnsServer = new DNSServer();
+                dnsServer = std::make_unique<DNSServer>();
                 dnsServer->start(53, "*", apIP);
                 LOG_INFO("WIFI", String("Access Point '") + portalName + "' is online.");
             }

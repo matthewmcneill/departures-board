@@ -5,9 +5,9 @@ The global attribution constants for API providers (`nrAttributionn`, `tflAttrib
 
 ## Changes Made
 - Removed the global `extern const char` instantiations from the `src/departuresBoard.cpp` file.
-- **National Rail Board**: Created a strictly localized `nrAttributionn` variable within [nationalRailBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp).
-- **TfL Board**: Created a strictly localized `tflAttribution` variable within [tflBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/tflBoard/tflBoard.cpp).
-- **Bus Board**: Created a strictly localized `btAttribution` variable within [busBoard.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/displayManager/boards/busBoard/busBoard.cpp).
+- **National Rail Board**: Created a strictly localized `nrAttributionn` variable within [nationalRailBoard.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp).
+- **TfL Board**: Created a strictly localized `tflAttribution` variable within [tflBoard.cpp](modules/displayManager/boards/tflBoard/tflBoard.cpp).
+- **Bus Board**: Created a strictly localized `btAttribution` variable within [busBoard.cpp](modules/displayManager/boards/busBoard/busBoard.cpp).
 
 ## Validation Results
 The constants preserve exactly the same naming and value attributes locally within those translation units so the respective board layouts remain completely intact whilst benefiting from enhanced encapsulation.

@@ -21,12 +21,12 @@ Transitioned all `iDataSource` implementations to return `UpdateStatus` instead 
 
 | Component | File | Update |
 |-----------|------|--------|
-| **Core** | [iDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/dataManager/iDataSource.hpp) | Definition of typed enums |
-| **National Rail** | [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp) | Updated `init` and `updateData` |
-| **Bus** | [busDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/busDataSource.cpp) | Updated to `PRIO_HIGH`/`PRIO_MEDIUM` |
-| **TfL** | [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp) | Updated to `PRIO_HIGH`/`PRIO_MEDIUM` |
-| **RSS Client** | [rssClient.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/rssClient/rssClient.cpp) | Updated `loadFeed` signature |
-| **Weather** | [weatherClient.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/weatherClient/weatherClient.hpp) | Updated to `PRIO_LOW` |
+| **Core** | [iDataSource.hpp](modules/dataManager/iDataSource.hpp) | Definition of typed enums |
+| **National Rail** | [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp) | Updated `init` and `updateData` |
+| **Bus** | [busDataSource.cpp](modules/displayManager/boards/busBoard/busDataSource.cpp) | Updated to `PRIO_HIGH`/`PRIO_MEDIUM` |
+| **TfL** | [tflDataSource.cpp](modules/displayManager/boards/tflBoard/tflDataSource.cpp) | Updated to `PRIO_HIGH`/`PRIO_MEDIUM` |
+| **RSS Client** | [rssClient.cpp](lib/rssClient/rssClient.cpp) | Updated `loadFeed` signature |
+| **Weather** | [weatherClient.hpp](modules/weatherClient/weatherClient.hpp) | Updated to `PRIO_LOW` |
 
 ### 3. Logic Refactoring
 Updated `DataManager` and `SystemManager` to handle the new enum types, including safe `static_cast` for logging and registry comparisons.

@@ -29,6 +29,7 @@
 #define WIFI_MANAGER_HPP
 
 #include <Arduino.h>
+#include <memory>
 #include <iConfigurable.hpp>
 
 class DNSServer; // Forward declaration
@@ -58,7 +59,7 @@ private:
     unsigned long stateTimer = 0;
     int connectionRetries = 0;
 
-    DNSServer* dnsServer = nullptr;
+    std::unique_ptr<DNSServer> dnsServer;
 
     void loadWiFiConfig();
     void saveWiFiConfig();
@@ -66,6 +67,7 @@ private:
 
 public:
     WifiManager();
+    ~WifiManager();
 
     /**
      * @brief Initialize WiFi using LittleFS credentials. If it fails, spins up an Access Point and DNS hijacker.

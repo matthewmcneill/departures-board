@@ -16,7 +16,7 @@ Refactor the simplistic FIFO `dataWorker` queue into a highly intelligent, Prior
 ### Core Interface Contract (Abstraction)
 The foundational contract for all transit boards and clients fetching data.
 
-#### [MODIFY] `iDataSource.hpp` (file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/interfaces/iDataSource.hpp)
+#### [MODIFY] `iDataSource.hpp` (modules/displayManager/boards/interfaces/iDataSource.hpp)
 - Add pure virtual methods to expose scheduling intelligence to the manager:
   - `virtual uint32_t getNextFetchTime() = 0;`
   - `virtual uint8_t getPriorityTier() = 0;`
@@ -28,8 +28,8 @@ The foundational contract for all transit boards and clients fetching data.
 Replaces the naive FreeRTOS queue with a dynamic, time-aware scheduler.
 
 #### [DELETE] `modules/dataWorker/` (entire directory)
-#### [NEW] `modules/dataManager/dataManager.hpp` (file:///Users/mcneillm/Documents/Projects/departures-board/modules/dataManager/dataManager.hpp)
-#### [NEW] `modules/dataManager/dataManager.cpp` (file:///Users/mcneillm/Documents/Projects/departures-board/modules/dataManager/dataManager.cpp)
+#### [NEW] `modules/dataManager/dataManager.hpp` (modules/dataManager/dataManager.hpp)
+#### [NEW] `modules/dataManager/dataManager.cpp` (modules/dataManager/dataManager.cpp)
 - **Class `dataManager`**:
   - Contains a `std::vector<iDataSource*> registry`.
   - Holds a `QueueHandle_t priorityEventQueue` (size 5) for Tier 0/1 waking interrupts.
@@ -44,14 +44,14 @@ Replaces the naive FreeRTOS queue with a dynamic, time-aware scheduler.
 ### Implementations (Data Sources)
 Update all concrete sources to parse their API schedules and return precise sleep intervals.
 
-#### [MODIFY] `NationalRailDataSource.cpp` / `.hpp` (file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
+#### [MODIFY] `NationalRailDataSource.cpp` / `.hpp` (modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
 - Implement `getNextFetchTime()` targeting e.g. "10 seconds after the `std` (scheduled time) of the soonest boarding train", with a hard floor of 30 seconds (`BASELINE_MIN_INTERVAL`).
 - Implement `getPriorityTier()`: Return `1` (High) if the UI's internal `rdService` structure is empty AND the board asserts it is actively visible. Otherwise return `2` (Active) or `3` (Background).
 
-#### [MODIFY] `tflDataSource.cpp` / `.hpp` (file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.hpp)
+#### [MODIFY] `tflDataSource.cpp` / `.hpp` (modules/displayManager/boards/tflBoard/tflDataSource.hpp)
 - Similar intelligent polling based on the soonest Tube arrival string (e.g., parsing "3 mins").
 
-#### [MODIFY] `weatherClient.cpp` / `.hpp` (file:///Users/mcneillm/Documents/Projects/departures-board/modules/weatherClient/weatherClient.hpp)
+#### [MODIFY] `weatherClient.cpp` / `.hpp` (modules/weatherClient/weatherClient.hpp)
 - Refactor to implement `iDataSource` if it doesn't already, so it can enter the `dataManager` registry and be fetched safely on Core 0.
 
 ---
@@ -59,7 +59,7 @@ Update all concrete sources to parse their API schedules and return precise slee
 ### Orchestration Updates
 Point the engine to the new manager.
 
-#### [MODIFY] `appContext.hpp` / `.cpp` (file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.hpp)
+#### [MODIFY] `appContext.hpp` / `.cpp` (modules/appContext/appContext.hpp)
 - Remove `dataWorker` references.
 - Create singletons/initialization for `dataManager` and strictly enforce that all networks (Weather, Feeds, Rail) reference `appContext.getDataManager()`.
 

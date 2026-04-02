@@ -34,6 +34,13 @@ AsyncWebServer server(80);
 WebServerManager webServer;
 File fsUploadFile;
 
+WebServerManager::WebServerManager() : _handlerManager(nullptr) {
+}
+
+WebServerManager::~WebServerManager() {
+    // std::unique_ptr automatically handles deallocation of _handlerManager
+}
+
 /**
  * @brief Initializes the web server and binds all application endpoints.
  */
@@ -43,7 +50,7 @@ void WebServerManager::init() {
 
   // Initialize and register new portal handlers
   _handlerManager =
-      new WebHandlerManager(server, appContext.getConfigManager());
+      std::make_unique<WebHandlerManager>(server, appContext.getConfigManager());
   _handlerManager->begin();
 
   server.begin();

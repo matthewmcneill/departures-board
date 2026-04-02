@@ -4,20 +4,20 @@ The "bustimes.org" button in the API Key selector is being removed because it do
 
 ## Proposed Changes
 
-### Web Portal [portal](file:///Users/mcneillm/Documents/Projects/departures-board/portal)
+### Web Portal [portal](portal)
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - Remove the `type-card` element for "bustimes.org" (approx line 1105-1115).
 - Remove the `bus` entry from the `PROVIDER_LOGOS` constant (approx line 1196).
 
-### Web Tests [test/web/tests](file:///Users/mcneillm/Documents/Projects/departures-board/test/web/tests)
+### Web Tests [test/web/tests](test/web/tests)
 
-#### [MODIFY] [portal.spec.ts](file:///Users/mcneillm/Documents/Projects/departures-board/test/web/tests/portal.spec.ts)
+#### [MODIFY] [portal.spec.ts](test/web/tests/portal.spec.ts)
 - Update the expected logo count in the key type picker from 4 to 3 (line 205).
 
-### Build Scripts [scripts](file:///Users/mcneillm/Documents/Projects/departures-board/scripts)
+### Build Scripts [scripts](scripts)
 
-#### [MODIFY] [portalAssets.h](file:///Users/mcneillm/Documents/Projects/departures-board/include/webServer/portalAssets.h)
+#### [MODIFY] [portalAssets.h](include/webServer/portalAssets.h)
 - This file will be automatically updated by running the `portalBuilder.py` script.
 
 ---

@@ -83,13 +83,13 @@ A dedicated section for version tracking and updates:
 ## 3. Proposed Changes
 
 ### Backend: System & Status API
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - Enhance `/api/status` to return dynamic keys (omit if unsupported):
   - `total_heap`, `cpu_0`, `cpu_1`, `temp`, `storage_total`, `storage_used`.
 - Update config save/load for new global settings.
 
 ### Frontend: Web Portal UI
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - **Structure**: Move Global Settings to the top.
 - **Logic**: 
   - Render hardware bars dynamically based on API response.

@@ -20,6 +20,7 @@
 class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
+#include <memory>
 #include "../../widgets/imageWidget.hpp"
 #include "../../widgets/progressBarWidget.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
@@ -33,7 +34,7 @@ class SplashBoard : public iDisplayBoard {
 private:
     appContext* context;
     char noticeMessage[64];
-    imageWidget* splashLogo;
+    std::unique_ptr<imageWidget> splashLogo;
     WeatherStatus weatherStatus;
 
 protected:
