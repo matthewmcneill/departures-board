@@ -39,7 +39,7 @@ private:
 
 protected:
     SplashBoard();
-    friend class DisplayManager;
+    friend class BoardFactory;
 
 public:
     const char* getBoardName() const override { return "SYS: Boot Splash"; }

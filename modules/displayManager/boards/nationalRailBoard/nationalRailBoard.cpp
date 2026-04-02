@@ -77,21 +77,7 @@ void NationalRailBoard::onActivate() {
   LOG_INFO("DISPLAY", "NR Board: onActivate() called.");
 
   // --- Step 1: Data Source Initialization ---
-  // Defer initialization if WiFi is not connected to avoid blocking the main
-  // thread during boot.
-  if (WiFi.status() == WL_CONNECTED) {
-    UpdateStatus status = dataSource.init("lite.realtime.nationalrail.co.uk",
-                                 "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
-    if (status != UpdateStatus::SUCCESS) {
-      LOG_WARN("DISPLAY", "NR Board: dataSource.init() failed with status: " +
-                              String(static_cast<uint8_t>(status)));
-    } else {
-      LOG_INFO("DISPLAY", "NR Board: dataSource.init() succeeded.");
-    }
-  } else {
-    LOG_INFO("DISPLAY",
-             "NR Board: WiFi not connected. Deferring dataSource.init().");
-  }
+  // (WSDL Initialization is delegated to DataManager on safe background thread)
 
   // --- Step 2: Configuration Injection ---
   dataSource.configure(nrToken, crsCode, platformFilter, callingCrsCode,
@@ -200,12 +186,7 @@ UpdateStatus NationalRailBoard::updateData() {
       return UpdateStatus::DATA_ERROR; // Unconfigured
     }
 
-    // Deferred init if WiFi joined late
-    if (WiFi.status() == WL_CONNECTED && !dataSource.isInitialized()) {
-      LOG_INFO("DISPLAY", "NR Board: Performing deferred dataSource.init()...");
-      dataSource.init("lite.realtime.nationalrail.co.uk",
-                      "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
-    }
+    // (WSDL Initialization is handled safely inside the Data Source)
 
     // --- Step 3: Initiation ---
     LOG_INFO("DISPLAY", "NR Board: Starting data update...");

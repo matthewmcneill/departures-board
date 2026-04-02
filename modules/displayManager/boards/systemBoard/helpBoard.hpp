@@ -35,7 +35,7 @@ private:
 
 protected:
     HelpBoard();
-    friend class DisplayManager;
+    friend class BoardFactory;
 
 public:
     const char* getBoardName() const override { return "SYS: Setup Help"; }

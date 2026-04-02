@@ -44,19 +44,11 @@ class appContext;
 #include <U8g2lib.h>
 #include <variant>
 #include "iConfigurable.hpp"
-#include <boards/nationalRailBoard/nationalRailBoard.hpp>
-#include <boards/tflBoard/tflBoard.hpp>
-#include <boards/busBoard/busBoard.hpp>
-#include <boards/systemBoard/diagnosticBoard.hpp>
-#include <boards/systemBoard/splashBoard.hpp>
-#include <boards/systemBoard/loadingBoard.hpp>
-#include <boards/systemBoard/wizardBoard.hpp>
-#include <boards/systemBoard/helpBoard.hpp>
-#include <boards/systemBoard/messageBoard.hpp>
-#include <boards/systemBoard/firmwareUpdateBoard.hpp>
-#include <boards/systemBoard/sleepingBoard.hpp>
+#include "boards/interfaces/iDisplayBoard.hpp"
 #include <widgets/wifiStatusWidget.hpp>
 #include <messaging/messagePool.hpp>
+
+#include "departuresBoard.hpp"
 
 #include "departuresBoard.hpp"
 
@@ -90,27 +82,21 @@ enum class SystemBoardId {
     SYS_DIAGNOSTIC       // Hardware calibration grid
 };
 
-/**
- * @brief Type-safe union overlay spanning the maximum memory footprint 
- *        of any hardware Board class implementation.
- */
-using BoardVariant = std::variant<std::monostate, NationalRailBoard, TfLBoard, BusBoard, SleepingBoard, DiagnosticBoard>;
-
 class DisplayManager : public iConfigurable {
 private:
     U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2; ///< Concrete hardware display driver instance
-    BoardVariant slots[MAX_BOARDS]; // Memory pool for statically allocated boards
+    iDisplayBoard* slots[MAX_BOARDS]; // Memory pool for heap allocated boards
     int activeSlotIndex;           // Currently selected slot in the pool (0 to MAX_BOARDS-1)
 
     // System Boards Memory
-    SplashBoard splashBoard;
-    LoadingBoard loadingBoard;
-    WizardBoard wizardBoard;
-    HelpBoard helpBoard;
-    MessageBoard messageBoard;
-    FirmwareUpdateBoard firmwareUpdateBoard;
-    SleepingBoard sleepingBoard;
-    DiagnosticBoard diagnosticBoard;
+    iDisplayBoard* splashBoard;
+    iDisplayBoard* loadingBoard;
+    iDisplayBoard* wizardBoard;
+    iDisplayBoard* helpBoard;
+    iDisplayBoard* messageBoard;
+    iDisplayBoard* firmwareUpdateBoard;
+    iDisplayBoard* sleepingBoard;
+    iDisplayBoard* diagnosticBoard;
     
     wifiStatusWidget wifiWarning;
     appContext* context; ///< Reference to parent context for DI
@@ -328,11 +314,11 @@ public:
      * @brief Obtain the specific Board object stored in a slot.
      */
     /**
-     * @brief Retrieve the raw BoardVariant pointer for a specific slot.
+     * @brief Retrieve the board pointer for a specific slot.
      * @param slotIndex Index (0 to MAX_BOARDS-1).
-     * @return BoardVariant* Pointer to the variant storage.
+     * @return iDisplayBoard** Pointer to the struct storage.
      */
-    BoardVariant* getSlot(int slotIndex);
+    iDisplayBoard** getSlot(int slotIndex);
 
     /**
      * @brief Retrieve the board implementation from a specific slot.

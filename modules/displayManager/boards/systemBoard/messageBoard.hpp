@@ -41,7 +41,7 @@ private:
 
 protected:
     MessageBoard();
-    friend class DisplayManager;
+    friend class BoardFactory;
     friend class FirmwareUpdateBoard;
 
 public:

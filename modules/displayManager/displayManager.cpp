@@ -37,10 +37,21 @@
 #include <algorithm>
 #include <rssClient.hpp>
 #include <otaUpdater.hpp>
-#include <boards/systemBoard/sleepingBoard.hpp>
 #include "configManager.hpp"
 #include <appContext.hpp>
 #include "buildTime.hpp"
+#include "boardFactory.hpp"
+
+// We must include Board specialized headers internally within the cpp only when absolutely needed to invoke methods that the generic iDisplayBoard does not have (like setHeading).
+#include "boards/systemBoard/sleepingBoard.hpp"
+#include "boards/systemBoard/splashBoard.hpp"
+#include "boards/systemBoard/loadingBoard.hpp"
+#include "boards/systemBoard/wizardBoard.hpp"
+#include "boards/systemBoard/helpBoard.hpp"
+#include "boards/systemBoard/messageBoard.hpp"
+#include "boards/nationalRailBoard/nationalRailBoard.hpp"
+#include "boards/tflBoard/tflBoard.hpp"
+#include "boards/busBoard/busBoard.hpp"
 
 // DisplayManager singleton will be owned by appContext
 
@@ -74,10 +85,16 @@ void DisplayManager::setForcedSleep(bool active) { forcedSleep = active; }
  */
 DisplayManager::DisplayManager() 
     : u8g2(U8G2_R0, /* cs=*/ DISPLAY_CS_PIN, /* dc=*/ DISPLAY_DC_PIN, /* reset=*/ U8X8_PIN_NONE),
-      activeSlotIndex(0), brightness(20), flipScreen(false), 
+      activeSlotIndex(0), 
+      splashBoard(nullptr), loadingBoard(nullptr), wizardBoard(nullptr), helpBoard(nullptr), 
+      messageBoard(nullptr), firmwareUpdateBoard(nullptr), sleepingBoard(nullptr), diagnosticBoard(nullptr),
+      brightness(20), flipScreen(false), 
       sleepEnabled(false), sleepStarts(23), sleepEnds(8), 
       currentBoard(nullptr), lastActivity(0), forcedSleep(false),
       wifiWarning(0, 56) {
+    for (int i = 0; i < MAX_BOARDS; i++) {
+        slots[i] = nullptr;
+    }
 }
 
 /**
@@ -87,15 +104,24 @@ DisplayManager::DisplayManager()
 void DisplayManager::begin(appContext* contextPtr) {
     context = contextPtr;
     
+    // Dynamically allocate essential system boards
+    splashBoard = BoardFactory::createSystemBoard(static_cast<int>(SystemBoardId::SYS_BOOT_SPLASH), context);
+    loadingBoard = BoardFactory::createSystemBoard(static_cast<int>(SystemBoardId::SYS_BOOT_LOADING), context);
+    wizardBoard = BoardFactory::createSystemBoard(static_cast<int>(SystemBoardId::SYS_WIFI_WIZARD), context);
+    helpBoard = BoardFactory::createSystemBoard(static_cast<int>(SystemBoardId::SYS_SETUP_HELP), context);
+    messageBoard = BoardFactory::createSystemBoard(static_cast<int>(SystemBoardId::SYS_ERROR_NO_DATA), context);
+    firmwareUpdateBoard = BoardFactory::createSystemBoard(static_cast<int>(SystemBoardId::SYS_FIRMWARE_UPDATE), context);
+    sleepingBoard = BoardFactory::createSystemBoard(static_cast<int>(SystemBoardId::SYS_SLEEP_CLOCK), context);
+    diagnosticBoard = BoardFactory::createSystemBoard(static_cast<int>(SystemBoardId::SYS_DIAGNOSTIC), context);
+
     // Initialize system boards with context
-    splashBoard.init(context);
-    loadingBoard.init(context);
-    wizardBoard.init(context);
-    helpBoard.init(context);
-    messageBoard.init(context);
-    firmwareUpdateBoard.init(context);
-    sleepingBoard.init(context);
-    diagnosticBoard.init(context);
+    if(splashBoard) ((SplashBoard*)splashBoard)->init(context);
+    if(loadingBoard) ((LoadingBoard*)loadingBoard)->init(context);
+    if(wizardBoard) ((WizardBoard*)wizardBoard)->init(context);
+    if(helpBoard) ((HelpBoard*)helpBoard)->init(context);
+    if(messageBoard) ((MessageBoard*)messageBoard)->init(context);
+    // FirmwareUpdateBoard, SleepingBoard, DiagnosticBoard use constructors or don't need init called this way
+    
 
     u8g2.begin();
     u8g2.setDrawColor(1);
@@ -104,7 +130,7 @@ void DisplayManager::begin(appContext* contextPtr) {
     u8g2.setFontPosTop();
     u8g2.setFont(NatRailTall12);
     
-    showBoard(&splashBoard, "DisplayManager::begin() Hardware Initialization");
+    if (splashBoard) showBoard(splashBoard, "DisplayManager::begin() Hardware Initialization");
     
     lastActivity = millis();
 }
@@ -120,7 +146,7 @@ void DisplayManager::tick(unsigned long currentMillis) {
     bool shouldSnooze = isSnoozing();
     iDisplayBoard* sleepBoard = getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
 
-    if (shouldSnooze && currentBoard != sleepBoard) {
+    if (shouldSnooze && currentBoard != sleepBoard && sleepBoard != nullptr) {
         // Transition TO Sleep: Dim the OLED and swap active board to the clock.
         showBoard(sleepBoard, "Screensaver sleep schedule triggered");
         u8g2.setContrast(((SleepingBoard*)sleepBoard)->getDimmedBrightness());
@@ -180,8 +206,8 @@ void DisplayManager::tick(unsigned long currentMillis) {
 void DisplayManager::setDiagMode(bool active) {
     if (diagModeActive != active) {
         diagModeActive = active;
-        if (diagModeActive) {
-            showBoard(&diagnosticBoard, "Diagnostic Mode Activated (Volatile)");
+        if (diagModeActive && diagnosticBoard) {
+            showBoard(diagnosticBoard, "Diagnostic Mode Activated (Volatile)");
         } else {
             // Restore current carousel slot
             showBoard(getDisplayBoard(activeSlotIndex), "Diagnostic Mode Deactivated");
@@ -288,51 +314,53 @@ void DisplayManager::setBrightness(int level) {
 iDisplayBoard* DisplayManager::getSystemBoard(SystemBoardId id) {
     switch (id) {
         case SystemBoardId::SYS_BOOT_SPLASH:
-            return &splashBoard;
+            return splashBoard;
         case SystemBoardId::SYS_BOOT_LOADING:
-            loadingBoard.setHeading("Departures Board");
+            if (loadingBoard) {
+                ((LoadingBoard*)loadingBoard)->setHeading("Departures Board");
 #ifdef BUILD_TIME
-            loadingBoard.setBuildTime(BUILD_TIME);
+                ((LoadingBoard*)loadingBoard)->setBuildTime(BUILD_TIME);
 #else
-            loadingBoard.setBuildTime(String(__DATE__ " " __TIME__).c_str());
+                ((LoadingBoard*)loadingBoard)->setBuildTime(String(__DATE__ " " __TIME__).c_str());
 #endif
-            return &loadingBoard;
+            }
+            return loadingBoard;
         case SystemBoardId::SYS_WIFI_WIZARD:
-            wizardBoard.setWizardIp(WiFi.softAPIP());
-            return &wizardBoard;
+            if (wizardBoard) ((WizardBoard*)wizardBoard)->setWizardIp(WiFi.softAPIP());
+            return wizardBoard;
         case SystemBoardId::SYS_SETUP_HELP: {
             char ipStr[32];
             snprintf(ipStr, sizeof(ipStr), "Browse: http://%s", WiFi.localIP().toString().c_str());
             const char* lines[] = {
                 "To configure this display,", "connect to the same WiFi", "and navigate to:", ipStr, "Settings -> Displays"
             };
-            helpBoard.setHelpContent("Setup Guide", lines, 5);
-            return &helpBoard;
+            if (helpBoard) ((HelpBoard*)helpBoard)->setHelpContent("Setup Guide", lines, 5);
+            return helpBoard;
         }
         case SystemBoardId::SYS_ERROR_NO_DATA:
-            messageBoard.setContent("** COMMS ERROR **", "NO DEPARTURE DATA", "UNABLE TO GET DATA FOR", "STATION.");
-            return &messageBoard;
+            if (messageBoard) ((MessageBoard*)messageBoard)->setContent("** COMMS ERROR **", "NO DEPARTURE DATA", "UNABLE TO GET DATA FOR", "STATION.");
+            return messageBoard;
         case SystemBoardId::SYS_ERROR_WSDL:
-            messageBoard.setContent("** WSDL ERROR **", "FAILED TO INIT API", "CANNOT CONTACT NATIONAL", "RAIL SERVERS.");
-            return &messageBoard;
+            if (messageBoard) ((MessageBoard*)messageBoard)->setContent("** WSDL ERROR **", "FAILED TO INIT API", "CANNOT CONTACT NATIONAL", "RAIL SERVERS.");
+            return messageBoard;
         case SystemBoardId::SYS_ERROR_TOKEN:
-            messageBoard.setContent("** AUTHORISATION **", "INVALID API KEY", "CHECK YOUR TOKEN AND", "TFL CREDENTIALS VIA", "THE WEB SETUP WIZARD.");
-            return &messageBoard;
+            if (messageBoard) ((MessageBoard*)messageBoard)->setContent("** AUTHORISATION **", "INVALID API KEY", "CHECK YOUR TOKEN AND", "TFL CREDENTIALS VIA", "THE WEB SETUP WIZARD.");
+            return messageBoard;
         case SystemBoardId::SYS_ERROR_CRS:
-            messageBoard.setContent("** STATION ERROR **", "INVALID CRS/NAPTAN", "STATION CODE NOT", "RECOGNISED BY API.");
-            return &messageBoard;
+            if (messageBoard) ((MessageBoard*)messageBoard)->setContent("** STATION ERROR **", "INVALID CRS/NAPTAN", "STATION CODE NOT", "RECOGNISED BY API.");
+            return messageBoard;
         case SystemBoardId::SYS_FIRMWARE_UPDATE:
-            return &firmwareUpdateBoard;
+            return firmwareUpdateBoard;
         case SystemBoardId::SYS_SLEEP_CLOCK:
-            return &sleepingBoard;
+            return sleepingBoard;
         case SystemBoardId::SYS_ERROR_WIFI: {
             char ipStr[32];
             snprintf(ipStr, sizeof(ipStr), "RETRY: http://%s", WiFi.localIP().toString().c_str());
-            messageBoard.setContent("** WIFI ERROR **", "CONNECTION LOST", ipStr, "CHECK YOUR ROUTER.");
-            return &messageBoard;
+            if (messageBoard) ((MessageBoard*)messageBoard)->setContent("** WIFI ERROR **", "CONNECTION LOST", ipStr, "CHECK YOUR ROUTER.");
+            return messageBoard;
         }
         case SystemBoardId::SYS_DIAGNOSTIC:
-            return &diagnosticBoard;
+            return diagnosticBoard;
         default:
             return nullptr;
     }
@@ -416,27 +444,23 @@ bool DisplayManager::isSnoozing() {
  */
 iDisplayBoard* DisplayManager::getDisplayBoard(int slotIndex) {
     if (slotIndex < 0 || slotIndex >= MAX_BOARDS) return nullptr;
-    
-    if (std::holds_alternative<NationalRailBoard>(slots[slotIndex])) {
-        return &std::get<NationalRailBoard>(slots[slotIndex]);
-    } else if (std::holds_alternative<TfLBoard>(slots[slotIndex])) {
-        return &std::get<TfLBoard>(slots[slotIndex]);
-    } else if (std::holds_alternative<BusBoard>(slots[slotIndex])) {
-        return &std::get<BusBoard>(slots[slotIndex]);
-    } else if (std::holds_alternative<SleepingBoard>(slots[slotIndex])) {
-        return &std::get<SleepingBoard>(slots[slotIndex]);
-    } else if (std::holds_alternative<DiagnosticBoard>(slots[slotIndex])) {
-        return &std::get<DiagnosticBoard>(slots[slotIndex]);
-    }
-    return nullptr; 
+    return slots[slotIndex]; 
 }
 
 BoardType DisplayManager::getActiveBoardType() {
-    if (std::holds_alternative<NationalRailBoard>(slots[activeSlotIndex])) return BoardType::NR_BOARD;
-    if (std::holds_alternative<TfLBoard>(slots[activeSlotIndex])) return BoardType::TFL_BOARD;
-    if (std::holds_alternative<BusBoard>(slots[activeSlotIndex])) return BoardType::BUS_BOARD;
-    if (std::holds_alternative<SleepingBoard>(slots[activeSlotIndex])) return BoardType::CLOCK_BOARD;
-    if (std::holds_alternative<DiagnosticBoard>(slots[activeSlotIndex])) return BoardType::DIAGNOSTIC_BOARD;
+    iDisplayBoard* current = slots[activeSlotIndex];
+    if (current == nullptr) return BoardType::NR_BOARD;
+    
+    // We can infer type by RTTI or string matching, but for now we look at the name
+    // as dynamic_cast is disabled on our embedded platform due to -fno-rtti
+    const char* boardName = current->getBoardName();
+    
+    if (strstr(boardName, "National Rail") != nullptr) return BoardType::NR_BOARD;
+    if (strstr(boardName, "TfL Board") != nullptr) return BoardType::TFL_BOARD;
+    if (strstr(boardName, "Bus Board") != nullptr) return BoardType::BUS_BOARD;
+    if (strstr(boardName, "Sleep Clock") != nullptr) return BoardType::CLOCK_BOARD;
+    if (strstr(boardName, "Diagnostics") != nullptr) return BoardType::DIAGNOSTIC_BOARD;
+
     return BoardType::NR_BOARD;
 }
 
@@ -447,20 +471,22 @@ BoardType DisplayManager::getActiveBoardType() {
  */
 void DisplayManager::setBoardType(int slotIndex, BoardType type) {
     if (slotIndex < 0 || slotIndex >= MAX_BOARDS) return;
-    switch (type) {
-        case BoardType::NR_BOARD: slots[slotIndex].emplace<NationalRailBoard>(context); break;
-        case BoardType::TFL_BOARD: slots[slotIndex].emplace<TfLBoard>(context); break;
-        case BoardType::BUS_BOARD: slots[slotIndex].emplace<BusBoard>(context); break;
-        case BoardType::CLOCK_BOARD: slots[slotIndex].emplace<SleepingBoard>(context); break;
-        case BoardType::DIAGNOSTIC_BOARD: slots[slotIndex].emplace<DiagnosticBoard>(context); break;
-    }
+    
+    clearSlot(slotIndex); // Clean up any existing board before making a new one
+    
+    slots[slotIndex] = BoardFactory::createDisplayBoard(static_cast<int>(type), context);
 }
 
 void DisplayManager::clearSlot(int slotIndex) {
-    if (slotIndex >= 0 && slotIndex < MAX_BOARDS) slots[slotIndex] = std::monostate{};
+    if (slotIndex >= 0 && slotIndex < MAX_BOARDS) {
+        if (slots[slotIndex] != nullptr) {
+            delete slots[slotIndex];
+            slots[slotIndex] = nullptr;
+        }
+    }
 }
 
-BoardVariant* DisplayManager::getSlot(int slotIndex) {
+iDisplayBoard** DisplayManager::getSlot(int slotIndex) {
     if (slotIndex >= 0 && slotIndex < MAX_BOARDS) return &slots[slotIndex];
     return nullptr;
 }
@@ -471,7 +497,7 @@ BoardVariant* DisplayManager::getSlot(int slotIndex) {
  */
 void DisplayManager::clearSlots() {
     for (int i = 0; i < MAX_BOARDS; i++) {
-        slots[i].emplace<std::monostate>();
+        clearSlot(i);
     }
 }
 
@@ -482,7 +508,7 @@ void DisplayManager::clearSlots() {
  */
 iDisplayBoard* DisplayManager::addBoard(BoardType type) {
     for (int i = 0; i < MAX_BOARDS; i++) {
-        if (std::holds_alternative<std::monostate>(slots[i])) {
+        if (slots[i] == nullptr) {
             setBoardType(i, type);
             return getDisplayBoard(i);
         }
@@ -580,12 +606,12 @@ void DisplayManager::applyConfig(const Config& config) {
     
     // Sync extra attributes to specialized system boards
     SleepingBoard* sb = (SleepingBoard*)getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
-    sb->setShowClock(config.showClockInSleep);
+    if(sb) sb->setShowClock(config.showClockInSleep);
     
     // Scan config for the first Screensaver board and use its OLED-off setting for the system sleep screen
     for (int i = 0; i < config.boardCount; i++) {
         if (config.boards[i].type == MODE_CLOCK) {
-            sb->setOledOff(config.boards[i].oledOff);
+            if(sb) sb->setOledOff(config.boards[i].oledOff);
             break;
         }
     }
@@ -654,7 +680,7 @@ void DisplayManager::applyConfig(const Config& config) {
         if (previousBoard != nullptr) {
             showBoard(previousBoard, "Context Restore: Reverting to previous slot");
         } else {
-            showBoard(&splashBoard, "Context Restore fallback: No boards left in carousel");
+            showBoard(splashBoard, "Context Restore fallback: No boards left in carousel");
         }
     } else if (previousBoard != getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK)) {
         // Use defaultBoardIndex if valid, otherwise fallback to first available board

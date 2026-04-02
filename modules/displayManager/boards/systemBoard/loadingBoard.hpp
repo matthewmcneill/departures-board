@@ -48,7 +48,7 @@ private:
     
 protected:
     LoadingBoard();
-    friend class DisplayManager;
+    friend class BoardFactory;
     friend class FirmwareUpdateBoard;
 
 public:

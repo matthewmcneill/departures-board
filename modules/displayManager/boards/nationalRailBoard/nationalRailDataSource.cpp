@@ -131,6 +131,18 @@ PriorityTier nationalRailDataSource::getPriorityTier() {
  */
 void nationalRailDataSource::executeFetch() {
     LOG_INFO("DATA", "NR Source: executeFetch() entry. Free heap: " + String(ESP.getFreeHeap()));
+    
+    // --- Self-Initialization ---
+    if (!isInitialized()) {
+        LOG_INFO("DATA", "NR Source: Data source uninitialized. Running deferred init on background task...");
+        UpdateStatus initStatus = init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
+        if (initStatus != UpdateStatus::SUCCESS) {
+            LOG_ERROR("DATA", "NR Source: Background initialization failed.");
+            taskStatus = initStatus;
+            return;
+        }
+    }
+
     unsigned long perfTimer = millis();
     bool bChunked = false;
     lastErrorMessage[0] = '\0';

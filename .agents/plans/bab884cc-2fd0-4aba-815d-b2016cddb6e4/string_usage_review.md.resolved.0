@@ -1,0 +1,64 @@
+# Arduino String Usage Review & Evaluation
+
+## Overview
+The `departures-board` firmware makes extensive use of the Arduino `String` class for logging, networking, JSON parsing, and web interface management. While convenient, `String` usage in embedded systems presents a risk of **heap fragmentation**, which can lead to unpredictable crashes during long-term operation.
+
+## Analysis by Category
+
+### 1. Logging System (High Frequency)
+The `Logger` library and almost all modules use `String` extensively for logging.
+- **Current Pattern**: `LOG_INFO("TAG", "Message: " + String(value) + " units");`
+- **Impact**: Every log line with concatenation triggers multiple heap allocations and deallocations.
+- **Evaluation**: This is the most significant source of heap churn.
+
+### 2. Networking & API Clients (Medium Frequency)
+`weatherClient`, `busDataSource`, `rssClient`, and `githubClient` use `String` for:
+- Building GET/POST request strings.
+- Storing API tokens, URLs, and status messages.
+- Parsing JSON via SAX-style callbacks (`key(String)`, `value(String)`).
+- **Impact**: Temporary fragmentation during data fetch cycles. The SAX callbacks generate many short-lived strings.
+
+### 3. Web Server & Portal (Low Frequency, High Volume)
+`webHandlerManager` handles complex JSON payloads and configuration.
+- **Current Pattern**: Reading entire POST bodies into `String`, serializing large JSON responses to `String`.
+- **Impact**: Burst of high memory usage. Large payloads (e.g., full configuration saves) may fail if the heap is fragmented.
+
+### 4. Configuration & Metadata (Static)
+- **Examples**: `timezone`, `buildTime`.
+- **Impact**: Negligible. These are typically allocated once or updated rarely.
+
+---
+
+## Risk Assessment
+
+| Risk Level | Impact | Locations | Recommendation |
+| :--- | :--- | :--- | :--- |
+| **CRITICAL** | Heap Churn / Fragmentation | `Logger`, Module Log Calls | Refactor to allow `const char*` and formatted output. |
+| **HIGH** | Out-of-Memory (Large Payloads) | `webHandlerManager` | Use `AsyncJsonResponse` or stream-based serialization. |
+| **MEDIUM** | Temporary Fragmentation | API Clients (Request building) | Use `snprintf` with fixed buffers or stack-allocated strings. |
+| **LOW** | Minor Overhead | Config, Build Metadata | Leave as-is (Pragmatic). |
+
+---
+
+## Pragmatic Recommendations
+
+### Phase 1: Logging Optimization (Short Term)
+- Stop using `+` concatenation in log calls.
+- Update `Logger` to provide a `printf`-style method: `LOG_INFOf("TAG", "Value: %d", value);`.
+- Use `const char*` or `std::string_view` for log messages where possible.
+
+### Phase 2: API Client Hardening (Medium Term)
+- Replace `String` concatenation in request builders with `snprintf` into a stack buffer (typically < 256 bytes for a URL).
+- Refactor SAX JSON callbacks to use `std::string_view` or `const char*` if the underlying parser (like `ArduinoJson`) supports it.
+
+### Phase 3: Web Server Streamlining (Long Term)
+- Move away from `String` for large JSON payloads.
+- Use `ArduinoJson`'s ability to serialize directly to a hardware `Print` object or a buffered stream.
+
+---
+
+## Conclusion
+We should **not** attempt a 100% "String-free" codebase, as it would conflict with many established Arduino/ESP32 library interfaces. Instead, we should target the **concatenation-heavy** and **frequently-executing** areas (primarily Logging and API request building) to significantly improve long-term stability.
+
+> [!IMPORTANT]
+> The most immediate benefit will come from refactoring the `Logger` to eliminate the need for `String` objects in 90% of log calls.

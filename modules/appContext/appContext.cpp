@@ -32,7 +32,7 @@
 #include <buttonHandler.hpp>
 #include <logger.hpp>
 #include <wifiManager.hpp>
-
+#include <WiFi.h>
 
 
 

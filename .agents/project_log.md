@@ -654,3 +654,11 @@ Generated commit: 10e5e55
 **Summary**: Stripped redundant `#include` statements from `src/departuresBoard.cpp` and optimized the heartbeat telemetry loop to conditionally compile under `#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO`. Refactored `CORE_DEBUG_LEVEL` checks across the codebase to utilize a centralized declarative macro set (`APP_LOG_LEVEL_*`) inside `logger.hpp` for improved readability and strict separation from Arduino magic numbers. Validated with `pio run -e esp32dev` and `pio test`.
 **Archive**: N/A (Trivial Execution)
 **Commit**: [Captured in session git history]
+
+## Plan 8534e510-1464-4474-9be0-7210c3c339cc
+**Date**: 2026-04-02
+**Session**: b75d98e4-55f7-435b-a4a1-0210b6946b34
+**Action**: DisplayManager Factory Refactor
+**Summary**: Decoupled the DisplayManager from concrete board implementations by migrating to a dynamic heap-allocated Factory pattern (`BoardFactory`). Replaced static `std::variant` pools with single active `iDisplayBoard*` pointers to eliminate permanent static RAM consumption and prevent runtime heap fragmentation. Resolved cyclic and cascading dependency issues across the build system. Disentangled National Rail SOAP network intialization from the main UI thread by deferring WSDL discovery to the background FreeRTOS `DataManager` core. Validated stability natively via `pio run -e esp32dev`.
+**Archive**: [.agents/plans/done/8534e510-1464-4474-9be0-7210c3c339cc/](.agents/plans/done/8534e510-1464-4474-9be0-7210c3c339cc/)
+**Commit**: [Captured in session git history]

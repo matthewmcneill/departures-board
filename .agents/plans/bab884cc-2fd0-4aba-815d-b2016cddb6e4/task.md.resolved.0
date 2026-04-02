@@ -1,0 +1,9 @@
+- [x] Review codebase for `String` usage.
+- [x] Evaluate risks (heap fragmentation, stack waste, resilience).
+- [x] Categorize usage (Logging, API Clients, Web Server, Config).
+- [/] Draft Phase 1 implementation plan (Logging Optimization).
+- [ ] Implement `printf`-style formatting in `Logger` class.
+- [ ] Refactor `LOG_*` macros to avoid `String` concatenation.
+- [ ] Replace `String` concatenation in `weatherClient`.
+- [ ] Replace `String` concatenation in `busDataSource`.
+- [ ] Verify build and heap stability.

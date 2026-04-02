@@ -46,7 +46,7 @@ private:
 
 protected:
     FirmwareUpdateBoard();
-    friend class DisplayManager;
+    friend class BoardFactory;
 
 public:
     const char* getBoardName() const override { return "SYS: Firmware Update"; }
