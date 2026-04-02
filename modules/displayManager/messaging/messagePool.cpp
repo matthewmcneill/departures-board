@@ -9,6 +9,13 @@
  *
  * Module: modules/displayManager/messaging/messagePool.cpp
  * Description: Implementation of memory-efficient string message storage.
+ *
+ * Exported Functions/Classes:
+ * - MessagePool: [Class implementation]
+ *   - addMessage: Memory-safe message ingestion with capacity enforcement.
+ *   - getMessage: Safe index-based accessor.
+ *   - getCount: Reports current queue depth.
+ *   - clear: Complete cache purge/resource recovery.
  */
 
 #include "messagePool.hpp"

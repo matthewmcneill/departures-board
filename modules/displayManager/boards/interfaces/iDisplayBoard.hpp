@@ -8,22 +8,20 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/interfaces/iDisplayBoard.hpp
- * Description: Core abstract interface for all display boards (screens). 
- *              Follows the State Pattern for UI lifecycle (Activate/Deactivate), 
- *              Logic (Tick), and Drawing (Render). Acts as the bridge between 
- *              DisplayManager and board-specific implementations.
+ * Description: Core abstract interface for all display boards (screens).
  *
  * Exported Functions/Classes:
- * - iDisplayBoard: Primary interface for displayable application models.
+ * - iDisplayBoard: [Interface] Primary class for displayable application models.
  *   - getBoardName(): Semantic identity for telemetry.
  *   - onActivate() / onDeactivate(): Lifecycle state transitions.
  *   - tick() / render(): Logic and drawing entry points.
  *   - updateData(): Explicit request to refresh backend data.
+ *   - getLastErrorMsg(): Accessor for source error strings.
+ *   - getLastUpdateStatus(): Retrieval of fetch result codes.
  *   - configure(): Provision settings from BoardConfig.
  *   - renderAnimationUpdate(): High-speed partial-frame updates.
- *   - getLastUpdateStatus(): Retrieval of fetch result codes.
- *   - getLastErrorMsg(): Accessor for source error strings.
  *   - getWeatherStatus(): Shared weather state accessor.
+ *   - isScrollFinished(): Pagination/scrolling completion check.
  */
 
 #ifndef I_DISPLAY_BOARD_HPP

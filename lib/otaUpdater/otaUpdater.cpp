@@ -11,9 +11,10 @@
  * Description: Implementation of firmware lifecycle and OTA update sequence.
  *
  * Exported Functions/Classes:
- * - otaUpdater: Lifecycle manager for firmware updates.
- * - isFirmwareUpdateAvailable(): Compares version strings.
- * - update_progress(): Callback for download progress.
+ * - otaUpdater: [Class implementation]
+ *   - tick: Main lifecycle check loop.
+ *   - checkForFirmwareUpdate: Executes the upgrade process.
+ *   - checkPostWebUpgrade: Syncs local filesystem resources after updates.
  */
 
 #include "otaUpdater.hpp"
@@ -57,6 +58,10 @@ void update_progress(int cur, int total) {
   }
 }
 
+/**
+ * @brief Semantic version comparison against latest GitHub release metadata.
+ * @return true if remote version is strictly newer than local build.
+ */
 bool isFirmwareUpdateAvailable() {
   int releaseMajor = ghUpdate.releaseId.substring(1,ghUpdate.releaseId.indexOf(".")).toInt();
   int releaseMinor = ghUpdate.releaseId.substring(ghUpdate.releaseId.indexOf(".")+1,ghUpdate.releaseId.indexOf("-")).toInt();
@@ -65,6 +70,11 @@ bool isFirmwareUpdateAvailable() {
   return true;
 }
 
+/**
+ * @brief Manual check and execution of the firmware update process.
+ * Downloads the binary from GitHub assets and performs a system reboot on success.
+ * @return true if the process was successfully initiated.
+ */
 bool otaUpdater::checkForFirmwareUpdate() {
   bool result = true;
   if (!isFirmwareUpdateAvailable()) return result;

@@ -8,17 +8,14 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/labelWidget.hpp
- * Description: A textual GUI component that inherits from iGfxWidget. 
- *              Provides a stateful character buffer and dynamically applies 
- *              text alignment and truncation heuristics. Uses annotations 
- *              for a drag-and-drop designer ecosystem.
+ * Description: Stateful text component with alignment and truncation.
  *
  * Exported Functions/Classes:
- * - labelWidget: Stateful text drawing label.
- *   - setText(): Updates internal string buffer.
- *   - setFont(): Assigns typography.
- *   - setAlignment(): Sets layout anchors.
- *   - setTruncated(): Toggles ellipse truncation logic.
+ * - labelWidget: [Class] Graphics widget for stateful text notifications.
+ *   - setText(): Assigns the display string buffer.
+ *   - setFont(): Assigns the typography for rendering.
+ *   - setAlignment(): Configures horizontal justification.
+ *   - render(): Paints the text to the display buffer.
  */
 #ifndef LABEL_WIDGET_HPP
 #define LABEL_WIDGET_HPP

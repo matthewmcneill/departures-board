@@ -4,70 +4,68 @@ Perform a comprehensive House Style Documentation pass across the `departures-bo
 
 ## User Review Required
 
-There are no breaking changes or critical logic modifications. This relies purely on commenting non-compliant variables and function declarations.
+There are no breaking changes or critical logic modifications. This relies purely on commenting non-compliant variables and function declarations and adding the missing `Exported Functions/Classes:` header block to relevant files.
+
+> [!NOTE]
+> Auto-generated files (e.g., `layout*.hpp/cpp`, `fonts.cpp/hpp`) are explicitly ignored in this pass as they are managed by build-time generator scripts.
 
 ## Proposed Changes
 
-### System Manager
-
-#### [MODIFY] [systemManager.hpp](modules/systemManager/systemManager.hpp)
-- Add same-line trailing comments to `std::function` variables (`onBootProgress`, `onSoftReset`).
-- Add Doxygen style `@brief`, `@param`, and `@return` comments for setter injection methods:
-  - `setBootProgressCallback`
-  - `setSoftResetCallback`
-  - `setInputDevice`
-- Add Doxygen style `@brief` comments for all data accessors and setters:
-  - `getWifiConnected`
-  - `setWifiConnected`
-  - `getFirstLoad`
-  - `setFirstLoad`
-  - `getStartupProgressPercent`
-  - `setStartupProgressPercent`
-  - `getNextRoundRobinUpdate`
-  - `setNextRoundRobinUpdate`
-  - `getLastDataLoadTime`
-  - `getDataLoadSuccess`
-  - `getDataLoadFailure`
-  - `getLastLoadFailure`
-  - `getLastUpdateResult`
-  - `getMyUrl`
-
----
-
-### Web Server
+### Core Managers & Services (Previously Defined)
 
 #### [MODIFY] [webServer.hpp](modules/webServer/webServer.hpp)
-- Add a same-line descriptive comment to the internal property `WebHandlerManager* _handlerManager`.
-- Add same-line descriptive comments to the exported external globals:
-  - `extern WebServerManager webServer;`
-  - `extern AsyncWebServer server;`
-- Add Doxygen style `@brief` and `@param` comments for the exported function:
-  - `void updateCurrentWeather(float latitude, float longitude);`
-
----
-
-### Config Manager
+- Add parameter docstrings and handler manager description.
+- Add missing `Exported Functions/Classes:` header block.
 
 #### [MODIFY] [configManager.hpp](modules/configManager/configManager.hpp)
-- Add same-line descriptions for properties of `ScheduleRule` struct (`startHour`, `startMinute`, `endHour`, `endMinute`).
-- Convert the malformed inline `@brief` doc for `reloadPending` to a standard same-line trailing comment.
-- Add Doxygen style `@brief` and `@return` comments for:
-  - `void requestReload()`
-  - `bool checkAndClearReload()`
-
----
-
-### Main Core
+- Fix reloadPending inline doc style and ScheduleRule comments.
+- Add brief and return to reload functions.
 
 #### [MODIFY] [departuresBoard.cpp](src/departuresBoard.cpp)
 - Add a same-line comment explanation on initialization of `appContext appContext;` 
 
 ---
 
+### Global Compliance Sweep (Missing 'Exported Functions/Classes:' header)
+
+The following files will be updated to include the missing `Exported Functions/Classes:` block in their module headers. For `.cpp` files, this will typically be marked as `None` (referencing the `.hpp` for exports) or listing internal classes/functions if they are local to the translation unit.
+
+#### [MODIFY] System Boards (modules/displayManager/boards/systemBoard/)
+- `firmwareUpdateBoard.cpp`
+- `loadingBoard.cpp`
+- `diagnosticBoard.cpp` & `diagnosticBoard.hpp`
+- `helpBoard.cpp`
+- `sleepingBoard.cpp`
+- `wizardBoard.cpp`
+- `splashBoard.cpp`
+- `messageBoard.cpp`
+
+#### [MODIFY] Widgets (modules/displayManager/widgets/)
+- `weatherWidget.cpp` & `weatherWidget.hpp`
+- `locationAndFiltersWidget.cpp`
+- `scrollingTextWidget.cpp`
+- `progressBarWidget.cpp`
+- `scrollingMessagePoolWidget.cpp`
+- `serviceListWidget.cpp`
+- `drawingPrimitives.cpp`
+- `systemMessageWidget.cpp`
+- `imageWidget.cpp`
+- `labelWidget.cpp`
+
+#### [MODIFY] Others
+- `modules/displayManager/boards/nationalRailBoard/iNationalRailLayout.cpp`
+- `modules/displayManager/messaging/messagePool.cpp`
+- `modules/dataManager/dataManager.cpp`
+- `modules/webServer/webServer.cpp`
+- `modules/webServer/portalAssets.cpp`
+
+---
+
 ## Verification Plan
 
 ### Automated Tests
-- Run PlatformIO build command to verify that no functional logic was broken and that the code compiles cleanly: `pio run -e esp32dev` (or fallback to relying on CI execution).
+- Run PlatformIO build command to verify that no functional logic was broken and that the code compiles cleanly: `pio run -e esp32dev`.
+- Re-run the compliance script `check_compliance.py` to ensure zero non-generated files remain on the list.
 
 ### Manual Verification
-- Review the diff generated across the four modified files to ensure comment format strictly aligns to the `@.agents/skills/house-style-docs/SKILL.md` template.
+- Review the diff generated across the modified files to ensure comment format strictly aligns to the `@.agents/skills/house-style-docs/SKILL.md` template.

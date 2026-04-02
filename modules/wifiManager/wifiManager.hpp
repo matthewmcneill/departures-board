@@ -11,20 +11,13 @@
  * Description: Wi-Fi credentials management and architecture-independent configuration logic.
  *
  * Exported Functions/Classes:
- * - WifiManager: Standard ESP32 WiFi lifecycle manager.
- *   - begin(): Connects to the primary station and initializes AP mode.
- *   - tick(): State machine for connection monitoring and retry logic.
- *   - isWifiPersistentError(): Checks if the network has been down for >10 mins.
- *   - updateMyUrl(): Generates the local access URL based on IP/MDNS.
- *   - reapplyConfig(): Responds to hostname configuration changes.
- *   - processDNS(): Intercepts captive portal DNS requests in AP mode.
- *   - updateWiFi(): Persists new WiFi credentials to LittleFS.
- *   - resetSettings(): Erases WiFi configuration and restores ESP WiFi state.
- *   - getAPMode(): Returns true if currently operating in Setup/AP Mode.
- *   - isReady(): Returns true if WiFi is ready (either STA connected or AP active).
- *   - getSSID(): Returns the current stored SSID.
- *   - hasPassword(): Returns true if a password is set.
- *   - testConnection(): Connects to standard AP momentarily to validate credentials.
+ * - WifiManager: [Class] Standard ESP32 WiFi lifecycle manager.
+ *   - begin(): Connects to station or initializes AP recovery mode.
+ *   - tick(): State machine for connection monitoring.
+ *   - isWifiPersistentError(): Heartbeat for connectivity health.
+ *   - updateWiFi(): Persists new credentials to non-volatile storage.
+ *   - resetSettings(): Factory reset for network configuration.
+ *   - testConnection(): Validation probe for new credentials.
  */
 
 #ifndef WIFI_MANAGER_HPP

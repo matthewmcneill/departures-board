@@ -8,16 +8,15 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp
- * Description: Implementation of National Rail data source ported from raildataXmlClient.
+ * Description: Implementation of National Rail data source.
  *
  * Exported Functions/Classes:
- * - nationalRailDataSource: Data client for Darwin (National Rail SOAP API).
- *   - init(): Initializes the WSDL parser and SSL handshake.
- *   - updateData(): High-level trigger for polling departure info.
- *   - getStationData(): Returns parsed station name and meta.
- *   - getMessagesData(): Accessor for rail disruption messages.
- *   - setSoapAddress(): Manually set SOAP endpoint (bypasses WSDL).
- *   - configure(): Set API token and station parameters.
+ * - nationalRailDataSource: [Class implementation]
+ *   - init() / refreshWsdl(): Discovery and endpoint management.
+ *   - updateData(): Initiates asynchronous SOAP fetch.
+ *   - executeFetch(): Internal synchronous SOAP pipeline (XML streaming).
+ *   - testConnection(): Validates station IDs and tokens.
+ *   - configure(): Sets API token and station parameters.
  */
 
 #include "nationalRailDataSource.hpp"
@@ -57,6 +56,14 @@ nationalRailDataSource::nationalRailDataSource()
     callingCrsCode[0] = '\0';
 }
 
+/**
+ * @brief Configure API credentials and station parameters.
+ * @param token OpenLDBWS access token.
+ * @param crs 3-letter station CRS code.
+ * @param filter Platform filter CSV string.
+ * @param callingCrs Destination station filter (optional).
+ * @param offset Minutes to offset results.
+ */
 void nationalRailDataSource::configure(const char* token, const char* crs, const char* filter, const char* callingCrs, int offset) {
     if (token) strlcpy(nrToken, token, sizeof(nrToken));
     if (crs) strlcpy(crsCode, crs, sizeof(crsCode));
@@ -66,6 +73,10 @@ void nationalRailDataSource::configure(const char* token, const char* crs, const
     filterPlatforms = (platformFilter[0] != '\0');
 }
 
+/**
+ * @brief Utility to sort services by scheduled time.
+ * Handles midnight rollover (e.g. 23:59 vs 00:05).
+ */
 bool nationalRailDataSource::compareTimes(const NationalRailService& a, const NationalRailService& b) {
     int h1, m1, h2, m2;
     sscanf(a.sTime, "%d:%d", &h1, &m1);
@@ -78,6 +89,11 @@ bool nationalRailDataSource::compareTimes(const NationalRailService& a, const Na
     return m1 < m2;
 }
 
+/**
+ * @brief Initialize the data source.
+ * Attempts to load cached endpoints from LittleFS; falls back to WSDL discovery.
+ * @return Success if endpoints are valid.
+ */
 UpdateStatus nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI) {
     
     // Attempt to load discovered SOAP endpoints from dedicated cache file
@@ -107,6 +123,10 @@ void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
     LOG_INFO("DATA", "NR Source: Soap address manually set to " + String(soapHost) + String(soapAPI) + " (Test Mode enabled)");
 }
 
+/**
+ * @brief Request an asynchronous data refresh from the DataManager.
+ * @return UpdateStatus::PENDING.
+ */
 UpdateStatus nationalRailDataSource::updateData() {
     if (taskStatus == UpdateStatus::PENDING) {
         return UpdateStatus::PENDING;

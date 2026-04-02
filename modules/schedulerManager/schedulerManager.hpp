@@ -9,15 +9,13 @@
  *
  * Module: modules/schedulerManager/schedulerManager.hpp
  * Description: Evaluates the system schedule rules against current time to 
- *              determine which display boards should be active. Handles manual 
- *              override button states and provides the source of truth for 
- *              active display contexts.
+ *              determine which display boards should be active.
  *
  * Exported Functions/Classes:
- * - schedulerManager: The core manager for time-based display scheduling.
- *   - begin(): Initializes the manager and logs the starting rules.
- *   - triggerManualOverride(): Wakes the system or overrides the schedule.
- *   - getActiveBoards(): Returns the current list of allowed board indices.
+ * - schedulerManager: [Class] Core manager for time-based display scheduling.
+ *   - begin(): Initializes manager state.
+ *   - triggerManualOverride(): Wakes system and resets idle timeout.
+ *   - getActiveBoards(): [Eval] Returns the effective list of allowed board indices.
  */
 
 #pragma once

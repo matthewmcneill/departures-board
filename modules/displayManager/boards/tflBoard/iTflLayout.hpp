@@ -8,10 +8,11 @@
  * Description: Interface defining the superset of widgets available to TfL layouts.
  *
  * Exported Functions/Classes:
- * - iTflLayout: Base class for TfL Tube layouts.
- *   - tick(uint32_t currentMillis): Periodic logic update.
- *   - render(U8G2& display): Full screen render.
- *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): High-speed animation pass.
+ * - iTflLayout: [Interface] Base class for TfL Tube layouts.
+ *   - iTflLayout(): Constructor with context injection.
+ *   - tick(): View-specific timing logic.
+ *   - render(): Full screen rendering.
+ *   - renderAnimationUpdate(): High-speed animation pass.
  */
 
 #pragma once

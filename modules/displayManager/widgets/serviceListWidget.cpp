@@ -10,6 +10,14 @@
  *
  * Module: modules/displayManager/widgets/serviceListWidget.cpp
  * Description: Implementation of tabular data rendering with pagination.
+ *
+ * Exported Functions/Classes:
+ * - serviceListWidget: [Class implementation]
+ *   - setColumns(): Defines the table layout (widths, alignments).
+ *   - setDataLimits(): Configures row slicing (skipping and capping).
+ *   - clearRows()/addRow(): Data ingestion lifecycle hooks.
+ *   - tick(): Automated pagination logic with page-reset animation.
+ *   - render(): Paints the visible row window with clipping support.
  */
 
 #include "serviceListWidget.hpp"
@@ -18,6 +26,14 @@
 
 /**
  * @brief Initialize the service list with default fonts and pagination state.
+ */
+/**
+ * @brief Initialize the service list widget.
+ * @param _x X coordinate.
+ * @param _y Y coordinate.
+ * @param _w Width.
+ * @param _h Height (determines rows per page).
+ * @param _font Optional font override.
  */
 serviceListWidget::serviceListWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
     : iGfxWidget(_x, _y, _w, _h), numColumns(0), font(_font), totalRows(0), topRowIndex(0), 
@@ -31,6 +47,11 @@ serviceListWidget::serviceListWidget(int _x, int _y, int _w, int _h, const uint8
  * @brief Define the column schema for the table.
  * @param _numCols Number of columns.
  * @param _cols Array of column definitions.
+ */
+/**
+ * @brief Configure the table columns.
+ * @param _numCols Number of active columns.
+ * @param _cols Array of definitions.
  */
 void serviceListWidget::setColumns(int _numCols, const ColumnDef* _cols) {
     numColumns = (_numCols > MAX_SERVICE_COLUMNS) ? MAX_SERVICE_COLUMNS : _numCols;
@@ -68,6 +89,11 @@ void serviceListWidget::setScrollDwell(int ms) {
  * @param skip The number of initial rows to ignore.
  * @param max The maximum number of rows to ingest limit (-1 for unbounded, capped at 16 internally based on array limits).
  */
+/**
+ * @brief Configure pagination skip/limit.
+ * @param skip Rows to ignore at start.
+ * @param max Maximum rows to display.
+ */
 void serviceListWidget::setDataLimits(int skip, int max) {
     skipRows = skip;
     maxRows = max;
@@ -90,6 +116,11 @@ void serviceListWidget::clearRows() {
  * @brief Add a new row of data strings, respecting slice limits. Only pointers are stored.
  * @param data Array of string pointers matching the column count.
  */
+/**
+ * @brief Append a row of data string pointers.
+ * Respects skip/max limits and internal array capacity (16).
+ * @param data Array of string pointers.
+ */
 void serviceListWidget::addRow(const char** data) {
     if (totalRowsAdded < skipRows) {
         totalRowsAdded++;
@@ -100,7 +131,7 @@ void serviceListWidget::addRow(const char** data) {
         totalRowsAdded++;
         return;
     }
-
+    
     if (totalRows >= 16) return; // Hard array limit
     
     for (int i = 0; i < numColumns; i++) {
@@ -111,10 +142,10 @@ void serviceListWidget::addRow(const char** data) {
 }
 
 /**
- * @brief Draws a single row of service data onto the display.
- * @param display The U8G2 display object to draw on.
- * @param rowY The Y-coordinate for the baseline of the row.
- * @param data An array of C-style strings representing the data for the row.
+ * @brief Render a single record row.
+ * @param display U8g2 reference.
+ * @param rowY Top Y coordinate.
+ * @param data Array of column string pointers.
  */
 void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
     if (!isVisible) return;
@@ -139,8 +170,8 @@ void serviceListWidget::drawRow(U8G2& display, int rowY, const char** data) {
 }
 
 /**
- * @brief Updates the widget's internal state, handling scroll animation.
- * @param currentMillis The current system time in milliseconds.
+ * @brief Periodic logic for pagination timing and animation lerping.
+ * @param currentMillis Milliseconds since boot.
  */
 void serviceListWidget::tick(uint32_t currentMillis) {
     if (!isVisible || totalRows == 0 || height <= 0) return;
@@ -199,9 +230,9 @@ void serviceListWidget::tick(uint32_t currentMillis) {
 }
 
 /**
- * @brief Handles targeted high framerate redraws for smooth scrolling.
- * @param display The U8G2 display object.
- * @param currentMillis The current system time in milliseconds.
+ * @brief Targeted high-framerate redraw for smooth scrolling.
+ * @param display U8G2 reference.
+ * @param currentMillis Milliseconds since boot.
  */
 void serviceListWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
     if (!isVisible || totalRows == 0 || height <= 0) return;
@@ -227,7 +258,7 @@ void serviceListWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMil
 }
 
 /**
- * @brief Render the active window of scrolling service data.
+ * @brief Full frame render for the visible data window.
  * @param display U8g2 reference.
  */
 void serviceListWidget::render(U8G2& display) {

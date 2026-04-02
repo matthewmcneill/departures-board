@@ -7,8 +7,13 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/messageBoard.cpp
+ * Module: modules/displayManager/boards/systemBoard/messageBoard.cpp
  * Description: Implementation of the configurable alert message board.
+ *
+ * Exported Functions/Classes:
+ * - MessageBoard: [Class implementation]
+ *   - setContent(): Updates the 6-layer text stack safely.
+ *   - render(): Iteratively draws the message stack with centered alignment.
  */
 
 #include "messageBoard.hpp"
@@ -24,6 +29,15 @@ MessageBoard::MessageBoard() : showWarningIcon(false) {
     msg4[0] = '\0';
 }
 
+/**
+ * @brief Configure the text currently displayed on the warning screen.
+ * @param h The small uppermost header (e.g. "** COMMS ERROR **")
+ * @param t The large bold title (e.g. "NO DEPARTURE DATA")
+ * @param m1 Body line 1
+ * @param m2 Body line 2
+ * @param m3 Body line 3
+ * @param m4 Body line 4
+ */
 void MessageBoard::setContent(const char* h, const char* t, 
                               const char* m1, const char* m2, 
                               const char* m3, const char* m4) {
@@ -51,6 +65,11 @@ void MessageBoard::tick(uint32_t ms) {
     // Message screens are usually static, no logic per tick
 }
 
+/**
+ * @brief Primary render pass.
+ * Draws a multi-layered alert screen with optional branding and warning icons.
+ * @param display Global U8g2 graphics instance.
+ */
 void MessageBoard::render(U8G2& display) {
     
     if (hdr[0] != '\0') {

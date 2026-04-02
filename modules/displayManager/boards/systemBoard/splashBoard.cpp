@@ -7,14 +7,23 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/splashBoard.cpp
+ * Module: modules/displayManager/boards/systemBoard/splashBoard.cpp
  * Description: Implementation of the startup splash screen.
+ *
+ * Exported Functions/Classes:
+ * - SplashBoard: [Class implementation]
+ *   - setNotice(): Updates the copyright/status text safely.
+ *   - render(): Draws the branding logo and centered notice text.
  */
 
 #include "splashBoard.hpp"
 #include <fonts/fonts.hpp>
 #include <U8g2lib.h>
 
+/**
+ * @brief Construct a new Splash Board.
+ * Instantiates the xbm image widget for the branding logo.
+ */
 SplashBoard::SplashBoard() {
     noticeMessage[0] = '\0';
     // Instantiate the graphic at runtime
@@ -24,6 +33,10 @@ SplashBoard::SplashBoard() {
 SplashBoard::~SplashBoard() {
 }
 
+/**
+ * @brief Update the status message text.
+ * @param message Null-terminated string (e.g. copyright info).
+ */
 void SplashBoard::setNotice(const char* message) {
     if (message != nullptr) {
         strlcpy(noticeMessage, message, sizeof(noticeMessage));
@@ -43,6 +56,11 @@ void SplashBoard::onDeactivate() {
 void SplashBoard::tick(uint32_t ms) {
 }
 
+/**
+ * @brief Primary render pass for the splash screen.
+ * Draws the branding logo and copyright notice text.
+ * @param display Global U8G2 graphics instance.
+ */
 void SplashBoard::render(U8G2& display) {
     // Draw the image widget
     if (splashLogo) {

@@ -8,10 +8,11 @@
  * Description: Interface defining the superset of widgets available to National Rail layouts.
  *
  * Exported Functions/Classes:
- * - iNationalRailLayout: Base class for National Rail layouts.
- *   - tick(uint32_t currentMillis): Periodic logic update.
- *   - render(U8G2& display): Full screen render.
- *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): High-speed animation pass.
+ * - iNationalRailLayout: [Interface] Base class for National Rail layouts.
+ *   - iNationalRailLayout(): Constructor with context injection.
+ *   - tick(): View-specific timing logic.
+ *   - render(): Full screen rendering.
+ *   - renderAnimationUpdate(): High-speed animation pass.
  */
 
 #pragma once

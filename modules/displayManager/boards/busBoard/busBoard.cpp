@@ -12,15 +12,13 @@
  * Description: Implementation of Bus arrival controller logic.
  *
  * Exported Functions/Classes:
- * - BusBoard: Controller for Bus arrival boards.
- *   - onActivate(): Lifecycle hook for activation.
- *   - onDeactivate(): Lifecycle hook for deactivation.
- *   - configure(const BoardConfig& config): Apply settings.
- *   - tick(uint32_t ms): Periodic logic update.
- *   - updateData(): Fetch background data.
- *   - render(U8G2& display): Standard render pass.
- *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): Animation
- * pass.
+ * - BusBoard: [Class implementation]
+ *   - BusBoard(): Constructor, registers with DataManager.
+ *   - ~BusBoard(): Destructor, unregisters source.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - configure(): Sets up layouts and API credentials.
+ *   - tick() / render(): Standard entry points for logic and drawing.
+ *   - updateData(): High-level orchestration of the TfL API fetch.
  */
 
 #include "busBoard.hpp"
@@ -54,7 +52,7 @@ BusBoard::BusBoard(appContext *contextPtr)
 }
 
 /**
- * @brief Rejects layout allocations.
+ * @brief Cleanup allocated resources and layouts.
  */
 BusBoard::~BusBoard() {
   if (context) {
@@ -65,7 +63,8 @@ BusBoard::~BusBoard() {
 }
 
 /**
- * @brief Called when the display board is visually activated.
+ * @brief Called when the board becomes the active display.
+ * Configures the data source and prepares the layout widgets.
  */
 void BusBoard::onActivate() {
   dataSource.configure(busAtco, busFilter);
@@ -131,8 +130,8 @@ void BusBoard::configure(const BoardConfig &config) {
 }
 
 /**
- * @brief Updates internal logic and periodically fetches new data.
- * @param ms Current system epoch in milliseconds.
+ * @brief Main logic tick for the board and its active layout.
+ * @param ms Current system time in milliseconds.
  */
 void BusBoard::tick(uint32_t ms) {
   if (activeLayout)
@@ -140,8 +139,10 @@ void BusBoard::tick(uint32_t ms) {
 }
 
 /**
- * @brief Triggers or polls the background data fetch for Bus arrivals.
- * @return UpdateStatus code.
+ * @brief High-level update trigger for bus departure data.
+ * Orchestrates the transition from PENDING to SUCCESS statuses
+ * and populates the services widget with the fresh data set.
+ * @return UpdateStatus code representing the result of the fetch.
  */
 UpdateStatus BusBoard::updateData() {
   if (lastUpdateStatus == UpdateStatus::PENDING) {
@@ -202,8 +203,8 @@ UpdateStatus BusBoard::updateData() {
 }
 
 /**
- * @brief Perform a full screen render to the U8G2 context.
- * @param display Primary graphics context.
+ * @brief Main rendering hook for the entire board.
+ * @param display Reference to the global U8g2 instance.
  */
 void BusBoard::render(U8G2 &display) {
   if (context && context->getWifiManager().isWifiPersistentError()) {
@@ -258,9 +259,9 @@ void BusBoard::render(U8G2 &display) {
 }
 
 /**
- * @brief Partially updates screen content to process micro-animations.
- * @param display Primary graphics context.
- * @param currentMillis Current time offset.
+ * @brief Targeted high-speed animation updates for scrollers and clocks.
+ * @param display Reference to the global U8g2 instance.
+ * @param currentMillis Current system time in milliseconds.
  */
 void BusBoard::renderAnimationUpdate(U8G2 &display, uint32_t currentMillis) {
   if (context && context->getWifiManager().isWifiPersistentError())

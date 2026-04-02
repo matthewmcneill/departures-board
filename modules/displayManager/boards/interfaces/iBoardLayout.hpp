@@ -8,12 +8,10 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/interfaces/iBoardLayout.hpp
- * Description: Base abstract interface for all visual board layouts (MVC/LGV pattern). 
- *              Decouples coordinate math and rendering from the board controller, 
- *              allowing for multiple design skins (e.g. Default vs Replica) per board.
+ * Description: Base abstract interface for all visual board layouts.
  *
  * Exported Functions/Classes:
- * - iBoardLayout: Interface for visual designers and layout templates.
+ * - iBoardLayout: [Interface] Visual layout template.
  *   - iBoardLayout(): Constructor with context injection.
  *   - tick(): View-specific timing logic (e.g. scrollers).
  *   - render(): Full-frame rendering pass.

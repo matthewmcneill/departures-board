@@ -23,14 +23,14 @@
  *              Serves as the primary dependency injection point for the system.
  *
  * Exported Functions/Classes:
- * - appContext: Lifecycle owner for Config, Display, Network, and OTA managers.
- *   - begin(): Master initialization sequence.
- *   - tick(): Central administrative loop.
- *   - softResetBoard(): Performs a safe application reload.
- *   - getBuildTime(): Returns the firmware version string.
- *   - setInputDevice(): Attaches a hardware interaction handler.
- * - yieldCallbackWrapper: Static wrapper to trigger display yield from any context.
- * - raildataYieldWrapper: Callback adaptor for National Rail data source events.
+ * - appContext: [Class] Lifecycle owner for Config, Display, Network, and OTA managers.
+ *   - begin(): Master initialization sequence for all hardware and FS services.
+ *   - tick(): Central administrative loop for state transitions and maintenance.
+ *   - softResetBoard(): Signals all managers to perform a non-volatile reload.
+ *   - getBuildTime(): Returns the firmware version string (YYMMDDHHMM).
+ *   - setInputDevice(std::unique_ptr<buttonHandler>): Attaches an interaction driver.
+ *   - getConfigManager()/getDisplayManager()/getWebServer(): Service discovery points.
+ *   - getAppState(): Returns the current system operating mode (BOOTING, RUNNING, etc).
  */
 
 #pragma once

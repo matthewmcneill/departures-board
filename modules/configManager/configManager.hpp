@@ -91,10 +91,10 @@ struct ApiKey {
  * display board.
  */
 struct ScheduleRule {
-  int startHour = 0;
-  int startMinute = 0;
-  int endHour = 23;
-  int endMinute = 59;
+  int startHour = 0;   // Start hour of the active period (0-23)
+  int startMinute = 0; // Start minute of the active period (0-59)
+  int endHour = 23;    // End hour of the active period (0-23)
+  int endMinute = 59;  // End minute of the active period (0-59)
   int boardIndex = -1; // -1 indicates an empty/inactive rule slot
 };
 
@@ -266,12 +266,17 @@ public:
    */
   void notifyConsumersToReapplyConfig();
 
+  bool reloadPending = false; // Flag to safely trigger reconfiguration defensively on the main thread
+
   /**
-   * @brief Flag to safely trigger reconfiguration defensively on the main
-   * thread
+   * @brief Requests a pending reconfiguration by setting the flag to true.
    */
-  bool reloadPending = false;
   void requestReload() { reloadPending = true; }
+
+  /**
+   * @brief Examines the pending reload flag and resets it if necessary.
+   * @return True if a reload was pending and is now cleared, false otherwise.
+   */
   bool checkAndClearReload() {
     if (reloadPending) {
       reloadPending = false;

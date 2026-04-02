@@ -21,14 +21,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *
- * Module: lib/hTTPUpdateGitHub/hTTPUpdateGitHub.h
- * Description: Over-the-air (OTA) update client for fetching firmware from private/public GitHub releases.
+ * Module: lib/hTTPUpdateGitHub/hTTPUpdateGitHub.hpp
+ * Description: OTA client for fetching firmware from GitHub releases.
  *
  * Exported Functions/Classes:
- *   - handleUpdate(): Handles the full OTA update process from a custom URL.
- *   - onStart(), onEnd(), onError(), onProgress(): Registers callback functions for update events.
- *   - getLastError(): Retrieves the last error code encountered.
- *   - getLastErrorString(): Retrieves a human-readable string for the last error.
+ * - HTTPUpdate: [Class] Secure firmware download and flash engine.
+ *   - handleUpdate(): High-level entry for redirect-aware binary fetching.
+ *   - runUpdate(): Strategic flash writing implementation.
+ *   - Notification Callbacks: onStart, onEnd, onError, onProgress.
  */
 
  #ifndef ___HTTP_UPDATE_H___

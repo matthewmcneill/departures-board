@@ -7,6 +7,11 @@
  * Module: modules/webServer/webServer.cpp
  * Description: Orchestrates the local HTTP server, endpoint routing, and
  *              LittleFS file management routines for the Web GUI.
+ *
+ * Exported Functions/Classes:
+ * - WebServerManager: [Class implementation]
+ *   - init: Master endpoint configuration and server start.
+ *   - updateCurrentWeather: Triggered logic for manual geo-sync.
  */
 
 #include "webServer.hpp"
@@ -26,10 +31,17 @@ extern class appContext appContext;
 // File handle for firmware uploads
 File fsUploadFile;
 
+/**
+ * @brief Construct a new WebServerManager.
+ * Statically allocates the AsyncWebServer on port 80.
+ */
 WebServerManager::WebServerManager() 
     : _server(std::make_unique<AsyncWebServer>(80)), _handlerManager(nullptr) {
 }
 
+/**
+ * @brief Destructor. 
+ */
 WebServerManager::~WebServerManager() {
     // std::unique_ptr automatically handles deallocation of _handlerManager
 }
@@ -51,6 +63,11 @@ void WebServerManager::init() {
                       WiFi.localIP().toString() + ":80/");
 }
 
+/**
+ * @brief Proxy a weather request from the web interface to the weatherClient.
+ * @param lat Decimal latitude.
+ * @param lon Decimal longitude.
+ */
 void WebServerManager::updateCurrentWeather(float lat, float lon) {
     weatherClient& weather = appContext.getWeather();
     if (weather.getWeatherEnabled()) {

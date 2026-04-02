@@ -8,17 +8,14 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/dataManager/dataManager.hpp
- * Description: Centralized FreeRTOS queue manager for coordinating background network requests.
- *              By forcing data sources to execute sequentially on Core 0, this module
- *              prevents concurrent TLS allocations, protecting the heap from exhaustion
- *              and preventing Watchdog Timer (WDT) panics.
+ * Description: Centralized FreeRTOS queue manager for transport data fetching.
  *
  * Exported Functions/Classes:
- * - dataManager: High-priority, schedule-driven fetch coordinator.
- *   - init(): Spawns the pinned Core 0 background worker task.
- *   - registerSource(): Injects a data source into the round-robin cycle.
- *   - requestPriorityFetch(): Submits a priority wake event.
- *   - getPollingStatus(): (Implied) Accessors for last transition and load success/failure.
+ * - dataManager: [Class] Core 0 background worker coordinator.
+ *   - init(): Task spawning entry point.
+ *   - registerSource(): Injects into the polling registry.
+ *   - requestPriorityFetch(): Triggers immediate out-of-band updates.
+ *   - unregisterSource(): Thread-safe removal of data providers.
  */
 
 #pragma once

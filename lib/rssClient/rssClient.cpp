@@ -10,12 +10,14 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/rssClient/rssClient.cpp
- * Description: Implementation of the RSS XML client.
+ * Description: Implementation of the RSS XML client using a streaming parser.
  *
  * Exported Functions/Classes:
- * - rssClient::rssClient: Constructor.
- * - rssClient::loadFeed: Fetches RSS XML and extracts titles.
- * - rssClient::reapplyConfig: Provisions RSS settings from global configuration.
+ * - rssClient: [Class implementation]
+ *   - loadFeed: Human-driven manual fetch for specific URLs.
+ *   - updateData: Background-driven schedule update.
+ *   - executeFetch: Internal FreeRTOS Task worker for network I/O.
+ *   - addRssMessage: MessagePool integration for board rendering.
  */
 
 #include <rssClient.hpp>
@@ -37,7 +39,7 @@ void rssClient::reapplyConfig(const Config& config) {
     setRssURL(config.rssUrl);
     setRssName(config.rssName);
     setRssEnabled(config.rssEnabled);
-    LOG_INFO("CONFIG", "RSS Config: Enabled=" + String(config.rssEnabled ? "true" : "false") + ", URL=" + String(config.rssUrl));
+    LOG_INFOf("CONFIG", "RSS Config: Enabled=%s, URL=%s", config.rssEnabled ? "true" : "false", config.rssUrl);
 }
 
 rssClient::rssClient() {
@@ -64,9 +66,10 @@ void rssClient::trim(char* str) {
 }
 
 /**
- * @brief Connects to the provided URL, fetches the RSS feed, and streams the XML to extract item titles.
- * @param url The URL of the RSS feed to fetch (supports HTTP and HTTPS).
- * @return Connection status constant.
+ * @brief Manual entry point to fetch a specific RSS feed.
+ * Overrides the internal activeUrl and triggers a priority fetch.
+ * @param url The target RSS/XML URL.
+ * @return Latest UpdateStatus (typically PENDING if queued).
  */
 UpdateStatus rssClient::loadFeed(String url) {
     activeUrl = url;
@@ -97,7 +100,9 @@ UpdateStatus rssClient::testConnection(const char* token, const char* stationId)
 }
 
 /**
- * @brief Internal blocking method that executes the HTTP protocol and coordinates XML parse.
+ * @brief Synchronous implementation of the HTTP and XML parsing sequence.
+ * Designed to be executed within a pinned FreeRTOS background task.
+ * Manages secure clients, redirects, and thread-safe headline storage.
  */
 void rssClient::executeFetch() {
     if (activeUrl.length() == 0) return;
@@ -122,7 +127,7 @@ void rssClient::executeFetch() {
     clientSecure->setInsecure();
     http->setReuse(false);
     bgNumRssTitles = 0;
-    LOG_INFO("DATA", "RSS Client: Loading feed from " + url);
+    LOG_INFOf("DATA", "RSS Client: Loading feed from %s", url.c_str());
 
     while (redirectCount < maxRedirects) {
         // --- Step 2: HTTP Connection ---
@@ -140,9 +145,7 @@ void rssClient::executeFetch() {
             }
             parser->setListener(this);
             parser->reset();
-            grandParentTagName = "";
-            parentTagName = "";
-            tagName = "";
+            tagPath[0] = '\0';
             tagLevel = 0;
             long dataReceived = 0;
             char c;
@@ -175,7 +178,7 @@ void rssClient::executeFetch() {
                 return;
             }
             snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Success: %ld bytes took %lums with %d redirects", dataReceived, static_cast<unsigned long>(millis()-perfTimer), redirectCount);
-            LOG_INFO("DATA", "RSS Feed: Successfully fetched " + String(dataReceived) + " bytes. Found " + String(bgNumRssTitles) + " titles.");
+            LOG_INFOf("DATA", "RSS Feed: Successfully fetched %ld bytes. Found %d titles.", dataReceived, bgNumRssTitles);
             
             xSemaphoreTake(rssMutex, portMAX_DELAY);
             numRssTitles = bgNumRssTitles;
@@ -187,7 +190,7 @@ void rssClient::executeFetch() {
             xSemaphoreGive(rssMutex);
 #ifdef ENABLE_DEBUG_LOG
             UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
-            LOG_DEBUG("DATA", "RSS Task Stack High Water Mark: " + String(hwm) + " words");
+            LOG_DEBUGf("DATA", "RSS Task Stack High Water Mark: %d words", (int)hwm);
 #endif
             return;
             break;
@@ -237,10 +240,11 @@ const char* rssClient::getLastError() const {
 void rssClient::startTag(const char *tag)
 {
     tagLevel++;
-    grandParentTagName = parentTagName;
-    parentTagName = tagName;
-    tagName = String(tag);
-    tagPath = grandParentTagName + "/" + parentTagName + "/" + tagName;
+    if (tagPath[0] != '\0') strlcat(tagPath, "/", sizeof(tagPath));
+    int res = strlcat(tagPath, tag, sizeof(tagPath));
+    if (res >= (int)sizeof(tagPath)) {
+        LOG_ERRORf("DATA", "RSS Client: XML Path too long! (%s)", tagPath);
+    }
 }
 
 /**
@@ -250,9 +254,9 @@ void rssClient::startTag(const char *tag)
 void rssClient::endTag(const char *tag)
 {
     tagLevel--;
-    tagName = parentTagName;
-    parentTagName=grandParentTagName;
-    grandParentTagName="??";
+    char* lastSlash = strrchr(tagPath, '/');
+    if (lastSlash) *lastSlash = '\0';
+    else tagPath[0] = '\0';
 }
 
 /**
@@ -269,11 +273,11 @@ void rssClient::parameter(const char *param)
  */
 void rssClient::value(const char *value)
 {
-    if (tagPath.endsWith("/item/title")) {
+    if (strstr(tagPath, "/item/title")) {
         strncpy(bgRssTitle[bgNumRssTitles],value,MAX_RSS_TITLE_SIZE-1);
         bgRssTitle[bgNumRssTitles][MAX_RSS_TITLE_SIZE-1] = '\0';
         trim(bgRssTitle[bgNumRssTitles]);
-        LOG_DEBUG("DATA", "RSS Item: " + String(bgRssTitle[bgNumRssTitles]));
+        LOG_DEBUGf("DATA", "RSS Item: %s", bgRssTitle[bgNumRssTitles]);
         bgNumRssTitles++;
     }
 }
@@ -287,23 +291,28 @@ void rssClient::attribute(const char *attr)
 }
 
 /**
- * @brief Append RSS headlines to the scrolling message pool.
+ * @brief Formats and appends current RSS headlines to the scrolling message pool.
+ * @param pool Reference to the board-local MessagePool.
+ * @param config Reference to global configuration for context-aware delimiters.
  */
 void rssClient::addRssMessage(MessagePool& pool, const Config& config) {
     if (rssEnabled && pool.getCount() < 4 && numRssTitles > 0) {
-        String rssCombined = String(rssName) + ": " + rssTitle[0];
+        char combined[512];
+        int len = snprintf(combined, sizeof(combined), "%s: %s", rssName, rssTitle[0]);
         
         for (int i = 1; i < numRssTitles; i++) {
-            if (rssCombined.length() + strlen(rssTitle[i]) + 2 < 400) {
-                BoardTypes firstType = (config.boardCount > 0) ? config.boards[0].type : BoardTypes::MODE_RAIL;
-                // Use a different delimiter based on context (Rail vs Tube)
-                rssCombined += (firstType == BoardTypes::MODE_TUBE) ? "\x81" : "\x90";
-                rssCombined += rssTitle[i];
+            BoardTypes firstType = (config.boardCount > 0) ? config.boards[0].type : BoardTypes::MODE_RAIL;
+            const char* delim = (firstType == BoardTypes::MODE_TUBE) ? "\x81" : "\x90";
+            
+            int nextNeeded = snprintf(NULL, 0, "%s%s", delim, rssTitle[i]);
+            if (len + nextNeeded < (int)sizeof(combined)) {
+                len += snprintf(combined + len, sizeof(combined) - len, "%s%s", delim, rssTitle[i]);
             } else {
+                LOG_WARN("DATA", "RSS Client: Headlines truncated in message builder");
                 break;
             }
         }
-        pool.addMessage(rssCombined.c_str());
+        pool.addMessage(combined);
         rssAddedtoMsgs = true;
     }
 }

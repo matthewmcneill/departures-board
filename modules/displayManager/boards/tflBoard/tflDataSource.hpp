@@ -8,20 +8,26 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/tflBoard/tflDataSource.hpp
- * Description: TfL data source implementing iDataSource. Fetches arrival data
- *              from the TfL Unified API.
+ * Description: TfL data source implementing iDataSource.
  *
  * Exported Functions/Classes:
- * - tflDataSource: Data client for TfL Unified API.
+ * - tflDataSource: [Class] Data client for TfL Unified API.
+ *   - updateData(): Initiates JSON fetch.
+ *   - getLastUpdateStatus(): Retrieval of fetch result codes.
+ *   - getLastErrorMsg(): Accessor for source error strings.
+ *   - testConnection(): Validates API credentials and station IDs.
+ *   - getNextFetchTime() / setNextFetchTime(): Polling interval management.
+ *   - getPriorityTier(): Context-aware fetch prioritization.
  *   - configure(): Sets Naptan ID and optional API key.
- *   - updateData(): Performs SSL GET request and parses JSON response.
+ *   - setFilter(): Applies line-specific filtering.
+ *   - setDirectionFilter(): Applies Inbound/Outbound filtering.
+ *   - setResultLimit(): Maximum arrivals to fetch.
+ *   - setTestMode(): Enable lightweight auth-only validation mode.
  *   - getStationData(): Accessor for parsed station metadata.
  *   - getMessagesData(): Accessor for line disruption messages.
- *   - setResultLimit(): Limit arrivals result count for performance.
- *   - setTestMode(): Enable lightweight auth-only validation mode.
  *   - executeFetch(): Internal synchronous HTTPS pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning JSON parse.
- *   - serviceNumbers: Static array of stable pointers for numbering (1-20).
+ * - TflService: [Struct] Single service arrival record.
+ * - TflStation: [Struct] Station departure board model.
  */
 
 #ifndef TFL_DATA_SOURCE_HPP

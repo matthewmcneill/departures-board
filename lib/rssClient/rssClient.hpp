@@ -13,14 +13,12 @@
  * Description: Client to fetch and parse RSS feeds via HTTP/HTTPS.
  *
  * Exported Functions/Classes:
- * - rssClient: XML/JSON news feed scroller with headline pool management.
- *   - addRssMessage(): Formats and pushes global headlines to the message pool.
- *   - removeRssMessage(): Clears active RSS content from the system.
- *   - loadFeed(): High-level parsing entry point.
- *   - setYieldCallback(): Registers a callback for non-blocking I/O.
- *   - reapplyConfig(): Updates RSS settings from central configuration.
- *   - executeFetch(): Internal synchronous HTTP pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
+ * - rssClient: [Class] XML news feed manager.
+ *   - loadFeed(): Strategic entry point for manual headline sync.
+ *   - updateData(): Background-driven schedule update.
+ *   - executeFetch(): Worker-thread background fetch implementation with snprintf.
+ *   - addRssMessage(): Syncs headlines to the global MessagePool using char buffers.
+ *   - startTag() / endTag(): XML path tracking using fixed-size char buffers.
  */
 
 #pragma once
@@ -43,12 +41,8 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
 
     private:
 
-        String grandParentTagName = "";
-        String parentTagName = "";
-        String tagName = "";
-        String tagPath = "";
+        char tagPath[64] = "";
         int tagLevel = 0;
-        String currentPath = "";
         char lastErrorMessage[128];
         
         bool rssEnabled = false;

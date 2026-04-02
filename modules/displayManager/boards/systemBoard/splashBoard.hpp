@@ -7,11 +7,16 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/splashBoard.hpp
+ * Module: modules/displayManager/boards/systemBoard/splashBoard.hpp
  * Description: Display board for rendering the initial system boot logo and copyright information.
  *
  * Exported Functions/Classes:
- * - SplashBoard: Class extending iDisplayBoard for the initial splash sequence.
+ * - SplashBoard: [Class] Core screen for the 5-second initial splash sequence.
+ *   - setNotice(): Injects the textual notice displayed below the logo.
+ *   - init(): Handles service injection.
+ *   - render(): Draws the branding logo and copyright text.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks.
+ *   - tick(): Logic entry point.
  */
 
 #ifndef SPLASH_BOARD_HPP

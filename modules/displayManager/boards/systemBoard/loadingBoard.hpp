@@ -13,14 +13,14 @@
  *              indicator for firmware init and connection sequences.
  *
  * Exported Functions/Classes:
- * - LoadingBoard: System board for startup sequences.
- *   - setProgress(): Update the active task and percentage.
+ * - LoadingBoard: [Class] System board for startup sequences.
+ *   - setProgress(): Update the active task and percentage (0-100).
  *   - setHeading(): Set the primary display title (e.g. "Initializing").
  *   - setBuildTime(): Display the compiled binary timestamp.
  *   - setNotice(): Set a secondary status string.
  *   - init(): Dependency injection for app context.
- *   - tick(): Logic update for progress bar.
- *   - render(): Full frame drawing.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - tick() / render(): Logic and drawing entry points.
  *   - renderAnimationUpdate(): Targeted redraw for smooth progress.
  */
 

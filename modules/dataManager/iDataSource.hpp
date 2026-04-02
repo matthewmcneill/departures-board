@@ -8,23 +8,15 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/dataManager/iDataSource.hpp
- * Description: Abstract interface for all transport data source providers. 
- *              Defines the contract for non-blocking asynchronous data fetching, 
- *              centralized task execution via DataWorker, and connectivity testing.
+ * Description: Abstract interface for all transport data source providers.
  *
  * Exported Functions/Classes:
- * - UpdateStatus: Standardized status codes for data update operations.
- * - PriorityTier: Priority tiers for data sources.
- * - iDataSource: Pure virtual base class for network API clients.
- *   - updateData(): Requests an update from the DataManager.
- *   - executeFetch(): Internal blocking network operation executed by DataManager.
- *   - getLastErrorMsg(): Human-readable error diagnostic.
- *   - getNextFetchTime(): Returns the next scheduled fetch time in millis.
- *   - getPriorityTier(): Returns the priority tier of this data source.
- *   - setNextFetchTime(): Forces the next fetch time.
- *   - testConnection(): Connectivity and credential validation logic.
- *   - lockData(): Locks the data struct.
- *   - unlockData(): Unlocks the data struct.
+ * - UpdateStatus: [Enum] Operation results.
+ * - PriorityTier: [Enum] Scheduling weight.
+ * - iDataSource: [Interface] pure virtual contract for API clients.
+ *   - updateData(): UI-driven sync request.
+ *   - executeFetch(): Worker-thread network implementation.
+ *   - testConnection(): Credential validation logic.
  */
 
 #ifndef I_DATA_SOURCE_HPP

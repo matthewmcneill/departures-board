@@ -8,20 +8,21 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/tflBoard/tflBoard.hpp
- * Description: Controller for TfL Underground departure boards. Manages 
- *              interaction with the TfL Unified API for arrival predictions 
- *              at a specific station.
+ * Description: Controller for TfL Underground departure boards.
  *
  * Exported Functions/Classes:
- * - TfLBoard: Core controller class for Underground displays.
+ * - TfLBoard: [Class] Core controller for Underground displays.
+ *   - getBoardName(): Semantic identity for telemetry.
  *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
- *   - tick(): Logic update for timing and scrollers.
- *   - render(): Full frame drawing.
- *   - renderAnimationUpdate(): Targeted redraw for animation quality.
+ *   - tick() / render(): Logic and drawing entry points.
  *   - updateData(): Initiates JSON fetch from TfL API.
- *   - configure(): Applies BoardConfig settings to local state.
+ *   - configure(): Applies BoardConfig settings.
  *   - getLastErrorMsg(): Accessor for data source error strings.
  *   - getWeatherStatus(): Accessor for shared weather state.
+ *   - isScrollFinished(): Scrolling completion check.
+ *   - setTflAppkey / getTflAppkey: API key management.
+ *   - setTubeId / getTubeId: Naptan ID management.
+ *   - setTubeName / getTubeName: Station name management.
  */
 
 #ifndef TFL_BOARD_HPP

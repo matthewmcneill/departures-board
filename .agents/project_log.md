@@ -662,3 +662,27 @@ Generated commit: 10e5e55
 **Summary**: Decoupled the DisplayManager from concrete board implementations by migrating to a dynamic heap-allocated Factory pattern (`BoardFactory`). Replaced static `std::variant` pools with single active `iDisplayBoard*` pointers to eliminate permanent static RAM consumption and prevent runtime heap fragmentation. Resolved cyclic and cascading dependency issues across the build system. Disentangled National Rail SOAP network intialization from the main UI thread by deferring WSDL discovery to the background FreeRTOS `DataManager` core. Validated stability natively via `pio run -e esp32dev`.
 **Archive**: [.agents/plans/done/8534e510-1464-4474-9be0-7210c3c339cc/](.agents/plans/done/8534e510-1464-4474-9be0-7210c3c339cc/)
 **Commit**: [Captured in session git history]
+
+## Plan b75d98e4-55f7-435b-a4a1-0210b6946b34
+**Date**: 2026-04-02
+**Session**: b75d98e4-55f7-435b-a4a1-0210b6946b34
+**Action**: DisplayManager Lazy-Loading Optimization
+**Summary**: Optimized the DisplayManager by transitioning from upfront static allocation of all system boards to a lazy-loading "Init-on-First-Use" pattern. Reduced initial heap overhead at boot by only allocating system memory for screens that are actually displayed. Ensured Zero Steady-State Fragmentation by caching the first instance of each board. Included codebase-wide formatting cleanup for DisplayManager.cpp and updated all calling locations to use the new getSystemBoard() hydrated interface.
+**Archive**: [.agents/plans/done/b75d98e4-55f7-435b-a4a1-0210b6946b34/](.agents/plans/done/b75d98e4-55f7-435b-a4a1-0210b6946b34/)
+**Commit**: [4033962]
+
+## 2026-04-02 - Boot Progress Bar Refactor (Session 5eb814a8)
+
+### Session Summary
+Refactored the firmware boot sequence to provide a contiguous 0-100% linear progress bar and resolved a first-load state machine deadlock. This ensures the device correctly transitions to the `RUNNING` state only after the initial network data fetch is complete.
+
+### Key Decisions
+- **Contiguous Segment Mapping**: Remapped the boot phases to monotonic segments: HW/FS (0-25%), WiFi (25-50%), NTP (50-75%), and First Data (75-100%).
+- **First Load Synchronization**: Integrated `networkManager.getNoDataLoaded()` into the `appContext` state machine, ensuring the loading screen persists until boards are hydrated.
+- **Async Data Signal**: Updated the background `DataManager` worker to explicitly flag the first successful data fetch, solving the premature screen drop.
+- **Loop-Back Removal**: Purged the legacy "loop back to 45" logic in the NTP sync phase, ensuring a unidirectional progress experience.
+
+### Git Commit
+Generated commit: 7f35aa3
+
+**Archive**: [.agents/plans/done/5eb814a8-fb4b-42df-86b7-877ad553407c/](.agents/plans/done/5eb814a8-fb4b-42df-86b7-877ad553407c/)

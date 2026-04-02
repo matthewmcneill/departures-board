@@ -8,15 +8,13 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/wifiStatusWidget.hpp
- * Description: Global status overlay widget that monitors network connectivity. 
- *              Renders a warning icon (character 0x7F) with an integrated 
- *              blink timer for long-term disconnections.
+ * Description: Global status overlay widget that monitors network connectivity.
  *
  * Exported Functions/Classes:
- * - wifiStatusWidget: Class extending iGfxWidget to draw a disconnection icon.
- * - wifiStatusWidget::tick: Monitors connection state changes.
- * - wifiStatusWidget::render: Draws the icon if disconnected.
- * - wifiStatusWidget::renderAnimationUpdate: Non-blocking hardware redraw for the icon.
+ * - wifiStatusWidget: [Class] Draws a disconnection icon or RSSI bars.
+ *   - tick(): Monitors connection state changes.
+ *   - render(): Draws the icon if disconnected.
+ *   - renderAnimationUpdate(): Non-blocking hardware redraw for the icon.
  */
 
 #ifndef WIFI_STATUS_WIDGET_HPP

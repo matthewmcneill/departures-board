@@ -9,16 +9,13 @@
  *
  * Module: modules/webServer/webHandlerManager.cpp
  * Description: Implementation of the modern web portal handlers.
- * Provides a RESTful API for system configuration, hardware monitoring, and 
- * network lifecycle management.
  *
  * Exported Functions/Classes:
- * - WebHandlerManager: Principal class for web service lifecycle management.
- *   - begin(): Registers all routes with the AsyncWebServer.
- *   - handlePortalRoot(): Serves gzipped SPA assets with concurrency protection.
- *   - handleGetStatus(): Evaluates hardware health and connectivity metrics.
- *   - handleGetConfig(): Serializes unified project configuration.
- *   - handleSaveAll(): Performs atomic validation and persistence of settings.
+ * - WebHandlerManager: [Class implementation]
+ *   - begin: Strategic route registration.
+ *   - handlePortalRoot: High-memory delivery of SPA assets.
+ *   - handleGetStatus: Telemetry serialization.
+ *   - handleSaveAll: Atomic configuration engine.
  */
 
 #include "webHandlerManager.hpp"
@@ -54,6 +51,11 @@ WebHandlerManager::WebHandlerManager(AsyncWebServer& server, ConfigManager& conf
     : _server(server), _config(config) {
 }
 
+/**
+ * @brief Registers all web portal routes with the underlying server.
+ * Implements a mix of static asset delivery and dynamic JSON API endpoints.
+ * Includes security-sensitive POST body reconstruction helper.
+ */
 void WebHandlerManager::begin() {
     LOG_INFO("WEB", "Initializing WebHandlerManager on /portal...");
 
@@ -168,6 +170,8 @@ void WebHandlerManager::handlePortalRoot(AsyncWebServerRequest *request) {
 
 /**
  * @brief API Handler for GET /api/status. Returns system health and connectivity metrics.
+ * Provides real-time telemetry for the Web UI dashboard.
+ * @param request Pointer to the incoming AsyncWebServerRequest.
  */
 void WebHandlerManager::handleGetStatus(AsyncWebServerRequest *request) {
     // LOG_DEBUG("WEB_API", "GET /api/status called - returning system health");

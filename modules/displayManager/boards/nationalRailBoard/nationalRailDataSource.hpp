@@ -11,15 +11,18 @@
  * Description: National Rail data source implementing iDataSource.
  *
  * Exported Functions/Classes:
- * - nationalRailDataSource: Data client for Darwin (National Rail SOAP API).
- *   - init(): Initializes the WSDL parser and SSL handshake.
+ * - nationalRailDataSource: [Class] Data client for Darwin (National Rail SOAP API).
+ *   - init() / refreshWsdl(): SOAP discovery and WSDL parsing.
  *   - updateData(): High-level trigger for polling departure info.
- *   - getStationData(): Returns parsed station name and meta.
+ *   - getStationData(): Returns parsed station metadata.
  *   - getMessagesData(): Accessor for rail disruption messages.
- *   - setSoapAddress(): Manually set SOAP endpoint (bypasses WSDL).
- *   - configure(): Set API token and station parameters.
+ *   - configure(): Sets API token and station parameters.
  *   - executeFetch(): Internal synchronous SOAP fetching pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning SOAP processing.
+ *   - lockData() / unlockData(): Thread synchronization.
+ *   - testConnection(): Validates station codes and tokens.
+ *   - getNextFetchTime() / setNextFetchTime(): Polling interval management.
+ * - NationalRailService: [Struct] Single service arrival record.
+ * - NationalRailStation: [Struct] Station-level departure container.
  */
 
 #ifndef NATIONAL_RAIL_DATA_SOURCE_HPP

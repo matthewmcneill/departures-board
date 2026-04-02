@@ -8,16 +8,13 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/timeManager/timeManager.cpp
- * Description: Implementation of NTP time synchronization.
+ * Description: Implementation of NTP time synchronization and timezone handling.
  *
  * Exported Functions/Classes:
- * - TimeManager: Core class for system clock management.
- *   - reapplyConfig(): Update timezone from system configuration.
- *   - setTimezone(): Configure explicit timezone string.
- *   - getTimezone(): Retrieve current timezone string.
- *   - updateCurrentTime(): Sync internal time struct from hardware.
- *   - getCurrentTime(): Fetch cached internal time struct.
- *   - initialize(): Execute initial NTP sync during boot sequence.
+ * - TimeManager: [Class implementation]
+ *   - initialize: Boot-time NTP sync loop with status callback.
+ *   - setTimezone: POSIX rule injection.
+ *   - updateCurrentTime: Local RTC polling.
  */
 
 #include "timeManager.hpp"
@@ -59,6 +56,12 @@ const struct tm& TimeManager::getCurrentTime() const {
 }
 
 
+/**
+ * @brief Initialize the system clock via NTP.
+ * This is a potentially blocking operation that polls the NTP pool.
+ * @param cycleCallback Optional function to run between poll attempts (e.g. for display updates).
+ * @return true if time was successfully synchronized.
+ */
 bool TimeManager::initialize(std::function<void()> cycleCallback) {
     // --- Step 1: Base Configuration ---
     // Register the standard NTP pool and applying the fallback timezone

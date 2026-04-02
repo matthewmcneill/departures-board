@@ -7,11 +7,16 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/helpBoard.hpp
+ * Module: modules/displayManager/boards/systemBoard/helpBoard.hpp
  * Description: UI Board specifically built to orchestrate paginated instruction flows.
  *
  * Exported Functions/Classes:
- * - HelpBoard: Class extending iDisplayBoard for user provisioning screens.
+ * - HelpBoard: [Class] Board that renders stacked lines of instructional text.
+ *   - setHelpContent(): Injects centered header and array of text lines.
+ *   - init(): Service injection point.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - render(): Layout engine for centered headers and left-aligned body.
+ *   - tick(): Logic updates (no-op).
  */
 
 #ifndef HELP_BOARD_HPP

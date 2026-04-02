@@ -10,19 +10,13 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/githubClient/githubClient.cpp
- * Description: Implementation of the githubClient library.
+ * Description: Implementation of the GitHub API client using a streaming JSON parser.
  *
  * Exported Functions/Classes:
- * - class github: JSON streaming parser and API client for fetching GitHub releases.
- *   - github(): Constructor.
- *   - getLatestRelease(): Polls the GitHub API to fetch latest release metadata.
- *   - getLastError(): Retrieves the last error message from the client.
- *   - accessToken: Attribute for GitHub API authorization.
- *   - releaseId: Attribute storing the ID of the fetched release.
- *   - releaseDescription: Attribute storing the description/name of the release.
- *   - releaseAssets: Attribute storing the number of available assets.
- *   - releaseAssetURL: Attribute array of asset download URLs.
- *   - releaseAssetName: Attribute array of asset names.
+ * - github: [Class implementation]
+ *   - getLatestRelease: Synchronous API call to fetch version metadata.
+ *   - getLastError: Retrieves diagnostic trace from the last operation.
+ *   - JSON Listeners: Implementation of the streaming parser callbacks.
  */
 
 #include <githubClient.hpp>
@@ -39,8 +33,10 @@ github::github(String repository, String token) {
 }
 
 /**
- * @brief Polls the GitHub API to fetch metadata about the latest release for the repository.
- * @return True if the metadata was successfully fetched and parsed, otherwise false.
+ * @brief Polls the GitHub API to fetch metadata about the latest release.
+ * Implements a synchronous HTTPS sequence with status code validation 
+ * and streaming JSON parsing to handle large responses without heap exhaustion.
+ * @return True if the metadata was successfully fetched and parsed.
  */
 bool github::getLatestRelease() {
 

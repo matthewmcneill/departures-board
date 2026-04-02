@@ -11,6 +11,11 @@
  *
  * Module: modules/displayManager/widgets/systemMessageWidget.cpp
  * Description: Implementation of centered multi-line alert layouts.
+ *
+ * Exported Functions/Classes:
+ * - systemMessageWidget: [Class implementation]
+ *   - setMessage(): Updates the alert title and sub-lines.
+ *   - render(): Paints the message box with centered justification.
  */
 
 #include "systemMessageWidget.hpp"
@@ -18,6 +23,13 @@
 
 /**
  * @brief Initialize the system message widget with default state.
+ */
+/**
+ * @brief Initialize the system message widget.
+ * @param _x X coordinate.
+ * @param _y Y coordinate.
+ * @param _w Width.
+ * @param _h Height.
  */
 systemMessageWidget::systemMessageWidget(int _x, int _y, int _w, int _h) 
     : iGfxWidget(_x, _y, _w, _h), numLines(0) {

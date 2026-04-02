@@ -21,18 +21,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *
- * Module: lib/HTTPUpdateGitHub/hTTPUpdateGitHub.cpp
+ * Module: lib/hTTPUpdateGitHub/hTTPUpdateGitHub.cpp
  * Description: Implementation of the GitHub OTA Update handler.
  *
  * Exported Functions/Classes:
- * - class HTTPUpdate: Core class handling the HTTP request, redirects, parsing MD5 headers, and writing to flash.
- *   - HTTPUpdate(): Constructor.
- *   - ~HTTPUpdate(): Destructor.
- *   - rebootOnUpdate(): Configures whether to reboot on update success.
- *   - handleUpdate(): Handles the full OTA update process from a custom URL.
- *   - onStart(), onEnd(), onError(), onProgress(): Registers callback functions for update events.
- *   - getLastError(): Retrieves the last error code encountered.
- *   - getLastErrorString(): Retrieves a human-readable string for the last error.
+ * - HTTPUpdate: [Class implementation]
+ *   - handleUpdate: Redirect-aware GitHub binary fetcher.
+ *   - runUpdate: ESP32-native flash writing orchestrator.
+ *   - getLastErrorString: Diagnostic error string formatting.
  */
 
  #include <hTTPUpdateGitHub.hpp>
@@ -119,13 +115,14 @@
  }
 
  /**
-  * @brief Handles the full OTA update process from a custom URL, such as a GitHub Release asset.
-  * @param client The active WiFiClient (or WiFiClientSecure).
-  * @param uri The URL path of the binary asset.
-  * @param token An optional GitHub Personal Access Token for private repositories.
-  * @return The result status of the update process (HTTP_UPDATE_OK, HTTP_UPDATE_FAILED, etc.).
-  */
-  HTTPUpdateResult HTTPUpdate::handleUpdate(WiFiClient& client, const String& uri = "/", const String& token = "") {
+ * @brief Handles the full OTA update process from a custom URL.
+ * Supports GitHub-specific redirect patterns and Personal Access Tokens.
+ * @param client The active WiFiClient (typically WiFiClientSecure).
+ * @param uri The source URL (default "/").
+ * @param token Optional GitHub PAT for private repos.
+ * @return Update result enumeration.
+ */
+HTTPUpdateResult HTTPUpdate::handleUpdate(WiFiClient& client, const String& uri, const String& token) {
 
      HTTPUpdateResult ret = HTTP_UPDATE_FAILED;
 
@@ -293,15 +290,16 @@
 }
 
  /**
-  * @brief Executes the flash write process using the ESP32 Update framework.
-  * @param in The HTTP data stream.
-  * @param size The total size of the binary in bytes.
-  * @param md5 The expected MD5 hash for the binary.
-  * @param command The update command (U_FLASH or U_SPIFFS).
-  * @return True if the update flashed successfully.
-  */
- bool HTTPUpdate::runUpdate(Stream& in, uint32_t size, String md5, int command)
- {
+ * @brief Internal method to execute the binary write to flash.
+ * Uses the ESP32 Update framework with MD5 validation.
+ * @param in The data stream containing the binary.
+ * @param size Expected file size.
+ * @param md5 Hex-encoded MD5 checksum.
+ * @param command Update command (U_FLASH or U_SPIFFS).
+ * @return True if flash was successful.
+ */
+bool HTTPUpdate::runUpdate(Stream& in, uint32_t size, String md5, int command)
+{
       StreamString error;
 
      if (_cbProgress) {

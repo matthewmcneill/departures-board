@@ -8,18 +8,22 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/imageWidget.cpp
- * Description: Implementation of XBM bitmap rendering.
+ * Description: Implementation of static XBM bitmap rendering.
+ *
+ * Exported Functions/Classes:
+ * - imageWidget: [Class implementation]
+ *   - render(): Paints the XBM bits to the display buffer.
  */
 
 #include <widgets/imageWidget.hpp>
 
 /**
- * @brief Constructor for the Image widget.
- * @param _x X coordinate (top-left).
- * @param _y Y coordinate (top-left).
- * @param _w Pixel width of the image.
- * @param _h Pixel height of the image.
- * @param bits Pointer to the XBM PROGMEM byte array.
+ * @brief Initialize the static image widget.
+ * @param _x X coordinate.
+ * @param _y Y coordinate.
+ * @param _w width.
+ * @param _h height.
+ * @param bits Pointer to XBM bits (expected in PROGMEM).
  */
 imageWidget::imageWidget(int _x, int _y, int _w, int _h, const unsigned char* bits)
     : iGfxWidget(_x, _y, _w, _h), imageBits(bits) {

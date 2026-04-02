@@ -9,6 +9,13 @@
  *
  * Module: modules/dataManager/dataManager.cpp
  * Description: Implementation of the centralized, priority-aware FreeRTOS data fetch manager.
+ *
+ * Exported Functions/Classes:
+ * - dataManager: [Class implementation]
+ *   - init: Initializes FreeRTOS concurrency primitives and starts the worker.
+ *   - registerSource/unregisterSource: Registry management for data providers.
+ *   - requestPriorityFetch: High-priority out-of-band fetch trigger.
+ *   - workerTaskLoop: [Static] The background fetch orchestration loop on Core 0.
  */
 
 #include "dataManager.hpp"
@@ -16,6 +23,10 @@
 
 /**
  * @brief Constructor for the Centralized Data Manager.
+ */
+/**
+ * @brief Construct a new dataManager.
+ * Initializes all polling and error tracking state to defaults.
  */
 dataManager::dataManager() : 
     priorityEventQueue(nullptr), 
@@ -34,7 +45,8 @@ dataManager::dataManager() :
 }
 
 /**
- * @brief Initializes the FreeRTOS queue and spawns the pinned Core 0 worker task.
+ * @brief Initializes the FreeRTOS event queue and spawns the pinned Core 0 worker task.
+ * Sets up binary semaphores for thread-safe registry access.
  */
 void dataManager::init() {
     
@@ -68,18 +80,24 @@ void dataManager::init() {
     LOG_INFO("DATA", "DataManager: Schedule-Driven Loop initialized on Core 0");
 }
 
+/**
+ * @brief Register a data source for background polling.
+ * @param source Pointer to iDataSource implementation.
+ */
 void dataManager::registerSource(iDataSource* source) {
     if (source != nullptr) {
         if (registryMutex && xSemaphoreTake(registryMutex, portMAX_DELAY) == pdPASS) {
             registry.push_back(source);
             xSemaphoreGive(registryMutex);
-            LOG_VERBOSE("DATA", "DataManager: Source registered. Total: " + String(registry.size()));
+            LOG_VERBOSEf("DATA", "DataManager: Source registered. Total: %d", (int)registry.size());
         }
     }
 }
 
 /**
- * @brief Submits a priority wake event.
+ * @brief Submits a priority wake event to the background worker.
+ * Guarantees the source will be evaluated for immediate fetch in the next cycle.
+ * @param source Pointer to the iDataSource requesting the priority wake.
  */
 void dataManager::requestPriorityFetch(iDataSource* source) {
     if (priorityEventQueue == nullptr) return;
@@ -97,6 +115,11 @@ void dataManager::requestPriorityFetch(iDataSource* source) {
     }
 }
 
+/**
+ * @brief Safely remove a source from background polling.
+ * Blocks if the source is currently mid-fetch to prevent use-after-free.
+ * @param source Pointer to the source to remove.
+ */
 void dataManager::unregisterSource(iDataSource* source) {
     if (source == nullptr || registryMutex == nullptr) return;
 
@@ -126,6 +149,8 @@ void dataManager::unregisterSource(iDataSource* source) {
 
 /**
  * @brief Static FreeRTOS Entry Point for the dynamic scheduling loop.
+ * Implements the core round-robin and priority-aware fetch orchestration.
+ * @param pvParameters Pointer to the executing dataManager instance.
  */
 void dataManager::workerTaskLoop(void* pvParameters) {
     dataManager* manager = static_cast<dataManager*>(pvParameters);
@@ -182,7 +207,7 @@ void dataManager::workerTaskLoop(void* pvParameters) {
         }
 
         if (targetToExecute != nullptr) {
-            LOG_INFO("DATA", "DataManager: Executing fetch for tier " + String(static_cast<uint8_t>(targetToExecute->getPriorityTier())));
+            LOG_INFOf("DATA", "DataManager: Executing fetch for tier %d", (int)targetToExecute->getPriorityTier());
             
             targetToExecute->executeFetch();
             

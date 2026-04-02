@@ -8,12 +8,15 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/drawingPrimitives.hpp
- * Description: Stateless U8G2 graphics utility wrappers.
+ * Description: Stateless U8G2 graphics utility wrappers for common drawing tasks.
  *
  * Exported Functions/Classes:
- * - drawText(): Draw aligned/truncated text within a bounding box.
- * - drawTriangle(): Draw filled or outlined triangle.
- * - U8g2StateSaver: RAII scope guard to elegantly push/pop U8G2 display state.
+ * - TextAlign: [Enum] Text justification options (LEFT, CENTER, RIGHT).
+ * - U8g2StateSaver: [Class] RAII scope guard to preserve U8G2 display properties.
+ * - blankArea(): Clears a rectangular region.
+ * - getStringWidth(): Measures string width in pixels.
+ * - drawText(): Aligned text rendering with optional truncation.
+ * - drawTriangle(): Draws filled or outlined triangles.
  */
 
 #ifndef DRAWING_PRIMITIVES_HPP

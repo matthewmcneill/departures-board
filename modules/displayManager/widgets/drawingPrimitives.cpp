@@ -9,6 +9,14 @@
  *
  * Module: modules/displayManager/widgets/drawingPrimitives.cpp
  * Description: Implementation of stateless U8G2 graphics utility wrappers.
+ *
+ * Exported Functions/Classes:
+ * - TextAlign: [Enum] Text justification options (LEFT, CENTER, RIGHT).
+ * - U8g2StateSaver: [Class implementation] RAII display state management.
+ * - blankArea(): Region clearing utility.
+ * - getStringWidth(): Character width measurement.
+ * - drawText(): Multi-aligned text rendering with truncation logic.
+ * - drawTriangle(): Geometric primitive drawing.
  */
 
 #include "drawingPrimitives.hpp"
@@ -16,8 +24,9 @@
 // --- U8g2StateSaver Implementation ---
 
 /**
- * @brief Constructs the saver, caching current state.
- * @param _display active U8G2 instance.
+ * @brief Constructs the state saver.
+ * Caches the current font, color, and clipping window from the u8g2_t struct.
+ * @param _display Reference to the active U8G2 instance.
  */
 U8g2StateSaver::U8g2StateSaver(U8G2& _display) : display(_display) {
     u8g2_t *u8g2 = display.getU8g2();
@@ -30,7 +39,7 @@ U8g2StateSaver::U8g2StateSaver(U8G2& _display) : display(_display) {
 }
 
 /**
- * @brief Destructor automatically reverts display state.
+ * @brief Revert the display state to the cached values.
  */
 U8g2StateSaver::~U8g2StateSaver() {
     display.setFont(oldFont);
@@ -52,18 +61,20 @@ void blankArea(U8G2& display, int x, int y, int w, int h) {
 }
 
 /**
- * @brief Calculate the width in pixels of a string using the current font
- * @param message C-string to measure
- * @return Width in pixels
+ * @brief Calculate the width in pixels of a string.
+ * @param display U8g2 reference.
+ * @param message Null-terminated string.
+ * @return Width in pixels.
  */
 int getStringWidth(U8G2& display, const char *message) {
   return display.getStrWidth(message);
 }
 
 /**
- * @brief Calculate the width in pixels of a PROGMEM string using the current font
- * @param message Flash string to measure
- * @return Width in pixels
+ * @brief Calculate the width in pixels of a Flash string.
+ * @param display U8g2 reference.
+ * @param message Flash string pointer.
+ * @return Width in pixels.
  */
 int getStringWidth(U8G2& display, const __FlashStringHelper *message) {
   char buf[256];
@@ -72,8 +83,20 @@ int getStringWidth(U8G2& display, const __FlashStringHelper *message) {
 }
 
 /**
- * @brief Draw text with alignment and optional truncation within a bounding box.
- * Optimized for performance with a fast-path for the most common use cases.
+ * @brief Core text rendering utility with alignment and optional truncation.
+ * 
+ * Optimized with a fast-path for standard left-aligned text to bypass 
+ * measurement and clipping logic.
+ * 
+ * @param display U8g2 reference.
+ * @param message String to draw.
+ * @param x Left edge.
+ * @param y Top edge.
+ * @param w Width (-1 for screen).
+ * @param h Height (-1 for char height).
+ * @param align Justification.
+ * @param truncate Append '...' if too wide.
+ * @param font Optional font override.
  */
 void drawText(U8G2& display, const char *message, int x, int y, int w, int h, TextAlign align, bool truncate, const uint8_t* font) {
   U8g2StateSaver saver(display);
@@ -157,14 +180,15 @@ void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, i
 
 
 /**
- * @brief Draw a triangle on the OLED display
- * @param x0 First vertex X coordinate
- * @param y0 First vertex Y coordinate
- * @param x1 Second vertex X coordinate
- * @param y1 Second vertex Y coordinate
- * @param x2 Third vertex X coordinate
- * @param y2 Third vertex Y coordinate
- * @param isFilled true to fill the triangle, false for an outline only
+ * @brief Draw a triangle geometric primitive.
+ * @param display U8g2 reference.
+ * @param x0 Vertex 0 X.
+ * @param y0 Vertex 0 Y.
+ * @param x1 Vertex 1 X.
+ * @param y1 Vertex 1 Y.
+ * @param x2 Vertex 2 X.
+ * @param y2 Vertex 2 Y.
+ * @param isFilled true for solid, false for wireframe.
  */
 void drawTriangle(U8G2& display, int x0, int y0, int x1, int y1, int x2, int y2, bool isFilled) {
   if (isFilled) {

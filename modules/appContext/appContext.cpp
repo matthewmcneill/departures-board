@@ -12,14 +12,12 @@
  * Description: Implementation of the central appContext orchestrator.
  *
  * Exported Functions/Classes:
- * - appContext::appContext: Constructor initializes core state.
- * - appContext::begin: Master initialization sequence for all hardware and
- * software services.
- * - appContext::tick: Central administrative loop for high-level tasks.
- * - appContext::reapplyConfig: Globally triggers a refresh across all managers.
- * - appContext::getAppState: Accessor for the core system state.
- * - yieldCallbackWrapper: Global yield relay for non-blocking I/O.
- * - raildataYieldWrapper: Global progress callback relay for National Rail.
+ * - appContext: [Class implementation]
+ *   - begin: Master initialization sequence for all hardware and software services.
+ *   - tick: Central administrative loop for high-level tasks and state transitions.
+ *   - softResetBoard: Re-initializes the application state from flash.
+ *   - getBuildTime: Utility for version reporting.
+ *   - setInputDevice: Attaches a unique hardware interaction driver.
  */
 
 #include "appContext.hpp"
@@ -40,6 +38,10 @@
 /**
  * @brief Construct the appContext and its managed service singletons.
  */
+/**
+ * @brief Construct a new appContext.
+ * Initializes the message pool and scheduler and sets initial state to BOOTING.
+ */
 appContext::appContext()
     : globalMessagePool(4), schedule(this), currentState(AppState::BOOTING),
       webServerInitialized(false), firstLoad(true), startupProgressPercent(0), 
@@ -47,6 +49,9 @@ appContext::appContext()
   // Note: Managers are initialized via their default constructors here.
 }
 
+/**
+ * @brief Explicit destructor to handle std::unique_ptr cleanup.
+ */
 appContext::~appContext() = default;
 
 /**
@@ -459,7 +464,8 @@ String appContext::getBuildTime() {
 }
 
 /**
- * @brief Set the hardware input device for interaction.
+ * @brief Attach a hardware interaction driver.
+ * @param device Unique pointer to a buttonHandler implementation.
  */
 void appContext::setInputDevice(std::unique_ptr<buttonHandler> device) {
   inputDevice = std::move(device);

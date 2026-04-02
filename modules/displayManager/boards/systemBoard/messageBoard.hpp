@@ -7,12 +7,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/messageBoard.hpp
+ * Module: modules/displayManager/boards/systemBoard/messageBoard.hpp
  * Description: Generic screen for formatting arbitrary error headers, bold titles,
  *              and multi-line subtitular content. Used heavily for system alerts.
  *
  * Exported Functions/Classes:
- * - MessageBoard: Class extending iDisplayBoard to handle error/alert layouts.
+ * - MessageBoard: [Class] Board for error and alert layouts.
+ *   - setContent(): Injects small header, bold title, and up to 4 body lines.
+ *   - setWarningIcon(): Toggles visibility of the warning glyph.
+ *   - init(): Service injection point.
+ *   - onActivate() / onDeactivate(): Lifecycle management hooks.
+ *   - tick() / render(): Logic and drawing entry points.
  */
 
 #ifndef MESSAGE_BOARD_HPP

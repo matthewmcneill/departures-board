@@ -12,15 +12,11 @@
  * Description: Implementation of TfL Tube board logic.
  *
  * Exported Functions/Classes:
- * - TfLBoard: Controller for TfL Tube/London Underground boards.
- *   - onActivate(): Lifecycle hook for activation.
- *   - onDeactivate(): Lifecycle hook for deactivation.
- *   - configure(const BoardConfig& config): Apply settings.
- *   - tick(uint32_t ms): Periodic logic update.
- *   - updateData(): Fetch background data.
- *   - render(U8G2& display): Standard render pass.
- *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): Animation
- * pass.
+ * - TfLBoard: [Class implementation]
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - tick() / render(): Logic and drawing entry points.
+ *   - updateData(): Initiates JSON fetch from TfL API.
+ *   - configure(): Applies BoardConfig settings.
  */
 
 #include "tflBoard.hpp"
@@ -51,7 +47,7 @@ TfLBoard::TfLBoard(appContext *contextPtr)
 }
 
 /**
- * @brief Cleanup layout allocations.
+ * @brief Cleanup allocated resources and layouts.
  */
 TfLBoard::~TfLBoard() {
   if (context) {
@@ -62,8 +58,8 @@ TfLBoard::~TfLBoard() {
 }
 
 /**
- * @brief Lifecycle hook for activation. Configures the data source
- *        and prepares the layout widgets.
+ * @brief Called when the board becomes the active display.
+ * Configures the data source and prepares the layout widgets.
  */
 void TfLBoard::onActivate() {
   dataSource.configure(tubeId, tflAppkey);
@@ -146,7 +142,7 @@ void TfLBoard::tick(uint32_t ms) {
 }
 
 /**
- * @brief Triggers or polls the background data fetch status.
+ * @brief Trigger an asynchronous data refresh from TfL APIs.
  * @return UpdateStatus code.
  */
 UpdateStatus TfLBoard::updateData() {
@@ -209,8 +205,8 @@ UpdateStatus TfLBoard::updateData() {
 }
 
 /**
- * @brief Renders the full board including error state handling.
- * @param display Reference to U8g2.
+ * @brief Main rendering hook for the entire board.
+ * @param display Reference to the global U8g2 instance.
  */
 void TfLBoard::render(U8G2 &display) {
   if (context && context->getWifiManager().isWifiPersistentError()) {
@@ -266,7 +262,7 @@ void TfLBoard::render(U8G2 &display) {
 
 /**
  * @brief Targeted high-speed animation updates for scrollers and clocks.
- * @param display Reference to U8g2.
+ * @param display Reference to the global U8g2 instance.
  * @param currentMillis Current system time in milliseconds.
  */
 void TfLBoard::renderAnimationUpdate(U8G2 &display, uint32_t currentMillis) {

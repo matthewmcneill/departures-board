@@ -12,10 +12,9 @@
  * Description: Implementation of the Wi-Fi status warning widget.
  *
  * Exported Functions/Classes:
- * - wifiStatusWidget: Graphical icon indicator for WiFi loss.
+ * - wifiStatusWidget: [Class implementation]
  *   - tick(): Monitors connection state and handles blinking timers.
  *   - render(): Draws the icon to the screen buffer.
- *   - renderAnimationUpdate(): Performs partial screen refresh for blinking.
  */
 
 #include <widgets/wifiStatusWidget.hpp>
@@ -23,7 +22,7 @@
 #include "drawingPrimitives.hpp"
 
 /**
- * @brief Constructor for the Wi-Fi status widget.
+ * @brief Initialize the Wi-Fi status widget.
  * @param _x X coordinate for the icon.
  * @param _y Y coordinate for the icon.
  */
@@ -79,7 +78,7 @@ void wifiStatusWidget::tick(uint32_t currentMillis) {
 }
 
 /**
- * @brief Renders the disconnected icon to the display buffer if not connected.
+ * @brief Renders the disconnected icon or RSSI bars to the display buffer.
  * @param display Reference to the global U8g2 instance.
  */
 void wifiStatusWidget::render(U8G2& display) {

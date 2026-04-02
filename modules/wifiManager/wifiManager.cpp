@@ -11,14 +11,12 @@
  * Description: Implementation of Wi-Fi credentials management and architecture-independent configuration logic.
  *
  * Exported Functions/Classes:
- * - WifiManager: Class for managing WiFi connectivity and captive portal.
- *   - begin(): Initializes WiFi and enters AP mode if no credentials found.
- *   - reapplyConfig(): Responds to hostname configuration changes.
- *   - tick(): Periodic non-blocking lifecycle management loop.
- *   - processDNS(): Intercepts captive portal DNS requests in AP mode.
- *   - updateWiFi(): Persists new WiFi credentials to LittleFS.
- *   - resetSettings(): Erases WiFi configuration and restores ESP WiFi state.
- *   - testConnection(): Connects to standard AP momentarily to validate credentials.
+ * - WifiManager: [Class implementation]
+ *   - begin: Initial non-blocking hardware initialization.
+ *   - tick: Main non-blocking state machine for connection maintenance.
+ *   - updateWiFi: Configuration persistence.
+ *   - resetSettings: Complete credential cleanup.
+ *   - testConnection: Momentary connection probe for verification.
  */
 #include <Arduino.h>
 #include <FS.h>
@@ -100,6 +98,11 @@ void WifiManager::transitionTo(WiFiState newState) {
 
 /**
  * @brief Core initialization routine (Non-Blocking).
+ */
+/**
+ * @brief Core initialization routine (Non-Blocking).
+ * Prepares the radio state but does not perform immediate connection; connectivity is managed in tick().
+ * @param hostname Optional hostname to set for station/AP modes.
  */
 void WifiManager::begin(const char* hostname) {
     if (hostname != nullptr) strlcpy(currentHostname, hostname, sizeof(currentHostname));
@@ -223,6 +226,14 @@ void WifiManager::updateWiFi(const char* ssid, const char* pass) {
     saveWiFiConfig();
 }
 
+/**
+ * @brief Test a WiFi connection without permanently changing stored credentials.
+ * Temporarily disconnects the current session to probe a new network.
+ * @param ssid SSID to test.
+ * @param pass Password to test (empty string to use current stored).
+ * @param ipOut [Out] String to store IP address on successful connection.
+ * @return true if connection was established within timeout.
+ */
 bool WifiManager::testConnection(const char* ssid, const char* pass, String& ipOut) {
     LOG_INFO("WIFI", "WIFI_TEST: Starting connection test...");
     

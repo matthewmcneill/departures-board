@@ -8,20 +8,21 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/busBoard/busBoard.hpp
- * Description: Controller for TfL Bus departure boards. Manages the 
- *              asynchronous lifecycle of bus stop arrivals using the 
- *              Instant API.
+ * Description: Controller for TfL Bus departure boards.
  *
  * Exported Functions/Classes:
- * - BusBoard: Controller class for Bus displays.
+ * - BusBoard: [Class] Core controller for Bus displays.
+ *   - getBoardName(): Semantic identity for telemetry.
  *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
- *   - tick(): Logic update for timing and scrollers.
- *   - render(): Full frame drawing.
- *   - renderAnimationUpdate(): Targeted redraw for animation quality.
+ *   - tick() / render(): Logic and drawing entry points.
  *   - updateData(): Initiates JSON fetch from TfL API.
- *   - configure(): Applies BoardConfig settings to local state.
+ *   - configure(): Applies BoardConfig settings.
  *   - getLastErrorMsg(): Accessor for data source error strings.
  *   - getWeatherStatus(): Accessor for shared weather state.
+ *   - isScrollFinished(): Scrolling completion check.
+ *   - setBusAtco / getBusAtco: ATCO code management.
+ *   - setBusName / getBusName: Bus stop name management.
+ *   - setBusFilter / getBusFilter: Route filtering management.
  */
 
 #ifndef BUS_BOARD_HPP

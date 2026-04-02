@@ -6,7 +6,16 @@
  *
  * Module: modules/displayManager/boards/systemBoard/diagnosticBoard.hpp
  * Description: Controller for the hardware diagnostic and calibration board.
- *              Renders a coordinate grid and alignment boxes.
+ *
+ * Exported Functions/Classes:
+ * - DiagnosticBoard: [Class] Core controller for hardware diagnostics.
+ *   - getBoardName(): Semantic identity for telemetry.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - tick() / render(): Logic and drawing entry points.
+ *   - configure(): Logic for applying optional display parameters.
+ *   - updateData(): No-op data pull (fixed logic result).
+ *   - getLastErrorMsg(): Error accessor.
+ *   - getWeatherStatus(): Shared weather state accessor.
  */
 
 #ifndef DIAGNOSTIC_BOARD_HPP

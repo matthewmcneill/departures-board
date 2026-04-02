@@ -9,19 +9,14 @@
  * this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp
- * Description: Implementation of National Rail controller logic and widget
- * binding.
+ * Description: Implementation of National Rail controller logic and widget binding.
  *
  * Exported Functions/Classes:
- * - NationalRailBoard: Controller for NR departure boards.
- *   - onActivate(): Lifecycle hook for activation.
- *   - onDeactivate(): Lifecycle hook for deactivation.
- *   - configure(const BoardConfig& config): Apply settings.
- *   - tick(uint32_t ms): Periodic logic update.
- *   - updateData(): Fetch background data.
- *   - render(U8G2& display): Standard render pass.
- *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): Animation
- * pass.
+ * - NationalRailBoard: [Class implementation]
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - tick() / render(): Logic and drawing entry points.
+ *   - updateData(): Triggers asynchronous SOAP fetch from OpenLDBWS.
+ *   - configure(): Applies BoardConfig settings.
  */
 
 #include "nationalRailBoard.hpp"
@@ -151,7 +146,7 @@ void NationalRailBoard::configure(const BoardConfig &config) {
 }
 
 /**
- * @brief Logic update for the board, including destination/via toggling.
+ * @brief Main logic loop. Handles timing for "Via" point toggles and layout animations.
  * @param ms Current system time in milliseconds.
  */
 void NationalRailBoard::tick(uint32_t ms) {
@@ -168,7 +163,8 @@ void NationalRailBoard::tick(uint32_t ms) {
 }
 
 /**
- * @brief Triggers or polls the background SOAP data fetch status.
+ * @brief Trigger an asynchronous data refresh from National Rail LDBWS.
+ * Calls into the DataManager to queue a priority SOAP request.
  * @return UpdateStatus code.
  */
 UpdateStatus NationalRailBoard::updateData() {
@@ -252,9 +248,9 @@ UpdateStatus NationalRailBoard::updateData() {
 }
 
 /**
- * @brief Renders the full National Rail board including Row 0 and secondary
- * list.
- * @param display Reference to U8g2.
+ * @brief Main rendering entry point for the National Rail board.
+ * Renders errors, setup help, or the active layout based on state.
+ * @param display Reference to the global U8g2 graphics instance.
  */
 void NationalRailBoard::render(U8G2 &display) {
   if (context && context->getWifiManager().isWifiPersistentError()) {

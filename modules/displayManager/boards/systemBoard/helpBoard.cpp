@@ -7,8 +7,13 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/helpBoard.cpp
+ * Module: modules/displayManager/boards/systemBoard/helpBoard.cpp
  * Description: Implementation of the Help Board.
+ *
+ * Exported Functions/Classes:
+ * - HelpBoard: [Class implementation]
+ *   - setHelpContent(): Clamps and assigns the instructional text.
+ *   - render(): Draws centered header and left-aligned body text.
  */
 
 #include "helpBoard.hpp"
@@ -16,6 +21,10 @@
 #include "../../widgets/drawingPrimitives.hpp"
 #include <string.h>
 
+/**
+ * @brief Construct a new Help Board.
+ * Zero-initializes line pointers and title.
+ */
 HelpBoard::HelpBoard() : lineCount(0) {
     title[0] = '\0';
     for (int i = 0; i < 5; i++) {
@@ -23,6 +32,12 @@ HelpBoard::HelpBoard() : lineCount(0) {
     }
 }
 
+/**
+ * @brief Update the displayed text lines.
+ * @param h Header title.
+ * @param textArr Array of string pointers for the body.
+ * @param count Number of elements in textArr.
+ */
 void HelpBoard::setHelpContent(const char* h, const char* textArr[], int count) {
     if (h) strlcpy(title, h, sizeof(title));
     lineCount = (count > 5) ? 5 : count; // clamp
@@ -37,9 +52,17 @@ void HelpBoard::onActivate() {
 void HelpBoard::onDeactivate() {
 }
 
+/**
+ * @brief Periodic logic tick (no-op for help board).
+ */
 void HelpBoard::tick(uint32_t ms) {
 }
 
+/**
+ * @brief Primary render pass.
+ * Draws the centered title and left-aligned body lines.
+ * @param display Global U8g2 reference.
+ */
 void HelpBoard::render(U8G2& display) {
     display.setFont(NatRailSmall9);
     

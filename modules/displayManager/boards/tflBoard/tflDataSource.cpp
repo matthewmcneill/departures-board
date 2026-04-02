@@ -8,16 +8,16 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/tflBoard/tflDataSource.cpp
- * Description: Implementation of TfL data source ported from TfLdataClient.
+ * Description: Implementation of TfL data source.
  *
  * Exported Functions/Classes:
- * - tflDataSource: Data client for TfL Unified API.
+ * - tflDataSource: [Class implementation]
  *   - configure(): Sets Naptan ID and optional API key.
- *   - updateData(): Performs SSL GET request and parses JSON response.
- *   - getStation(): Accessor for parsed station metadata.
- *   - getServicesCount(): Returns current found arrivals.
- *   - getService(): Accessor for individual arrival data.
- *   - getMessagesCount(): Accessor for line disruption messages.
+ *   - updateData(): Initiates JSON fetch.
+ *   - executeFetch(): Internal synchronous HTTPS pipeline.
+ *   - testConnection(): Validates API credentials and station IDs.
+ *   - getStationData(): Accessor for parsed station metadata.
+ *   - getMessagesData(): Accessor for line disruption messages.
  */
 
 #include "tflDataSource.hpp"
@@ -34,6 +34,10 @@ extern class appContext appContext;
 
 const char* tflDataSource::serviceNumbers[TFL_MAX_FETCH] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
 
+/**
+ * @brief Initialize the TfL data source.
+ * Allocates background and render buffers (TflStation) and creates synchronization mutexes.
+ */
 tflDataSource::tflDataSource() : id(0), maxServicesRead(false), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     renderData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
@@ -51,11 +55,21 @@ tflDataSource::tflDataSource() : id(0), maxServicesRead(false), messagesData(4),
     isTestMode = false;
 }
 
+/**
+ * @brief Configure station ID and API key.
+ * @param naptanId The TfL Naptan ID.
+ * @param apiKey Your TfL API App Key.
+ */
 void tflDataSource::configure(const char* naptanId, const char* apiKey) {
     if (naptanId) strlcpy(tubeId, naptanId, sizeof(tubeId));
     if (apiKey) strlcpy(tflAppkey, apiKey, sizeof(tflAppkey));
 }
 
+/**
+ * @brief Trigger an asynchronous data refresh.
+ * Marks the task as pending and requests a priority fetch from the DataManager.
+ * @return UpdateStatus::PENDING.
+ */
 UpdateStatus tflDataSource::updateData() {
     if (taskStatus == UpdateStatus::PENDING) {
         return UpdateStatus::PENDING;

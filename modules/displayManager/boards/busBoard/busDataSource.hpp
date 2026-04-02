@@ -9,21 +9,23 @@
  *
  * Module: modules/displayManager/boards/busBoard/busDataSource.hpp
  * Description: Bus-specific data source implementing iDataSource.
- *              Fetches and parses bus arrival information from bustimes.org.
  *
  * Exported Functions/Classes:
- * - BusService: Structure representing a single bus service arrival.
- * - BusStop: Structure holding data for a bus stop, including multiple services.
- * - busDataSourceCallback: Callback for when bus data is updated.
- * - busDataSource: Class that fetches and parses bus arrival information.
- * - busDataSource::updateData: Fetches latest bus arrival data.
- * - busDataSource::configure: Configures the data source with stop location and filters.
- * - busDataSource::getStationData: Returns the current station data.
- * - busDataSource::getStopLongName: Retrieves the long name of a bus stop.
- * - busDataSource::cleanFilter: Cleans a raw filter string.
+ * - busDataSource: [Class] Data client for bustimes.org.
+ *   - updateData(): Initiates JSON fetch.
+ *   - getLastUpdateStatus(): Retrieval of fetch result codes.
+ *   - getLastErrorMsg(): Accessor for source error strings.
+ *   - testConnection(): Validates station IDs.
+ *   - getNextFetchTime() / setNextFetchTime(): Polling interval management.
+ *   - getPriorityTier(): Context-aware fetch prioritization.
+ *   - configure(): Sets ATCO code and route filters.
+ *   - getStationData(): Accessor for parsed station metadata.
+ *   - getMessagesData(): Accessor for disruption messages.
+ *   - getStopLongName(): Retrieves human-readable stop name.
+ *   - cleanFilter(): Utility for route string normalization.
  *   - executeFetch(): Internal synchronous HTTPS scraping pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning HTML scraping.
- *   - serviceNumbers: Static array of stable pointers for numbering (1-20).
+ * - BusService: [Struct] Single service arrival record.
+ * - BusStop: [Struct] Bus stop arrival board model.
  */
 
 #ifndef BUS_DATA_SOURCE_HPP

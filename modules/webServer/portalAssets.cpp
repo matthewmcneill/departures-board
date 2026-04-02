@@ -7,9 +7,15 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: Portal Assets
+ * Module: modules/webServer/portalAssets.cpp
  * Description: Automated Portal Assets - embedded gzipped binary data.
- * Exported cleanly via .h/.cpp to remain in ESP32 Flash (.rodata) and conserve RAM.
+ *
+ * Exported Functions/Classes:
+ * - [Namespace/Global]: Contains gzipped binary buffers for web frontend.
+ *   - index_html_gz: Root application HTML.
+ *   - bootstrap_min_css_gz / bootstrap_min_js_gz: UI framework assets.
+ *   - app_js_gz / app_css_gz: Main application logic and styling.
+ *   - logo_png_gz / favicon_ico_gz: Branding assets.
  */
 #include "portalAssets.h"
 

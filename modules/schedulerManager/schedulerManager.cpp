@@ -10,13 +10,12 @@
  * Module: modules/schedulerManager/schedulerManager.cpp
  * Description: Implementation of the scheduler logic. Evaluates the current system time 
  *              against configured rules and manual overrides.
- *              Updated in v3.0 to include robust change detection and logging.
  *
  * Exported Functions/Classes:
- * - schedulerManager::schedulerManager: Constructor initializes context reference.
- * - schedulerManager::begin: Performs initial rule evaluation and state stabilization.
- * - schedulerManager::triggerManualOverride: Initiates a high-priority display override.
- * - schedulerManager::getActiveBoards: Performs the core time-based schedule evaluation.
+ * - schedulerManager: [Class implementation]
+ *   - begin: Loads config and stabilizes the initial state.
+ *   - triggerManualOverride: Resets the "keep-awake" timer.
+ *   - getActiveBoards: The primary time-gate logic for display rotation.
  */
 
 #include "schedulerManager.hpp"
@@ -56,6 +55,11 @@ void schedulerManager::triggerManualOverride() {
     LOG_INFO("SCHEDULER", "🔘 [SCHEDULER] Manual override triggered. Timeout reset.");
 }
 
+/**
+ * @brief Evaluates the current time and state to solve for allowed display slots.
+ * Implements rule priority, midnight wraparound, and empty-set fallback.
+ * @return std::vector<int> List of indices for boards enabled right now.
+ */
 std::vector<int> schedulerManager::getActiveBoards() {
     std::vector<int> activeSlots;
     if (!context) return activeSlots;

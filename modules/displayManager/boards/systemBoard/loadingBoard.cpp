@@ -9,6 +9,12 @@
  *
  * Module: modules/displayManager/boards/systemBoard/loadingBoard.cpp
  * Description: Implementation of the system startup and progress screen.
+ *
+ * Exported Functions/Classes:
+ * - LoadingBoard: [Class implementation]
+ *   - setProgress() / setHeading(): Visual progress and title updates.
+ *   - setNotice() / setBuildTime(): Footer and status updates.
+ *   - render(): Draw full screen layout including branding header.
  */
 
 #include "loadingBoard.hpp"

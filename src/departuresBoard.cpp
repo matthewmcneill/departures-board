@@ -48,12 +48,12 @@
 
 /*
  * Module: src/departuresBoard.cpp
- * Description: Main application entry point for the Departures Board.
+ * Description: Main application entry point for the Departures Board firmware.
  *              Manages hardware initialization and the core executive loop.
  *
  * Exported Functions/Classes:
- * - setup: Hardware and software initialization.
- * - loop: Main application polling and animation loop.
+ * - setup: Hardware and software initialization bootstrap.
+ * - loop: Primary executive rendering and maintenance loop.
  */
 
 // -----------------------------------------------------------------------------
@@ -75,7 +75,7 @@
 // Global Object Instantiations
 // -----------------------------------------------------------------------------
 
-appContext appContext;
+appContext appContext; // Global context managing application state and shared services
 
 // -----------------------------------------------------------------------------
 // Environment Variables & State Management
@@ -88,7 +88,8 @@ appContext appContext;
 // -----------------------------------------------------------------------------
 
 /**
- * @brief Initialize hardware and software components.
+ * @brief Initialize all system hardware and software components.
+ * Configures serial logging, starts the appContext orchestrator, and enters the boot splash sequence.
  */
 void setup(void) {
   LOG_BEGIN(115200);

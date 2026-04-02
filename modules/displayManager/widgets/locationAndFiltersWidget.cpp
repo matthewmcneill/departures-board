@@ -9,6 +9,13 @@
  *
  * Module: modules/displayManager/widgets/locationAndFiltersWidget.cpp
  * Description: Implementation of consolidated metadata layout logic.
+ *
+ * Exported Functions/Classes:
+ * - locationAndFiltersWidget: [Class implementation]
+ *   - setLocation/setFilters: Buffer assignment with change detection.
+ *   - tick: Animates the marquee scroll for overflow text.
+ *   - render: Main drawing logic with dynamic 60/40 width partitioning.
+ *   - renderAnimationUpdate: Optimized partial screen update for scrolling.
  */
 
 #include "locationAndFiltersWidget.hpp"
@@ -17,7 +24,11 @@
 #include <string.h>
 
 /**
- * @brief Construct a new consolidated header widget.
+ * @brief Initialize the consolidated header widget.
+ * @param _x X coordinate.
+ * @param _y Y coordinate.
+ * @param _w Width.
+ * @param _h Height.
  */
 locationAndFiltersWidget::locationAndFiltersWidget(int _x, int _y, int _w, int _h)
     : iGfxWidget(_x, _y, _w, _h), font(nullptr), 
@@ -31,7 +42,8 @@ locationAndFiltersWidget::locationAndFiltersWidget(int _x, int _y, int _w, int _
 }
 
 /**
- * @brief Set the location text.
+ * @brief Update the primary location label.
+ * @param text Station name or location string.
  */
 void locationAndFiltersWidget::setLocation(const char* text) {
     if (text == nullptr) {
@@ -44,7 +56,8 @@ void locationAndFiltersWidget::setLocation(const char* text) {
 }
 
 /**
- * @brief Set the filters text.
+ * @brief Update the filter/via information string.
+ * @param text Filter/metadata string.
  */
 void locationAndFiltersWidget::setFilters(const char* text) {
     if (text == nullptr) {
@@ -94,6 +107,8 @@ void locationAndFiltersWidget::tick(uint32_t currentMillis) {
 
 /**
  * @brief Paints the widget entirely on-demand.
+ * Recalculates layout partitions (60/40) if strings have changed.
+ * @param display U8G2 reference.
  */
 void locationAndFiltersWidget::render(U8G2& display) {
     if (!isVisible || !font) return;

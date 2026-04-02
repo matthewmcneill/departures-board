@@ -14,10 +14,10 @@
  *              Stateless implementation that updates provided WeatherStatus objects.
  *
  * Exported Functions/Classes:
- * - weatherClient: Main service class for OpenWeatherMap integration.
- * - weatherClient::updateWeather: Fetches and parses weather data for a status object.
- *   - executeFetch(): Internal synchronous HTTP pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
+ * - weatherClient: [Class] Service for OpenWeatherMap integration.
+ *   - updateWeather(): UI-driven manual sync.
+ *   - executeFetch(): Task-worker entry for background fetching.
+ *   - reapplyConfig(): Dynamic API key and preference sync.
  */
 #pragma once
 #include <Arduino.h>
