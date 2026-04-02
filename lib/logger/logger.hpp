@@ -17,6 +17,15 @@
  *   - logSplashMessage(): Prints a framed splash message.
  *   - registerSecret(): Adds a string to the redaction list.
  *   - _info(), _warn(), _error(), _debug(): Internal logging handlers.
+ *
+ * Macros:
+ * - LOG_BEGIN(baud): Macro-guarded Serial initialization.
+ * - LOG_REGISTER_SECRET(secret): Macro-guarded secret registration.
+ * - LOG_ERROR(sub, msg): Macro-guarded error logging.
+ * - LOG_WARN(sub, msg): Macro-guarded warning logging.
+ * - LOG_INFO(sub, msg): Macro-guarded info logging.
+ * - LOG_DEBUG(sub, msg): Macro-guarded debug logging.
+ * - LOG_SPLASH(msg): Macro-guarded splash message logging.
  */
 #pragma once
 
@@ -28,9 +37,13 @@
 #endif
 
 #if CORE_DEBUG_LEVEL >= 1
-  #define LOG_ERROR(sub, msg) Logger::_error(sub, msg)
+  #define LOG_ERROR(sub, msg)           Logger::_error(sub, msg)
+  #define LOG_BEGIN(baud)               Logger::begin(baud)
+  #define LOG_REGISTER_SECRET(secret)    Logger::registerSecret(secret)
 #else
   #define LOG_ERROR(sub, msg)
+  #define LOG_BEGIN(baud)
+  #define LOG_REGISTER_SECRET(secret)
 #endif
 
 #if CORE_DEBUG_LEVEL >= 2

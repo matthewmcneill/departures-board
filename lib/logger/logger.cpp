@@ -18,7 +18,10 @@
  *   - redact(): Filters sensitive strings from logs.
  */
 
-#include <logger.hpp>
+#include "logger.hpp"
+#include <Arduino.h>
+
+#if CORE_DEBUG_LEVEL > 0
 
 std::vector<String> Logger::secrets; // Registry of sensitive strings to be redacted
 
@@ -36,7 +39,6 @@ void Logger::begin(unsigned long baud) {
  * @param message The text to be framed.
  */
 void Logger::logSplashMessage(const char* message) {
-#if CORE_DEBUG_LEVEL > 0
   if (message == nullptr) return;
   size_t len = strlen(message);
   
@@ -48,7 +50,6 @@ void Logger::logSplashMessage(const char* message) {
   Serial.println(" ###");
   for (size_t i = 0; i < len + 8; i++) Serial.print("#");
   Serial.println("\n");
-#endif
 }
 
 /**
@@ -85,13 +86,11 @@ String Logger::redact(const String& message) {
  * @param message The raw message to be logged.
  */
 void Logger::printRedacted(const String& icon, const char* category, const String& message) {
-#if CORE_DEBUG_LEVEL > 0
   Serial.print(icon);
   Serial.print(" [");
   Serial.print(category);
   Serial.print("] ");
   Serial.println(redact(message));
-#endif
 }
 
 /**
@@ -102,7 +101,6 @@ void Logger::printRedacted(const String& icon, const char* category, const Strin
  * @param message The raw literal string to be logged.
  */
 void Logger::printRedacted(const String& icon, const char* category, const char* message) {
-#if CORE_DEBUG_LEVEL > 0
   Serial.print(icon);
   Serial.print(" [");
   Serial.print(category);
@@ -112,7 +110,6 @@ void Logger::printRedacted(const String& icon, const char* category, const char*
   } else {
     Serial.println(redact(String(message)));
   }
-#endif
 }
 
 /**
@@ -158,3 +155,5 @@ void Logger::_debug(const char* category, const String& message) {
 void Logger::_debug(const char* category, const char* message) {
   printRedacted("🔵", category, message);
 }
+
+#endif // CORE_DEBUG_LEVEL > 0

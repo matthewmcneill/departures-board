@@ -139,7 +139,7 @@ void ConfigManager::loadApiKeys() {
       // Register secrets for redaction
       for (int i = 0; i < config.keyCount; i++) {
         if (config.keys[i].token[0]) {
-          Logger::registerSecret(config.keys[i].token);
+          LOG_REGISTER_SECRET(config.keys[i].token);
         }
       }
 

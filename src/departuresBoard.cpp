@@ -110,7 +110,7 @@ appContext appContext;
  * @brief Initialize hardware and software components.
  */
 void setup(void) {
-  Logger::begin();
+  LOG_BEGIN(115200);
 
   LOG_INFO("SYSTEM", "Starting boot sequence...");
   appContext.begin();
