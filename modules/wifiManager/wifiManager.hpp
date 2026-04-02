@@ -11,10 +11,12 @@
  * Description: Wi-Fi credentials management and architecture-independent configuration logic.
  *
  * Exported Functions/Classes:
- * - WifiManager: Class for managing WiFi connectivity and captive portal.
- *   - begin(): Initializes WiFi and enters AP mode if no credentials found.
+ * - WifiManager: Standard ESP32 WiFi lifecycle manager.
+ *   - begin(): Connects to the primary station and initializes AP mode.
+ *   - tick(): State machine for connection monitoring and retry logic.
+ *   - isWifiPersistentError(): Checks if the network has been down for >10 mins.
+ *   - updateMyUrl(): Generates the local access URL based on IP/MDNS.
  *   - reapplyConfig(): Responds to hostname configuration changes.
- *   - tick(): Periodic non-blocking lifecycle management loop.
  *   - processDNS(): Intercepts captive portal DNS requests in AP mode.
  *   - updateWiFi(): Persists new WiFi credentials to LittleFS.
  *   - resetSettings(): Erases WiFi configuration and restores ESP WiFi state.
@@ -58,6 +60,8 @@ private:
     WiFiState currentState = WiFiState::WIFI_INIT;
     unsigned long stateTimer = 0;
     int connectionRetries = 0;
+    unsigned long wifiDisconnectTimer = 0; ///< Continuous downtime counter (ms)
+    char myUrl[24];                        ///< Formatted string URL for local IP
 
     std::unique_ptr<DNSServer> dnsServer;
 
@@ -131,6 +135,22 @@ public:
      * @return true on success
      */
     bool testConnection(const char* ssid, const char* pass, String& ipOut);
+
+    /**
+     * @brief Update the internal URL string for the Web GUI based on current IP.
+     */
+    void updateMyUrl();
+
+    /**
+     * @brief Returns the internal URL string for the Web GUI.
+     */
+    const char* getMyUrl() const { return myUrl; }
+
+    /**
+     * @brief Returns true if WiFi has been disconnected for a prolonged period
+     * (e.g. 3 mins).
+     */
+    bool isWifiPersistentError() const;
 };
 
 #endif

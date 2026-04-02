@@ -96,7 +96,7 @@ void FirmwareUpdateBoard::render(U8G2& display) {
         case FwUpdateState::DOWNLOADING:
             loadBoard.setHeading("Departures Board");
             if (context) {
-                loadBoard.setBuildTime(context->getsystemManager().getBuildTime().c_str());
+                loadBoard.setBuildTime(context->getBuildTime().c_str());
             }
             loadBoard.setProgress("Downloading Firmware", downloadPercent);
             loadBoard.render(display);

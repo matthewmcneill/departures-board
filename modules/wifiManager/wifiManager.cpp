@@ -32,10 +32,11 @@
 #include <esp_wifi.h>
 
 
-WifiManager::WifiManager() {
+WifiManager::WifiManager() : wifiDisconnectTimer(0) {
     memset(wifiSsid, 0, sizeof(wifiSsid));
     memset(wifiPass, 0, sizeof(wifiPass));
     memset(currentHostname, 0, sizeof(currentHostname));
+    strlcpy(myUrl, "http://0.0.0.0", sizeof(myUrl));
 }
 
 WifiManager::~WifiManager() {
@@ -140,6 +141,8 @@ void WifiManager::tick() {
             if (WiFi.status() == WL_CONNECTED) {
                 LOG_INFO("WIFI", String("Connected successfully. IP: ") + WiFi.localIP().toString());
                 isAPMode = false;
+                wifiDisconnectTimer = 0; // Reset downtime tracker
+                updateMyUrl();
                 transitionTo(WiFiState::WIFI_READY);
             } else if (millis() - stateTimer > 15000) { // 15 second timeout for STA
                 LOG_WARN("WIFI", "WiFi connection timed out. Falling back to AP.");
@@ -175,6 +178,11 @@ void WifiManager::tick() {
             
             // Reconnection logic: If we're in STA mode and lost connection
             if (!isAPMode && WiFi.status() != WL_CONNECTED) {
+                // If this is the first tick since disconnection, start the timer
+                if (wifiDisconnectTimer == 0) {
+                    wifiDisconnectTimer = millis();
+                }
+
                 // Wait 10 seconds before attempting to recycle the connection
                 if (millis() - stateTimer > 10000) {
                     LOG_WARN("WIFI", "Primary connection lost. Retrying...");
@@ -183,6 +191,9 @@ void WifiManager::tick() {
             } else {
                 // Reset timer if we are connected or in AP mode
                 stateTimer = millis();
+                if (WiFi.status() == WL_CONNECTED) {
+                    wifiDisconnectTimer = 0;
+                }
             }
             break;
 
@@ -284,4 +295,23 @@ void WifiManager::reapplyConfig(const Config& config) {
         // mDNS usually needs to be restarted or updated if the hostname changes
         MDNS.begin(currentHostname);
     }
+}
+
+/**
+ * @brief Update the internal URL string for the Web GUI.
+ */
+void WifiManager::updateMyUrl() {
+    IPAddress ip = WiFi.localIP();
+    snprintf(myUrl, sizeof(myUrl), "http://%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+}
+
+/**
+ * @brief Returns true if WiFi has been disconnected for longer than the timeout period (3 minutes).
+ */
+bool WifiManager::isWifiPersistentError() const {
+    if (isAPMode || (WiFi.status() == WL_CONNECTED)) return false;
+    if (wifiDisconnectTimer == 0) return false;
+    
+    // Over 3 minutes of continuous disconnection
+    return (millis() - wifiDisconnectTimer > 180000);
 }

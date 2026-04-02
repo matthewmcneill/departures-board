@@ -213,7 +213,7 @@ UpdateStatus TfLBoard::updateData() {
  * @param display Reference to U8g2.
  */
 void TfLBoard::render(U8G2 &display) {
-  if (context && context->getsystemManager().isWifiPersistentError()) {
+  if (context && context->getWifiManager().isWifiPersistentError()) {
     iDisplayBoard *wifiError = context->getDisplayManager().getSystemBoard(
         SystemBoardId::SYS_ERROR_WIFI);
     if (wifiError) {
@@ -270,7 +270,7 @@ void TfLBoard::render(U8G2 &display) {
  * @param currentMillis Current system time in milliseconds.
  */
 void TfLBoard::renderAnimationUpdate(U8G2 &display, uint32_t currentMillis) {
-  if (context && context->getsystemManager().isWifiPersistentError())
+  if (context && context->getWifiManager().isWifiPersistentError())
     return;
   if (!config.complete)
     return;

@@ -277,7 +277,7 @@ UpdateStatus NationalRailBoard::updateData() {
  * @param display Reference to U8g2.
  */
 void NationalRailBoard::render(U8G2 &display) {
-  if (context && context->getsystemManager().isWifiPersistentError()) {
+  if (context && context->getWifiManager().isWifiPersistentError()) {
     iDisplayBoard *wifiError = context->getDisplayManager().getSystemBoard(
         SystemBoardId::SYS_ERROR_WIFI);
     if (wifiError) {
@@ -377,7 +377,7 @@ void NationalRailBoard::populateServices() {
  */
 void NationalRailBoard::renderAnimationUpdate(U8G2 &display,
                                               uint32_t currentMillis) {
-  if (context && context->getsystemManager().isWifiPersistentError())
+  if (context && context->getWifiManager().isWifiPersistentError())
     return;
   if (!config.complete)
     return;

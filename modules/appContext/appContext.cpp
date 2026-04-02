@@ -24,7 +24,7 @@
 
 #include "appContext.hpp"
 #include "departuresBoard.hpp"
-#include "systemManager.hpp"
+#include "buildTime.hpp"
 #include <memory>
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
@@ -61,9 +61,12 @@ void raildataYieldWrapper(int stage, int nServices) { yieldCallbackWrapper(); }
  */
 appContext::appContext()
     : globalMessagePool(4), schedule(this), currentState(AppState::BOOTING),
-      webServerInitialized(false) {
+      webServerInitialized(false), firstLoad(true), startupProgressPercent(0), 
+      prevProgressBarPosition(0), inputDevice(nullptr) {
   // Note: Managers are initialized via their default constructors here.
 }
+
+appContext::~appContext() = default;
 
 /**
  * @brief Initialize all system services in the required boot order.
@@ -144,13 +147,13 @@ void appContext::begin() {
   wifiManager.begin(config.hostname);
 
   // 5. System Management (State & Refresh)
-  updateBootProgress(85, "Starting system manager...");
-  sysManager.begin(this);
+  updateBootProgress(85, "Optimizing application state...");
+  // systemManager is now dismantled, logic is integrated here or in domain managers.
 
 #ifdef BUTTON_PIN
   // application logic
   auto btn = std::make_unique<buttonHandler>(BUTTON_PIN);
-  sysManager.setInputDevice(std::move(btn)); // Ownership transferred to systemManager, btn becomes nullptr
+  setInputDevice(std::move(btn)); 
   LOG_INFO("SYSTEM",
            "Hardware input device attached on GPIO " + String(BUTTON_PIN));
 #else
@@ -184,21 +187,7 @@ void appContext::begin() {
   rss.setYieldCallback(yieldCallbackWrapper);
 
   // 9. Connect Observer Callbacks for UI Decoupling
-  sysManager.setBootProgressCallback([this](const char *msg, int percent) {
-    if (auto *load = static_cast<LoadingBoard *>(
-            displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
-      load->setProgress(msg, percent);
-      displayManager.showBoard(load, "systemManager Boot Progress Hook", 600);
-    }
-  });
-
-  sysManager.setSoftResetCallback([this]() {
-    currentState = AppState::BOOTING;
-    if (auto *splash = static_cast<SplashBoard *>(
-            displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_SPLASH))) {
-      displayManager.showBoard(splash, "systemManager Soft Reset Pipeline");
-    }
-  });
+  // Migrated from systemManager: Boot progress and soft reset now handled directly within appContext.
 
   otaAssetUpdater.setProgressCallback([this](int percent) {
     if (auto *fwBoard =
@@ -277,8 +266,7 @@ void appContext::tick() {
   yield();
 
   // 3. System state and refresh logic
-  sysManager.tick();
-  yield();
+  // Migrated: sysManager.tick() logic is now integrated or handle by domain managers.
 
   // 4. Evaluate AppState Reactively
   if (currentState == AppState::BOOTING) {
@@ -302,7 +290,7 @@ void appContext::tick() {
                 static_cast<LoadingBoard *>(displayManager.getSystemBoard(
                     SystemBoardId::SYS_BOOT_LOADING))) {
           load->setHeading("Departures Board");
-          load->setBuildTime(sysManager.getBuildTime().c_str());
+          load->setBuildTime(getBuildTime().c_str());
           int progress = 50;
           load->setProgress("Setting the system clock...", progress, 500);
           displayManager.showBoard(load, "Setting Clock Base");
@@ -322,7 +310,7 @@ void appContext::tick() {
         webServerInitialized = true;
       }
 
-      if (!sysManager.getFirstLoad()) {
+      if (!firstLoad) {
         if (wifiManager.getAPMode()) {
           currentState = AppState::WIFI_SETUP;
           LOG_SPLASH("APP STATE: WIFI_SETUP");
@@ -374,4 +362,95 @@ void appContext::tick() {
   // 6. Web server handle (Deprecated: ESPAsyncWebServer handles background
   // automatically)
   // yield();
+
+  // 7. Input Device Update
+  if (inputDevice) {
+    inputDevice->update();
+    if (inputDevice->wasShortTapped()) {
+      if (displayManager.getIsSleeping() || displayManager.getForcedSleep()) {
+        LOG_INFO("INPUT", "Short tap: Waking from sleep");
+        displayManager.setForcedSleep(false);
+        displayManager.resumeDisplays();
+      } else {
+        LOG_INFO("INPUT", "Short tap: Cycling mode");
+        displayManager.cycleNext();
+      }
+    } else if (inputDevice->wasLongTapped()) {
+      bool currentlySleeping = displayManager.getForcedSleep() || displayManager.getIsSleeping();
+      LOG_INFO("INPUT", String("Long tap: Toggling screensaver. Currently sleeping: ") + currentlySleeping);
+      displayManager.setForcedSleep(!currentlySleeping);
+      if (!displayManager.getForcedSleep()) {
+        displayManager.resumeDisplays();
+      }
+    }
+  }
+
+  // 8. Connection Management
+  // Migrated logic from systemManager for tracking WiFi status changes.
+  static bool wifiConnectedCached = false;
+  bool wifiConnectedNow = (WiFi.status() == WL_CONNECTED);
+  if (!wifiConnectedNow && wifiConnectedCached) {
+    wifiConnectedCached = false;
+    LOG_WARN("SYSTEM", "WiFi connection lost.");
+  } else if (wifiConnectedNow && !wifiConnectedCached) {
+    wifiConnectedCached = true;
+    LOG_INFO("SYSTEM", "WiFi connected. IP: " + WiFi.localIP().toString());
+  }
+}
+
+/**
+ * @brief Performs a soft reload of the application state based on new configuration.
+ */
+void appContext::softResetBoard() {
+  const Config& config = configManager.getConfig();
+  
+  LOG_INFO("SYSTEM", "Performing soft reset...");
+  configManager.loadConfig();
+  displayManager.applyConfig(config);
+  
+  // Timezone sync
+  if (timeManager.getTimezone() != "") {
+    setenv("TZ", timeManager.getTimezone().c_str(), 1);
+  } else {
+    setenv("TZ", TimeManager::ukTimezone, 1);
+  }
+  tzset();
+
+  currentState = AppState::BOOTING;
+  if (auto *splash = static_cast<SplashBoard *>(
+          displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_SPLASH))) {
+    displayManager.showBoard(splash, "Soft Reset Pipeline");
+  }
+
+  displayManager.resumeDisplays();
+  firstLoad = true;
+  startupProgressPercent = 70;
+  prevProgressBarPosition = 70;
+
+  globalMessagePool.clear();
+}
+
+/**
+ * @brief Get the Build Timestamp of the running firmware
+ */
+String appContext::getBuildTime() {
+#ifdef BUILD_TIME
+  return String(BUILD_TIME);
+#else
+  char timestamp[22];
+  char buildtime[11];
+  struct tm tm = {};
+
+  sprintf(timestamp,"%s %s",__DATE__,__TIME__);
+  strptime(timestamp,"%b %d %Y %H:%M:%S",&tm);
+  sprintf(buildtime,"%02d%02d%02d%02d%02d",tm.tm_year-100,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min);
+  return String(buildtime);
+#endif
+}
+
+/**
+ * @brief Set the hardware input device for interaction.
+ */
+void appContext::setInputDevice(std::unique_ptr<buttonHandler> device) {
+  inputDevice = std::move(device);
 }

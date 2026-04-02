@@ -13,10 +13,12 @@
  * Description: Client to fetch and parse RSS feeds via HTTP/HTTPS.
  *
  * Exported Functions/Classes:
- * - rssClient: Main service class for RSS feed integration.
- * - rssClient::loadFeed: Fetches and parses an RSS feed from a URL.
- * - rssClient::setYieldCallback: Registers a callback for non-blocking I/O.
- * - rssClient::reapplyConfig: Updates RSS settings from central configuration.
+ * - rssClient: XML/JSON news feed scroller with headline pool management.
+ *   - addRssMessage(): Formats and pushes global headlines to the message pool.
+ *   - removeRssMessage(): Clears active RSS content from the system.
+ *   - loadFeed(): High-level parsing entry point.
+ *   - setYieldCallback(): Registers a callback for non-blocking I/O.
+ *   - reapplyConfig(): Updates RSS settings from central configuration.
  *   - executeFetch(): Internal synchronous HTTP pipeline.
  *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
  */
@@ -33,6 +35,9 @@
 
 #define MAX_RSS_TITLES 5
 #define MAX_RSS_TITLE_SIZE 140
+
+class MessagePool; // Forward declaration
+struct Config;     // Forward declaration
 
 class rssClient: public xmlListener, public iConfigurable, public iDataSource {
 
@@ -141,6 +146,16 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
          * @brief Implements the iConfigurable interface.
          */
         virtual void reapplyConfig(const Config& config) override;
+
+        /**
+         * @brief Append RSS headlines to the scrolling message pool.
+         */
+        void addRssMessage(MessagePool& pool, const Config& config);
+
+        /**
+         * @brief Clean up RSS messages from the board message pool.
+         */
+        void removeRssMessage(MessagePool& pool);
 
         // --- iDataSource Interface Methods ---
         UpdateStatus updateData() override;

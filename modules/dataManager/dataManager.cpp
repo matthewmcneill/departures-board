@@ -17,7 +17,20 @@
 /**
  * @brief Constructor for the Centralized Data Manager.
  */
-dataManager::dataManager() : priorityEventQueue(nullptr), registryMutex(nullptr), currentlyExecuting(nullptr), workerTaskHandle(nullptr) {
+dataManager::dataManager() : 
+    priorityEventQueue(nullptr), 
+    registryMutex(nullptr), 
+    currentlyExecuting(nullptr), 
+    workerTaskHandle(nullptr),
+    nextRoundRobinUpdate(0),
+    backgroundUpdateIndex(0),
+    lastDataLoadTime(0),
+    noDataLoaded(true),
+    dataLoadSuccess(0),
+    dataLoadFailure(0),
+    lastLoadFailure(0),
+    lastUpdateResult(UpdateStatus::SUCCESS),
+    lastActiveSlotIndex(0) {
 }
 
 /**

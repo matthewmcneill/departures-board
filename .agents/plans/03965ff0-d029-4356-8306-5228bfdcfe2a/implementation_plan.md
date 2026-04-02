@@ -1,58 +1,74 @@
-# RAII and Memory Management Refactor
+# Remove Yield Callbacks & Update Multitasking Docs
 
-Resolve "Raw Pointer Allocations and RAII Violations" technical debt by migrating manual memory management (`new`/`delete`) to C++14 RAII paradigms (`std::make_unique` and `std::unique_ptr`). This ensures memory safety across transient execution paths in our continuous 24/7 environment.
+This plan removes the legacy `yieldCallback` mechanism from the firmware. These callbacks were previously used to manually trigger display refreshes during blocking network I/O. Since the migration to a dual-core FreeRTOS architecture (Core 0 for data fetching, Core 1 for rendering), these callbacks are redundant and represent technical debt. We will also update the system documentation to reflect the current multitasking architecture.
+
+## User Review Required
+
+> [!IMPORTANT]
+> This change simplifies internal API signatures for several data sources. While it reduces boilerplate, it is a breaking change for any out-of-tree modules that might rely on these callback pointers (though none are currently known).
 
 ## Proposed Changes
 
----
+### Core Architecture & AppContext
+#### [MODIFY] [appContext.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.hpp)
+- Remove `yieldCallbackWrapper()` and `raildataYieldWrapper()` function declarations.
+- Remove `extern appContext* _instance;` if it's only used for yield callbacks.
 
-### App / System Context
-#### [MODIFY] [appContext.cpp](modules/appContext/appContext.cpp)
-- Refactor dynamic allocation `new buttonHandler(BUTTON_PIN)` to use `std::make_unique<buttonHandler>` and store it safely.
-#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
-- Remove `delete inputDevice;` statements, transferring ownership internally to smart pointers.
-
----
-
-### Web Services
-#### [MODIFY] [webServer.cpp](modules/webServer/webServer.cpp)
-- Convert `new WebHandlerManager(...)` invocation to utilize `std::make_unique`.
-#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
-- Migrate `ApiTestParams` and `ApiTestDataSource` transient pointer allocations to use `std::make_unique`.
-- Update API object constructors to accept `std::unique_ptr<ApiTestParams>` and pass dependencies via `std::move()`.
-- Eliminate all manual `delete testSource;` and `delete params;` memory deallocations.
-- *Note: External `ESPAsyncWebServer` string payload references like `request->_tempObject = new String();` which expect raw memory may be isolated.*
+#### [MODIFY] [appContext.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.cpp)
+- Delete `yieldCallbackWrapper()` and `raildataYieldWrapper()` implementations.
+- Remove `_instance = this;` if the static instance is no longer required.
+- Remove calls to `weather.setYieldCallback()` and `rss.setYieldCallback()`.
 
 ---
 
-### WiFi & Weather Clients
-#### [MODIFY] [wifiManager.cpp](modules/wifiManager/wifiManager.cpp)
-- Refactor `dnsServer = new DNSServer();` to `std::make_unique` eliminating explicit `delete dnsServer;`.
-#### [MODIFY] [weatherClient.cpp](modules/weatherClient/weatherClient.cpp)
-- Modernize C++11 standard raw allocations `std::unique_ptr<T>(new (std::nothrow) T())` directly to C++14 `std::make_unique<T>()`.
+### Data Sources
+#### [MODIFY] [weatherClient.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/weatherClient/weatherClient.hpp) / [weatherClient.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/weatherClient/weatherClient.cpp)
+- Remove `yieldCallback` member and `setYieldCallback` method.
+- Remove all invocations of `yieldCallback()` within the JSON parsing loop and network fetch.
+
+#### [MODIFY] [rssClient.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/rssClient/rssClient.hpp) / [rssClient.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/rssClient/rssClient.cpp)
+- Remove `yieldCallback` member and `setYieldCallback` method.
+- Remove all invocations of `yieldCallback()` within the XML parsing loop.
+
+#### [MODIFY] [tflDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.hpp) / [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp)
+- Remove `tflDataSourceCallback` typedef and `callback` member.
+- Update `configure()` signature and implementation to remove the callback parameter.
+- Remove all invocations of `callback()`.
+
+#### [MODIFY] [nationalRailDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp) / [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
+- Remove `nrDataSourceCallback` typedef and `callback` member.
+- Update `init()` signature and `setYieldCallback()` to remove callback handling.
+- Remove all invocations of `callback()`.
 
 ---
 
-### Display Manager & Data Sources
-#### [MODIFY] [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
-- Replace transient instances of `WiFiClientSecure`, `HTTPRequest`, and `xStation` payloads with `std::make_unique`.
-- Completely purge procedural `delete httpsClient`, `delete xStation`, and `delete client` commands mitigating risk on premature network exits.
-#### [MODIFY] [splashBoard.cpp](modules/displayManager/boards/systemBoard/splashBoard.cpp)
-- Overhaul `splashLogo = new imageWidget(...)` into a managed `std::unique_ptr`.
-#### [MODIFY] [diagnosticBoard.cpp](modules/displayManager/boards/systemBoard/diagnosticBoard.cpp)
-- Refine `activeLayout = new layoutTestDiagnostic(...)` allocation.
-#### [MODIFY] [busBoard.cpp](modules/displayManager/boards/busBoard/busBoard.cpp)
-#### [MODIFY] [tflBoard.cpp](modules/displayManager/boards/tflBoard/tflBoard.cpp)
-#### [MODIFY] [nationalRailBoard.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
-- Remove `delete activeLayout;` usages by altering domain property definitions to `std::unique_ptr`.
+### Display Boards
+#### [MODIFY] [tflBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflBoard.cpp)
+- Update calls to `dataSource.configure()` to remove the `yieldCallbackWrapper` argument.
 
-## Resource Impact Assessment
-- **Flash Cost (Zero-overhead)**: Switching to `std::unique_ptr` and `std::make_unique` resolves entirely functionally at compile-time as a zero-cost abstraction—producing identical assembly outputs and demanding negligible binary payload compared to manual `delete` wrappers.
-- **Dynamic RAM Stability**: Yields profound stability for 24/7 runtimes enforcing stack ownership limits. Should API polls time out or terminate unexpectedly, native stack unwinding invokes `unique_ptr` destructors without omission, eliminating silent transient heap leaks that previously caused fatal Task Watchdog Timer (TWDT) crashes and fragmentation.
+#### [MODIFY] [nationalRailBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
+- Update calls to `dataSource.init()` to remove the `raildataYieldWrapper` argument.
+
+---
+
+### Documentation
+#### [MODIFY] [WeatherSystemDesign.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/reference/WeatherSystemDesign.md)
+- Delete Section 4 "Non-Blocking I/O (Yield Mechanism)".
+- Add a note explaining that weather fetching now runs on Core 0 via `Data_Manager`.
+
+#### [MODIFY] [AsyncDataRetrieval.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/reference/AsyncDataRetrieval.md)
+- Update "The Fetch/Yield Cycle" (if present) to explain the modern FreeRTOS task relationship and why yielding is no longer required for display stability.
+
+## Open Questions
+
+- Does any other module (e.g. `otaUpdater`) rely on `_instance`? I will verify this during execution before removing it.
 
 ## Verification Plan
+
 ### Automated Tests
-- Run PIO check locally to confirm parsing and lint checks `pio check` (or use internal linter tools).
+- `pio run`: Ensure the firmware builds correctly with the simplified signatures.
+- `pio check`: Perform static analysis to ensure no dead references remain.
+
 ### Manual Verification
-- Compile and flash firmware manually using `/flash-test`.
-- Observe Serial Monitor logs (`/monitor`) inspecting API connectivity loops and web API tests (particularly `WiFiClientSecure` handshakes) to confirm runtime memory stability and behavior parity.
+- `/flash-test`: Flash the device and monitor the serial output.
+- Observe that the display animations (scrollers, clocks) remain smooth even during background network activity (e.g. when weather or RSS is updating).

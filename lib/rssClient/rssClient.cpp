@@ -26,6 +26,7 @@
 #include <logger.hpp>
 #include <memory>
 #include <appContext.hpp>
+#include <messaging/messagePool.hpp>
 
 extern class appContext appContext;
 
@@ -283,4 +284,36 @@ void rssClient::value(const char *value)
  */
 void rssClient::attribute(const char *attr)
 {
+}
+
+/**
+ * @brief Append RSS headlines to the scrolling message pool.
+ */
+void rssClient::addRssMessage(MessagePool& pool, const Config& config) {
+    if (rssEnabled && pool.getCount() < 4 && numRssTitles > 0) {
+        String rssCombined = String(rssName) + ": " + rssTitle[0];
+        
+        for (int i = 1; i < numRssTitles; i++) {
+            if (rssCombined.length() + strlen(rssTitle[i]) + 2 < 400) {
+                BoardTypes firstType = (config.boardCount > 0) ? config.boards[0].type : BoardTypes::MODE_RAIL;
+                // Use a different delimiter based on context (Rail vs Tube)
+                rssCombined += (firstType == BoardTypes::MODE_TUBE) ? "\x81" : "\x90";
+                rssCombined += rssTitle[i];
+            } else {
+                break;
+            }
+        }
+        pool.addMessage(rssCombined.c_str());
+        rssAddedtoMsgs = true;
+    }
+}
+
+/**
+ * @brief Clean up RSS messages from the board message pool.
+ */
+void rssClient::removeRssMessage(MessagePool& pool) {
+    if (rssAddedtoMsgs) {
+        pool.removeLastMessage();
+        rssAddedtoMsgs = false;
+    }
 }
