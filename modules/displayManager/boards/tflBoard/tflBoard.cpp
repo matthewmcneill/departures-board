@@ -4,8 +4,9 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
- * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
- * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ * This work is licensed under Creative Commons
+ * Attribution-NonCommercial-ShareAlike 4.0 International. To view a copy of
+ * this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/tflBoard/tflBoard.cpp
  * Description: Implementation of TfL Tube board logic.
@@ -18,73 +19,78 @@
  *   - tick(uint32_t ms): Periodic logic update.
  *   - updateData(): Fetch background data.
  *   - render(U8G2& display): Standard render pass.
- *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): Animation pass.
+ *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): Animation
+ * pass.
  */
 
-#include <appContext.hpp>
 #include "tflBoard.hpp"
+#include <appContext.hpp>
 #include <logger.hpp>
 
-extern const char tflAttribution[];
+const char tflAttribution[] = "Powered by TfL Open Data";
 extern const uint8_t Underground10[];
 
 /**
  * @brief Constructs the TfL Board and its default layout.
  * @param contextPtr Pointer to the global application context.
  */
-TfLBoard::TfLBoard(appContext* contextPtr) 
-    : context(contextPtr),
-      activeLayout(nullptr),
-      lastUpdate(0) {
-    
-    // Ensure activeLayout is explicitly null until configure() is called
-    activeLayout = nullptr;
+TfLBoard::TfLBoard(appContext *contextPtr)
+    : context(contextPtr), activeLayout(nullptr), lastUpdate(0) {
 
-    tflAppkey[0] = '\0';
-    tubeId[0] = '\0';
-    tubeName[0] = '\0';
+  // Ensure activeLayout is explicitly null until configure() is called
+  activeLayout = nullptr;
 
-    // Register this board's source with the predictive DataManager
-    if (context) {
-        context->getDataManager().registerSource(&dataSource);
-    }
+  tflAppkey[0] = '\0';
+  tubeId[0] = '\0';
+  tubeName[0] = '\0';
+
+  // Register this board's source with the predictive DataManager
+  if (context) {
+    context->getDataManager().registerSource(&dataSource);
+  }
 }
 
 /**
  * @brief Cleanup layout allocations.
  */
 TfLBoard::~TfLBoard() {
-    if (context) {
-        context->getDataManager().unregisterSource(&dataSource);
-    }
-    if (activeLayout) delete activeLayout;
+  if (context) {
+    context->getDataManager().unregisterSource(&dataSource);
+  }
+  if (activeLayout)
+    delete activeLayout;
 }
 
 /**
- * @brief Lifecycle hook for activation. Configures the data source 
+ * @brief Lifecycle hook for activation. Configures the data source
  *        and prepares the layout widgets.
  */
 void TfLBoard::onActivate() {
-    dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
-    
-    if (activeLayout) {
-        activeLayout->locationAndFilters.setLocation(tubeName);
-        activeLayout->locationAndFilters.setFilters(""); // Currently no global filters for TfL
-        
-        // Configure message pools
-        activeLayout->msgWidget.clearPools();
-        if (context->getConfigManager().getConfig().prioritiseRss) {
-            if (context) activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
-            activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
-        } else {
-            activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
-            if (context) activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
-        }
-        
-        // Set initial text (fallback)
-        activeLayout->msgWidget.setText(tflAttribution);
+  dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
+
+  if (activeLayout) {
+    activeLayout->locationAndFilters.setLocation(tubeName);
+    activeLayout->locationAndFilters.setFilters(
+        ""); // Currently no global filters for TfL
+
+    // Configure message pools
+    activeLayout->msgWidget.clearPools();
+    if (context->getConfigManager().getConfig().prioritiseRss) {
+      if (context)
+        activeLayout->msgWidget.addMessagePool(
+            &context->getGlobalMessagePool());
+      activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+    } else {
+      activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+      if (context)
+        activeLayout->msgWidget.addMessagePool(
+            &context->getGlobalMessagePool());
     }
-    lastUpdate = 0;
+
+    // Set initial text (fallback)
+    activeLayout->msgWidget.setText(tflAttribution);
+  }
+  lastUpdate = 0;
 }
 
 /**
@@ -96,32 +102,38 @@ void TfLBoard::onDeactivate() {}
  * @brief Apply board-specific settings from the global configuration.
  * @param config The BoardConfig struct.
  */
-void TfLBoard::configure(const BoardConfig& config) {
-    this->config = config;
+void TfLBoard::configure(const BoardConfig &config) {
+  this->config = config;
 
-    // Destroy existing layout to prevent heap leaks on consecutive updates
-    if (activeLayout) { delete activeLayout; activeLayout = nullptr; }
-    
-    // Evaluate requested layout against available subclasses
-    // (No alternatives yet for TfL, fallback to default)
-    activeLayout = new layoutTflDefault(context);
+  // Destroy existing layout to prevent heap leaks on consecutive updates
+  if (activeLayout) {
+    delete activeLayout;
+    activeLayout = nullptr;
+  }
 
-    if (context) {
-        ApiKey* key = context->getConfigManager().getKeyById(config.apiKeyId);
-        if (key) setTflAppkey(key->token);
-        else tflAppkey[0] = '\0';
-    }
-    if (strcmp(config.id, "HUBTCR") == 0) {
-        setTubeId("940GZZLUTCR");
-    } else {
-        setTubeId(config.id);
-    }
-    setTubeName(config.name);
-    dataSource.setFilter(config.filter);
-    dataSource.setDirectionFilter(config.tflDirectionFilter);
-    
-    // Inject the credentials down into the API caller so background sweeps work successfully
-    dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
+  // Evaluate requested layout against available subclasses
+  // (No alternatives yet for TfL, fallback to default)
+  activeLayout = new layoutTflDefault(context);
+
+  if (context) {
+    ApiKey *key = context->getConfigManager().getKeyById(config.apiKeyId);
+    if (key)
+      setTflAppkey(key->token);
+    else
+      tflAppkey[0] = '\0';
+  }
+  if (strcmp(config.id, "HUBTCR") == 0) {
+    setTubeId("940GZZLUTCR");
+  } else {
+    setTubeId(config.id);
+  }
+  setTubeName(config.name);
+  dataSource.setFilter(config.filter);
+  dataSource.setDirectionFilter(config.tflDirectionFilter);
+
+  // Inject the credentials down into the API caller so background sweeps work
+  // successfully
+  dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
 }
 
 /**
@@ -129,7 +141,8 @@ void TfLBoard::configure(const BoardConfig& config) {
  * @param ms Current system time in milliseconds.
  */
 void TfLBoard::tick(uint32_t ms) {
-    if (activeLayout) activeLayout->tick(ms);
+  if (activeLayout)
+    activeLayout->tick(ms);
 }
 
 /**
@@ -137,114 +150,118 @@ void TfLBoard::tick(uint32_t ms) {
  * @return Status code (0 = Success, 9 = Pending).
  */
 int TfLBoard::updateData() {
-    // --- Step 1: Handle Async Latency ---
+  // --- Step 1: Handle Async Latency ---
+  if (lastUpdateStatus == UPD_PENDING) {
+    lastUpdateStatus = dataSource.getLastUpdateStatus();
     if (lastUpdateStatus == UPD_PENDING) {
-        lastUpdateStatus = dataSource.getLastUpdateStatus();
-        if (lastUpdateStatus == UPD_PENDING) {
-            return UPD_PENDING;
-        }
-    } else {
-        // --- Step 2: Validate Config ---
-        if (!config.complete) {
-            LOG_WARN("DISPLAY", "TfL Board: Skipping updateData() - Configuration incomplete.");
-            return 7;
-        }
-        
-        // --- Step 3: Initiation ---
-        LOG_INFO("DISPLAY", "TfL Board: Starting data update...");
-        lastUpdateStatus = dataSource.updateData();
-        if (lastUpdateStatus == UPD_PENDING) {
-            return UPD_PENDING;
-        }
+      return UPD_PENDING;
+    }
+  } else {
+    // --- Step 2: Validate Config ---
+    if (!config.complete) {
+      LOG_WARN("DISPLAY",
+               "TfL Board: Skipping updateData() - Configuration incomplete.");
+      return 7;
     }
 
-    // --- Step 4: Error Tracking ---
-    if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
-        LOG_WARN("DISPLAY", "TfL Board: Data update failed with status: " + String(lastUpdateStatus));
-        if (lastUpdateStatus > 2) {
-            consecutiveErrors++;
-        }
-    } else {
-        LOG_INFO("DISPLAY", "TfL Board: Data update finished successfully.");
-        consecutiveErrors = 0;
+    // --- Step 3: Initiation ---
+    LOG_INFO("DISPLAY", "TfL Board: Starting data update...");
+    lastUpdateStatus = dataSource.updateData();
+    if (lastUpdateStatus == UPD_PENDING) {
+      return UPD_PENDING;
     }
+  }
 
-    // --- Step 5: Data Push to UI ---
-    if (lastUpdateStatus == 0) { // UPD_SUCCESS
-        dataSource.lockData();
-        TflStation* data = dataSource.getStationData();
-        if (activeLayout) {
-            activeLayout->servicesWidget.clearRows();
-            if (data->numServices > 0) {
-                for (int i = 0; i < data->numServices; i++) {
-                    // --- Step 3: Populate 4-Column Layout ---
-                    // Column Order: 0: OrderNum, 1: Line, 2: Destination, 3: Time
-                    // The orderNum is a stable pointer assigned by the DataSource.
-                    const char* rowData[4] = {
-                        config.showServiceOrdinals ? data->service[i].orderNum : "",
-                        data->service[i].lineName,
-                        data->service[i].destination,
-                        data->service[i].expectedTime
-                    };
-                    activeLayout->servicesWidget.addRow(rowData);
-                }
-            }
-        }
-        dataSource.unlockData();
+  // --- Step 4: Error Tracking ---
+  if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
+    LOG_WARN("DISPLAY", "TfL Board: Data update failed with status: " +
+                            String(lastUpdateStatus));
+    if (lastUpdateStatus > 2) {
+      consecutiveErrors++;
     }
-    return lastUpdateStatus;
+  } else {
+    LOG_INFO("DISPLAY", "TfL Board: Data update finished successfully.");
+    consecutiveErrors = 0;
+  }
+
+  // --- Step 5: Data Push to UI ---
+  if (lastUpdateStatus == 0) { // UPD_SUCCESS
+    dataSource.lockData();
+    TflStation *data = dataSource.getStationData();
+    if (activeLayout) {
+      activeLayout->servicesWidget.clearRows();
+      if (data->numServices > 0) {
+        for (int i = 0; i < data->numServices; i++) {
+          // --- Step 3: Populate 4-Column Layout ---
+          // Column Order: 0: OrderNum, 1: Line, 2: Destination, 3: Time
+          // The orderNum is a stable pointer assigned by the DataSource.
+          const char *rowData[4] = {
+              config.showServiceOrdinals ? data->service[i].orderNum : "",
+              data->service[i].lineName, data->service[i].destination,
+              data->service[i].expectedTime};
+          activeLayout->servicesWidget.addRow(rowData);
+        }
+      }
+    }
+    dataSource.unlockData();
+  }
+  return lastUpdateStatus;
 }
 
 /**
  * @brief Renders the full board including error state handling.
  * @param display Reference to U8g2.
  */
-void TfLBoard::render(U8G2& display) {
-    if (context && context->getsystemManager().isWifiPersistentError()) {
-        iDisplayBoard* wifiError = context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_ERROR_WIFI);
-        if (wifiError) {
-            wifiError->render(display);
-            return;
-        }
+void TfLBoard::render(U8G2 &display) {
+  if (context && context->getsystemManager().isWifiPersistentError()) {
+    iDisplayBoard *wifiError = context->getDisplayManager().getSystemBoard(
+        SystemBoardId::SYS_ERROR_WIFI);
+    if (wifiError) {
+      wifiError->render(display);
+      return;
     }
+  }
 
-    if (!config.complete) {
-        if (context) {
-            iDisplayBoard* help = context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_SETUP_HELP);
-            if (help) help->render(display);
-        }
+  if (!config.complete) {
+    if (context) {
+      iDisplayBoard *help = context->getDisplayManager().getSystemBoard(
+          SystemBoardId::SYS_SETUP_HELP);
+      if (help)
+        help->render(display);
+    }
+    return;
+  }
+
+  if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+    if (context) {
+      SystemBoardId id =
+          context->getDisplayManager().mapErrorToId(lastUpdateStatus);
+      iDisplayBoard *errBoard = context->getDisplayManager().getSystemBoard(id);
+      if (errBoard) {
+        errBoard->render(display);
         return;
+      }
     }
+  }
 
-    if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
-        if (context) {
-            SystemBoardId id = context->getDisplayManager().mapErrorToId(lastUpdateStatus);
-            iDisplayBoard* errBoard = context->getDisplayManager().getSystemBoard(id);
-            if (errBoard) {
-                errBoard->render(display);
-                return;
-            }
-        }
+  if (activeLayout) {
+    dataSource.lockData();
+    TflStation *data = dataSource.getStationData();
+    if (data->numServices > 0) {
+      activeLayout->servicesWidget.setVisible(true);
+      activeLayout->noDataLabel.setVisible(false);
+    } else {
+      if (lastUpdateStatus == -1 || lastUpdateStatus == 9) {
+        activeLayout->noDataLabel.setText("Loading data...");
+      } else {
+        activeLayout->noDataLabel.setText("No arrivals scheduled.");
+      }
+      activeLayout->servicesWidget.setVisible(false);
+      activeLayout->noDataLabel.setVisible(true);
     }
-
-    if (activeLayout) {
-        dataSource.lockData();
-        TflStation* data = dataSource.getStationData();
-        if (data->numServices > 0) {
-            activeLayout->servicesWidget.setVisible(true);
-            activeLayout->noDataLabel.setVisible(false);
-        } else {
-            if (lastUpdateStatus == -1 || lastUpdateStatus == 9) {
-                activeLayout->noDataLabel.setText("Loading data...");
-            } else {
-                activeLayout->noDataLabel.setText("No arrivals scheduled.");
-            }
-            activeLayout->servicesWidget.setVisible(false);
-            activeLayout->noDataLabel.setVisible(true);
-        }
-        activeLayout->render(display);
-        dataSource.unlockData();
-    }
+    activeLayout->render(display);
+    dataSource.unlockData();
+  }
 }
 
 /**
@@ -252,24 +269,29 @@ void TfLBoard::render(U8G2& display) {
  * @param display Reference to U8g2.
  * @param currentMillis Current system time in milliseconds.
  */
-void TfLBoard::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
-    if (context && context->getsystemManager().isWifiPersistentError()) return;
-    if (!config.complete) return;
-    if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
-        if (context) {
-            SystemBoardId id = context->getDisplayManager().mapErrorToId(lastUpdateStatus);
-            iDisplayBoard* errBoard = context->getDisplayManager().getSystemBoard(id);
-            if (errBoard) {
-                errBoard->renderAnimationUpdate(display, currentMillis);
-                return;
-            }
-        }
+void TfLBoard::renderAnimationUpdate(U8G2 &display, uint32_t currentMillis) {
+  if (context && context->getsystemManager().isWifiPersistentError())
+    return;
+  if (!config.complete)
+    return;
+  if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+    if (context) {
+      SystemBoardId id =
+          context->getDisplayManager().mapErrorToId(lastUpdateStatus);
+      iDisplayBoard *errBoard = context->getDisplayManager().getSystemBoard(id);
+      if (errBoard) {
+        errBoard->renderAnimationUpdate(display, currentMillis);
+        return;
+      }
     }
+  }
 
-    if (activeLayout) activeLayout->renderAnimationUpdate(display, currentMillis);
+  if (activeLayout)
+    activeLayout->renderAnimationUpdate(display, currentMillis);
 }
 
 bool TfLBoard::isScrollFinished() {
-    if (activeLayout) return activeLayout->msgWidget.isScrollFinished();
-    return true;
+  if (activeLayout)
+    return activeLayout->msgWidget.isScrollFinished();
+  return true;
 }

@@ -1,0 +1,9 @@
+- **📍 Current State & Focus**: Just drafted an implementation plan to completely dismantle the `systemManager` object, assigning its overlapping capabilities directly to dedicated controllers (`wifiManager`, `appContext`, `rssClient`, `dataManager`). 
+- **🎯 Next Immediate Actions**: Waiting for user approval on the implementation plan. Once approved, shift to EXECUTION mode and migrate the target capabilities exactly as defined in `implementation_plan.md`.
+- **🧠 Decisions & Designs**: 
+  - Network tracking loops and offline checks migrate securely to `wifiManager`
+  - Boot state properties (`startupProgressPercent` etc.) push up to `appContext` directly so they do not hop through lambdas natively.
+  - RSS String building correctly localizes back down into `rssClient`.
+- **🐛 Active Quirks, Bugs & Discoveries**: Be very careful to maintain the same dependencies while unwinding the `MessagePool` references. Ensure cyclical includes aren't spawned between `appContext` and `rssClient`.
+- **💻 Commands Reference**: Standard Build (e.g. PlatformIO build / ESP32 compilation) natively.
+- **🌿 Execution Environment**: Local machine using local hardware sources based on regular configuration.

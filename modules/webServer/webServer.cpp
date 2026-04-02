@@ -5,29 +5,27 @@
  * https://github.com/gadec-uk/departures-board
  *
  * Module: modules/webServer/webServer.cpp
- * Description: Orchestrates the local HTTP server, endpoint routing, and 
+ * Description: Orchestrates the local HTTP server, endpoint routing, and
  *              LittleFS file management routines for the Web GUI.
  */
 
 #include "webServer.hpp"
-#include <wifiManager.hpp>
 #include "webHandlerManager.hpp"
-#include <SPIFFS.h>
-#include <Update.h>
 #include <LittleFS.h>
+#include <Update.h>
 #include <WiFi.h>
-#include <logger.hpp>
-#include <displayManager.hpp>
-#include <configManager.hpp>
-#include <boards/systemBoard/firmwareUpdateBoard.hpp>
-#include <boards/nationalRailBoard/nationalRailBoard.hpp>
-#include <weatherClient.hpp>
-#include <rssClient.hpp>
 #include <WiFiClientSecure.h>
 #include <appContext.hpp>
+#include <boards/nationalRailBoard/nationalRailBoard.hpp>
+#include <boards/systemBoard/firmwareUpdateBoard.hpp>
+#include <configManager.hpp>
+#include <displayManager.hpp>
 #include <githubClient.hpp>
+#include <logger.hpp>
 #include <otaUpdater.hpp>
-
+#include <rssClient.hpp>
+#include <weatherClient.hpp>
+#include <wifiManager.hpp>
 
 extern class appContext appContext;
 
@@ -36,21 +34,19 @@ AsyncWebServer server(80);
 WebServerManager webServer;
 File fsUploadFile;
 
-
 /**
  * @brief Initializes the web server and binds all application endpoints.
  */
 void WebServerManager::init() {
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->redirect("/web");
-  });
- 
+  server.on("/", HTTP_GET,
+            [](AsyncWebServerRequest *request) { request->redirect("/web"); });
 
- 
   // Initialize and register new portal handlers
-  _handlerManager = new WebHandlerManager(server, appContext.getConfigManager());
+  _handlerManager =
+      new WebHandlerManager(server, appContext.getConfigManager());
   _handlerManager->begin();
 
-  server.begin();     
-  LOG_INFO("WEB", "Local async webserver started at http://" + WiFi.localIP().toString() + ":80/");
+  server.begin();
+  LOG_INFO("WEB", "Local async webserver started at http://" +
+                      WiFi.localIP().toString() + ":80/");
 }

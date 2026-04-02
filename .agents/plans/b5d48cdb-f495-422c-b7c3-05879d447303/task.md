@@ -1,0 +1,21 @@
+# Task List for Logging Architecture Optimization
+
+- [x] Planning Phase
+  - [x] Review `lib/logger/logger.hpp` and `lib/logger/logger.cpp`.
+  - [x] Review `src/departuresBoard.cpp` for `Logger::begin()`.
+  - [x] Search for all invocations of `Logger::registerSecret()`.
+  - [x] Draft an implementation plan covering:
+    - Adding `LOG_REGISTER_SECRET` macro.
+    - Wrapping `logger.cpp` contents in `#if CORE_DEBUG_LEVEL > 0`.
+    - Updating direct calls to use the macro.
+    - Adding conditional guards for `Serial.begin()`.
+  - [ ] Request user review of the implementation plan.
+  - [ ] Request user review of the implementation plan.
+- [ ] Execution Phase
+  - [ ] Update `lib/logger/logger.hpp`.
+  - [ ] Update `lib/logger/logger.cpp`.
+  - [ ] Update all callers of `registerSecret` (e.g., `configManager.cpp`).
+  - [ ] Update `src/departuresBoard.cpp` (or `logger.cpp`'s `begin` if there) conditionally.
+- [ ] Verification Phase
+  - [ ] Run compilation checks.
+  - [ ] Create walkthrough.md.

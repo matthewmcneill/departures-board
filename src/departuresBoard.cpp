@@ -4,8 +4,9 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
- * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
- * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ * This work is licensed under Creative Commons
+ * Attribution-NonCommercial-ShareAlike 4.0 International. To view a copy of
+ * this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Supported Hardware:
  * - ESP32 "Mini" (env: esp32dev)
@@ -22,17 +23,20 @@
  * 16 CS#         DISPLAY_CS_PIN DISPLAY_CS_PIN  (e.g., IO26, D10)
  *
  * NOTE ON HARDWARE SPI:
- * Because we are using the U8G2_..._HW_SPI (Hardware SPI) version of the display 
- * library rather than a Software SPI setup, the U8g2 library intentionally doesn't ask 
- * for the Clock and Data pin numbers simply because those pins are physically hardwired
- * inside the ESP32 chip to dedicated hardware micro-controllers for maximum performance.
+ * Because we are using the U8G2_..._HW_SPI (Hardware SPI) version of the
+ * display library rather than a Software SPI setup, the U8g2 library
+ * intentionally doesn't ask for the Clock and Data pin numbers simply because
+ * those pins are physically hardwired inside the ESP32 chip to dedicated
+ * hardware micro-controllers for maximum performance.
  *
- * When we tell PlatformIO to build for board = arduino_nano_esp32 or board = esp32dev, 
- * it pulls in the specific Arduino Core variants for those boards under the hood. 
- * The core automatically maps the default Hardware SPI pathways to the correct pins 
- * for that respective board without us having to lift a finger in our codebase!
+ * When we tell PlatformIO to build for board = arduino_nano_esp32 or board =
+ * esp32dev, it pulls in the specific Arduino Core variants for those boards
+ * under the hood. The core automatically maps the default Hardware SPI pathways
+ * to the correct pins for that respective board without us having to lift a
+ * finger in our codebase!
  *
- * V3.0 Architecture removes direct driver dependencies via interface abstraction.
+ * V3.0 Architecture removes direct driver dependencies via interface
+ * abstraction.
  */
 
 #include "departuresBoard.hpp"
@@ -61,31 +65,28 @@
 #include <LittleFS.h>
 
 // Networking & Web Libraries
-#include <WiFi.h>
 #include <ESPmDNS.h>
+#include <WiFi.h>
 
 // Internal Modules & Managers
-#include <logger.hpp>
-#include <wifiManager.hpp>
-#include <configManager.hpp>
-#include <timeManager.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
+#include <configManager.hpp>
 #include <displayManager.hpp>
+#include <logger.hpp>
 #include <otaUpdater.hpp>
+#include <timeManager.hpp>
 #include <webServer.hpp>
+#include <wifiManager.hpp>
 
 // API Service Clients
-#include <weatherClient.hpp>
 #include <githubClient.hpp>
 #include <rssClient.hpp>
-
+#include <weatherClient.hpp>
 
 // -----------------------------------------------------------------------------
 // Definitions & Macros
 // -----------------------------------------------------------------------------
-
-#include "departuresBoard.hpp"
 
 // -----------------------------------------------------------------------------
 // Global Object Instantiations
@@ -96,15 +97,10 @@
 appContext appContext;
 
 // -----------------------------------------------------------------------------
-// Environment Variables & State Management 
+// Environment Variables & State Management
 // -----------------------------------------------------------------------------
 
-// API Credits and Attribution Text
-extern const char nrAttributionn[] = "Powered by National Rail Enquiries"; // Mandatory attribution for National Rail
-extern const char tflAttribution[] = "Powered by TfL Open Data"; // Mandatory attribution for TfL
-extern const char btAttribution[] = "Powered by bustimes.org"; // Mandatory attribution for bus data
-
-
+// (Attribution constants moved to specific board implementations)
 
 // -----------------------------------------------------------------------------
 // Boot Setup
@@ -116,10 +112,9 @@ extern const char btAttribution[] = "Powered by bustimes.org"; // Mandatory attr
 void setup(void) {
   Logger::begin();
 
-  LOG_INFO("SYSTEM", "Starting boot sequence...");  
+  LOG_INFO("SYSTEM", "Starting boot sequence...");
   appContext.begin();
   LOG_INFO("SYSTEM", "appContext.begin() finished.");
-
 }
 
 // -----------------------------------------------------------------------------
@@ -133,8 +128,10 @@ void loop(void) {
   static unsigned long lastSerialHeartbeat = 0;
   if (millis() - lastSerialHeartbeat > 10000) {
     char diagMsg[128];
-    snprintf(diagMsg, sizeof(diagMsg), "Alive | Heap: %lu (Max Block: %lu) | Temp: %.1fC", 
-             (unsigned long)ESP.getFreeHeap(), (unsigned long)ESP.getMaxAllocHeap(), temperatureRead());
+    snprintf(diagMsg, sizeof(diagMsg),
+             "Alive | Heap: %lu (Max Block: %lu) | Temp: %.1fC",
+             (unsigned long)ESP.getFreeHeap(),
+             (unsigned long)ESP.getMaxAllocHeap(), temperatureRead());
     LOG_INFO("HEARTBEAT", diagMsg);
     lastSerialHeartbeat = millis();
   }
