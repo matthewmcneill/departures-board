@@ -27,7 +27,7 @@
 #include <appContext.hpp>
 #include <logger.hpp>
 
-const char tflAttribution[] = "Powered by TfL Open Data";
+const char tflAttribution[] = "Powered by TfL Open Data"; // Attribution for Transport for London
 extern const uint8_t Underground10[];
 
 /**

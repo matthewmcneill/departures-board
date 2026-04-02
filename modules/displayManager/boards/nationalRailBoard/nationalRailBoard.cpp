@@ -28,7 +28,7 @@
 #include <appContext.hpp>
 #include <logger.hpp>
 
-const char nrAttributionn[] = "Powered by National Rail Enquiries";
+const char nrAttribution[] = "Powered by National Rail Enquiries"; // Attribution for National Rail
 extern const uint8_t NatRailTall12[];
 extern const uint8_t NatRailSmall9[];
 
@@ -111,7 +111,7 @@ void NationalRailBoard::onActivate() {
     }
 
     // Initial attribution text
-    activeLayout->msgWidget.setText(nrAttributionn);
+    activeLayout->msgWidget.setText(nrAttribution);
   }
   lastUpdate = 0;
 }
@@ -260,7 +260,7 @@ UpdateStatus NationalRailBoard::updateData() {
       if (msg.length() > 0) {
         activeLayout->msgWidget.setText(msg.c_str());
       } else {
-        activeLayout->msgWidget.setText(nrAttributionn);
+        activeLayout->msgWidget.setText(nrAttribution);
       }
     }
 
