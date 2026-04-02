@@ -39,10 +39,13 @@
 #include <freertos/semphr.h>
 #include <memory>
 
-#define BUS_MAX_LOCATION 45   // Maximum length of a location string
-#define BUS_MAX_LINE_NAME 9   // Maximum length of a bus line name
-#define BUS_MAX_SERVICES 9    // Maximum number of services to store on the board
-#define BUS_MAX_FETCH 20      // Number of services to fetch from the API
+/**
+ * @brief Data Length Constants
+ */
+constexpr size_t BUS_MAX_LOCATION = 45;   // Maximum length of a location string
+constexpr size_t BUS_MAX_LINE_NAME = 9;   // Maximum length of a bus line name
+constexpr size_t BUS_MAX_SERVICES = 9;    // Maximum number of services to store on the board
+constexpr size_t BUS_MAX_FETCH = 20;      // Number of services to fetch from the API
 
 /**
  * @brief Represents a single bus service arrival.
@@ -84,7 +87,7 @@ private:
     static const uint32_t BASELINE_MIN_INTERVAL = 30000;
     
     SemaphoreHandle_t dataMutex;          // Thread-safe lock protecting data transfers
-    volatile int taskStatus;              // Cross-thread execution status tracking (e.g., UPD_PENDING)
+    volatile UpdateStatus taskStatus;     // Cross-thread execution status tracking (e.g., UpdateStatus::PENDING)
     
     // Internal parser state (migrated from busDataClient)
     const char* apiHost = "bustimes.org";   // API host address
@@ -157,10 +160,10 @@ public:
     // iDataSource implementation
     /**
      * @brief Fetches latest bus arrival data.
-     * @return int Success status or error code.
+     * @return UpdateStatus Success status or error code.
      */
-    int updateData() override;
-    int getLastUpdateStatus() const { return taskStatus; }
+    UpdateStatus updateData() override;
+    UpdateStatus getLastUpdateStatus() const { return taskStatus; }
 
     /**
      * @brief Returns the last error message.
@@ -168,16 +171,16 @@ public:
      */
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
     uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
-    uint8_t getPriorityTier() override;
+    PriorityTier getPriorityTier() override;
     void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
     /**
      * @brief Performs a lightweight connection and authentication test.
      * @param token Optional token to test (overrides stored configuration). Can be nullptr for data sources that do not use keys.
      * @param stationId Optional station/stop ID to test (overrides stored configuration).
-     * @return 0 for success (UPD_SUCCESS), non-zero for error (UPD_*).
+     * @return UpdateStatus::SUCCESS for success, otherwise an error status.
      */
-    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+    UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
     // Bus specific methods
     /**
@@ -199,9 +202,9 @@ public:
      * @brief Retrieves the long name of a bus stop.
      * @param locationId ATCO code or location ID.
      * @param locationName Buffer to store the long name.
-     * @return int Success status.
+     * @return UpdateStatus Success status.
      */
-    int getStopLongName(const char *locationId, char *locationName);
+    UpdateStatus getStopLongName(const char *locationId, char *locationName);
 
     /**
      * @brief Cleans a raw filter string.

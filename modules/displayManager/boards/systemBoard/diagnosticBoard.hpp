@@ -37,7 +37,7 @@ public:
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
     void configure(const struct BoardConfig& config) override;
     const char* getLastErrorMsg() override { return nullptr; }
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
     WeatherStatus& getWeatherStatus() override { return weather; }
 };
 

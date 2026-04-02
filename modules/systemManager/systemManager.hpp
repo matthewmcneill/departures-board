@@ -22,6 +22,7 @@
 
 #include <Arduino.h>
 #include <functional>
+#include "../dataManager/iDataSource.hpp"
 
 class buttonHandler; // Forward declaration
 class appContext;    // Forward declaration
@@ -59,7 +60,7 @@ private:
   int dataLoadSuccess;  ///< Count of valid polling cycles
   int dataLoadFailure;  ///< Count of connection/parse breaks
   unsigned long lastLoadFailure; ///< Last exception time (ms)
-  int lastUpdateResult;          ///< HTTP return code from last poll
+  UpdateStatus lastUpdateResult;          ///< HTTP return code from last poll
   int lastActiveSlotIndex;       ///< Cached index to detect board switching
 
 public:
@@ -171,7 +172,7 @@ public:
   int getDataLoadSuccess() const { return dataLoadSuccess; }
   int getDataLoadFailure() const { return dataLoadFailure; }
   unsigned long getLastLoadFailure() const { return lastLoadFailure; }
-  int getLastUpdateResult() const { return lastUpdateResult; }
+  UpdateStatus getLastUpdateResult() const { return lastUpdateResult; }
 
   const char *getMyUrl() const { return myUrl; }
 

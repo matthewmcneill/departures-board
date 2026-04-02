@@ -67,32 +67,32 @@ void rssClient::trim(char* str) {
  * @param url The URL of the RSS feed to fetch (supports HTTP and HTTPS).
  * @return Connection status constant.
  */
-int rssClient::loadFeed(String url) {
+UpdateStatus rssClient::loadFeed(String url) {
     activeUrl = url;
     return updateData();
 }
 
-int rssClient::updateData() {
+UpdateStatus rssClient::updateData() {
     if (activeUrl.length() == 0 && strlen(rssURL) > 0) activeUrl = String(rssURL);
     
     if (activeUrl.length() == 0) {
         LOG_WARN("DATA", "RSS Client: No URL configured. Skipping fetch.");
-        lastRssUpdateResult = 0; // UPD_SUCCESS (quiet skip)
+        lastRssUpdateResult = UpdateStatus::SUCCESS; // (quiet skip)
         return lastRssUpdateResult;
     }
 
     LOG_INFO("DATA", "RSS Client: Requesting priority fetch from DataManager");
-    lastRssUpdateResult = UPD_PENDING;
+    lastRssUpdateResult = UpdateStatus::PENDING;
     appContext.getDataManager().requestPriorityFetch(this);
-    return UPD_PENDING;
+    return UpdateStatus::PENDING;
 }
 
-int rssClient::testConnection(const char* token, const char* stationId) {
+UpdateStatus rssClient::testConnection(const char* token, const char* stationId) {
     if (stationId && strlen(stationId) > 0) activeUrl = String(stationId);
     else if (strlen(rssURL) > 0) activeUrl = String(rssURL);
     
     executeFetch();
-    return (lastRssUpdateResult == 0) ? UPD_SUCCESS : lastRssUpdateResult;
+    return (lastRssUpdateResult == UpdateStatus::NO_CHANGE) ? UpdateStatus::SUCCESS : lastRssUpdateResult;
 }
 
 /**
@@ -107,7 +107,7 @@ void rssClient::executeFetch() {
 
     if (!http || !client || !clientSecure) {
         LOG_ERROR("DATA", "RSS Client: Memory allocation failed for clients!");
-        lastRssUpdateResult = 3; // UPD_DATA_ERROR
+        lastRssUpdateResult = UpdateStatus::DATA_ERROR;
         setNextFetchTime(millis() + 30000);
         return;
     }
@@ -133,7 +133,7 @@ void rssClient::executeFetch() {
             std::unique_ptr<xmlStreamingParser> parser(new (std::nothrow) xmlStreamingParser());
             if (!parser) {
                 LOG_ERROR("DATA", "RSS Client: Memory allocation failed for parser!");
-                lastRssUpdateResult = 3; // UPD_DATA_ERROR
+                lastRssUpdateResult = UpdateStatus::DATA_ERROR;
                 setNextFetchTime(millis() + 30000);
                 return;
             }
@@ -169,7 +169,7 @@ void rssClient::executeFetch() {
             if (millis() >= dataSendTimeout && bgNumRssTitles < MAX_RSS_TITLES) {
                 snprintf(lastErrorMessage, sizeof(lastErrorMessage), "Timed out during data receive operation - %ld bytes received", dataReceived);
                 LOG_WARN("DATA", lastErrorMessage);
-                lastRssUpdateResult = 6; // UPD_TIMEOUT
+                lastRssUpdateResult = UpdateStatus::TIMEOUT;
                 setNextFetchTime(millis() + 30000);
                 return;
             }
@@ -181,7 +181,7 @@ void rssClient::executeFetch() {
             for (int i=0; i<bgNumRssTitles; i++) {
                 strlcpy(rssTitle[i], bgRssTitle[i], MAX_RSS_TITLE_SIZE);
             }
-            lastRssUpdateResult = 0; // UPD_SUCCESS
+            lastRssUpdateResult = UpdateStatus::SUCCESS;
             setNextFetchTime(millis() + 600000); // 10 minutes on success
             xSemaphoreGive(rssMutex);
 #ifdef ENABLE_DEBUG_LOG
@@ -200,7 +200,7 @@ void rssClient::executeFetch() {
             if (newUrl.length() == 0) {
                 strcpy(lastErrorMessage, "HTTP Redirect without Location header!");
                 LOG_WARN("DATA", lastErrorMessage);
-                lastRssUpdateResult = 4; // UPD_HTTP_ERROR
+                lastRssUpdateResult = UpdateStatus::HTTP_ERROR;
                 setNextFetchTime(millis() + 30000);
                 return;
             }
@@ -210,13 +210,13 @@ void rssClient::executeFetch() {
             snprintf(lastErrorMessage, sizeof(lastErrorMessage), "GET failed, error: %d %s", httpCode, http->errorToString(httpCode).c_str());
             LOG_WARN("DATA", lastErrorMessage);
             http->end();
-            lastRssUpdateResult = 4; // UPD_HTTP_ERROR
+            lastRssUpdateResult = UpdateStatus::HTTP_ERROR;
             setNextFetchTime(millis() + 30000);
             return;
         }
     }
     // never get here
-    lastRssUpdateResult = 4;
+    lastRssUpdateResult = UpdateStatus::HTTP_ERROR;
     setNextFetchTime(millis() + 30000);
     return;
 }

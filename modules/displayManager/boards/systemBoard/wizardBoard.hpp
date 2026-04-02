@@ -56,7 +56,7 @@ public:
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override { (void)display; (void)currentMillis; }
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
     const char* getLastErrorMsg() override { return ""; }
     WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };

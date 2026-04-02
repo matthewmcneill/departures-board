@@ -523,17 +523,17 @@ public:
             if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
         } else if (params->type == "rail") {
             nationalRailDataSource ds;
-            success = (ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : "PAD") == UPD_SUCCESS);
+            success = (ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : "PAD") == UpdateStatus::SUCCESS);
             if (!success) errorMsg = ds.getLastErrorMsg();
         } else if (params->type == "tfl") {
             tflDataSource ds;
-            int res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
-            success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
+            UpdateStatus res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
+            success = (res == UpdateStatus::SUCCESS || res == UpdateStatus::NO_CHANGE);
             if (!success) errorMsg = ds.getLastErrorMsg();
         } else if (params->type == "bus") {
             busDataSource ds;
-            int res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
-            success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
+            UpdateStatus res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
+            success = (res == UpdateStatus::SUCCESS || res == UpdateStatus::NO_CHANGE);
             if (!success) errorMsg = ds.getLastErrorMsg();
         } else if (params->type == "clock") {
             success = true;
@@ -545,11 +545,11 @@ public:
         
         params->done = true;
     }
-    int updateData() override { return 0; }
-    int testConnection(const char*, const char*) override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
+    UpdateStatus testConnection(const char*, const char*) override { return UpdateStatus::SUCCESS; }
     const char* getLastErrorMsg() const override { return ""; }
     uint32_t getNextFetchTime() override { return 0; }
-    uint8_t getPriorityTier() override { return TIER_CRITICAL; } // Test connections must run immediately
+    PriorityTier getPriorityTier() override { return PriorityTier::PRIO_CRITICAL; } // Test connections must run immediately
     void setNextFetchTime(uint32_t) override {}
 };
 
@@ -680,13 +680,13 @@ void WebHandlerManager::handleTestFeed(AsyncWebServerRequest *request) {
     LOG_INFO("WEB_API", "Testing RSS Feed: " + url);
     
     rssClient& rss = appContext.getRss();
-    int res = rss.loadFeed(url);
+    UpdateStatus res = rss.loadFeed(url);
     
     JsonDocument doc;
-    doc["status"] = (res == 0) ? "ok" : "fail";
-    if (res == 0) {
+    doc["status"] = (res == UpdateStatus::SUCCESS || res == UpdateStatus::NO_CHANGE) ? "ok" : "fail";
+    if (res == UpdateStatus::SUCCESS || res == UpdateStatus::NO_CHANGE) {
         doc["count"] = rss.numRssTitles;
-        doc["title"] = rss.numRssTitles > 0 ? rss.rssTitle[0] : "No items found";
+        doc["title"] = rss.numRssTitles > 0 ? String(rss.rssTitle[0]) : "No items found";
     } else {
         doc["msg"] = rss.getLastError();
     }

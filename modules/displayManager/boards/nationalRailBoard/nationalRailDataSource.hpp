@@ -36,16 +36,22 @@
 
 #include <Arduino.h>
 
-// Service Type Constants
-#define NR_SERVICE_OTHER 0
-#define NR_SERVICE_TRAIN 1
-#define NR_SERVICE_BUS 2
+/**
+ * @brief Service Type Constants
+ */
+enum class NrServiceType : uint8_t {
+    OTHER = 0,
+    TRAIN = 1,
+    BUS = 2
+};
 
-// Data Length Constants
-#define NR_MAX_LOCATION 45
-#define NR_MAX_CALLING 450
-#define NR_MAX_MSG_LEN 400
-#define NR_MAX_SERVICES 9
+/**
+ * @brief Data Length Constants
+ */
+constexpr size_t NR_MAX_LOCATION = 45;
+constexpr size_t NR_MAX_CALLING = 450;
+constexpr size_t NR_MAX_MSG_LEN = 400;
+constexpr size_t NR_MAX_SERVICES = 9;
 
 /**
  * @brief Data structure for a single train/bus service.
@@ -65,7 +71,7 @@ struct NationalRailService {
     char origin[NR_MAX_LOCATION];
     char lastSeen[NR_MAX_LOCATION]; // Upstream B2.4-W3.1: "Last seen at..."
     char serviceMessage[NR_MAX_MSG_LEN];
-    int serviceType; // TRAIN or BUS
+    NrServiceType serviceType; // TRAIN or BUS
 };
 
 /**
@@ -92,7 +98,7 @@ private:
     MessagePool renderMessages; // Safe local copy for UI rendering
 
     SemaphoreHandle_t dataMutex; // Thread-safe lock protecting data transfers
-    volatile int taskStatus; // Cross-thread execution status tracking (e.g., UPD_PENDING)
+    volatile UpdateStatus taskStatus; // Cross-thread execution status tracking (e.g., UpdateStatus::PENDING)
 
     char lastErrorMessage[128];
 
@@ -143,7 +149,7 @@ public:
 
     // DataManager Scheduling Implementations
     uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
-    uint8_t getPriorityTier() override;
+    PriorityTier getPriorityTier() override;
     void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
 private:
@@ -157,13 +163,13 @@ private:
 
 public:
     // iDataSource Implementation
-    int updateData() override;
-    int getLastUpdateStatus() const { return taskStatus; }
+    UpdateStatus updateData() override;
+    UpdateStatus getLastUpdateStatus() const { return taskStatus; }
     const char* getLastErrorMsg() const override { return lastErrorMessage; }
-    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+    UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
     // Configuration & Data Access
-    int init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb);
+    UpdateStatus init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb);
     bool isInitialized() const { return soapHost[0] != '\0'; }
     void configure(const char* token, const char* crs, const char* filter = "", const char* callingCrs = "", int offset = 0);
     
@@ -188,9 +194,9 @@ public:
     /**
      * @brief Performs a full WSDL discovery to find the latest SOAP endpoints.
      *        Updates the global config and persists to disk on success.
-     * @return int Update status code.
+     * @return UpdateStatus code.
      */
-    int refreshWsdl();
+    UpdateStatus refreshWsdl();
 };
 
 #endif // NATIONAL_RAIL_DATA_SOURCE_HPP

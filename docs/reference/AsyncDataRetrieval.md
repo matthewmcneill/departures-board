@@ -11,7 +11,7 @@ The targeted solution was to decouple all core network integrations (National Ra
 
 **Core Objectives:**
 1. **FreeRTOS Execution:** Migrate all blocking `.executeFetch()` logic inside `xTaskCreatePinnedToCore` delegates running strictly on Core 0 context.
-2. **State Machine (`UPD_PENDING`):** Implement a continuous non-blocking polling architecture where `systemManager` requests data, receives an immediate `UPD_PENDING` (9) status code, and leaves the board alone until the task completes.
+2. **State Machine (`UpdateStatus::PENDING`):** Implement a continuous non-blocking polling architecture where `systemManager` requests data, receives an immediate `UpdateStatus::PENDING` status code, and leaves the board alone until the task completes.
 3. **Double Buffering:** Secure background writes. Each client must parse data into a hidden `bgStatus` background structure.
 4. **Mutex Synchronization (`SemaphoreMutex`):** Protect the copy of the background buffer to the active UI buffer (`renderData`) by wrapping it in an extremely brief `xSemaphoreTake()` lock, ensuring zero tearing or memory corruption.
 5. **Yield Chunking:** To satisfy single-core environments, all XML/JSON parsing loops must explicitly track byte counts and yield using `vTaskDelay(1)` periodically.
@@ -33,7 +33,7 @@ Evaluated against rigorous Embedded Systems ESP32 specifications.
 
 ### Memory Impact
 - **Flash/ROM:** `+1.6 KB` footprint increase to compile the FreeRTOS task wrappers, state-machines, and Synchronization handles. Negligible footprint delta.
-- **Static RAM:** `+800 Bytes` BSS memory consumed for `SemaphoreHandle_t`, `TaskHandle_t`, and background buffer `UPD_PENDING` tracking primitives.
+- **Static RAM:** `+800 Bytes` BSS memory consumed for `SemaphoreHandle_t`, `TaskHandle_t`, and background buffer `UpdateStatus::PENDING` tracking primitives.
 - **Stack:** Each background fetch task strictly bounds a 1-to-1 **8KB (8192 words)** FreeRTOS stack threshold (`xTaskCreatePinnedToCore`). Because heavy clients like `WiFiClientSecure`, `JsonStreamingParser`, and `HTTPClient` are forced entirely to the Heap via `std::unique_ptr<T>`, we mitigate all stack overflow vulnerabilities during deep nested execution. Stack Watermarks (`uxTaskGetStackHighWaterMark()`) successfully validate strict isolation.
 - **Heap & Fragmentation:** By initiating Double Buffers natively in the constructors, true "Fragmentation Neutrality" is preserved. Updates occur via `memcpy` over pre-allocated variables instead of massive contiguous `String` concatenations or dynamic JSON DOMs. Network client instances cleanly destruct out of memory in a guaranteed variable-scope error-handler workflow.
 

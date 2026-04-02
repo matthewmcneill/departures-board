@@ -45,7 +45,7 @@ nationalRailDataSource::nationalRailDataSource()
     if (renderData) memset(renderData.get(), 0, sizeof(NationalRailStation));
     
     dataMutex = xSemaphoreCreateMutex();
-    taskStatus = UPD_NO_DATA;
+    taskStatus = UpdateStatus::NO_DATA;
     
     lastErrorMessage[0] = '\0';
     soapHost[0] = '\0';
@@ -77,7 +77,7 @@ bool nationalRailDataSource::compareTimes(const NationalRailService& a, const Na
     return m1 < m2;
 }
 
-int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb) {
+UpdateStatus nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb) {
     callback = cb;
     
     // Attempt to load discovered SOAP endpoints from dedicated cache file
@@ -89,7 +89,7 @@ int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDa
             strlcpy(soapHost, doc[F("host")], sizeof(soapHost));
             strlcpy(soapAPI, doc[F("api")], sizeof(soapAPI));
             LOG_INFO("DATA", "NR Source: Initialized from standalone cache: " + String(soapHost) + String(soapAPI));
-            return UPD_SUCCESS;
+            return UpdateStatus::SUCCESS;
         }
         LOG_WARN("DATA", "NR Source: Cache file corrupted or invalid. Wiping.");
         LittleFS.remove(F("/darwin_wsdl_cache.json"));
@@ -107,23 +107,23 @@ void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
     LOG_INFO("DATA", "NR Source: Soap address manually set to " + String(soapHost) + String(soapAPI) + " (Test Mode enabled)");
 }
 
-int nationalRailDataSource::updateData() {
-    if (taskStatus == UPD_PENDING) {
-        return UPD_PENDING;
+UpdateStatus nationalRailDataSource::updateData() {
+    if (taskStatus == UpdateStatus::PENDING) {
+        return UpdateStatus::PENDING;
     }
     
     LOG_INFO("DATA", "NR Source: Requesting priority fetch from DataManager");
-    taskStatus = UPD_PENDING;
+    taskStatus = UpdateStatus::PENDING;
     appContext.getDataManager().requestPriorityFetch(this);
-    return UPD_PENDING;
+    return UpdateStatus::PENDING;
 }
 
-uint8_t nationalRailDataSource::getPriorityTier() {
+PriorityTier nationalRailDataSource::getPriorityTier() {
     // If we've never successfully loaded data, it's critically empty -> High Priority
     if (renderData && renderData->numServices == 0) {
-        return TIER_HIGH;
+        return PriorityTier::PRIO_HIGH;
     }
-    return TIER_MEDIUM;
+    return PriorityTier::PRIO_MEDIUM;
 }
 
 /**
@@ -140,7 +140,7 @@ void nationalRailDataSource::executeFetch() {
     WiFiClientSecure *httpsClient = new (std::nothrow) WiFiClientSecure();
     if (!httpsClient) {
         LOG_ERROR("DATA", "NR Source: Failed to allocate WiFiClientSecure for update!");
-        taskStatus = UPD_DATA_ERROR;
+        taskStatus = UpdateStatus::DATA_ERROR;
         return;
     }
     httpsClient->setInsecure();
@@ -161,7 +161,7 @@ void nationalRailDataSource::executeFetch() {
         snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SOAP connection failed");
         httpsClient->stop();
         delete httpsClient;
-        taskStatus = UPD_NO_RESPONSE;
+        taskStatus = UpdateStatus::NO_RESPONSE;
         return;
     }
 
@@ -175,7 +175,7 @@ void nationalRailDataSource::executeFetch() {
             LOG_ERROR("DATA", "NR Source: Failed to allocate memory for station data update!");
             httpsClient->stop();
             delete httpsClient;
-            taskStatus = UPD_DATA_ERROR;
+            taskStatus = UpdateStatus::DATA_ERROR;
             return;
         }
         memset(xStation, 0, sizeof(NationalRailStation));
@@ -244,7 +244,7 @@ void nationalRailDataSource::executeFetch() {
     if (retry >= 80) {
         LOG_ERROR("DATA", "NR Source: Request timeout!");
         delete xStation;
-        taskStatus = UPD_TIMEOUT;
+        taskStatus = UpdateStatus::TIMEOUT;
         return;
     }
 
@@ -283,13 +283,13 @@ void nationalRailDataSource::executeFetch() {
                 httpsClient->stop();
                 delete httpsClient;
                 if (xStation) delete xStation;
-                taskStatus = UPD_HTTP_ERROR;
+                taskStatus = UpdateStatus::HTTP_ERROR;
                 return;
             } else if (isTestMode) {
                 LOG_INFO("DATA", "NR Source: Test Mode validated HTTP 200 via fast-exit.");
                 httpsClient->stop();
                 delete httpsClient;
-                taskStatus = UPD_SUCCESS;
+                taskStatus = UpdateStatus::SUCCESS;
                 return;
             }
         } else if (line.startsWith("Transfer-Encoding:") && line.indexOf("chunked") >= 0) {
@@ -368,7 +368,7 @@ void nationalRailDataSource::executeFetch() {
     for (int i = 0; i < messagesData.getCount(); i++) {
         renderMessages.addMessage(messagesData.getMessage(i));
     }
-    taskStatus = UPD_SUCCESS;
+    taskStatus = UpdateStatus::SUCCESS;
     xSemaphoreGive(dataMutex);
 
     if (callback && renderData) callback(3, renderData->numServices);
@@ -412,9 +412,9 @@ void nationalRailDataSource::executeFetch() {
 /**
  * @brief Performs a lightweight connection and authentication test using a minimal payload.
  * @param token Optional token to test (overrides stored configuration).
- * @return int Update status code.
+ * @return UpdateStatus code.
  */
-int nationalRailDataSource::testConnection(const char* token, const char* stationId) {
+UpdateStatus nationalRailDataSource::testConnection(const char* token, const char* stationId) {
     LOG_INFO("DATA", "NR Source: Performing lightweight Auth-only check via testConnection");
     
     // Save current state to avoid clobbering an active board's settings
@@ -448,7 +448,7 @@ int nationalRailDataSource::testConnection(const char* token, const char* statio
     // Execute update (in test mode it uses minimal payload)
     // Synchronously execute it for testConnection
     executeFetch();
-    int result = taskStatus;
+    UpdateStatus result = taskStatus;
     
     // Restore state
     isTestMode = prevTestMode;
@@ -457,8 +457,8 @@ int nationalRailDataSource::testConnection(const char* token, const char* statio
     strlcpy(soapHost, prevSoapHost, sizeof(soapHost));
     strlcpy(soapAPI, prevSoapApi, sizeof(soapAPI));
     
-    // Convert UPD_NO_CHANGE (1) to UPD_SUCCESS (0) for test result consistency since we don't care about board state changing
-    if (result == UPD_NO_CHANGE) result = UPD_SUCCESS;
+    // Convert UPD_NO_CHANGE (1) to UpdateStatus::SUCCESS (0) for test result consistency since we don't care about board state changing
+    if (result == UpdateStatus::NO_CHANGE) result = UpdateStatus::SUCCESS;
     
     return result;
 }
@@ -619,7 +619,7 @@ void nationalRailDataSource::attribute(const char *attr) {
     }
 }
 
-int nationalRailDataSource::refreshWsdl() {
+UpdateStatus nationalRailDataSource::refreshWsdl() {
     LOG_INFO("DATA", "NR Source: Refreshing WSDL to discover latest SOAP endpoints...");
     
     Config& cfg = appContext.getConfigManager().getConfig();
@@ -627,7 +627,7 @@ int nationalRailDataSource::refreshWsdl() {
     const char* api = cfg.wsdlAPI;
     
     WiFiClientSecure *client = new (std::nothrow) WiFiClientSecure();
-    if (!client) return UPD_DATA_ERROR;
+    if (!client) return UpdateStatus::DATA_ERROR;
     
     client->setInsecure();
     client->setTimeout(10000);
@@ -635,7 +635,7 @@ int nationalRailDataSource::refreshWsdl() {
     if (!client->connect(host, 443)) {
         LOG_ERROR("DATA", "NR Source: Failed to connect to WSDL host: " + String(host));
         delete client;
-        return UPD_NO_RESPONSE;
+        return UpdateStatus::NO_RESPONSE;
     }
     
     String request = "GET " + String(api) + " HTTP/1.1\r\n" +
@@ -690,11 +690,11 @@ int nationalRailDataSource::refreshWsdl() {
                 serializeJson(doc, output);
                 appContext.getConfigManager().saveFile(F("/darwin_wsdl_cache.json"), output);
                 
-                return UPD_SUCCESS;
+                return UpdateStatus::SUCCESS;
             }
         }
     }
     
     LOG_ERROR("DATA", "NR Source: Failed to extract soap:address from WSDL response.");
-    return UPD_DATA_ERROR;
+    return UpdateStatus::DATA_ERROR;
 }

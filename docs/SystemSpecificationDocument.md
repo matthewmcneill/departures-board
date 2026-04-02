@@ -45,13 +45,13 @@
         - **System Heap**: Reserved for transient **Network Clients** (`WiFiClientSecure`), **JSON Documents**, and **SSL Buffers**.
         - **Task Stack**: Limited to ~8KB; large local variables are strictly avoided to prevent kernel corruption.
 - **Data Flow**:
-    1. **Trigger**: `SystemManager` or `Carousel` triggers `updateData()` on the active board's data source, instantly returning a `UPD_PENDING` (9) state while a FreeRTOS background task is spawned.
+    1. **Trigger**: `SystemManager` or `Carousel` triggers `updateData()` on the active board's data source, instantly returning a `UpdateStatus::PENDING` state while a FreeRTOS background task is spawned.
     2. **Coordinate Recovery**: For National Rail boards, if coordinates are missing from the primary OJP autocomplete picker (which lost spatial data in March 2026), the system performs a fallback lookup via the **TfL Search API** (`api.tfl.gov.uk/StopPoint/Search`) to ensure the weather system remains functional.
     3. **Schedule-Driven Background Fetch**: All network operations (Rail, Bus, Tube, Weather, RSS, Web Portal Tests) register with a centralized `DataManager` to ensure 100% of TLS allocations are serialized globally on Core 0. The core logic uses a **Priority-Aware Scheduling Loop** rather than a simple FIFO queue:
         - Each source maintains a `nextFetchTime` and possesses the intelligence to dynamically parse its own schedule to determine optimal polling (e.g., 10s after the next train departs).
         - A dynamic priority tiering system handles Immediate Ad-Hoc Portal Tests (Tier 0), Active Boards with Empty Data Frames (Tier 1), Normal Active Boards (Tier 2), and Background Boards (Tier 3).
         - The `DataWorker` blocks smartly on a FreeRTOS event queue until the soonest `nextFetchTime`, then performs the non-blocking HTTP GET/POST, protecting the heap from exhaustion. Streaming parsers populate isolated background variables (`bgStatus`, etc.).
-    4. **Mutex Synchronization**: Upon parse completion, the task acquires a `SemaphoreMutex`, safely `memcpy`s the verified structures into the UI-facing active memory blocks (`renderData`), sets `UPD_SUCCESS`, and immediately releases the lock to prevent memory tearing.
+    4. **Mutex Synchronization**: Upon parse completion, the task acquires a `SemaphoreMutex`, safely `memcpy`s the verified structures into the UI-facing active memory blocks (`renderData`), sets `UpdateStatus::SUCCESS`, and immediately releases the lock to prevent memory tearing.
     5. **Render**: On the next `tick()`, `iDisplayBoard` reads the valid state and consumes the fresh data via `iGfxWidget`s for final hardware output.
 - **Data Retention & Archiving**: Configuration is persistent across reboots; real-time transport and weather data are purged on power loss or board deactivation.
 
@@ -140,7 +140,7 @@
 *(For detailed scheduling behavior, see [Async Data Retrieval](reference/AsyncDataRetrieval.md).)*
 - **Role**: Abstraction for external API connectivity, separating parsing from presentation.
 - **Methods**:
-    - `updateData()`: Requests an update from the `DataManager`. Depending on dynamic priority (e.g., Tier 1 Empty/Active vs Tier 3 Background), the fetch is scheduled appropriately. It instantly returns `UPD_PENDING` (9).
+    - `updateData()`: Requests an update from the `DataManager`. Depending on dynamic priority (e.g., Tier 1 Empty/Active vs Tier 3 Background), the fetch is scheduled appropriately. It instantly returns `UpdateStatus::PENDING`.
     - `executeFetch()`: The internal blocking HTTP/parsing payload called exclusively by the `DataWorker` task. Data sources must parse their schedules during this fetch and update their own `nextFetchTime` intelligently to avoid blind polling.
     - `getLastUpdateStatus()`: Polled by Board controllers to track background fetching task progress.
     - `testConnection()`: Lightweight credential validation.

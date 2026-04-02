@@ -99,7 +99,7 @@ public:
     void render(U8G2& display) override;
 
     /** @return Always 0 for system boards. */
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
 
     /** @return Empty string for system boards. */
     const char* getLastErrorMsg() override { return ""; }

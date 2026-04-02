@@ -38,10 +38,13 @@
 #include <freertos/semphr.h>
 #include <Arduino.h>
 
-#define TFL_MAX_LOCATION 45
-#define TFL_MAX_LINE 20
-#define TFL_MAX_SERVICES 9
-#define TFL_MAX_FETCH 20
+/**
+ * @brief Data Length Constants
+ */
+constexpr size_t TFL_MAX_LOCATION = 45;
+constexpr size_t TFL_MAX_LINE = 20;
+constexpr size_t TFL_MAX_SERVICES = 9;
+constexpr size_t TFL_MAX_FETCH = 20;
 
 /**
  * @brief Data structure for a single London Underground service.
@@ -74,7 +77,7 @@ private:
     MessagePool renderMessages; // Safe local copy for UI rendering
 
     SemaphoreHandle_t dataMutex; // Thread-safe lock protecting data transfers
-    volatile int taskStatus; // Cross-thread execution status tracking (e.g., UPD_PENDING)
+    volatile UpdateStatus taskStatus; // Cross-thread execution status tracking (e.g., UpdateStatus::PENDING)
 
     char lastErrorMsg[128];
 
@@ -108,12 +111,12 @@ public:
     virtual ~tflDataSource() = default;
 
     // iDataSource Implementation
-    int updateData() override;
-    int getLastUpdateStatus() const { return taskStatus; }
+    UpdateStatus updateData() override;
+    UpdateStatus getLastUpdateStatus() const { return taskStatus; }
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
-    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+    UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
     uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
-    uint8_t getPriorityTier() override;
+    PriorityTier getPriorityTier() override;
     void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
     // Configuration & Data Access

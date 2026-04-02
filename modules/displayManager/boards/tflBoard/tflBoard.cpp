@@ -147,36 +147,36 @@ void TfLBoard::tick(uint32_t ms) {
 
 /**
  * @brief Triggers or polls the background data fetch status.
- * @return Status code (0 = Success, 9 = Pending).
+ * @return UpdateStatus code.
  */
-int TfLBoard::updateData() {
+UpdateStatus TfLBoard::updateData() {
   // --- Step 1: Handle Async Latency ---
-  if (lastUpdateStatus == UPD_PENDING) {
+  if (lastUpdateStatus == UpdateStatus::PENDING) {
     lastUpdateStatus = dataSource.getLastUpdateStatus();
-    if (lastUpdateStatus == UPD_PENDING) {
-      return UPD_PENDING;
+    if (lastUpdateStatus == UpdateStatus::PENDING) {
+      return UpdateStatus::PENDING;
     }
   } else {
     // --- Step 2: Validate Config ---
     if (!config.complete) {
       LOG_WARN("DISPLAY",
                "TfL Board: Skipping updateData() - Configuration incomplete.");
-      return 7;
+      return UpdateStatus::DATA_ERROR;
     }
 
     // --- Step 3: Initiation ---
     LOG_INFO("DISPLAY", "TfL Board: Starting data update...");
     lastUpdateStatus = dataSource.updateData();
-    if (lastUpdateStatus == UPD_PENDING) {
-      return UPD_PENDING;
+    if (lastUpdateStatus == UpdateStatus::PENDING) {
+      return UpdateStatus::PENDING;
     }
   }
 
   // --- Step 4: Error Tracking ---
-  if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
+  if (lastUpdateStatus != UpdateStatus::SUCCESS && lastUpdateStatus != UpdateStatus::NO_CHANGE) {
     LOG_WARN("DISPLAY", "TfL Board: Data update failed with status: " +
-                            String(lastUpdateStatus));
-    if (lastUpdateStatus > 2) {
+                            String((int)lastUpdateStatus));
+    if (lastUpdateStatus >= UpdateStatus::TIMEOUT) {
       consecutiveErrors++;
     }
   } else {
@@ -185,7 +185,7 @@ int TfLBoard::updateData() {
   }
 
   // --- Step 5: Data Push to UI ---
-  if (lastUpdateStatus == 0) { // UPD_SUCCESS
+  if (lastUpdateStatus == UpdateStatus::SUCCESS) { // UpdateStatus::SUCCESS
     dataSource.lockData();
     TflStation *data = dataSource.getStationData();
     if (activeLayout) {
@@ -232,7 +232,7 @@ void TfLBoard::render(U8G2 &display) {
     return;
   }
 
-  if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+  if (lastUpdateStatus >= UpdateStatus::TIMEOUT && consecutiveErrors >= 3) {
     if (context) {
       SystemBoardId id =
           context->getDisplayManager().mapErrorToId(lastUpdateStatus);
@@ -251,7 +251,7 @@ void TfLBoard::render(U8G2 &display) {
       activeLayout->servicesWidget.setVisible(true);
       activeLayout->noDataLabel.setVisible(false);
     } else {
-      if (lastUpdateStatus == -1 || lastUpdateStatus == 9) {
+      if (lastUpdateStatus == UpdateStatus::NO_DATA || lastUpdateStatus == UpdateStatus::PENDING) {
         activeLayout->noDataLabel.setText("Loading data...");
       } else {
         activeLayout->noDataLabel.setText("No arrivals scheduled.");
@@ -274,7 +274,7 @@ void TfLBoard::renderAnimationUpdate(U8G2 &display, uint32_t currentMillis) {
     return;
   if (!config.complete)
     return;
-  if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+  if (lastUpdateStatus >= UpdateStatus::TIMEOUT && consecutiveErrors >= 3) {
     if (context) {
       SystemBoardId id =
           context->getDisplayManager().mapErrorToId(lastUpdateStatus);

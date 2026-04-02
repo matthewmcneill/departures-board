@@ -560,3 +560,10 @@ Enhanced the Screensaver Clock configuration and the overall portal aesthetic. I
 
 ### Git Commit
 Generated commit: 6acd617
+
+## Plan 8a9a238e-dc7d-4e80-a935-5d897c2cd59f
+**Date**: 2026-04-02
+**Session**: 303ac83a-6266-463c-ad89-a347c37505ea
+**Action**: Include Graph Optimization Execution
+**Summary**: Optimized C++ include graph by removing heavyweight ESP32 libraries (`WiFi.h`, `LittleFS.h`) from global `.hpp` interfaces. Fixed ensuing compilation errors by restoring transitive dependencies for `Arduino.h` core types in (`systemManager.hpp`, `busDataSource.hpp`, `progressBarWidget.hpp`, `weatherClient.hpp`). Validated via `pio run -e esp32dev`.
+**Commit**: 9638158

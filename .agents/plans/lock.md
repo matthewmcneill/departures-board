@@ -1,4 +1,4 @@
 ## Lock Status
-- **Locked By**: 303ac83a-6266-463c-ad89-a347c37505ea
-- **Reason**: Include Graph Optimization Execution (8a9a238e)
-- **Since**: 2026-04-02T13:04:30+01:00
+- **Locked By**: 00a761cb-6c18-468c-ba43-4bea43e5276d
+- **Reason**: Migration of Preprocessor Macros to Type-Safe Constants
+- **Since**: 2026-04-02T13:18:42+01:00

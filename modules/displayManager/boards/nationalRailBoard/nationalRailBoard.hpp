@@ -148,9 +148,9 @@ public:
 
     /**
      * @brief Trigger an asynchronous data refresh.
-     * @return UPD_SUCCESS, UPD_PENDING, or error code.
+     * @return UpdateStatus code.
      */
-    int updateData() override;
+    UpdateStatus updateData() override;
 
     /**
      * @brief Populates the layout widgets with the latest data slices.

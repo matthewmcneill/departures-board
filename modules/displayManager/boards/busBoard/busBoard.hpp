@@ -154,9 +154,9 @@ public:
 
     /**
      * @brief Triggers an immediate update from the internal data source.
-     * @return 0 on success, non-zero on error.
+     * @return UpdateStatus on success or error.
      */
-    int updateData() override;
+    UpdateStatus updateData() override;
 
     /**
      * @brief Retrieves the last error message from the components.

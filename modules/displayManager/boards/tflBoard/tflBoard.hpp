@@ -104,9 +104,9 @@ public:
 
     /**
      * @brief Trigger an asynchronous data refresh from TfL APIs.
-     * @return UPD_SUCCESS, UPD_PENDING, or error code.
+     * @return UpdateStatus code.
      */
-    int updateData() override;
+    UpdateStatus updateData() override;
 
     /**
      * @brief Get the last error string from the data source.

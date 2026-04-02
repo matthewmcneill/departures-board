@@ -141,34 +141,34 @@ void BusBoard::tick(uint32_t ms) {
 
 /**
  * @brief Triggers or polls the background data fetch for Bus arrivals.
- * @return Status code (0 = Success, 9 = Pending).
+ * @return UpdateStatus code.
  */
-int BusBoard::updateData() {
-  if (lastUpdateStatus == UPD_PENDING) {
+UpdateStatus BusBoard::updateData() {
+  if (lastUpdateStatus == UpdateStatus::PENDING) {
     lastUpdateStatus = dataSource.getLastUpdateStatus();
-    if (lastUpdateStatus == UPD_PENDING) {
-      return UPD_PENDING;
+    if (lastUpdateStatus == UpdateStatus::PENDING) {
+      return UpdateStatus::PENDING;
     }
   } else {
     if (!config.complete) {
       LOG_WARN("DISPLAY",
                "Bus Board: Skipping updateData() - Configuration incomplete.");
-      return 7;
+      return UpdateStatus::DATA_ERROR;
     }
 
     LOG_INFO("DISPLAY", "Bus Board: Starting data update...");
     lastUpdateStatus = dataSource.updateData();
-    if (lastUpdateStatus == UPD_PENDING) {
-      return UPD_PENDING;
+    if (lastUpdateStatus == UpdateStatus::PENDING) {
+      return UpdateStatus::PENDING;
     }
   }
 
   needsRefresh = true;
 
-  if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
+  if (lastUpdateStatus != UpdateStatus::SUCCESS && lastUpdateStatus != UpdateStatus::NO_CHANGE) {
     LOG_WARN("DISPLAY", "Bus Board: Data update failed with status: " +
-                            String(lastUpdateStatus));
-    if (lastUpdateStatus > 2) {
+                            String((int)lastUpdateStatus));
+    if (lastUpdateStatus >= UpdateStatus::TIMEOUT) {
       consecutiveErrors++;
     }
   } else {
@@ -176,7 +176,7 @@ int BusBoard::updateData() {
     consecutiveErrors = 0;
   }
 
-  if (lastUpdateStatus == 0) { // UPD_SUCCESS
+  if (lastUpdateStatus == UpdateStatus::SUCCESS) { // UpdateStatus::SUCCESS
     dataSource.lockData();
     BusStop *data = dataSource.getStationData();
     if (activeLayout) {
@@ -225,7 +225,7 @@ void BusBoard::render(U8G2 &display) {
     return;
   }
 
-  if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+  if (lastUpdateStatus >= UpdateStatus::TIMEOUT && consecutiveErrors >= 3) {
     if (context) {
       SystemBoardId id =
           context->getDisplayManager().mapErrorToId(lastUpdateStatus);
@@ -244,7 +244,7 @@ void BusBoard::render(U8G2 &display) {
       activeLayout->servicesWidget.setVisible(true);
       activeLayout->noDataLabel.setVisible(false);
     } else {
-      if (lastUpdateStatus == -1 || lastUpdateStatus == 9) {
+      if (lastUpdateStatus == UpdateStatus::NO_DATA || lastUpdateStatus == UpdateStatus::PENDING) {
         activeLayout->noDataLabel.setText("Loading data...");
       } else {
         activeLayout->noDataLabel.setText("No scheduled services.");
@@ -267,7 +267,7 @@ void BusBoard::renderAnimationUpdate(U8G2 &display, uint32_t currentMillis) {
     return;
   if (!config.complete)
     return;
-  if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+  if (lastUpdateStatus >= UpdateStatus::TIMEOUT && consecutiveErrors >= 3) {
     if (context) {
       SystemBoardId id =
           context->getDisplayManager().mapErrorToId(lastUpdateStatus);

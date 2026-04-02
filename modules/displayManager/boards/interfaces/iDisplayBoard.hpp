@@ -31,6 +31,7 @@
 
 #include <U8g2lib.h>
 #include <stdint.h>
+#include "../../../dataManager/iDataSource.hpp"
 #include <weatherStatus.hpp>
 
 /**
@@ -76,7 +77,7 @@ public:
      * @brief Forces an immediate data update.
      * @return Update status code.
      */
-    virtual int updateData() = 0;
+    virtual UpdateStatus updateData() = 0;
 
     /**
      * @brief Retrieves the last error message from the board's data source.
@@ -86,9 +87,9 @@ public:
 
     /**
      * @brief Retrieves the HTTP or internal result code from the last updateData() call.
-     * @return Result code (e.g., 0 for Success, 5 for Unauthorised).
+     * @return Result code (e.g., UpdateStatus::SUCCESS).
      */
-    virtual int getLastUpdateStatus() const { return lastUpdateStatus; }
+    virtual UpdateStatus getLastUpdateStatus() const { return lastUpdateStatus; }
 
     /**
      * @brief Apply a specific configuration to this board.
@@ -121,7 +122,7 @@ public:
     virtual bool isScrollFinished() { return true; }
 
 protected:
-    int lastUpdateStatus = -1; ///< Stores the result of the last updateData() call for inline error handling.
+    UpdateStatus lastUpdateStatus = UpdateStatus::NO_DATA; ///< Stores the result of the last updateData() call for inline error handling.
     int consecutiveErrors = 0; ///< Tracks the number of consecutive data fetch failures to defer error overlays.
 };
 

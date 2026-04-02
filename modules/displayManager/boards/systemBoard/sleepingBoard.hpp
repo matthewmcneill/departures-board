@@ -81,7 +81,7 @@ public:
 
     // Minimal interface implementations
     /** @return Always 0 for system boards. */
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
 
     /** @brief No-op animation tick. */
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {}

@@ -339,19 +339,19 @@ iDisplayBoard* DisplayManager::getSystemBoard(SystemBoardId id) {
 }
 
 /**
- * @brief Maps an interface error status (UPD_*) to a functional SystemBoardId.
+ * @brief Maps an interface error status (UpdateStatus) to a functional SystemBoardId.
  */
-SystemBoardId DisplayManager::mapErrorToId(int status) {
+SystemBoardId DisplayManager::mapErrorToId(UpdateStatus status) {
     switch (status) {
-        case UPD_UNAUTHORISED: // 6
+        case UpdateStatus::UNAUTHORISED:
             return SystemBoardId::SYS_ERROR_TOKEN;
-        case UPD_DATA_ERROR:   // 5
-        case UPD_TIMEOUT:      // 3
-        case UPD_HTTP_ERROR:   // 4
+        case UpdateStatus::DATA_ERROR:
+        case UpdateStatus::TIMEOUT:
+        case UpdateStatus::HTTP_ERROR:
             return SystemBoardId::SYS_ERROR_NO_DATA;
-        case UPD_NO_RESPONSE:  // 7
+        case UpdateStatus::NO_RESPONSE:
             return SystemBoardId::SYS_ERROR_WSDL;
-        case UPD_INCOMPLETE:   // 8
+        case UpdateStatus::INCOMPLETE:
             return SystemBoardId::SYS_ERROR_CRS;
         default:
             return SystemBoardId::SYS_ERROR_NO_DATA;

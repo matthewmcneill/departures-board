@@ -89,7 +89,7 @@ public:
     void configure(const struct BoardConfig& config) override { (void)config; }
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
     const char* getLastErrorMsg() override { return ""; }
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
     WeatherStatus& getWeatherStatus() override { return weatherStatus; }

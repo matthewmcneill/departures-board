@@ -185,7 +185,7 @@ public:
      * @param status The error code from a data source.
      * @return The corresponding system board ID for delegation.
      */
-    SystemBoardId mapErrorToId(int status);
+    SystemBoardId mapErrorToId(UpdateStatus status);
 
     /**
      * @brief Trigger a synchronized render of the current board.

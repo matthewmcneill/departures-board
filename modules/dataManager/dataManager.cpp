@@ -128,16 +128,16 @@ void dataManager::workerTaskLoop(void* pvParameters) {
         uint32_t now = millis();
         uint32_t soonestTime = now + 60000; // Default max sleep 1 minute
         iDataSource* bestSource = nullptr;
-        uint8_t bestTier = 255;
+        PriorityTier bestTier = static_cast<PriorityTier>(255);
 
         // Iterate registry to find the most pressing source
         if (manager->registryMutex && xSemaphoreTake(manager->registryMutex, portMAX_DELAY) == pdPASS) {
             for (iDataSource* src : manager->registry) {
                 uint32_t fetchTime = src->getNextFetchTime();
-                uint8_t tier = src->getPriorityTier();
+                PriorityTier tier = src->getPriorityTier();
                 
                 if (now >= fetchTime) {
-                    if (tier < bestTier) {
+                    if (static_cast<uint8_t>(tier) < static_cast<uint8_t>(bestTier)) {
                         bestTier = tier;
                         bestSource = src;
                     }
@@ -175,7 +175,7 @@ void dataManager::workerTaskLoop(void* pvParameters) {
         }
 
         if (targetToExecute != nullptr) {
-            LOG_INFO("DATA", "DataManager: Executing fetch for tier " + String(targetToExecute->getPriorityTier()));
+            LOG_INFO("DATA", "DataManager: Executing fetch for tier " + String(static_cast<uint8_t>(targetToExecute->getPriorityTier())));
             
             targetToExecute->executeFetch();
             

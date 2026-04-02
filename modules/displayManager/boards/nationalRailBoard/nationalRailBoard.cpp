@@ -80,12 +80,12 @@ void NationalRailBoard::onActivate() {
   // Defer initialization if WiFi is not connected to avoid blocking the main
   // thread during boot.
   if (WiFi.status() == WL_CONNECTED) {
-    int status = dataSource.init("lite.realtime.nationalrail.co.uk",
+    UpdateStatus status = dataSource.init("lite.realtime.nationalrail.co.uk",
                                  "/OpenLDBWS/wsdl.aspx?ver=2021-11-01",
                                  raildataYieldWrapper);
-    if (status != 0) {
+    if (status != UpdateStatus::SUCCESS) {
       LOG_WARN("DISPLAY", "NR Board: dataSource.init() failed with status: " +
-                              String(status));
+                              String(static_cast<uint8_t>(status)));
     } else {
       LOG_INFO("DISPLAY", "NR Board: dataSource.init() succeeded.");
     }
@@ -184,21 +184,21 @@ void NationalRailBoard::tick(uint32_t ms) {
 
 /**
  * @brief Triggers or polls the background SOAP data fetch status.
- * @return Status code (0 = Success, 9 = Pending).
+ * @return UpdateStatus code.
  */
-int NationalRailBoard::updateData() {
+UpdateStatus NationalRailBoard::updateData() {
   // --- Step 1: Pending Result Status ---
-  if (lastUpdateStatus == UPD_PENDING) {
+  if (lastUpdateStatus == UpdateStatus::PENDING) {
     lastUpdateStatus = dataSource.getLastUpdateStatus();
-    if (lastUpdateStatus == UPD_PENDING) {
-      return UPD_PENDING;
+    if (lastUpdateStatus == UpdateStatus::PENDING) {
+      return UpdateStatus::PENDING;
     }
   } else {
     // --- Step 2: Pre-Fetch Validation ---
     if (!config.complete) {
       LOG_WARN("DISPLAY",
                "NR Board: Skipping updateData() - Configuration incomplete.");
-      return 7; // Unconfigured
+      return UpdateStatus::DATA_ERROR; // Unconfigured
     }
 
     // Deferred init if WiFi joined late
@@ -211,16 +211,16 @@ int NationalRailBoard::updateData() {
     // --- Step 3: Initiation ---
     LOG_INFO("DISPLAY", "NR Board: Starting data update...");
     lastUpdateStatus = dataSource.updateData();
-    if (lastUpdateStatus == UPD_PENDING) {
-      return UPD_PENDING;
+    if (lastUpdateStatus == UpdateStatus::PENDING) {
+      return UpdateStatus::PENDING;
     }
   }
 
   // --- Step 4: Post-Fetch Error Tracking ---
-  if (lastUpdateStatus != 0 && lastUpdateStatus != 1) {
+  if (lastUpdateStatus != UpdateStatus::SUCCESS && lastUpdateStatus != UpdateStatus::NO_CHANGE) {
     LOG_WARN("DISPLAY", "NR Board: Data update failed with status: " +
-                            String(lastUpdateStatus));
-    if (lastUpdateStatus > 2) {
+                            String((int)lastUpdateStatus));
+    if (lastUpdateStatus >= UpdateStatus::TIMEOUT) {
       consecutiveErrors++;
     }
   } else {
@@ -228,7 +228,7 @@ int NationalRailBoard::updateData() {
     consecutiveErrors = 0;
   }
 
-  if (lastUpdateStatus == 0) { // UPD_SUCCESS
+  if (lastUpdateStatus == UpdateStatus::SUCCESS) { // UpdateStatus::SUCCESS
     dataSource.lockData();
     // Update header once we have the station name
     NationalRailStation *data = dataSource.getStationData();
@@ -296,7 +296,7 @@ void NationalRailBoard::render(U8G2 &display) {
     return;
   }
 
-  if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+  if (lastUpdateStatus >= UpdateStatus::TIMEOUT && consecutiveErrors >= 3) {
     if (context) {
       SystemBoardId id =
           context->getDisplayManager().mapErrorToId(lastUpdateStatus);
@@ -316,7 +316,7 @@ void NationalRailBoard::render(U8G2 &display) {
       activeLayout->servicesWidget.setVisible(true);
       activeLayout->noDataLabel.setVisible(false);
     } else {
-      if (lastUpdateStatus == -1 || lastUpdateStatus == 9) {
+      if (lastUpdateStatus == UpdateStatus::NO_DATA || lastUpdateStatus == UpdateStatus::PENDING) {
         activeLayout->noDataLabel.setText("Loading data...");
       } else {
         activeLayout->noDataLabel.setText("No services found.");
@@ -381,7 +381,7 @@ void NationalRailBoard::renderAnimationUpdate(U8G2 &display,
     return;
   if (!config.complete)
     return;
-  if (lastUpdateStatus > 2 && consecutiveErrors >= 3) {
+  if (lastUpdateStatus >= UpdateStatus::TIMEOUT && consecutiveErrors >= 3) {
     if (context) {
       SystemBoardId id =
           context->getDisplayManager().mapErrorToId(lastUpdateStatus);

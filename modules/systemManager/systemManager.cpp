@@ -35,7 +35,7 @@ systemManager::systemManager()
       lastWiFiReconnect(0), firstLoad(true), startupProgressPercent(0), 
       prevProgressBarPosition(0), nextRoundRobinUpdate(0), backgroundUpdateIndex(0), lastDataLoadTime(0), 
       noDataLoaded(true), dataLoadSuccess(0), dataLoadFailure(0), 
-      lastLoadFailure(0), lastUpdateResult(0), lastActiveSlotIndex(-1) {
+      lastLoadFailure(0), lastUpdateResult(UpdateStatus::SUCCESS), lastActiveSlotIndex(-1) {
     strlcpy(myUrl, "http://0.0.0.0", sizeof(myUrl));
 }
 
@@ -126,9 +126,9 @@ void systemManager::tick() {
             LOG_INFO("SYSTEM", "Board switch detected. Aligning sweeper.");
             iDisplayBoard* activeBoard = displayMgr.getDisplayBoard(activeIndex);
             if (activeBoard && config.boards[activeIndex].complete) {
-                int status = activeBoard->getLastUpdateStatus();
+                UpdateStatus status = activeBoard->getLastUpdateStatus();
                 // Only trigger fetch if unloaded, pending, or errored to prevent API flooding from rapid swiping
-                if (status == -1 || status == 9 || status > 2) {
+                if (status == UpdateStatus::NO_DATA || status == UpdateStatus::PENDING || status >= UpdateStatus::DATA_ERROR) {
                     LOG_INFO("SYSTEM", "Active board unloaded or errored. Triggering background fetch.");
                     activeBoard->updateData();
                 } else {
@@ -153,14 +153,14 @@ void systemManager::tick() {
             if (bgBoard && bgConfig.complete) {
                 lastUpdateResult = bgBoard->updateData(); // This both initiates pulls AND polls pending locks
                 
-                if (bgBoard->getLastUpdateStatus() == 9) { // 9 == UPD_PENDING
+                if (bgBoard->getLastUpdateStatus() == UpdateStatus::PENDING) {
                     // Lock cursor on this pending board and poll it again in 500ms
                     nextRoundRobinUpdate = millis() + 500;
                 } else {
                     int distributedInterval = config.apiRefreshRate / config.boardCount;
                     if (distributedInterval < 10000) distributedInterval = 10000; // Hard minimum floor
                     
-                    if (bgBoard->getLastUpdateStatus() == -1) {
+                    if (bgBoard->getLastUpdateStatus() == UpdateStatus::NO_DATA) {
                         // Fast-fill initialization override for unloaded dashboards
                         LOG_INFO("DATA", "Fast-Filling unloaded board index array: " + String(backgroundUpdateIndex));
                         distributedInterval = 2000; 
@@ -182,7 +182,7 @@ void systemManager::tick() {
                     backgroundUpdateIndex = (backgroundUpdateIndex + 1) % config.boardCount;
                 }
             } // Handle Result Codes
-                if (lastUpdateResult == 0 || lastUpdateResult == 1) { // UPD_SUCCESS, UPD_NO_CHANGE
+                if (lastUpdateResult == UpdateStatus::SUCCESS || lastUpdateResult == UpdateStatus::NO_CHANGE) { // UPD_SUCCESS, UPD_NO_CHANGE
                     // Omitted OTA flag toggle
                     lastDataLoadTime = millis();
                     noDataLoaded = false;
@@ -213,7 +213,7 @@ void systemManager::tick() {
                     }
                     
                     displayMgr.render();
-                } else if (lastUpdateResult == 5) { // UPD_UNAUTHORISED
+                } else if (lastUpdateResult == UpdateStatus::UNAUTHORISED) { // UPD_UNAUTHORISED
                     // Board must render its own error inline; do not hijack the display here.
                     LOG_WARN("DATA", "API Unauthorised. Displaying inline warning.");
                 } else {
@@ -260,7 +260,7 @@ String systemManager::getBuildTime() {
  */
 void systemManager::updateRssFeed() {
     rssClient& rss = context->getRss();
-    if (rss.getLastRssUpdateResult() == 9) return; // Wait until current fetch completes
+    if (rss.getLastRssUpdateResult() == UpdateStatus::PENDING) return; // Wait until current fetch completes
     LOG_INFO("DATA", "Triggering RSS Feed update: " + String(rss.getRssURL()));
     rss.loadFeed(rss.getRssURL());
 }
