@@ -40,6 +40,8 @@
 - [ ] **Simulator**: in the WASM if the edited json omits a widget config mark it as `isVisible = false` and do not show it. (makes config show only configured widgets)
 - [ ] **Schedule Migration**: Review the original v1/v2 `config.json` format. Critically assess how existing `sleepEnabled`, `sleepStarts`, and `sleepEnds` fields should be automatically migrated into the new Schedule/Screensaver paradigm when we update the settings json parsing logic.
 
+- [ ] **Web**: Consider adding a "Credits" tab to the web portal with attributions to authors (Gadec Software, Matt McNeill) and data providers (National Rail, TfL, bustimes.org). Reference `nrAttribution[]`, `tflAttribution[]`, and `btAttribution[]` strings.
+
 ## Completed
 - [x] **OLED Sleep Refactor**: Migrated "Turn OLED Off" from global system settings to per-board `BoardConfig`. Implemented v2.4 JSON migration and state-tracked power management in `DisplayManager`.
 - [x] Implement a unified diagnostic test queue in the frontend to prevent ESP32 resource saturation and dropped connections.

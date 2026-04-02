@@ -25,6 +25,7 @@
  * - LOG_WARN(sub, msg): Macro-guarded warning logging.
  * - LOG_INFO(sub, msg): Macro-guarded info logging.
  * - LOG_DEBUG(sub, msg): Macro-guarded debug logging.
+ * - LOG_VERBOSE(sub, msg): Macro-guarded verbose (Level 5) logging.
  * - LOG_SPLASH(msg): Macro-guarded splash message logging.
  */
 #pragma once
@@ -64,6 +65,12 @@
   #define LOG_DEBUG(sub, msg) Logger::_debug(sub, msg)
 #else
   #define LOG_DEBUG(sub, msg)
+#endif
+
+#if CORE_DEBUG_LEVEL >= 5
+  #define LOG_VERBOSE(sub, msg) Logger::_verbose(sub, msg)
+#else
+  #define LOG_VERBOSE(sub, msg)
 #endif
 
 /**
@@ -120,6 +127,14 @@ public:
    */
   static void _debug(const char* category, const String& message);
   static void _debug(const char* category, const char* message);
+
+  /**
+   * @brief Logs a verbose message. Called internally by the LOG_VERBOSE macro.
+   * @param category Subsystem or tag.
+   * @param message Message content.
+   */
+  static void _verbose(const char* category, const String& message);
+  static void _verbose(const char* category, const char* message);
 
 private:
   static std::vector<String> secrets; ///< Registry of sensitive strings

@@ -156,4 +156,15 @@ void Logger::_debug(const char* category, const char* message) {
   printRedacted("🔵", category, message);
 }
 
+/**
+ * @brief Logs a verbose message. Called internally by the LOG_VERBOSE macro.
+ */
+void Logger::_verbose(const char* category, const String& message) {
+  printRedacted("🟣", category, message);
+}
+
+void Logger::_verbose(const char* category, const char* message) {
+  printRedacted("🟣", category, message);
+}
+
 #endif // CORE_DEBUG_LEVEL > 0

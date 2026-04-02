@@ -158,7 +158,7 @@ void appContext::begin() {
 #endif
 
   // Initialize Centralized Data Fetch Worker
-  networkManager.init(false); // Enable queue debug logging if true
+  networkManager.init(); // Verbose logging controlled via CORE_DEBUG_LEVEL >= 5
   networkManager.registerSource(&weather);
   networkManager.registerSource(&rss);
 

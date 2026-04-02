@@ -567,3 +567,16 @@ Generated commit: 6acd617
 **Action**: Include Graph Optimization Execution
 **Summary**: Optimized C++ include graph by removing heavyweight ESP32 libraries (`WiFi.h`, `LittleFS.h`) from global `.hpp` interfaces. Fixed ensuing compilation errors by restoring transitive dependencies for `Arduino.h` core types in (`systemManager.hpp`, `busDataSource.hpp`, `progressBarWidget.hpp`, `weatherClient.hpp`). Validated via `pio run -e esp32dev`.
 **Commit**: 9638158
+## Plan 00a761cb-6c18-468c-ba43-4bea43e5276d
+**Date**: 2026-04-02
+**Session**: 00a761cb-6c18-468c-ba43-4bea43e5276d
+**Action**: Migration of Preprocessor Macros to Type-Safe Constants
+**Summary**: Refactored the firmware's status reporting and scheduling systems to use type-safe `UpdateStatus` and `PriorityTier` enums. Resolved critical macro collisions between `PriorityTier` members (`LOW`, `HIGH`) and Arduino's hardware abstraction by adopting the `PRIO_` prefix. Standardized the `iDataSource` interface to return `UpdateStatus` and updated all data sources (National Rail, TfL, Bus, RSS, Weather) to comply. Validated the changes through a clean PlatformIO build and host-based unit tests.
+**Commit**: 392af1a
+
+## Plan 44f14aa6-4a8e-4c1d-b18d-ae7bf9ebcb11
+**Date**: 2026-04-02
+**Session**: 54ace06a-60ad-4948-93f5-b71e7a39cf9b
+**Action**: Relocating Attribution Constants
+**Summary**: Refactored `nrAttribution`, `tflAttribution`, and `btAttribution` out of the global scope in `src/departuresBoard.cpp` into their respective board implementations (`nationalRailBoard.cpp`, `tflBoard.cpp`, `busBoard.cpp`). This removes minor architectural debt and strictly encapsulates display-only text within the correct domain controllers.
+**Commit**: a89c7e3

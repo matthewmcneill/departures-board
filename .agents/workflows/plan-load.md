@@ -7,4 +7,8 @@ description: Pull a plan's rich context from disk into your active session and m
 3. Append the *current* session ID to the `.agents/plans/[Target Plan ID]/sessions.md` lineage file.
 4. Update the `.agents/plans/[Target Plan ID]/PLAN.md` YAML frontmatter to update `status: WIP`.
 5. **DO NOT AUTO-EXECUTE OR CLAIM HARDWARE LOCKS.** 
-7. Present a summary of the loaded plan to the user and wait for their guidance to run `/plan-start`.
+7. **Proactive Review**:
+   - Check if an `implementation_plan.md` exists in the loaded directory.
+   - **If it exists**: Display the plan to the user and explicitly request review and approval to proceed with the execution stage (`/plan-start`).
+   - **If NOT found**: Notify the user that no existing implementation plan was discovered and await instructions to draft a new one.
+8. This ensures the agent is ready to resume momentum immediately upon reloading.

@@ -1,25 +1,49 @@
-# Refactoring dataManager Logging Framework
+Refactor the `dataManager` module to eliminate the runtime `enableDebug` flag. This anti-pattern consumes permanent heap memory and CPU cycles for logging that should be strictly compile-time. Instead of module-specific macros, we will implement a new global `LOG_VERBOSE` level in the core `Logger` library (Level 5). When `CORE_DEBUG_LEVEL` is set to 5 or higher, verbose logs will be compiled in; otherwise, they are stripped out as NO-OPs.
 
-Refactor the `dataManager` module to eliminate the runtime `enableDebug` flag. This anti-pattern consumes permanent heap memory and CPU cycles for logging that should be strictly compile-time. The boolean flag will be replaced by a module-level preprocessor macro (`DATA_MANAGER_VERBOSE`) that maps to standard logging utilities, improving memory efficiency and encapsulation.
+## User Review Required
+
+> [!IMPORTANT]
+> This change introduces a new global logging level `LOG_VERBOSE`. To see the "spammy" dataManager logs, the project must now be compiled with `-D CORE_DEBUG_LEVEL=5`.
+
+> [!CAUTION]
+> This change modifies the `init()` signature of the `dataManager` class. Any external modules (like `appContext`) that directly call `init(bool)` will need to be updated to `init()`.
 
 ## Proposed Changes
 
+### Core Logger Library
+#### [MODIFY] [logger.hpp](modules/systemManager/logger.hpp)
+- Add `LOG_VERBOSE(sub, msg)` macro guarded by `#if CORE_DEBUG_LEVEL >= 5`.
+- Add `static void _verbose(const char* category, const String& message)` and character pointer overload to the `Logger` class.
+
+#### [MODIFY] [logger.cpp](modules/systemManager/logger.cpp)
+- Implement `_verbose()` using the 🟣 (Purple Circle) icon for visual distinction.
+
 ### Data Manager Module
-#### [MODIFY] [dataManager.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/dataManager/dataManager.hpp)
+#### [MODIFY] [dataManager.hpp](modules/dataManager/dataManager.hpp)
 - Remove `bool enableDebug = false` from the `init()` method signature.
 - Remove the `bool debugEnabled` member variable from the class definition.
-- Verify that Doxygen comments for `init()` strictly align with the `house-style-docs` standards and accurately reflect the simplified signature.
 
-#### [MODIFY] [dataManager.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/dataManager/dataManager.cpp)
-- Add a new block at the top of the file explicitly defining `DATA_MANAGER_VERBOSE` as `0` by default.
-- Add preprocessor directives to define `LOG_DM_VERBOSE` based on `DATA_MANAGER_VERBOSE`. When enabled, it maps to `LOG_DEBUG`; when disabled, it strips out the trace strings via `do {} while(0)`.
-- Replace all runtime `if (debugEnabled)` checks with direct invocations of the `LOG_DM_VERBOSE` macro.
-- Standardize the `init()` implementation signature.
+#### [MODIFY] [dataManager.cpp](modules/dataManager/dataManager.cpp)
+- Remove `debugEnabled = enableDebug;` from the `init()` implementation.
+- Replace all runtime `if (debugEnabled)` checks with direct invocations of the `LOG_VERBOSE` macro.
 
 ### Application Context
-#### [MODIFY] [appContext.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/appContext/appContext.cpp)
-- Update the initialization call on line 147 from `networkManager.init(false);` to `networkManager.init();`.
+#### [MODIFY] [appContext.cpp](modules/appContext/appContext.cpp)
+- Update the initialization call on line 161 from `networkManager.init(false);` to `networkManager.init();`.
 - Clean up any adjacent stale comments referencing the old queue debug flag.
+
+## Resource Impact Assessment
+
+### Memory (RAM)
+- **Heap**: Saving 1 byte per instance (singleton) by removing `debugEnabled`.
+- **Stack**: Minor reduction in `init()` stack frame.
+- **Static**: If `DATA_MANAGER_VERBOSE` is `0`, debug strings are not compiled in, saving several dozen bytes of Flash/RAM (depending on where the compiler places string literals).
+
+### Flash (ROM)
+- Reduction in code size as runtime checks are removed and debug logging is conditionally compiled.
+
+### Power & Security
+- No significant impact.
 
 ## Verification Plan
 

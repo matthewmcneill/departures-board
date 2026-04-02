@@ -37,11 +37,10 @@ class dataManager {
 public:
     dataManager();
     
-    /**
+     /**
      * @brief Initializes the FreeRTOS event queue and spawns the pinned Core 0 worker task.
-     * @param enableDebug Optional flag to enable verbose logging.
      */
-    void init(bool enableDebug = false);
+    void init();
 
     /**
      * @brief Registers a data source with the manager.
@@ -66,7 +65,6 @@ private:
     volatile iDataSource* currentlyExecuting; // Tracks the active fetch target
     QueueHandle_t priorityEventQueue; // FreeRTOS queue holding priority events
     TaskHandle_t workerTaskHandle;
-    bool debugEnabled;
 
     /**
      * @brief Static FreeRTOS Entry Point for the dynamic scheduling loop.

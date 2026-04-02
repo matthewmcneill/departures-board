@@ -1,7 +1,23 @@
+[x] Reviewed by house-style-documentation - passed
+[x] Reviewed by architectural-refactoring - passed
+[x] Reviewed by embedded-systems - passed
+
 # Zero-Overhead Logging Architecture Refactor
 
 ## Goal Description
 Optimize the logging architecture in the `departures-board` project to achieve true zero-overhead compilation on the ESP32 when debugging is disabled (`CORE_DEBUG_LEVEL == 0`). Specifically, we will resolve memory leaks caused by `Logger::registerSecret()` allocating memory for string redaction even when the logger is entirely disabled by wrapping it in a macro, and we will place the `logger.cpp` definitions under compile-time conditionals. 
+
+## Resource Impact Assessment
+### Memory (Flash/RAM/Stack/Heap)
+- **Flash/ROM**: Reduction in binary size as the entire `Logger` implementation and its supporting data structures (like `std::vector<String>`) are compiled out when `CORE_DEBUG_LEVEL == 0`.
+- **RAM/Heap**: Significant savings on the heap. Previously, `Logger::registerSecret` would allocate `String` objects into a global vector regardless of whether logging was enabled. This plan ensures that when logging is disabled, no allocations occur, and the vector itself is not instantiated.
+- **Stack**: No significant change to stack usage.
+
+### Power
+- **Power Consumption**: Negligible direct impact on power, though reduced CPU cycles for string manipulation during boot (secret registration) may marginally improve boot time and energy consumption.
+
+### Security
+- **Security Posture**: No negative impact. String redaction functionality is maintained for debug builds. Secret registration remains available but optimized.
 
 ## User Review Required
 No blocking decisions required. The structure ensures `Logger::secrets` vector definition and `Serial.begin` bindings compile out completely.

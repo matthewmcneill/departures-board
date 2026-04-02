@@ -17,15 +17,13 @@
 /**
  * @brief Constructor for the Centralized Data Manager.
  */
-dataManager::dataManager() : priorityEventQueue(nullptr), registryMutex(nullptr), currentlyExecuting(nullptr), workerTaskHandle(nullptr), debugEnabled(false) {
+dataManager::dataManager() : priorityEventQueue(nullptr), registryMutex(nullptr), currentlyExecuting(nullptr), workerTaskHandle(nullptr) {
 }
 
 /**
  * @brief Initializes the FreeRTOS queue and spawns the pinned Core 0 worker task.
- * @param enableDebug Optional flag to enable verbose logging for the queue.
  */
-void dataManager::init(bool enableDebug) {
-    debugEnabled = enableDebug;
+void dataManager::init() {
     
     // We only need a tiny queue to wake the worker up early if a priority event occurs
     priorityEventQueue = xQueueCreate(5, sizeof(iDataSource*));
@@ -62,9 +60,7 @@ void dataManager::registerSource(iDataSource* source) {
         if (registryMutex && xSemaphoreTake(registryMutex, portMAX_DELAY) == pdPASS) {
             registry.push_back(source);
             xSemaphoreGive(registryMutex);
-            if (debugEnabled) {
-                LOG_DEBUG("DATA", "DataManager: Source registered. Total: " + String(registry.size()));
-            }
+            LOG_VERBOSE("DATA", "DataManager: Source registered. Total: " + String(registry.size()));
         }
     }
 }
@@ -83,8 +79,8 @@ void dataManager::requestPriorityFetch(iDataSource* source) {
     // Wake up the worker task safely
     if (xQueueSendToFront(priorityEventQueue, &source, (TickType_t)10) != pdPASS) {
         LOG_WARN("DATA", "DataManager: Priority Queue full! Wake event dropped.");
-    } else if (debugEnabled) {
-        LOG_DEBUG("DATA", "DataManager: Priority wake event dispatched.");
+    } else {
+        LOG_VERBOSE("DATA", "DataManager: Priority wake event dispatched.");
     }
 }
 
@@ -97,9 +93,7 @@ void dataManager::unregisterSource(iDataSource* source) {
         auto it = std::find(registry.begin(), registry.end(), source);
         if (it != registry.end()) {
             registry.erase(it);
-            if (debugEnabled) {
-                LOG_DEBUG("DATA", "DataManager: Source removed from registry.");
-            }
+            LOG_VERBOSE("DATA", "DataManager: Source removed from registry.");
         }
         xSemaphoreGive(registryMutex);
     }

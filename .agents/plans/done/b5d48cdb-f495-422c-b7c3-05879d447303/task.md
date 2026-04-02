@@ -9,13 +9,12 @@
     - Wrapping `logger.cpp` contents in `#if CORE_DEBUG_LEVEL > 0`.
     - Updating direct calls to use the macro.
     - Adding conditional guards for `Serial.begin()`.
-  - [ ] Request user review of the implementation plan.
-  - [ ] Request user review of the implementation plan.
-- [ ] Execution Phase
-  - [ ] Update `lib/logger/logger.hpp`.
-  - [ ] Update `lib/logger/logger.cpp`.
-  - [ ] Update all callers of `registerSecret` (e.g., `configManager.cpp`).
-  - [ ] Update `src/departuresBoard.cpp` (or `logger.cpp`'s `begin` if there) conditionally.
-- [ ] Verification Phase
-  - [ ] Run compilation checks.
-  - [ ] Create walkthrough.md.
+  - [x] Request user review of the implementation plan.
+- [x] Execution Phase
+  - [x] Update `lib/logger/logger.hpp`.
+  - [x] Update `lib/logger/logger.cpp`.
+  - [x] Update all callers of `registerSecret` (e.g., `configManager.cpp`).
+  - [x] Update `src/departuresBoard.cpp` (or `logger.cpp`'s `begin` if there) conditionally.
+- [x] Verification Phase
+  - [x] Run compilation checks.
+  - [x] Create walkthrough.md.

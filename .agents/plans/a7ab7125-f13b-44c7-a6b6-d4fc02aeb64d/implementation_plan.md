@@ -64,6 +64,19 @@ Similar to the Bus module, we will eliminate `String` cache storage and concaten
 #### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
 - Update `getBuildTime()` to return a `static char` buffer or `const char*` macro string instead of allocating a new `String` on the heap every call.
 
+---
+
+### RSS Client Library (rssClient)
+
+#### [MODIFY] [rssClient.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/rssClient/rssClient.hpp)
+- Change `String grandParentTagName`, `parentTagName`, `tagName`, `tagPath`, `currentPath` to `char` buffers (e.g., `char tagName[32]`).
+- Change `String activeUrl` to `char activeUrl[128]`.
+- Update `loadFeed(String url)` to `loadFeed(const char* url)`.
+
+#### [MODIFY] [rssClient.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/rssClient/rssClient.cpp)
+- Replace internal string assignments with `strncpy` or `strlcpy`.
+- Replace `String::startsWith` and `String::indexOf` calls with `strncmp` and `strstr`.
+
 ## Verification Plan
 
 ### Automated Tests
