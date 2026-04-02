@@ -66,7 +66,7 @@ TfLBoard::~TfLBoard() {
  *        and prepares the layout widgets.
  */
 void TfLBoard::onActivate() {
-  dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
+  dataSource.configure(tubeId, tflAppkey);
 
   if (activeLayout) {
     activeLayout->locationAndFilters.setLocation(tubeName);
@@ -133,7 +133,7 @@ void TfLBoard::configure(const BoardConfig &config) {
 
   // Inject the credentials down into the API caller so background sweeps work
   // successfully
-  dataSource.configure(tubeId, tflAppkey, yieldCallbackWrapper);
+  dataSource.configure(tubeId, tflAppkey);
 }
 
 /**

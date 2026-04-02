@@ -81,8 +81,7 @@ void NationalRailBoard::onActivate() {
   // thread during boot.
   if (WiFi.status() == WL_CONNECTED) {
     UpdateStatus status = dataSource.init("lite.realtime.nationalrail.co.uk",
-                                 "/OpenLDBWS/wsdl.aspx?ver=2021-11-01",
-                                 raildataYieldWrapper);
+                                 "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
     if (status != UpdateStatus::SUCCESS) {
       LOG_WARN("DISPLAY", "NR Board: dataSource.init() failed with status: " +
                               String(static_cast<uint8_t>(status)));
@@ -160,7 +159,7 @@ void NationalRailBoard::configure(const BoardConfig &config) {
   // Inject the credentials and instantly init the static endpoints so
   // background sweeps work successfully
   dataSource.init("lite.realtime.nationalrail.co.uk",
-                  "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", raildataYieldWrapper);
+                  "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
   dataSource.configure(nrToken, crsCode, platformFilter, callingCrsCode,
                        nrTimeOffset);
 }
@@ -205,7 +204,7 @@ UpdateStatus NationalRailBoard::updateData() {
     if (WiFi.status() == WL_CONNECTED && !dataSource.isInitialized()) {
       LOG_INFO("DISPLAY", "NR Board: Performing deferred dataSource.init()...");
       dataSource.init("lite.realtime.nationalrail.co.uk",
-                      "/OpenLDBWS/wsdl.aspx?ver=2021-11-01", nullptr);
+                      "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
     }
 
     // --- Step 3: Initiation ---

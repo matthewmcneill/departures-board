@@ -631,3 +631,18 @@ Generated commit: 10e5e55
 **Summary**: Eliminated floating global singletons (`displayManager`, `currentWeather`, `server`, `manager`) in favor of context-based service access via `appContext`. Removed deprecated, UI-bleeding callbacks from `systemManager`.
 **Archive**: [.agents/plans/done/8cea9a9b-2af4-45ea-a652-c71e3367672b/](.agents/plans/done/8cea9a9b-2af4-45ea-a652-c71e3367672b/)
 **Commit**: 2072c04
+## Plan 2c42d48e-858a-4329-b5da-224af7810633
+**Date**: 2026-04-02
+**Session**: 911eded9-2b96-4491-aa21-15ab175f2aba
+**Action**: Dismantling systemManager God Object
+**Summary**: Successfully dismantled the legacy `systemManager` singleton and redistributed its responsibilities to `appContext` and domain-specific managers. Migrated WiFi error tracking, RSS headline management, and data polling status metrics. Resolved RAII "incomplete type" errors for `buttonHandler` by ensuring proper destructor definitions in `appContext.cpp`. Physically removed the `modules/systemManager/` directory and verified build stability with a successful PlatformIO build.
+**Archive**: [.agents/plans/done/2c42d48e-858a-4329-b5da-224af7810633/](.agents/plans/done/2c42d48e-858a-4329-b5da-224af7810633/)
+**Commit**: [Captured in session git history]
+
+## Plan 03965ff0-d029-4356-8306-5228bfdcfe2a
+**Date**: 2026-04-02
+**Session**: 67807d52-6252-404a-8651-e5129d2aa965
+**Action**: Purging Legacy Yield Callbacks
+**Summary**: Successfully purged the obsolete yieldCallback mechanism from the firmware architecture. This removed redundant function pointers and registration logic from appContext, weatherClient, rssClient, and transport data sources (TfL, National Rail). Updated board controllers to remove call-site overhead and modernized the AsyncDataRetrieval.md and WeatherSystemDesign.md documentation to reflect the current dual-core FreeRTOS task yielding model. Verified the build stability with pio run.
+**Archive**: [.agents/plans/done/03965ff0-d029-4356-8306-5228bfdcfe2a/](.agents/plans/done/03965ff0-d029-4356-8306-5228bfdcfe2a/)
+**Commit**: [Captured in session git history]

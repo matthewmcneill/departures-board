@@ -157,17 +157,4 @@ public:
     void setFirstLoad(bool load) { firstLoad = load; }
 };
 
-// Global yield wrappers for non-blocking I/O
-
-/**
- * @brief Global wrapper to trigger DisplayManager's non-blocking yield.
- *        Used by data clients to keep the web server alive during long I/O.
- */
-void yieldCallbackWrapper();
-
-/**
- * @brief Adaptor for National Rail data source which provides progress events.
- * @param stage Current parsing stage.
- * @param nServices Number of services found so far.
- */
-void raildataYieldWrapper(int stage, int nServices);
+// Global yield wrappers for non-blocking I/O - DEPRECATED for v3.0 FreeRTOS flow

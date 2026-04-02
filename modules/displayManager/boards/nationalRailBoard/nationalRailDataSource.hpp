@@ -88,7 +88,7 @@ struct NationalRailStation {
     NationalRailService service[NR_MAX_SERVICES];
 };
 
-typedef void (*nrDataSourceCallback) (int state, int id);
+
 
 class nationalRailDataSource : public iDataSource, public xmlListener {
 private:
@@ -127,7 +127,6 @@ private:
     char crsCode[4];
     char callingCrsCode[4];
     int nrTimeOffset;
-    nrDataSourceCallback callback;
 
     // Internal Utility Methods (ported from raildataXmlClient)
     static bool compareTimes(const NationalRailService& a, const NationalRailService& b);
@@ -137,7 +136,6 @@ private:
     void fixFullStop(char* input);
     void trim(char* &start, char* &end);
     bool equalsIgnoreCase(const char* a, int a_len, const char* b);
-    void setYieldCallback(nrDataSourceCallback cb) { callback = cb; }
 
     bool serviceMatchesFilter(const char* filter, const char* serviceId);
     void sanitiseData();
@@ -169,7 +167,7 @@ public:
     UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
     // Configuration & Data Access
-    UpdateStatus init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb);
+    UpdateStatus init(const char *wsdlHost, const char *wsdlAPI);
     bool isInitialized() const { return soapHost[0] != '\0'; }
     void configure(const char* token, const char* crs, const char* filter = "", const char* callingCrs = "", int offset = 0);
     

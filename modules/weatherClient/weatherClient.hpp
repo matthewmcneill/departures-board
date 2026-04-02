@@ -16,8 +16,6 @@
  * Exported Functions/Classes:
  * - weatherClient: Main service class for OpenWeatherMap integration.
  * - weatherClient::updateWeather: Fetches and parses weather data for a status object.
- * - weatherClient::setYieldCallback: Registers a callback for non-blocking I/O.
- * - weatherClient::reapplyConfig: Updates API keys from central configuration.
  *   - executeFetch(): Internal synchronous HTTP pipeline.
  *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
  */
@@ -39,7 +37,6 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
         String currentKey = "";
         String currentObject = "";
         int weatherItem = 0;
-        void (*yieldCallback)() = nullptr;
 
         WeatherStatus bgStatus; // Background Double Buffer used during active HTTP parsing
         WeatherStatus* activeStatus = nullptr; // Pointer to the UI-facing active status structure
@@ -80,8 +77,6 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
          * @brief Default constructor for the weather client.
          */
         weatherClient();
-
-        void setYieldCallback(void (*cb)()) { yieldCallback = cb; }
 
 /**
  * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.

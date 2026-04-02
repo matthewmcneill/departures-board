@@ -67,7 +67,7 @@ struct TflStation {
     TflService service[TFL_MAX_FETCH];
 };
 
-typedef void (*tflDataSourceCallback) ();
+
 
 class tflDataSource : public iDataSource, public JsonListener {
 private:
@@ -98,7 +98,6 @@ private:
     char tubeId[13];
     char lineFilter[32];
     int directionFilter = 0; // 0: Any, 1: Inbound, 2: Outbound
-    tflDataSourceCallback callback;
 
     // Internal Utilities
     bool pruneFromPhrase(char* input, const char* target);
@@ -126,7 +125,7 @@ public:
      * @param apiKey Your TfL API App Key
      * @param cb Optional completion callback
      */
-    void configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb);
+    void configure(const char* naptanId, const char* apiKey);
     void setFilter(const char* filter) { 
         if (filter) strlcpy(lineFilter, filter, sizeof(lineFilter)); 
         else lineFilter[0] = '\0';

@@ -1,0 +1,18 @@
+- [x] Review house style documentation skill for Implementation Plan requirements
+- [x] Survey `docs/` for mentions of yielding, blocking, and multitasking.
+- [x] Identify code locations representing `yieldCallback` technical debt (appContext, weatherClient, rssClient, tflBoard, etc.)
+- [x] Write `implementation_plan.md` containing the correct removal plan.
+- [x] Obtain hardware lock for target device
+- [x] **Execution: Removing Yield Callbacks**
+  - [x] Refactor `appContext`: remove wrappers and `_instance`
+  - [x] Refactor `weatherClient`: remove `yieldCallback` members/logic
+  - [x] Refactor `rssClient`: remove `yieldCallback` members/logic
+  - [x] Refactor `tflDataSource`: remove callback usage
+  - [x] Refactor `nationalRailDataSource`: remove callback usage
+  - [x] Update display boards to remove call-site passing of callbacks
+- [x] **Execution: Updating Multitasking Docs**
+  - [x] Update `WeatherSystemDesign.md`
+  - [x] Update `AsyncDataRetrieval.md`
+- [/] **Verification**
+  - [/] Build firmware with `pio run`
+  - [ ] Flash and monitor with `/flash-test`

@@ -13,7 +13,7 @@ The targeted solution was to decouple all core network integrations (National Ra
 1. **FreeRTOS Execution:** Migrate all blocking `.executeFetch()` logic inside `xTaskCreatePinnedToCore` delegates running strictly on Core 0 context.
 2. **State Machine (`UpdateStatus::PENDING`):** Implement a continuous non-blocking polling architecture where `systemManager` requests data, receives an immediate `UpdateStatus::PENDING` status code, and leaves the board alone until the task completes.
 3. **Double Buffering:** Secure background writes. Each client must parse data into a hidden `bgStatus` background structure.
-4. **Mutex Synchronization (`SemaphoreMutex`):** Protect the copy of the background buffer to the active UI buffer (`renderData`) by wrapping it in an extremely brief `xSemaphoreTake()` lock, ensuring zero tearing or memory corruption.
+4. **Mutex Synchronization (`dataMutex`):** Protect the copy of the background buffer to the active UI buffer (`renderData`) by wrapping it in an extremely brief `xSemaphoreTake()` lock, ensuring zero tearing or memory corruption.
 5. **Yield Chunking:** To satisfy single-core environments, all XML/JSON parsing loops must explicitly track byte counts and yield using `vTaskDelay(1)` periodically.
 
 ## 3. Walkthrough of the Mechanism
@@ -21,11 +21,11 @@ The targeted solution was to decouple all core network integrations (National Ra
 ### Data Lifecycle
 1. The `systemManager` invokes an update trigger (e.g. `NationalRailBoard::updateData()`).
 2. The board calls `NationalRailDataSource::loadFeed()`.
-3. If no fetch is running, a FreeRTOS task is spawned (`xTaskCreatePinnedToCore`) and a `TaskHandle_t` is retained. The method instantly returns `UPD_PENDING`.
-4. The `systemManager` sees `UPD_PENDING` and gracefully exits its tick cycle, letting the GPU/UI render loop continue running at 60fps unaffected.
-5. The background FreeRTOS task executes the HTTP GET and streams the XML into a parser, writing strictly to the isolated `bgStatus` background memory buffer. It yields every 500 parse iterations.
-6. Once the parse succeeds, the task acquires `SemaphoreMutex`, copies the background structs into the UI-facing `stationData` structs, sets the status code to `UPD_SUCCESS` (0), and gives the Mutex back.
-7. Next tick, the UI board checks the background status, sees `UPD_SUCCESS`, and processes the layout strings.
+3. If no fetch is running, a FreeRTOS task is spawned (`xTaskCreatePinnedToCore`) and a `TaskHandle_t` is retained. The method instantly returns `UpdateStatus::PENDING`.
+4. The Board controller sees `UpdateStatus::PENDING` and gracefully exits its tick cycle, letting the GPU/UI render loop continue running at 60fps unaffected.
+5. The background FreeRTOS task executes the HTTP GET and streams the XML/JSON into a parser, writing strictly to the isolated `stationData` background memory buffer. It yields every 500 bytes.
+6. Once the parse succeeds, the task acquires `dataMutex`, copies the background structs into the UI-facing `renderData` structs, sets the status code to `UpdateStatus::SUCCESS`, and gives the Mutex back.
+7. Next tick, the UI board checks the background status, sees `UpdateStatus::SUCCESS`, and processes the layout strings.
 8. The FreeRTOS task deletes itself.
 
 ## 4. Resource Impact Assessment

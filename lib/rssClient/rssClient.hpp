@@ -50,7 +50,6 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
         int tagLevel = 0;
         String currentPath = "";
         char lastErrorMessage[128];
-        void (*yieldCallback)() = nullptr;
         
         bool rssEnabled = false;
         bool rssAddedtoMsgs = false;
@@ -122,11 +121,6 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
          * @brief Default constructor for the RSS client.
          */
         rssClient();
-        /**
-         * @brief Registers a callback function to be invoked during blocking I/O operations.
-         * @param cb Pointer to the yield function.
-         */
-        void setYieldCallback(void (*cb)()) { yieldCallback = cb; }
 
 /**
  * @brief Connects to the provided URL, fetches the RSS feed, and streams the XML to extract item titles.

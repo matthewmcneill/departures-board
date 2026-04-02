@@ -34,7 +34,7 @@ extern class appContext appContext;
 
 const char* tflDataSource::serviceNumbers[TFL_MAX_FETCH] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
 
-tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
+tflDataSource::tflDataSource() : id(0), maxServicesRead(false), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     renderData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     if (stationData) memset(stationData.get(), 0, sizeof(TflStation));
@@ -51,10 +51,9 @@ tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr
     isTestMode = false;
 }
 
-void tflDataSource::configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb) {
+void tflDataSource::configure(const char* naptanId, const char* apiKey) {
     if (naptanId) strlcpy(tubeId, naptanId, sizeof(tubeId));
     if (apiKey) strlcpy(tflAppkey, apiKey, sizeof(tflAppkey));
-    callback = cb;
 }
 
 UpdateStatus tflDataSource::updateData() {
@@ -120,7 +119,6 @@ void tflDataSource::executeFetch() {
     request += F("\r\nConnection: close\r\n\r\n");
     
     httpsClient->print(request);
-    if (callback) callback();
 
     unsigned long ticker = millis() + 350;
     int retry = 0;
@@ -170,7 +168,7 @@ void tflDataSource::executeFetch() {
             // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
             yieldCounter++;
             if (yieldCounter % 500 == 0) vTaskDelay(1);
-            if (millis() > ticker) { if (callback) callback(); ticker = millis() + 350; }
+            if (millis() > ticker) { ticker = millis() + 350; }
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
@@ -200,7 +198,7 @@ void tflDataSource::executeFetch() {
                         dataReceived++;
                         yieldCounter++;
                         if (yieldCounter % 500 == 0) vTaskDelay(1);
-                        if (millis() > ticker) { if (callback) callback(); ticker = millis() + 350; }
+                        if (millis() > ticker) { ticker = millis() + 350; }
                     }
                     vTaskDelay(pdMS_TO_TICKS(10));
                 }

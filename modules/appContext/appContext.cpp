@@ -33,28 +33,9 @@
 #include <logger.hpp>
 #include <wifiManager.hpp>
 
-appContext *_instance =
-    nullptr; // Global static pointer for yield callback adaptor
 
-/**
- * @brief Global wrapper to trigger DisplayManager's non-blocking yield.
- *        Required for raw function pointers used in data clients.
- */
-void yieldCallbackWrapper() {
-  // Prevent the background data fetcher from concurrently driving the U8G2
-  // hardware
-  if (strcmp(pcTaskGetName(NULL), "Data_Manager") == 0)
-    return;
 
-  if (_instance)
-    _instance->getDisplayManager().yieldAnimationUpdate();
-}
 
-/**
- * @brief Adaptor for National Rail data source which provides progress events.
- *        Relays to the central yield handler.
- */
-void raildataYieldWrapper(int stage, int nServices) { yieldCallbackWrapper(); }
 
 /**
  * @brief Construct the appContext and its managed service singletons.
@@ -72,7 +53,6 @@ appContext::~appContext() = default;
  * @brief Initialize all system services in the required boot order.
  */
 void appContext::begin() {
-  _instance = this;
   LOG_SPLASH("APP STATE: BOOTING");
   LOG_INFO("SYSTEM", "Initializing appContext managers...");
 
@@ -182,11 +162,7 @@ void appContext::begin() {
   timeManager.init(this);
 
   updateBootProgress(100, "Stabilizing application...");
-  // 8. Connect Yield Callbacks for Non-Blocking I/O
-  weather.setYieldCallback(yieldCallbackWrapper);
-  rss.setYieldCallback(yieldCallbackWrapper);
-
-  // 9. Connect Observer Callbacks for UI Decoupling
+  // 8. Connect Observer Callbacks for UI Decoupling
   // Migrated from systemManager: Boot progress and soft reset now handled directly within appContext.
 
   otaAssetUpdater.setProgressCallback([this](int percent) {

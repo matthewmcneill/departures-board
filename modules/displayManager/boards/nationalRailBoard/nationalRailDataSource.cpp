@@ -37,7 +37,7 @@ extern class appContext appContext;
 
 nationalRailDataSource::nationalRailDataSource() 
     : loadingWDSL(false), tagLevel(0), isTestMode(false), id(-1), coaches(0), addedStopLocation(false), 
-      filterPlatforms(false), keepRoute(false), nrTimeOffset(0), callback(nullptr),
+      filterPlatforms(false), keepRoute(false), nrTimeOffset(0),
       messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::make_unique<NationalRailStation>();
     renderData = std::make_unique<NationalRailStation>();
@@ -78,8 +78,7 @@ bool nationalRailDataSource::compareTimes(const NationalRailService& a, const Na
     return m1 < m2;
 }
 
-UpdateStatus nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb) {
-    callback = cb;
+UpdateStatus nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI) {
     
     // Attempt to load discovered SOAP endpoints from dedicated cache file
     if (LittleFS.exists(F("/darwin_wsdl_cache.json"))) {
@@ -234,8 +233,6 @@ void nationalRailDataSource::executeFetch() {
     LOG_DEBUG("DATA", "NR Request:\n" + debugReq);
 
     httpsClient->print(requestBody);
-
-    if (callback) callback(1, 0);
     
     unsigned long ticker = millis() + 350;
     int retry = 0;
@@ -332,7 +329,6 @@ void nationalRailDataSource::executeFetch() {
                     if (yieldCounter % 500 == 0) vTaskDelay(1); // Single-core compatibility yield
                     
                     if (millis() > ticker && stationData) {
-                        if (callback) callback(2, stationData->numServices);
                         ticker = millis() + 350;
                     }
                 }
@@ -365,7 +361,7 @@ void nationalRailDataSource::executeFetch() {
     taskStatus = UpdateStatus::SUCCESS;
     xSemaphoreGive(dataMutex);
 
-    if (callback && renderData) callback(3, renderData->numServices);
+    if (renderData) { // Removed callback trigger
     snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SUCCESS [%ld] %lums", bytesRecv, (unsigned long)(millis()-perfTimer));
     
     // Dynamic Scheduling Calculation
@@ -398,6 +394,7 @@ void nationalRailDataSource::executeFetch() {
         LOG_DEBUG("DATA", "--------------------------");
     }
 #endif
+    }
     return;
 }
 
