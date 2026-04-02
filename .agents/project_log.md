@@ -646,3 +646,11 @@ Generated commit: 10e5e55
 **Summary**: Successfully purged the obsolete yieldCallback mechanism from the firmware architecture. This removed redundant function pointers and registration logic from appContext, weatherClient, rssClient, and transport data sources (TfL, National Rail). Updated board controllers to remove call-site overhead and modernized the AsyncDataRetrieval.md and WeatherSystemDesign.md documentation to reflect the current dual-core FreeRTOS task yielding model. Verified the build stability with pio run.
 **Archive**: [.agents/plans/done/03965ff0-d029-4356-8306-5228bfdcfe2a/](.agents/plans/done/03965ff0-d029-4356-8306-5228bfdcfe2a/)
 **Commit**: [Captured in session git history]
+
+## Ad-Hoc Session: Logging Enum Refactor
+**Date**: 2026-04-02
+**Session**: 381cd0df-b4f7-4c5b-af30-ef89935bc885
+**Action**: Refactoring Logging Enums & Include Cleanup
+**Summary**: Stripped redundant `#include` statements from `src/departuresBoard.cpp` and optimized the heartbeat telemetry loop to conditionally compile under `#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO`. Refactored `CORE_DEBUG_LEVEL` checks across the codebase to utilize a centralized declarative macro set (`APP_LOG_LEVEL_*`) inside `logger.hpp` for improved readability and strict separation from Arduino magic numbers. Validated with `pio run -e esp32dev` and `pio test`.
+**Archive**: N/A (Trivial Execution)
+**Commit**: [Captured in session git history]

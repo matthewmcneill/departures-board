@@ -33,11 +33,18 @@
 #include <Arduino.h>
 #include <vector>
 
+#define APP_LOG_LEVEL_NONE    0
+#define APP_LOG_LEVEL_ERROR   1
+#define APP_LOG_LEVEL_WARN    2
+#define APP_LOG_LEVEL_INFO    3
+#define APP_LOG_LEVEL_DEBUG   4
+#define APP_LOG_LEVEL_VERBOSE 5
+
 #ifndef CORE_DEBUG_LEVEL
-#define CORE_DEBUG_LEVEL 0
+#define CORE_DEBUG_LEVEL APP_LOG_LEVEL_NONE
 #endif
 
-#if CORE_DEBUG_LEVEL >= 1
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_ERROR
   #define LOG_ERROR(sub, msg)           Logger::_error(sub, msg)
   #define LOG_BEGIN(baud)               Logger::begin(baud)
   #define LOG_REGISTER_SECRET(secret)    Logger::registerSecret(secret)
@@ -47,13 +54,13 @@
   #define LOG_REGISTER_SECRET(secret)
 #endif
 
-#if CORE_DEBUG_LEVEL >= 2
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_WARN
   #define LOG_WARN(sub, msg)  Logger::_warn(sub, msg)
 #else
   #define LOG_WARN(sub, msg)
 #endif
 
-#if CORE_DEBUG_LEVEL >= 3
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO
   #define LOG_INFO(sub, msg)  Logger::_info(sub, msg)
   #define LOG_SPLASH(msg)     Logger::logSplashMessage(msg)
 #else
@@ -61,13 +68,13 @@
   #define LOG_SPLASH(msg)
 #endif
 
-#if CORE_DEBUG_LEVEL >= 4
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_DEBUG
   #define LOG_DEBUG(sub, msg) Logger::_debug(sub, msg)
 #else
   #define LOG_DEBUG(sub, msg)
 #endif
 
-#if CORE_DEBUG_LEVEL >= 5
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_VERBOSE
   #define LOG_VERBOSE(sub, msg) Logger::_verbose(sub, msg)
 #else
   #define LOG_VERBOSE(sub, msg)

@@ -21,7 +21,7 @@
 #include "logger.hpp"
 #include <Arduino.h>
 
-#if CORE_DEBUG_LEVEL > 0
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_ERROR
 
 std::vector<String> Logger::secrets; // Registry of sensitive strings to be redacted
 
@@ -167,4 +167,4 @@ void Logger::_verbose(const char* category, const char* message) {
   printRedacted("🟣", category, message);
 }
 
-#endif // CORE_DEBUG_LEVEL > 0
+#endif // CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_ERROR

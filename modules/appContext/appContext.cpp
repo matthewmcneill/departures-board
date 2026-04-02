@@ -141,7 +141,7 @@ void appContext::begin() {
 #endif
 
   // Initialize Centralized Data Fetch Worker
-  networkManager.init(); // Verbose logging controlled via CORE_DEBUG_LEVEL >= 5
+  networkManager.init(); // Verbose logging controlled via CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_VERBOSE
   networkManager.registerSource(&weather);
   networkManager.registerSource(&rss);
 

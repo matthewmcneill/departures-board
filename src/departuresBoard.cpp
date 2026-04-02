@@ -62,27 +62,10 @@
 
 // Core Library Includes
 #include <Arduino.h>
-#include <LittleFS.h>
-
-// Networking & Web Libraries
-#include <ESPmDNS.h>
-#include <WiFi.h>
 
 // Internal Modules & Managers
-#include <boards/systemBoard/loadingBoard.hpp>
-#include <boards/systemBoard/splashBoard.hpp>
-#include <configManager.hpp>
-#include <displayManager.hpp>
+#include <appContext.hpp>
 #include <logger.hpp>
-#include <otaUpdater.hpp>
-#include <timeManager.hpp>
-#include <webServer.hpp>
-#include <wifiManager.hpp>
-
-// API Service Clients
-#include <githubClient.hpp>
-#include <rssClient.hpp>
-#include <weatherClient.hpp>
 
 // -----------------------------------------------------------------------------
 // Definitions & Macros
@@ -91,8 +74,6 @@
 // -----------------------------------------------------------------------------
 // Global Object Instantiations
 // -----------------------------------------------------------------------------
-
-#include <appContext.hpp>
 
 appContext appContext;
 
@@ -125,6 +106,8 @@ void setup(void) {
  * @brief Executive rendering and state management loop.
  */
 void loop(void) {
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO
+  // Print heap usage every 10 seconds if DEBUG flag is at least LOG level.
   static unsigned long lastSerialHeartbeat = 0;
   if (millis() - lastSerialHeartbeat > 10000) {
     char diagMsg[128];
@@ -135,5 +118,7 @@ void loop(void) {
     LOG_INFO("HEARTBEAT", diagMsg);
     lastSerialHeartbeat = millis();
   }
+#endif
+
   appContext.tick();
 }
