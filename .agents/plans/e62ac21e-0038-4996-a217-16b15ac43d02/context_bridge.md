@@ -1,0 +1,6 @@
+- **📍 Current State & Focus**: Designed an implementation plan to resolve memory leaks and RAII violations by changing manual pointer allocations (new/delete) to C++14 smart pointers. The plan was presented to the user for review.
+- **🎯 Next Immediate Actions**: Wait for the user to approve the implementation plan. Once approved and this plan is queued, begin replacing `new` with `std::make_unique` across the identified modules.
+- **🧠 Decisions & Designs**: Chose to strictly migrate to C++14's `std::make_unique` and `std::unique_ptr` without custom allocators, guaranteeing stack unwinding in case of timeouts in transient network handlers.
+- **🐛 Active Quirks, Bugs & Discoveries**: ESPAsyncWebServer internally relies on raw memory for `request->_tempObject`, necessitating care around that specific library integration.
+- **💻 Commands Reference**: Standard local compilation command `pio run`, check with `pio check`.
+- **🌿 Execution Environment**: Local environment (MacOS), intended for ESP32 target testing.

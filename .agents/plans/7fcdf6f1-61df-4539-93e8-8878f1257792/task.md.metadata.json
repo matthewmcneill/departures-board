@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_TASK",
+  "summary": "A task plan for removing legacy #define macros and replacing them with constexpr and enum class structures.",
+  "updatedAt": "2026-04-02T08:46:12.274503Z"
+}

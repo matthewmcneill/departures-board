@@ -1,0 +1,3 @@
+- [x] Audit raw pointer allocations (`new` and `delete`) in `src/` and `modules/`.
+- [x] Draft `implementation_plan.md` for RAII migration.
+- [ ] Review plan with user.

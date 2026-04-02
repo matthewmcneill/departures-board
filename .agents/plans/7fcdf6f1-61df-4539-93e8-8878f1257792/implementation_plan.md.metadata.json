@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary": "A comprehensive implementation plan to replace legacy #define macros with constexpr and enum class across the codebase, ensuring strict type safety and scoped constant management.",
+  "updatedAt": "2026-04-02T08:47:36.247566Z"
+}
