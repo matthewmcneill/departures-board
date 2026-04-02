@@ -1,25 +1,27 @@
 # Context Bridge
 
 **📍 Current State & Focus**
-We just drafted an `implementation_plan.md` to refactor the boot sequence progress bar. We identified a fundamental deadlock bug in `systemManager::tick()` causing the `firstLoad` flag to drop instantly. The user requested a `/plan-save` manually before approving or executing the implementation plan.
+We have refined the `implementation_plan.md` to align with the dismantling of `systemManager` and the new `appContext` / `dataManager` architecture. The focus is on a contiguous 0-100% boot progress bar and resolving the state machine deadlock that previously prevented transitioning to `RUNNING`.
 
 **🎯 Next Immediate Actions**
-The next agent needs to execute the `implementation_plan.md` tasks across `appContext` and `systemManager`.
+The next agent needs to execute the refined `implementation_plan.md` tasks, specifically remapping progress in `appContext::begin()` and `appContext::tick()`, and updating `dataManager` to report the first successful data load.
 
 **🧠 Decisions & Designs**
-- Mapped synchronous boot payload across 0-30%.
-- Mapped Clock sync down to 30-60%.
-- Extended `systemManager::tick()` background sweep logic: conditionally allow data fetching when `(appState == AppState::RUNNING || firstLoad)` to resolve the load screen drop.
-- Moved `firstLoad = false` to trigger *only* natively when a board fetch is actually finalized (`!noDataLoaded`), except falling back to instantly dropping if `config.boardCount == 0`.
-- Ensured `appContext` naturally falls into `WIFI_SETUP` or `BOARD_SETUP` modes before locking on `firstLoad`.
+- **Remapped Progress High-Level**:
+    - 0-25%: Synchronous Boot (`appContext::begin`).
+    - 25-50%: Network Ready (`wifiManager`).
+    - 50-75%: NTP/System Clock Sync (`timeManager`).
+    - 75-100%: First Data Load (`dataManager`).
+- **State Transition**: `firstLoad` in `appContext` is now tied to `dataManager::getNoDataLoaded()`.
+- **SystemManager Purge**: All references to the legacy `systemManager` have been removed in favor of direct management within `appContext`.
 
 **🐛 Active Quirks, Bugs & Discoveries**
-- The `LoadingBoard` in `appContext` naturally loops the progress numbers if you provide a looping hook (like during system clock sync). We shifted this to visually represent 30% to 60%.
-- `onBootProgress` callbacks were heavily fragmented across `systemManager`.
+- The progress bar was jumping from 100% back to 50% during clock sync because `begin()` ends at 100% but `tick()` starts its phase at 50%.
+- `dataManager::workerTaskLoop` was not yet updating `noDataLoaded` correctly to signal first load completion to `appContext`.
 
 **💻 Commands Reference**
 - Use `/flash-test` to test on hardware.
-- Use `/review-ip` to automatically apply house style to any edited implementation plans.
+- Use `/review-ip` to audit the updated implementation plan.
 
 **🌿 Execution Environment**
 - ESP32 hardware development, targeting `.agents/plans/5eb814a8-fb4b-42df-86b7-877ad553407c`

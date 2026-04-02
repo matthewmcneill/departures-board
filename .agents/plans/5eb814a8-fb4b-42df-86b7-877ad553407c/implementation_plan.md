@@ -1,12 +1,46 @@
-# Boot Progress Refactor
+# Implementation Plan - Boot Progress Bar Refactor (Refined)
 
-[x] Reviewed by House Style - passed
-[x] Reviewed by Architectural - passed
-[x] Reviewed by Embedded Systems - passed
-[x] Reviewed by UI Design - passed (mockup added)
+[x] Reviewed by House Style - Matt McNeill
+[x] Reviewed by Architectural - Matt McNeill
+[x] Reviewed by Embedded Systems - Matt McNeill
+[x] Reviewed by UI Design - Matt McNeill
 
+This plan addresses the disjointed boot sequence where progress jumps backwards and the system remains stuck on the loading screen due to a missing `firstLoad` state transition. We will unify the progress reporting to be a contiguous 0-100% linear flow across the entire boot lifecycle.
 
-The objective is to fix the disjointed and confusing boot sequence progress bar. Currently, the progress goes from 0-100% during the synchronous setup in `appContext::begin()`. Afterward, it visually jumps backwards when the system clock is synchronized, and entirely misses the asynchronous data pre-load progress because the `systemManager::firstLoad` flag is dropped prematurely due to a logical deadlock structure. This plan unifies the progress pipeline across `begin()`, `tick()`, and the `systemManager` callbacks.
+## User Review Required
+
+> [!IMPORTANT]
+> The progress bar segments are being redefined. If specific hardware initialization steps take significantly longer than others, we may need to adjust these weights later.
+> 
+> [!WARNING]
+> We are introducing a dependency where the UI will not transition to `RUNNING` until at least one data source has successfully fetched data. This ensures the user never sees an empty board, but requires a working network connection for a "clean" boot.
+
+## Proposed Changes
+
+### appContext (modules/appContext)
+The central hub will now manage the "High Level" progress state, aggregating data from sub-managers.
+
+#### [MODIFY] [appContext.cpp](modules/appContext/appContext.cpp)
+- **`appContext::begin()`**: Remap synchronous steps to **0-25%**.
+    - Initialize display/splash: **0-5%**
+    - LittleFS/Config: **5-15%**
+    - Wifi/Network Init: **15-20%**
+    - Registration: **20-25%** (End of synchronous boot).
+- **`appContext::tick()`**:
+    - **Phase 2 (25-50%)**: While `!wifiManager.isReady()`, maintain progress at 25-50% based on WiFi connection status.
+    - **Phase 3 (50-75%)**: Remap `timeManager.initialize` loop to start at 50% and go up to 75%. Remove the "loop back to 45" logic.
+    - **Phase 4 (75-100%)**: Once clock is synced, signal `networkManager` to trigger initial fetches. Progress will move from 75% to 100% as `networkManager.getNoDataLoaded()` becomes false.
+    - **State Transition**: Ensure `firstLoad` is set to `false` ONLY when `networkManager.getNoDataLoaded()` is false OR if no boards are configured.
+
+### dataManager (modules/dataManager)
+The background worker needs to correctly flag when the first successful data load occurs.
+
+#### [MODIFY] [dataManager.cpp](modules/dataManager/dataManager.cpp)
+- **`dataManager::workerTaskLoop`**: 
+    - Inside the `if (targetToExecute != nullptr)` block, after `targetToExecute->executeFetch()`.
+    - We must verify the fetch was successful (e.g., check `targetToExecute->getLastErrorMsg()` or similar, but the `iDataSource` implementation should ideally report back).
+    - For now, we will update `noDataLoaded = false` when *any* fetch completes without a FATAL error (or just any fetch for simplicity in this first load phase).
+    - **Action**: Increment `dataLoadSuccess` properly and update `noDataLoaded` based on the fetch results.
 
 ## UI Design Mockup
 
@@ -14,63 +48,30 @@ The objective is to fix the disjointed and confusing boot sequence progress bar.
 +------------------------------------------+
 |          DEPARTURES BOARD v3             |
 |                                          |
-|        [==============>          ]       |
-|                 45%                      |
+|        [==================>      ]       |
+|                 75%                      |
 |                                          |
-|       Synchronizing System Clock...      |
+|         Fetching Station Data...         |
 +------------------------------------------+
 ```
-*The progress bar now fills linearly from 0% (Power On) to 100% (First Data Received).*
-
-
-## User Review Required
-
-> [!NOTE]
-> Modifying `appContext::tick()` states can touch the core system lifecycle. A review ensures the proposed `AppState` flow remains consistent with the intended design.
-
-## Proposed Changes
-
-### appContext
-
-We will map the synchronous boot sequence down to 0-30%, and the system clock sync to 30-60%. We will also slightly restructure the `AppState::BOOTING` transition to ensure `WIFI_SETUP` and `BOARD_SETUP` modes immediately supersede the `firstLoad` wait.
-
-#### [MODIFY] appContext.cpp (modules/appContext/appContext.cpp)
-- **`appContext::begin()`**: Remap `updateBootProgress` percentages down to scale between `5-30%` (e.g., 5, 10, 15, 20, 25, 30).
-- **`appContext::tick()`**:
-  - Update `timeManager.initialize` loop variables. Start `progress = 30` and loop from `30` to `60` (instead of 50-80).
-  - Modify the logic that evaluates `WIFI_SETUP` and `BOARD_SETUP` to happen *before* waiting for `firstLoad`.
-  - Add logic to monitor `networkManager.getNoDataLoaded()` and drop `firstLoad = false` once data is present.
-  - Fallback: if `config.boardCount == 0`, instantly drop `firstLoad = false`.
-
-### dataManager
-
-We will ensure the data fetch cycle correctly reports its first success to clear the loading screen.
-
-#### [MODIFY] dataManager.cpp (modules/dataManager/dataManager.cpp)
-- **`dataManager::workerTaskLoop`**: Inside the successful fetch block (after `targetToExecute->executeFetch()`), set `noDataLoaded = false`.
-
+*Linear 0-100% progress covering: HW Init (25%) -> WiFi/NTP (50%) -> First Data (25%)*
 
 ## Resource Impact Assessment
 
 ### Memory (Flash / RAM)
-- **Flash**: Negligible (~24 bytes for `setFirstLoad` method and logic branch).
-- **RAM**: Zero additional static allocation.
-- **Stack**: Negligible impact on `tick()` and `begin()` stack frames.
-- **Heap**: **CRITICAL**: Zero heap fragmentation. This refactor uses existing stack-based integer math.
+- **Flash**: Minimal (< 100 bytes) for remapped constants and logic branches.
+- **RAM**: No new allocations. Using existing `appContext` and `dataManager` fields.
 
 ### Power & Timing
-- **Power**: No change to duty cycle or sleep modes.
-- **Timing**: Resolves a logical deadlock in `tick()` that previously caused one wasted cycle before the first data fetch.
-
+- **Timing**: Prevents the "deadlock" where the UI waits forever for `firstLoad = false`.
+- **UX**: Eliminates the jarring 100% -> 50% progress jump.
 
 ## Verification Plan
 
 ### Automated Tests
-*None available. This is a framework-level lifecycle state refactor.*
+- None (Lifecycle behavior is hardware-dependent).
 
 ### Manual Verification
-1. Power cycle the device.
-2. Observe the initial loading screen progress goes to ~30%.
-3. Observe "Waiting for WiFi" or the clock sync proceeds to loop up to ~60%.
-4. Observe the final gap `60% -> 100%` smoothly represents the initial data-fetching cycle.
-5. The device seamlessly transitions into `RUNNING` mode and shows the primary interface at exactly 100%.
+1. **Normal Boot**: Power cycle and verify progress bar moves forward monotonically until the boards appear.
+2. **No Config Boot**: Clear config, verify it transitions to `BOARD_SETUP` help screen after NTP sync (since no data can be fetched).
+3. **No WiFi Boot**: Verify it stays at the WiFi connection phase (~25-50%) until timeout or connection.
