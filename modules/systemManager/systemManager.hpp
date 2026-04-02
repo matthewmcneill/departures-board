@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <Arduino.h>
 #include <functional>
 
 class buttonHandler; // Forward declaration

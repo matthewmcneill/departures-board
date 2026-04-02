@@ -25,6 +25,7 @@
 #ifndef PROGRESS_BAR_WIDGET_HPP
 #define PROGRESS_BAR_WIDGET_HPP
 
+#include <Arduino.h>
 #include "iGfxWidget.hpp"
 
 class progressBarWidget : public iGfxWidget {

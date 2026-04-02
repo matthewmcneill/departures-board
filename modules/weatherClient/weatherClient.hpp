@@ -22,6 +22,7 @@
  *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
  */
 #pragma once
+#include <Arduino.h>
 #include <JsonStreamingParser.h>
 #include "iConfigurable.hpp"
 #include "weatherStatus.hpp"

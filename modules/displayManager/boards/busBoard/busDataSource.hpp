@@ -29,6 +29,7 @@
 #ifndef BUS_DATA_SOURCE_HPP
 #define BUS_DATA_SOURCE_HPP
 
+#include <Arduino.h>
 #include "../../../dataManager/iDataSource.hpp"
 #include "../../messaging/messagePool.hpp"
 #include <JsonListener.h>

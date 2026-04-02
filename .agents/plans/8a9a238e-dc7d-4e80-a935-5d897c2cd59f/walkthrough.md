@@ -17,5 +17,12 @@ The C++ `#include` graph optimizations formulated during the architectural audit
   - Removed duplicate inclusion of `#include "departuresBoard.hpp"`.
 
 ## Verification Status
-- **Compilation Check**: To ensure we didn't introduce hidden circular problems or "undeclared identifiers", an attempt was made to natively compile via `pio run -e esp32dev`.
-- **Result Output**: PlatformIO's Python environment encountered an error (`Failed to install Python dependencies into penv`), bypassing the build. Despite this hurdle on the local environment side, the module signatures logically guarantee clean resolution for subsequent compilations.
+- **Compilation Check**: A full native compilation was executed via `pio run -e esp32dev` to validate the optimized include graph.
+- **Fixed Issues**: Pruning `WiFi.h` from headers caused several modules to lose their indirect `Arduino.h` include, breaking `String` and `__FlashStringHelper` types. These were restored by explicitly adding `#include <Arduino.h>` to:
+  - `systemManager.hpp`
+  - `busDataSource.hpp`
+  - `progressBarWidget.hpp`
+  - `weatherClient.hpp`
+- **Result Output**: Compilation was **SUCCESSFUL**. The optimized include graph now resolves correctly without global overhead from heavyweight ESP32 libraries. 
+  - **RAM**: 22.4% (73,344 bytes)
+  - **Flash**: 76.3% (1,499,675 bytes)
