@@ -32,6 +32,22 @@ extern const uint8_t WeatherIcons11[];
 weatherWidget::weatherWidget(appContext* _context, int _x, int _y, int _w, int _h)
     : iGfxWidget(_x, _y, _w, _h), context(_context), font(WeatherIcons11) {}
 
+void weatherWidget::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) {
+    if (!isVisible || !context) return;
+
+    iDisplayBoard* board = context->getDisplayManager().getCurrentBoard();
+    if (!board) return;
+
+    WeatherStatus& ws = board->getWeatherStatus();
+    char currentIcon = ws.getIconChar();
+
+    if (currentIcon != lastIcon) {
+        lastIcon = currentIcon;
+        render(display);
+        display.updateDisplayArea(x / 8, y / 8, (width + 7) / 8, (height + 7) / 8);
+    }
+}
+
 /**
  * @brief Renders the current weather glyph if valid status exists.
  * @param display U8G2 reference.
@@ -43,10 +59,12 @@ void weatherWidget::render(U8G2& display) {
     if (!board) return;
 
     WeatherStatus& ws = board->getWeatherStatus();
-    if (!ws.isValid()) return;
+    lastIcon = ws.getIconChar();
 
     blankArea(display, x, y, width, height);
     
-    char icon[2] = { ws.getIconChar(), '\0' };
-    drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, font);
+    if (ws.isValid()) {
+        char icon[2] = { lastIcon, '\0' };
+        drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, font);
+    }
 }

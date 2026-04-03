@@ -185,6 +185,7 @@ UpdateStatus TfLBoard::updateData() {
     dataSource.lockData();
     TflStation *data = dataSource.getStationData();
     if (activeLayout && data->contentHash != lastRenderedHash) {
+      activeLayout->row0Widget.clearRows();
       activeLayout->servicesWidget.clearRows();
       if (data->numServices > 0) {
         for (int i = 0; i < data->numServices; i++) {
@@ -195,6 +196,7 @@ UpdateStatus TfLBoard::updateData() {
               config.showServiceOrdinals ? data->service[i].orderNum : "",
               data->service[i].lineName, data->service[i].destination,
               data->service[i].expectedTime};
+          activeLayout->row0Widget.addRow(rowData);
           activeLayout->servicesWidget.addRow(rowData);
         }
       }
@@ -245,6 +247,7 @@ void TfLBoard::render(U8G2 &display) {
     dataSource.lockData();
     TflStation *data = dataSource.getStationData();
     if (data->numServices > 0) {
+      activeLayout->row0Widget.setVisible(true);
       activeLayout->servicesWidget.setVisible(true);
       activeLayout->noDataLabel.setVisible(false);
     } else {
@@ -253,6 +256,7 @@ void TfLBoard::render(U8G2 &display) {
       } else {
         activeLayout->noDataLabel.setText("No arrivals scheduled.");
       }
+      activeLayout->row0Widget.setVisible(false);
       activeLayout->servicesWidget.setVisible(false);
       activeLayout->noDataLabel.setVisible(true);
     }

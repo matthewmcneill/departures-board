@@ -750,3 +750,10 @@ Generated commit: 7f35aa3
 **Archive**: [.agents/plans/done/abea8a28-c44b-4702-a721-65d5e7ae9b98/](.agents/plans/done/abea8a28-c44b-4702-a721-65d5e7ae9b98/)
 **Commit**: 7507bfb
 
+## Trivial Fix - OpenWeatherMap API Connectivity
+**Date**: 2026-04-03
+**Session**: e5335b8a-10f0-42fc-8e2e-ad3248036c40
+**Action**: Migration to HTTPS (`NetworkClientSecure`) for Weather Fetch
+**Summary**: Diagnosed and resolved a weather condition loading failure caused by OpenWeatherMap deprecating unencrypted HTTP support on the free tier. Upgraded `weatherClient.cpp` to use `NetworkClientSecure` with port `443` and `setInsecure()` rather than the legacy `WiFiClient`. This ensures the streaming JSON parser actually receives the active weather stream and that `WeatherStatus` objects hydrate successfully globally, restoring display icons across all boards.
+**Archive**: N/A (Trivial Execution)
+**Commit**: 6a8a534

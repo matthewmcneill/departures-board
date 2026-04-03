@@ -7,33 +7,94 @@
       "geometry": {
         "x": 0,
         "y": 0,
-        "w": 236,
+        "w": 192,
         "h": 12
       },
       "visible": true,
       "font": "Underground10"
     },
     {
-      "id": "wifiWarning",
-      "type": "wifiStatusWidget",
+      "id": "weather",
+      "type": "weatherWidget",
       "geometry": {
-        "x": 236,
+        "x": 192,
         "y": 0,
-        "w": 20,
+        "w": 12,
         "h": 12
       },
       "visible": true
+    },
+    {
+      "id": "wifiWarning",
+      "type": "wifiStatusWidget",
+      "geometry": {
+        "x": 204,
+        "y": 0,
+        "w": 12,
+        "h": 12
+      },
+      "visible": true
+    },
+    {
+      "id": "sysClock",
+      "type": "clockWidget",
+      "geometry": {
+        "x": 216,
+        "y": 0,
+        "w": 40,
+        "h": 12
+      },
+      "visible": true,
+      "format": "HH_MM",
+      "blink": true,
+      "secondaryFont": "NatRailClockSmall7"
+    },
+    {
+      "id": "row0Widget",
+      "type": "serviceListWidget",
+      "geometry": {
+        "x": 0,
+        "y": 12,
+        "w": 256,
+        "h": 13
+      },
+      "visible": true,
+      "skipRows": 0,
+      "maxRows": 1,
+      "columns": [
+        {
+          "width": 16,
+          "align": 0,
+          "label": "No"
+        },
+        {
+          "width": 60,
+          "align": 0,
+          "label": "Line"
+        },
+        {
+          "width": 124,
+          "align": 0,
+          "label": "Destination"
+        },
+        {
+          "width": 56,
+          "align": 2,
+          "label": "Time"
+        }
+      ]
     },
     {
       "id": "servicesWidget",
       "type": "serviceListWidget",
       "geometry": {
         "x": 0,
-        "y": 12,
+        "y": 25,
         "w": 256,
-        "h": 39
+        "h": 26
       },
       "visible": true,
+      "skipRows": 1,
       "columns": [
         {
           "width": 16,

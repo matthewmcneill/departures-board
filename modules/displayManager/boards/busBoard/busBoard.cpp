@@ -181,6 +181,7 @@ UpdateStatus BusBoard::updateData() {
     dataSource.lockData();
     BusStop *data = dataSource.getStationData();
     if (activeLayout && data->contentHash != lastRenderedHash) {
+      activeLayout->row0Widget.clearRows();
       activeLayout->servicesWidget.clearRows();
       if (data->numServices > 0) {
         for (int i = 0; i < data->numServices; i++) {
@@ -193,6 +194,7 @@ UpdateStatus BusBoard::updateData() {
               data->service[i].expectedTime[0] != '\0'
                   ? data->service[i].expectedTime
                   : data->service[i].sTime};
+          activeLayout->row0Widget.addRow(rowData);
           activeLayout->servicesWidget.addRow(rowData);
         }
       }
@@ -243,6 +245,7 @@ void BusBoard::render(U8G2 &display) {
     dataSource.lockData();
     BusStop *data = dataSource.getStationData();
     if (data->numServices > 0) {
+      activeLayout->row0Widget.setVisible(true);
       activeLayout->servicesWidget.setVisible(true);
       activeLayout->noDataLabel.setVisible(false);
     } else {
@@ -251,6 +254,7 @@ void BusBoard::render(U8G2 &display) {
       } else {
         activeLayout->noDataLabel.setText("No scheduled services.");
       }
+      activeLayout->row0Widget.setVisible(false);
       activeLayout->servicesWidget.setVisible(false);
       activeLayout->noDataLabel.setVisible(true);
     }

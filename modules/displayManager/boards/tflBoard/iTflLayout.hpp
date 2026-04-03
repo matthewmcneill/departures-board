@@ -26,6 +26,8 @@ class appContext;
 #include <widgets/scrollingMessagePoolWidget.hpp>
 #include <widgets/labelWidget.hpp>
 #include <widgets/wifiStatusWidget.hpp>
+#include <widgets/weatherWidget.hpp>
+#include <widgets/clockWidget.hpp>
 
 /**
  * @brief Base Layout class for TfL layouts (Tube).
@@ -33,20 +35,15 @@ class appContext;
 class iTflLayout : public iBoardLayout {
 public:
     locationAndFiltersWidget locationAndFilters;
+    weatherWidget weather;
     wifiStatusWidget wifiWarning;
+    clockWidget sysClock;
+    serviceListWidget row0Widget;
     serviceListWidget servicesWidget;
     scrollingMessagePoolWidget msgWidget;
     labelWidget noDataLabel;
 
-    iTflLayout(appContext* context) 
-        : iBoardLayout(context),
-          locationAndFilters(0, 0, 0, 0),
-          wifiWarning(0, 0),
-          servicesWidget(0, 0, 0, 0),
-          msgWidget(0, 0, 0, 0),
-          noDataLabel(0, 0, 0, 0) {
-              noDataLabel.setVisible(false);
-          }
+    iTflLayout(appContext* context);
 
     /**
      * @brief Virtual destructor.
@@ -59,7 +56,10 @@ public:
      */
     virtual void tick(uint32_t currentMillis) override {
         locationAndFilters.tick(currentMillis);
+        weather.tick(currentMillis);
         wifiWarning.tick(currentMillis);
+        sysClock.tick(currentMillis);
+        row0Widget.tick(currentMillis);
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
         noDataLabel.tick(currentMillis);
@@ -71,7 +71,10 @@ public:
      */
     virtual void render(U8G2& display) override {
         locationAndFilters.render(display);
+        weather.render(display);
         wifiWarning.render(display);
+        sysClock.render(display);
+        row0Widget.render(display);
         servicesWidget.render(display);
         msgWidget.render(display);
         noDataLabel.render(display);
@@ -84,7 +87,10 @@ public:
      */
     virtual void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {
         locationAndFilters.renderAnimationUpdate(display, currentMillis);
+        weather.renderAnimationUpdate(display, currentMillis);
         wifiWarning.renderAnimationUpdate(display, currentMillis);
+        sysClock.renderAnimationUpdate(display, currentMillis);
+        row0Widget.renderAnimationUpdate(display, currentMillis);
         servicesWidget.renderAnimationUpdate(display, currentMillis);
         msgWidget.renderAnimationUpdate(display, currentMillis);
     }
