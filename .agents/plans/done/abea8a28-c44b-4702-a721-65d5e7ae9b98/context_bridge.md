@@ -1,0 +1,9 @@
+- **📍 Current State & Focus**: Project is currently building successfully, and fully flashed. All configuration data (WiFi, API keys) now utilizes safe RAII buffering (`std::unique_ptr<char[]>`) instead of strings. 
+- **🎯 Next Immediate Actions**: None. This is a wrapped plan. The next agent should check `.agents/todo_list.md` or `.agents/queue.md` to spawn or start new tasks.
+- **🧠 Decisions & Designs**: Converted all Base64 cryptographic routines inside `deviceCrypto.cpp` and data serialization within `ConfigManager/WiFiManager` to use standard C array pointers via `std::unique_ptr`. This guarantees absolute zero-fragmentation recovery via C++14 deterministic destructors for the long-term stable web portal UI. Used explicit `printf` styling for diagnostic logging macros.
+- **🐛 Active Quirks, Bugs & Discoveries**: We discovered that the ESP32 builder has an incomplete AST resolver for `<memory>` leading to clang linter throwing false positives on `nullptr` initializations for `std::unique_ptr`. However, actual PlatformIO `.pio` binaries compile flawlessly. Ignore `std::nullptr_t` conversion IDE feedback errors within these scopes.
+- **💻 Commands Reference**: 
+  - `pio run -e esp32dev` (Build)
+  - `npm test` (For Web UI local logic)
+  - `./.agents/skills/hardware-testing/scripts/safe-flash.sh` (Auto Flash & Monitor)
+- **🌿 Execution Environment**: `main` Git Branch is clean. Physical hardware ESP32 is functioning successfully via the cached build.

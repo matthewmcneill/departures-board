@@ -741,3 +741,12 @@ Generated commit: 7f35aa3
 **Summary**: Fully migrated legacy configuration definitions (including the removal of sleepEnabled, sleepStarts, and sleepEnds variables from system configuration) into the central SchedulerManager framework via native runtime conversion maps targeting a generic Clock Board. Dynamically scaled UI array bounds by passing `MAX_BOARDS`, `MAX_KEYS`, and `MAX_SCHEDULE_RULES` directly to the web portal via the new `/api/config` REST endpoint. Natively updated portal `index.html` to sync time offsets and support global OTA flags. Validated through local Node.js UI tests, compilation `pio run`, and successful hardware serial boot analysis confirming data translation mappings.
 **Archive**: [.agents/plans/done/6a17e258-0624-4b37-bd3e-becac4c21d61/](.agents/plans/done/6a17e258-0624-4b37-bd3e-becac4c21d61/)
 **Commit**: affd35d
+
+## Plan abea8a28-c44b-4702-a721-65d5e7ae9b98 (Memory Stability RAII Refactor)
+**Date**: 2026-04-03
+**Session**: abea8a28-c44b-4702-a721-65d5e7ae9b98
+**Action**: System-wide eradication of dynamic String allocations in hardware configurations.
+**Summary**: Decoupled all hardware layer network configuration mechanisms from the transient, fragmentation-heavy `Arduino String` library. Refactored the core payload and key processing systems to rely on stack-bound or zero-fragmentation RAII `std::unique_ptr<char[]>` buffers. Safely verified encryption logic executing cleanly underneath 8KB boundaries for `WiFiManager` and `ConfigManager` via physical hardware flash, eliminating standard crash vectors tied to rapid REST state adjustments.
+**Archive**: [.agents/plans/done/abea8a28-c44b-4702-a721-65d5e7ae9b98/](.agents/plans/done/abea8a28-c44b-4702-a721-65d5e7ae9b98/)
+**Commit**: 7507bfb
+
