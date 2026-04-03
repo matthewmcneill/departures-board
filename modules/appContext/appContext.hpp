@@ -48,6 +48,7 @@
 #include <messaging/messagePool.hpp>
 #include <dataManager.hpp>
 #include "schedulerManager.hpp"
+#include <deviceCrypto.hpp>
 
 /**
  * @brief High-level states for the AppContext Hierarchical State Machine.
@@ -64,6 +65,7 @@ enum class AppState {
  */
 class appContext {
 private:
+    DeviceCrypto deviceCrypto;      ///< Persistent Master Key Cryptographic Engine
     ConfigManager configManager;    ///< Persistence and settings management
     DisplayManager displayManager;  ///< Rendering and board lifecycle
     otaUpdater otaAssetUpdater;     ///< Firmware update lifecycle
@@ -105,7 +107,14 @@ public:
      */
     void tick();
 
+    /**
+     * @brief Helper to update the visual booting progress bar.
+     */
+    void updateBootProgress(int percentage, const char *msg);
+
     // --- Service Accessors (DI Points) ---
+    /** @brief Get the cryptographic engine. */
+    DeviceCrypto& getDeviceCrypto() { return deviceCrypto; }
     /** @brief Get the configuration persistence manager. */
     ConfigManager& getConfigManager() { return configManager; }
     /** @brief Get the display and rendering manager. */

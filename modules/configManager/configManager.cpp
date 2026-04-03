@@ -26,6 +26,7 @@
 #include <LittleFS.h>
 #include <logger.hpp>
 #include <timeManager.hpp>
+#include <deviceCrypto.hpp>
 
 // Forward declaration of the configuration subscriber interface
 #include "iConfigurable.hpp"
@@ -73,13 +74,12 @@ String ConfigManager::loadFile(String fName) {
  * `/apikeys.json`.
  */
 void ConfigManager::loadApiKeys() {
-  LOG_INFO("CONFIG", "Loading API keys from /apikeys.json...");
+  LOG_INFO("CONFIG", "Querying local API registry storage...");
   JsonDocument doc;
 
   if (LittleFS.exists("/apikeys.json")) {
+    LOG_INFO("CONFIG", "Legacy plaintext `/apikeys.json` detected. Executing secure token migration...");
     String contents = loadFile("/apikeys.json");
-    // LOG_DEBUG("CONFIG", String("Dumping /apikeys.json:\n") + contents);  <<
-    // emits secure content, do not leave in and compiled code.
 
     DeserializationError error = deserializeJson(doc, contents);
     if (!error) {
@@ -119,7 +119,6 @@ void ConfigManager::loadApiKeys() {
         }
 
         config.apiKeysLoaded = true;
-        saveApiKeys(); // Persist migrated format
       } else {
         // --- Load v2.0 Format ---
         JsonArray keys = root[F("keys")].as<JsonArray>();
@@ -136,6 +135,11 @@ void ConfigManager::loadApiKeys() {
         config.apiKeysLoaded = true;
       }
 
+      // Explicitly persist back to LittleFS as encrypted blob and drop old variant
+      saveApiKeys();
+      LittleFS.remove("/apikeys.json");
+      LOG_INFO("CONFIG", "Legacy API credentials safely migrated and eradicated.");
+
       // Register secrets for redaction
       for (int i = 0; i < config.keyCount; i++) {
         if (config.keys[i].token[0]) {
@@ -143,22 +147,72 @@ void ConfigManager::loadApiKeys() {
         }
       }
 
-      LOG_INFO("SYSTEM", "API Key Registry loaded with " +
-                             String(config.keyCount) + " keys.");
     } else {
       LOG_ERROR("CONFIG",
                 String("Failed to parse /apikeys.json: ") + error.c_str());
     }
+  } else if (LittleFS.exists("/apikeys.bin")) {
+     if (cryptoEngine) {
+       File f = LittleFS.open("/apikeys.bin", "r");
+       if (f) {
+           size_t fSize = f.size();
+           std::unique_ptr<char[]> fileBuf(new (std::nothrow) char[fSize + 1]);
+           if (fileBuf) {
+               f.readBytes(fileBuf.get(), fSize);
+               fileBuf[fSize] = '\0';
+               
+               size_t plainLen = 0;
+               std::unique_ptr<char[]> decryptedRaw = cryptoEngine->decrypt(fileBuf.get(), fSize, &plainLen);
+               if (decryptedRaw && plainLen > 0) {
+                    DeserializationError error = deserializeJson(doc, decryptedRaw.get());
+                    if (!error) {
+                         JsonObject root = doc.as<JsonObject>();
+                         JsonArray keys = root[F("keys")].as<JsonArray>();
+                         config.keyCount = 0;
+                         for (JsonObject kObj : keys) {
+                           if (config.keyCount >= MAX_KEYS) break;
+                           ApiKey &k = config.keys[config.keyCount++];
+                           strlcpy(k.id, kObj[F("id")] | "", sizeof(k.id));
+                           strlcpy(k.label, kObj[F("label")] | "", sizeof(k.label));
+                           strlcpy(k.type, kObj[F("type")] | "", sizeof(k.type));
+                           strlcpy(k.token, kObj[F("token")] | "", sizeof(k.token));
+                         }
+                         config.apiKeysLoaded = true;
+                         
+                         // Register secrets for redaction
+                         for (int i = 0; i < config.keyCount; i++) {
+                           if (config.keys[i].token[0]) {
+                             LOG_REGISTER_SECRET(config.keys[i].token);
+                           }
+                         }
+                         LOG_INFOf("SYSTEM", "API Key Registry securely loaded with %d keys.", config.keyCount);
+                    } else {
+                       LOG_ERROR("CONFIG", "Decrypted API token failure. Keys misaligned?");
+                    }
+               }
+           }
+           f.close();
+       }
+     } else {
+        LOG_ERROR("CONFIG", "Security Engine unbound. Cannot decrypt API tokens.");
+     }
   } else {
-    LOG_WARN("CONFIG", "/apikeys.json not found on LittleFS.");
+    // Neither exist
+    LOG_WARN("CONFIG", "No API tokens found on storage.");
   }
 }
 
 /**
- * @brief Writes the current Key Registry to `/apikeys.json`.
+ * @brief Writes the current Key Registry to secured binary blob.
  */
 bool ConfigManager::saveApiKeys() {
-  LOG_INFO("CONFIG", "Saving API Key Registry to /apikeys.json...");
+  LOG_INFO("CONFIG", "Securing API Key Registry...");
+  if (!cryptoEngine) {
+     LOG_ERROR("CONFIG", "Security Engine unbound. Aborting API key save.");
+     return false;
+  }
+
+  // --- Step 1: Package Registry into JSON ---
   JsonDocument doc;
   doc[F("version")] = 2.0;
   JsonArray keys = doc[F("keys")].to<JsonArray>();
@@ -171,9 +225,31 @@ bool ConfigManager::saveApiKeys() {
     kObj[F("token")] = config.keys[i].token;
   }
 
-  String output;
-  serializeJson(doc, output);
-  return saveFile(F("/apikeys.json"), output);
+  size_t jsonLen = measureJson(doc);
+  std::unique_ptr<char[]> plainBuf(new (std::nothrow) char[jsonLen + 1]);
+  if (!plainBuf) {
+      LOG_ERROR("CONFIG", "Serialization memory allocation failed.");
+      return false;
+  }
+  serializeJson(doc, plainBuf.get(), jsonLen + 1);
+  
+  // --- Step 2: Encrypt Payload ---
+  size_t cipherLen = 0;
+  std::unique_ptr<char[]> securedBlob = cryptoEngine->encrypt(plainBuf.get(), jsonLen, &cipherLen);
+  if (!securedBlob || cipherLen == 0) {
+      LOG_ERROR("CONFIG", "Cryptographic API token serialization failed.");
+      return false;
+  }
+  
+  // --- Step 3: Write to Secure Binary File ---
+  File f = LittleFS.open(F("/apikeys.bin"), "w");
+  if (!f) {
+      LOG_ERROR("CONFIG", "Failed to construct secure binary file.");
+      return false;
+  }
+  f.write((uint8_t*)securedBlob.get(), cipherLen);
+  f.close();
+  return true;
 }
 
 /**

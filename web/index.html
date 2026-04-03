@@ -3529,8 +3529,9 @@
 
           // Item 5 Fix: TfL Fallback if Rail API returns zero
           if ((!lat || lat === 0) && document.getElementById('board-type-select').value === "0") {
-            console.log("Rail API returned zero coords, attempting TfL sync for " + s.name);
-            const fallback = await this.syncRailCoordsFromTfL(s.name || s.crsCode);
+            const fallbackQuery = s.crsCode || s.name;
+            console.log("Rail API returned zero coords, attempting TfL sync for " + fallbackQuery);
+            const fallback = await this.syncRailCoordsFromTfL(fallbackQuery);
             if (fallback) {
               lat = fallback.lat;
               lon = fallback.lon;
@@ -3601,7 +3602,8 @@
             // Item 6 Fix: TfL Fallback for Find button
             if (!lat || lat === 0) {
               console.log("Find: Rail API returned zero, attempting TfL fallback...");
-              const fallback = await this.syncRailCoordsFromTfL(query);
+              let fallbackQuery = form.id.value || query;
+              const fallback = await this.syncRailCoordsFromTfL(fallbackQuery);
               if (fallback) {
                 lat = fallback.lat;
                 lon = fallback.lon;

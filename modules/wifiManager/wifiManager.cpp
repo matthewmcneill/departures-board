@@ -28,6 +28,7 @@
 #include <wifiManager.hpp>
 #include <logger.hpp>
 #include <esp_wifi.h>
+#include <deviceCrypto.hpp>
 
 
 WifiManager::WifiManager() : wifiDisconnectTimer(0) {
@@ -45,46 +46,107 @@ WifiManager::~WifiManager() {
  * @brief Load Wi-Fi credentials from wifi.json on LittleFS.
  */
 void WifiManager::loadWiFiConfig() {
-  LOG_INFO("WIFI", "Loading WiFi credentials from wifi.json...");
+  LOG_INFO("WIFI", "Querying local credential storage...");
+  
+  // --- Step 1: Detect and Migrate Legacy Configurations ---
   if (LittleFS.exists("/wifi.json")) {
+    LOG_INFO("WIFI", "Legacy plaintext `/wifi.json` detected. Executing secure token migration...");
     File f = LittleFS.open("/wifi.json", "r");
     if (!f) {
-      LOG_ERROR("WIFI", "Failed to open wifi.json for reading");
+      LOG_ERROR("WIFI", "Failed to open legacy setup for reading");
       return;
     }
-
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, f);
-    if (error) {
-      LOG_ERROR("WIFI", String("Failed to read wifi.json: ") + error.c_str());
-    } else {
+    if (!error) {
       strlcpy(wifiSsid, doc["ssid"] | "", sizeof(wifiSsid));
       strlcpy(wifiPass, doc["pass"] | "", sizeof(wifiPass));
-      
-      if (strlen(wifiSsid) > 0) {
-        LOG_INFO("WIFI", String("Found saved WiFi credentials for SSID: ") + wifiSsid);
-      }
     }
     f.close();
+    
+    // Save to encrypted bin
+    if (cryptoEngine && strlen(wifiSsid) > 0) {
+        saveWiFiConfig();
+    }
+    
+    // Nuke the legacy file permanently
+    LittleFS.remove("/wifi.json");
+    LOG_INFO("WIFI", "Legacy credentials successfully migrated to encrypted blob and eradicated.");
+
+  // --- Step 2: Load Secure Binary Firmware Tokens ---
+  } else if (LittleFS.exists("/wifi.bin")) {
+    if (cryptoEngine) {
+      File f = LittleFS.open("/wifi.bin", "r");
+      if (f) {
+         size_t fSize = f.size();
+         std::unique_ptr<char[]> fileBuf(new (std::nothrow) char[fSize + 1]);
+         if (fileBuf) {
+             f.readBytes(fileBuf.get(), fSize);
+             fileBuf[fSize] = '\0';
+             
+             size_t plainLen = 0;
+             std::unique_ptr<char[]> decryptedRaw = cryptoEngine->decrypt(fileBuf.get(), fSize, &plainLen);
+             if (decryptedRaw && plainLen > 0) {
+                 JsonDocument doc;
+                 DeserializationError error = deserializeJson(doc, decryptedRaw.get());
+                 if (!error) {
+                    strlcpy(wifiSsid, doc["ssid"] | "", sizeof(wifiSsid));
+                    strlcpy(wifiPass, doc["pass"] | "", sizeof(wifiPass));
+                    if (strlen(wifiSsid) > 0) {
+                      LOG_INFOf("WIFI", "Loaded secure encrypted WiFi credentials for: %s", wifiSsid);
+                    }
+                 } else {
+                    LOG_ERROR("WIFI", "Decrypted JSON token failure. Keys misaligned?");
+                 }
+             }
+         }
+         f.close();
+      }
+    } else {
+       LOG_ERROR("WIFI", "Security Engine unbound. Cannot decrypt standard tokens.");
+    }
   }
 }
 
 /**
- * @brief Save Wi-Fi credentials to wifi.json on LittleFS.
+ * @brief Save Wi-Fi credentials to secure binary blob.
  */
 void WifiManager::saveWiFiConfig() {
-  LOG_INFO("WIFI", "Saving WiFi credentials to wifi.json...");
+  LOG_INFO("WIFI", "Securing WiFi credentials...");
+  if (!cryptoEngine) {
+     LOG_ERROR("WIFI", "Security Engine unbound. Aborting credential save.");
+     return;
+  }
+  
+  // --- Step 1: Package Active Identity into JSON ---
   JsonDocument doc;
   doc["ssid"] = wifiSsid;
   doc["pass"] = wifiPass;
+  
+  size_t jsonLen = measureJson(doc);
+  std::unique_ptr<char[]> plainBuf(new (std::nothrow) char[jsonLen + 1]);
+  if (!plainBuf) {
+      LOG_ERROR("WIFI", "Serialization memory allocation failed.");
+      return;
+  }
+  serializeJson(doc, plainBuf.get(), jsonLen + 1);
 
-  File f = LittleFS.open("/wifi.json", "w");
+  // --- Step 2: Encrypt Payload ---
+  size_t cipherLen = 0;
+  std::unique_ptr<char[]> securedBlob = cryptoEngine->encrypt(plainBuf.get(), jsonLen, &cipherLen);
+  if (!securedBlob || cipherLen == 0) {
+      LOG_ERROR("WIFI", "Cryptographic serialization failed.");
+      return;
+  }
+
+  // --- Step 3: Write to Secure Binary File ---
+  File f = LittleFS.open("/wifi.bin", "w");
   if (!f) {
-    LOG_ERROR("WIFI", "Failed to open wifi.json for writing.");
+    LOG_ERROR("WIFI", "Failed to construct secure binary file.");
     return;
   }
   
-  serializeJson(doc, f);
+  f.write((uint8_t*)securedBlob.get(), cipherLen);
   f.close();
 }
 
@@ -287,11 +349,12 @@ void WifiManager::resetSettings() {
     memset(wifiSsid, 0, sizeof(wifiSsid));
     memset(wifiPass, 0, sizeof(wifiPass));
     LittleFS.remove("/wifi.json");
+    LittleFS.remove("/wifi.bin");
     
     WiFi.disconnect(true, true);
     esp_wifi_restore();
     
-    LOG_INFO("WIFI", "WiFi settings thoroughly erased (LittleFS + NVS restore).");
+    LOG_INFO("WIFI", "WiFi settings purely eliminated (LittleFS + NVS restore).");
 }
 
 /**

@@ -152,12 +152,20 @@ struct Config {
 /**
  * @brief Class responsible for persistence and access of the Config object.
  */
+class DeviceCrypto; // Forward declaration
+
 class ConfigManager {
 private:
   Config config; // Master configuration state container
+  DeviceCrypto* cryptoEngine = nullptr; ///< Reference to hardware encryption provider
 
 public:
   ConfigManager() = default;
+
+  /**
+   * @brief Inject the crypto engine before initial loading
+   */
+  void bindCrypto(DeviceCrypto* crypto) { cryptoEngine = crypto; }
 
   /**
    * @brief Load all user preferences and module settings from `/config.json`.

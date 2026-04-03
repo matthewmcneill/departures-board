@@ -28,6 +28,7 @@
 #include <iConfigurable.hpp>
 
 class DNSServer; // Forward declaration
+class DeviceCrypto; // Forward declaration
 
 /**
  * @brief Class managing WiFi connectivity and configuration.
@@ -57,6 +58,7 @@ private:
     char myUrl[24];                        ///< Formatted string URL for local IP
 
     std::unique_ptr<DNSServer> dnsServer;
+    DeviceCrypto* cryptoEngine = nullptr;  ///< Reference to hardware encryption provider
 
     void loadWiFiConfig();
     void saveWiFiConfig();
@@ -65,6 +67,11 @@ private:
 public:
     WifiManager();
     ~WifiManager();
+
+    /**
+     * @brief Inject the crypto engine before begin()
+     */
+    void bindCrypto(DeviceCrypto* crypto) { cryptoEngine = crypto; }
 
     /**
      * @brief Initialize WiFi using LittleFS credentials. If it fails, spins up an Access Point and DNS hijacker.
