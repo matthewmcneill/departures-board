@@ -2,7 +2,7 @@
 description: Concludes the plan lifecycle including house style checks, validation, git commits, final plan save, and releasing locks.
 ---
 
-1. Determine the active Plan ID based on your session lineage.
+1. Determine the active Plan ID based on your session lineage (e.g., by checking if this session's ID exists inside any `.agents/plans/*/sessions.md` file).
 2. **Refactoring & Documentation**: Run the `house-style-documentation` and `architectural-refactoring` skills to ensure all modified code and `/docs` files are strictly aligned with project standards.
 3. **Validation & Assessment**: Run `pio run` and `pio test` to ensure the codebase compiles cleanly and passes all web and C++ tests. Update `.agents/todo_list.md` with any discovered technical debt or necessary test suite additions.
 4. **Git Commit & Project Log**: Prepare a "rich" Git commit summarizing the architectural decisions and breaking changes. Log the session summary, commit ID, and a repository-relative link to the archived plan context: `[.agents/plans/done/[ID]/](.agents/plans/done/[ID]/)` into `.agents/project_log.md`.

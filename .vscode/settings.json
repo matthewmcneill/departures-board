@@ -1,0 +1,11 @@
+{
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "**/layouts/*.json",
+                "layout.json"
+            ],
+            "url": "./tools/layoutsim/layout.schema.json"
+        }
+    ]
+}

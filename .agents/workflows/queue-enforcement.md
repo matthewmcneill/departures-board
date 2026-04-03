@@ -1,3 +1,6 @@
+---
+description: Read the queue enforcement rules. Ensure that NO agent session performs a build or flash operation if the system is locked by another session.
+---
 # Queue Enforcement Rule
 
 This rule ensures that NO agent session performs a build or flash operation if the system is locked by another session.

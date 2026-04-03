@@ -1,3 +1,6 @@
+---
+description: Read the web testing strategy rules. The mandatory 3-phase testing workflow for all web portal development in this project.
+---
 # Web Testing Strategy Rule
 
 This rule defines the mandatory 3-phase testing workflow for all web portal development in this project. All agent sessions MUST follow this sequence to ensure rapid iteration while maintaining high quality and avoiding unnecessary hardware cycles.

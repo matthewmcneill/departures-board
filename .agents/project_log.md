@@ -707,3 +707,13 @@ Generated commit: 7f35aa3
 **Summary**: Successfully refactored the ESP32 firmware from an imperative push-model to a declarative, hash-based UI reconciliation system. Implemented FNV-1a hashing primitives in `iDataSource` and decoupled rendering cycles across TfL, Bus, and National Rail boards. Reconstructed update logic to only invoke UI draw routines when a structural data difference is detected by comparing the dynamically computed `contentHash` to the `lastRenderedHash`. Fixed minor bugs relating to XML stream parsing logical flips for National Rail board location parameters.
 **Archive**: [.agents/plans/done/d0058584-db94-49b1-8ae1-3c93995d3d1a/](.agents/plans/done/d0058584-db94-49b1-8ae1-3c93995d3d1a/)
 **Commit**: 678176b
+
+- **2026-04-03** | Resolved std::bad_alloc OOM errors during heavy station additions. Refactored architecture to use single buffers per station. Flashed to device and verified memory stabilised at 104KB free. Commit 5239582. Plan: [.agents/plans/done/d97c93b9-4be2-4c25-a5d6-da9529666216/](.agents/plans/done/d97c93b9-4be2-4c25-a5d6-da9529666216/)
+
+## Plan d97c93b9-4be2-4c25-a5d6-da9529666216 (Pagination & XML Parsing Bug Fixes)
+**Date**: 2026-04-03
+**Session**: d97c93b9-4be2-4c25-a5d6-da9529666216
+**Action**: Hardware Pagination Fix & Negative Overflow Prevention
+**Summary**: Resolved an unintended state-machine wipeout occurring during the 4000ms `nextViaToggle` loops that blocked the 5000ms `serviceListWidget` from ever physically scrolling multi-page data on National Rail boards. Stabilized the XML streaming parser by enforcing `indexOf` strict substring validations and fixing a critical integer underflow crash `(id < unsigned)` caused by negative initialization.
+**Archive**: [.agents/plans/done/d97c93b9-4be2-4c25-a5d6-da9529666216/](.agents/plans/done/d97c93b9-4be2-4c25-a5d6-da9529666216/)
+**Commit**: 7790ace
