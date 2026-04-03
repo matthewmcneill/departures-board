@@ -1,0 +1,6 @@
+- `[/]` Update `iDataSource.hpp` with templated `hashPrimitive`.
+- `[x]` Update `BusDataSource` and `BusBoard` (`BusStop` struct hash accumulation + UI decoupling).
+- `[x]` Update `TflDataSource` and `TflBoard` (`TflStation` struct hash accumulation + UI decoupling).
+- `[x]` Update `NationalRailDataSource` and `NationalRailBoard` struct hash cascade + UI decoupling.
+- `[x]` Compile firmware via `pio run`.
+- `[x]` Test via `pio device upload` and `monitor`.

@@ -63,6 +63,7 @@ private:
     uint32_t lastUpdate;  ///< Timestamp of the last successful data update
     bool needsRefresh;    ///< Flag indicating if the display requires a complete refresh
     WeatherStatus weatherStatus;
+    uint32_t lastRenderedHash;
 
 public:
     const char* getBoardName() const override { return "DATA: Bus Board"; }

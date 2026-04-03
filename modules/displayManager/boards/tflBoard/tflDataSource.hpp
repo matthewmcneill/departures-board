@@ -71,6 +71,7 @@ struct TflStation {
     int numServices;
     bool boardChanged;
     TflService service[TFL_MAX_FETCH];
+    uint32_t contentHash;
 };
 
 

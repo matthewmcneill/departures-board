@@ -32,12 +32,28 @@ extern class appContext appContext;
  */
 void weatherClient::reapplyConfig(const Config& config) {
     bool hasOwmKey = false;
+    activeApiKey = "";
+
+    // First try the specifically chosen weatherKeyId
     for (int i = 0; i < config.keyCount; i++) {
-        if (strcmp(config.keys[i].type, "owm") == 0) {
+        if (strlen(config.weatherKeyId) > 0 && strcmp(config.keys[i].id, config.weatherKeyId) == 0) {
+            activeApiKey = String(config.keys[i].token);
             hasOwmKey = true;
             break;
         }
     }
+    
+    // Fallback to first OWM key if designated key isn't found
+    if (!hasOwmKey) {
+        for (int i = 0; i < config.keyCount; i++) {
+            if (strcmp(config.keys[i].type, "owm") == 0) {
+                activeApiKey = String(config.keys[i].token);
+                hasOwmKey = true;
+                break;
+            }
+        }
+    }
+
     setWeatherEnabled(hasOwmKey);
 }
 
@@ -117,7 +133,10 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
  * Manages sockets, error handling, and memory-safe struct synchronization.
  */
 void weatherClient::executeFetch() {
-    if (activeApiKey.length() == 0) return;
+    if (activeApiKey.length() == 0) {
+        setNextFetchTime(millis() + 600000);
+        return;
+    }
     unsigned long perfTimer = millis();
     strcpy(lastErrorMsg, "");
     

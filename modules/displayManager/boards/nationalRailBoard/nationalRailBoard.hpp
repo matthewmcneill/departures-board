@@ -65,6 +65,7 @@ private:
     char cachedOrdinals[16][8];
     char firstOrdinal[4];
     WeatherStatus weatherStatus;
+    uint32_t lastRenderedHash;
 
 public:
     const char* getBoardName() const override { return "DATA: National Rail"; }

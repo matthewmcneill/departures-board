@@ -74,6 +74,11 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
         void setWeatherMsg(const char* newMsg) { strncpy(weatherMsg, newMsg, sizeof(weatherMsg)-1); }
 
         /**
+         * @brief Check if a background fetch is currently queued or executing.
+         */
+        bool isFetchPending() const { return fetchPending; }
+
+        /**
          * @brief Default constructor for the weather client.
          */
         weatherClient();

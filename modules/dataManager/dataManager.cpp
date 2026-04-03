@@ -194,8 +194,19 @@ void dataManager::workerTaskLoop(void* pvParameters) {
         if (xQueueReceive(manager->priorityEventQueue, &eventSource, ticksToWait) == pdPASS) {
             if (manager->registryMutex && xSemaphoreTake(manager->registryMutex, portMAX_DELAY) == pdPASS) {
                 if (eventSource != nullptr) {
-                    targetToExecute = eventSource;
-                    manager->currentlyExecuting = targetToExecute;
+                    // SECURITY: Ensure the queued source hasn't been unregistered/destroyed
+                    auto it = std::find(manager->registry.begin(), manager->registry.end(), eventSource);
+                    if (it != manager->registry.end()) {
+                        targetToExecute = eventSource;
+                        manager->currentlyExecuting = targetToExecute;
+                    } else {
+                        LOG_WARN("DATA", "DataManager: Discarded orphaned queue event.");
+                        // Fallback if the priority event was a ghost
+                        if (bestSource != nullptr) {
+                            targetToExecute = bestSource;
+                            manager->currentlyExecuting = targetToExecute;
+                        }
+                    }
                 } else if (bestSource != nullptr) {
                     targetToExecute = bestSource;
                     manager->currentlyExecuting = targetToExecute;
@@ -203,6 +214,7 @@ void dataManager::workerTaskLoop(void* pvParameters) {
                 xSemaphoreGive(manager->registryMutex);
             }
         } else {
+
             targetToExecute = bestSource;
         }
 

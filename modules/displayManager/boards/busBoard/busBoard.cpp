@@ -35,7 +35,7 @@ extern const uint8_t NatRailSmall9[]; ///< Small font for scrolling messages
  */
 BusBoard::BusBoard(appContext *contextPtr)
     : context(contextPtr), activeLayout(nullptr), lastUpdate(0),
-      needsRefresh(true) {
+      needsRefresh(true), lastRenderedHash(0) {
 
   // Ensure activeLayout is explicitly null until configure() is called
   activeLayout = nullptr;
@@ -157,7 +157,7 @@ UpdateStatus BusBoard::updateData() {
       return UpdateStatus::DATA_ERROR;
     }
 
-    LOG_INFO("DISPLAY", "Bus Board: Starting data update...");
+    LOG_VERBOSE("DISPLAY", "Bus Board: Starting data update...");
     lastUpdateStatus = dataSource.updateData();
     if (lastUpdateStatus == UpdateStatus::PENDING) {
       return UpdateStatus::PENDING;
@@ -173,14 +173,14 @@ UpdateStatus BusBoard::updateData() {
       consecutiveErrors++;
     }
   } else {
-    LOG_INFO("DISPLAY", "Bus Board: Data update finished successfully.");
+    LOG_VERBOSE("DISPLAY", "Bus Board: Data update finished successfully.");
     consecutiveErrors = 0;
   }
 
   if (lastUpdateStatus == UpdateStatus::SUCCESS) { // UpdateStatus::SUCCESS
     dataSource.lockData();
     BusStop *data = dataSource.getStationData();
-    if (activeLayout) {
+    if (activeLayout && data->contentHash != lastRenderedHash) {
       activeLayout->servicesWidget.clearRows();
       if (data->numServices > 0) {
         for (int i = 0; i < data->numServices; i++) {
@@ -196,6 +196,7 @@ UpdateStatus BusBoard::updateData() {
           activeLayout->servicesWidget.addRow(rowData);
         }
       }
+      lastRenderedHash = data->contentHash;
     }
     dataSource.unlockData();
   }

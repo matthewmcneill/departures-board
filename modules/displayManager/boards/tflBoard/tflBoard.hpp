@@ -54,6 +54,7 @@ private:
 
     uint32_t lastUpdate;
     WeatherStatus weatherStatus;
+    uint32_t lastRenderedHash;
 
 public:
     const char* getBoardName() const override { return "DATA: TfL Board"; }

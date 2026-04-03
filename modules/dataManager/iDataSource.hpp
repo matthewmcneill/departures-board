@@ -23,6 +23,7 @@
 #define I_DATA_SOURCE_HPP
 
 #include <stdint.h>
+#include <stddef.h>
 
 /**
  * @brief Priority tiers for data sources.
@@ -117,6 +118,25 @@ public:
      * @brief Unlocks the data struct.
      */
     virtual void unlockData() {}
+
+protected:
+    uint32_t hashString(const char* str, uint32_t hash = 2166136261u) {
+        if (!str) return hash;
+        while (*str) {
+            hash ^= (uint8_t)(*str++);
+            hash *= 16777619u;
+        }
+        return hash;
+    }
+    template <typename T>
+    uint32_t hashPrimitive(const T& val, uint32_t hash = 2166136261u) {
+        const uint8_t* p = reinterpret_cast<const uint8_t*>(&val);
+        for (size_t i = 0; i < sizeof(T); i++) {
+            hash ^= p[i];
+            hash *= 16777619u;
+        }
+        return hash;
+    }
 };
 
 #endif // I_DATA_SOURCE_HPP

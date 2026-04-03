@@ -31,7 +31,7 @@ extern const uint8_t Underground10[];
  * @param contextPtr Pointer to the global application context.
  */
 TfLBoard::TfLBoard(appContext *contextPtr)
-    : context(contextPtr), activeLayout(nullptr), lastUpdate(0) {
+    : context(contextPtr), activeLayout(nullptr), lastUpdate(0), lastRenderedHash(0) {
 
   // Ensure activeLayout is explicitly null until configure() is called
   activeLayout = nullptr;
@@ -161,7 +161,7 @@ UpdateStatus TfLBoard::updateData() {
     }
 
     // --- Step 3: Initiation ---
-    LOG_INFO("DISPLAY", "TfL Board: Starting data update...");
+    LOG_VERBOSE("DISPLAY", "TfL Board: Starting data update...");
     lastUpdateStatus = dataSource.updateData();
     if (lastUpdateStatus == UpdateStatus::PENDING) {
       return UpdateStatus::PENDING;
@@ -176,7 +176,7 @@ UpdateStatus TfLBoard::updateData() {
       consecutiveErrors++;
     }
   } else {
-    LOG_INFO("DISPLAY", "TfL Board: Data update finished successfully.");
+    LOG_VERBOSE("DISPLAY", "TfL Board: Data update finished successfully.");
     consecutiveErrors = 0;
   }
 
@@ -184,7 +184,7 @@ UpdateStatus TfLBoard::updateData() {
   if (lastUpdateStatus == UpdateStatus::SUCCESS) { // UpdateStatus::SUCCESS
     dataSource.lockData();
     TflStation *data = dataSource.getStationData();
-    if (activeLayout) {
+    if (activeLayout && data->contentHash != lastRenderedHash) {
       activeLayout->servicesWidget.clearRows();
       if (data->numServices > 0) {
         for (int i = 0; i < data->numServices; i++) {
@@ -198,6 +198,7 @@ UpdateStatus TfLBoard::updateData() {
           activeLayout->servicesWidget.addRow(rowData);
         }
       }
+      lastRenderedHash = data->contentHash;
     }
     dataSource.unlockData();
   }

@@ -1,0 +1,21 @@
+- [x] Add `printf`-style macros to `logger.hpp`.
+- [x] Implement `printf`-style methods in `logger.cpp`.
+- [x] Create private `vprintRedacted` helper in `Logger` class.
+- [x] Update `appContext.cpp` to use `LOG_INFOf` for some existing log calls.
+- [x] **Stage 2: Network URL Builders Refactor**
+    - [x] Refactor `weatherClient.cpp` to use `snprintf` and char buffers.
+    - [x] Refactor `busDataSource.cpp` to use `snprintf` and char buffers.
+    - [x] Add truncation safety checks with `LOG_ERRORf`.
+    - [x] Clean up remaining `String` logging in bus/weather modules.
+- [x] **Stage 3: RSS Client Refactor**
+    - [x] Refactor `rssClient.hpp` to remove 5 String members.
+    - [x] Implement char-based XML path tracking in `rssClient.cpp`.
+    - [x] Refactor `addRssMessage` to use a 512-byte stack buffer.
+    - [x] Add truncation safety checks with `LOG_ERRORf` and `LOG_WARN`.
+    - [x] Clean up all remaining `String` logging in the RSS module.
+- [x] **Stage 4: Logger Memory Cleanup**
+    - [x] Add `redactInPlace` method to `Logger`.
+    - [x] Optimize `printRedacted` to avoid temporary `String` objects.
+    - [x] Clean up redundant `String`-based logging methods.
+- [x] Verify final build with `pio run`.
+- [x] Finalize walkthrough.

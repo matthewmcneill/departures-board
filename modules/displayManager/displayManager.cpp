@@ -175,7 +175,17 @@ void DisplayManager::tick(unsigned long currentMillis) {
     }
   }
 
-  // --- Step 3: Internal Logic and Rendering ---
+  // --- Step 3: Global Data Source Synchronization ---
+  // Poll each active UI board periodically so they can sync their layout state with background DataManager fetches
+  static unsigned long lastDataSync = 0;
+  if (currentMillis - lastDataSync >= 500) {
+    lastDataSync = currentMillis;
+    for (int i = 0; i < MAX_BOARDS; i++) {
+        if (slots[i]) slots[i]->updateData();
+    }
+  }
+
+  // --- Step 4: Internal Logic and Rendering ---
   // Delegate state updates to the active board.
   if (currentBoard != nullptr)
     currentBoard->tick(currentMillis);

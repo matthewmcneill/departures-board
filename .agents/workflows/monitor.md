@@ -1,17 +1,14 @@
 ---
-description: View the most recent serial monitor logs from the departures-board
+description: Start the continuous device monitor with automated logging
 ---
 
-To view the most recent serial logs from the physical hardware (without restarting the monitor), execute the following:
+Execute this script to start the continuous device monitor. It will:
+1. Detect the attached device (Arduino Nano ESP32 or ESP32 Dev).
+2. Spool logs to `logs/device-monitor-<timestamp>.log`.
+3. Automatically reconnect when the port is released (e.g., after a firmware upload).
+4. Maintain a `logs/latest-monitor.log` file for live viewing.
 
 ```bash
-# View the last 100 lines and continue monitoring
-tail -n 100 -f logs/latest-monitor.log
-```
-
-Alternatively, for a one-off snapshot:
-
-```bash
-# View the last 50 lines only
-tail -n 50 logs/latest-monitor.log
+#!/bin/bash
+./scripts/device-monitor.py
 ```

@@ -686,3 +686,16 @@ Refactored the firmware boot sequence to provide a contiguous 0-100% linear prog
 Generated commit: 7f35aa3
 
 **Archive**: [.agents/plans/done/5eb814a8-fb4b-42df-86b7-877ad553407c/](.agents/plans/done/5eb814a8-fb4b-42df-86b7-877ad553407c/)
+
+## Plan bab884cc-2fd0-4aba-815d-b2016cddb6e4
+**Date**: 2026-04-02
+**Session**: bab884cc-2fd0-4aba-815d-b2016cddb6e4
+**Action**: Firmware Logging & Memory Architecture Refactor
+**Summary**: Systematically eliminated high-frequency dynamic `String` object allocations across the Logger, DataManager, Network Clients (Weather, Bus), and RSS XML parser. Replaced allocations with fast, fixed-size char buffers and `printf`-style macros (`LOG_INFOf`, `LOG_ERRORf`). Implemented `redactInPlace` in the logger to perform secret masking natively on char buffers. This zero-allocation architecture ensures maximum long-term heap stability and eliminates fragmentation during intensive network/UI tasks.
+**Archive**: [.agents/plans/done/bab884cc-2fd0-4aba-815d-b2016cddb6e4/](.agents/plans/done/bab884cc-2fd0-4aba-815d-b2016cddb6e4/)
+**Commit**: adee1ce
+
+## 58927b2a-4c78-4d94-a2f7-046154fa4487: Autonomous Build & Validation Plan
+- **Commit**: a27f38f
+- **Summary**: Validated firmware refactoring via Playwright tests, ESP32 compilation, and hardware testing. Fixed UI test expectation for factory reset.
+- **Plan Reference**: [.agents/plans/done/58927b2a-4c78-4d94-a2f7-046154fa4487/](.agents/plans/done/58927b2a-4c78-4d94-a2f7-046154fa4487/)

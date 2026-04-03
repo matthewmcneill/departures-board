@@ -89,6 +89,7 @@ struct NationalRailStation {
     bool boardChanged;
     int numServices;
     NationalRailService service[NR_MAX_SERVICES];
+    uint32_t contentHash;
 };
 
 

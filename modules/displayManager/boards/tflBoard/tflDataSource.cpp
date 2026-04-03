@@ -75,6 +75,14 @@ UpdateStatus tflDataSource::updateData() {
         return UpdateStatus::PENDING;
     }
     
+    if (taskStatus == UpdateStatus::SUCCESS) {
+        taskStatus = UpdateStatus::NO_CHANGE;
+        return UpdateStatus::SUCCESS;
+    }
+    if (taskStatus == UpdateStatus::NO_CHANGE) {
+        return UpdateStatus::NO_CHANGE;
+    }
+
     LOG_INFO("DATA", "TfL Source: Requesting priority fetch from DataManager");
     taskStatus = UpdateStatus::PENDING;
     appContext.getDataManager().requestPriorityFetch(this);
@@ -239,6 +247,20 @@ void tflDataSource::executeFetch() {
             if (m == 0) strcpy(stationData->service[i].expectedTime, "Due");
             else sprintf(stationData->service[i].expectedTime, "%d mins", m);
         }
+
+        uint32_t hashVal = 2166136261u;
+        hashVal = hashPrimitive(stationData->numServices, hashVal);
+        hashVal = hashString(stationData->location, hashVal);
+        for(int i = 0; i < stationData->numServices; i++) {
+            hashVal = hashString(stationData->service[i].destination, hashVal);
+            hashVal = hashString(stationData->service[i].lineName, hashVal);
+            hashVal = hashString(stationData->service[i].expectedTime, hashVal);
+            hashVal = hashPrimitive(stationData->service[i].timeToStation, hashVal);
+        }
+        for(int i = 0; i < messagesData.getCount(); i++) {
+            hashVal = hashString(messagesData.getMessage(i), hashVal);
+        }
+        stationData->contentHash = hashVal;
     }
 
     bool changed = true;

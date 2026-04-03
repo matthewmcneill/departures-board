@@ -68,6 +68,7 @@ struct BusStop {
     int numServices;                      // Number of services currently loaded
     bool boardChanged;                    // Flag indicating if the board content has changed
     BusService service[BUS_MAX_SERVICES]; // Array of bus services
+    uint32_t contentHash;                 // Hash of active displayable payload
 };
 
 /**

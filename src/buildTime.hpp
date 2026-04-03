@@ -17,5 +17,5 @@
 
 #pragma once
 
-#define BUILD_TIME "B20260402220056-7f35aa3+mod"
-#define BUILD_DATE_PRETTY "2026-04-02"
+#define BUILD_TIME "B20260403164234-a27f38f+mod"
+#define BUILD_DATE_PRETTY "2026-04-03"

@@ -83,6 +83,14 @@ UpdateStatus busDataSource::updateData() {
         return UpdateStatus::PENDING;
     }
     
+    if (taskStatus == UpdateStatus::SUCCESS) {
+        taskStatus = UpdateStatus::NO_CHANGE;
+        return UpdateStatus::SUCCESS;
+    }
+    if (taskStatus == UpdateStatus::NO_CHANGE) {
+        return UpdateStatus::NO_CHANGE;
+    }
+
     LOG_INFO("DATA", "Bus Source: Requesting priority fetch from DataManager");
     taskStatus = UpdateStatus::PENDING;
     appContext.getDataManager().requestPriorityFetch(this);
@@ -332,6 +340,21 @@ void busDataSource::executeFetch() {
         xSemaphoreTake(dataMutex, portMAX_DELAY);
         stationData->numServices = xBusStop->numServices;
         memcpy(stationData->service, xBusStop->service, sizeof(BusService) * BUS_MAX_SERVICES);
+        
+        uint32_t hashVal = 2166136261u;
+        hashVal = hashPrimitive(stationData->numServices, hashVal);
+        hashVal = hashString(stationData->location, hashVal);
+        for(int i = 0; i < stationData->numServices; i++) {
+            hashVal = hashString(stationData->service[i].sTime, hashVal);
+            hashVal = hashString(stationData->service[i].expectedTime, hashVal);
+            hashVal = hashString(stationData->service[i].destination, hashVal);
+            hashVal = hashString(stationData->service[i].routeNumber, hashVal);
+        }
+        for(size_t i = 0; i < messagesData.getCount(); i++) {
+            hashVal = hashString(messagesData.getMessage(i), hashVal);
+        }
+        stationData->contentHash = hashVal;
+
         if (renderData) {
             memcpy(renderData.get(), stationData.get(), sizeof(BusStop));
         }

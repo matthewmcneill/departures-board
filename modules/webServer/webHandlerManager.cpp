@@ -518,6 +518,8 @@ struct ApiTestParams {
 class ApiTestDataSource : public iDataSource {
 public:
     std::unique_ptr<ApiTestParams> params;
+    uint32_t nextFetch = 0;
+    
     ApiTestDataSource(std::unique_ptr<ApiTestParams> p) : params(std::move(p)) {}
     void executeFetch() override {
         bool success = false; String errorMsg = "Unsupported test type";
@@ -553,9 +555,9 @@ public:
     UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
     UpdateStatus testConnection(const char*, const char*) override { return UpdateStatus::SUCCESS; }
     const char* getLastErrorMsg() const override { return ""; }
-    uint32_t getNextFetchTime() override { return 0; }
+    uint32_t getNextFetchTime() override { return nextFetch; }
     PriorityTier getPriorityTier() override { return PriorityTier::PRIO_CRITICAL; } // Test connections must run immediately
-    void setNextFetchTime(uint32_t) override {}
+    void setNextFetchTime(uint32_t t) override { nextFetch = t; }
 };
 
 void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const String& body) {
@@ -727,8 +729,25 @@ void WebHandlerManager::handleTestWeather(AsyncWebServerRequest *request) {
     
     LOG_INFO("WEB_API", "Testing Weather using coordinates: 51.7487° N, 3.3816° W (Pen-y-darren)");
     
-    // Pass both. WeatherClient handles the logic of which to use.
     bool success = weather.updateWeather(ws, keyId, token);
+    
+    if (success) {
+        int maxWait = 12000 / 50; // 12 seconds max
+        int cycles = 0;
+        
+        while(weather.isFetchPending() && cycles < maxWait) { 
+            esp_task_wdt_reset();
+            vTaskDelay(pdMS_TO_TICKS(50)); 
+            cycles++; 
+        }
+
+        if (weather.isFetchPending()) {
+            success = false;
+            strcpy(weather.lastErrorMsg, "Timeout waiting for queue");
+        } else {
+            success = (ws.status == WeatherUpdateStatus::READY);
+        }
+    }
     
     JsonDocument doc;
     doc["status"] = success ? "ok" : "fail";

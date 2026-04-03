@@ -105,7 +105,10 @@ UpdateStatus rssClient::testConnection(const char* token, const char* stationId)
  * Manages secure clients, redirects, and thread-safe headline storage.
  */
 void rssClient::executeFetch() {
-    if (activeUrl.length() == 0) return;
+    if (activeUrl.length() == 0) {
+        setNextFetchTime(millis() + 600000);
+        return;
+    }
     String url = activeUrl;
     std::unique_ptr<HTTPClient> http(new (std::nothrow) HTTPClient());
     std::unique_ptr<WiFiClient> client(new (std::nothrow) WiFiClient());

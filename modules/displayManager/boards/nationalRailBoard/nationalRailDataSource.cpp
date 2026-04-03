@@ -132,6 +132,15 @@ UpdateStatus nationalRailDataSource::updateData() {
         return UpdateStatus::PENDING;
     }
     
+    // Intercept completion from background task, acknowledge it to the UI, and rest.
+    if (taskStatus == UpdateStatus::SUCCESS) {
+        taskStatus = UpdateStatus::NO_CHANGE;
+        return UpdateStatus::SUCCESS;
+    }
+    if (taskStatus == UpdateStatus::NO_CHANGE) {
+        return UpdateStatus::NO_CHANGE;
+    }
+
     LOG_INFO("DATA", "NR Source: Requesting priority fetch from DataManager");
     taskStatus = UpdateStatus::PENDING;
     appContext.getDataManager().requestPriorityFetch(this);
@@ -378,6 +387,23 @@ void nationalRailDataSource::executeFetch() {
     // For now, always treat a successful parse as a change to trigger board refresh
     // Simplifies memory and is generally what's needed for departures
     if (stationData) {
+        uint32_t hashVal = 2166136261u;
+        hashVal = hashPrimitive(stationData->numServices, hashVal);
+        hashVal = hashString(stationData->location, hashVal);
+        for(int i = 0; i < stationData->numServices; i++) {
+            hashVal = hashString(stationData->service[i].sTime, hashVal);
+            hashVal = hashString(stationData->service[i].destination, hashVal);
+            hashVal = hashString(stationData->service[i].platform, hashVal);
+            hashVal = hashString(stationData->service[i].etd, hashVal);
+            hashVal = hashString(stationData->service[i].calling, hashVal);
+            hashVal = hashString(stationData->service[i].via, hashVal);
+            hashVal = hashString(stationData->service[i].lastSeen, hashVal);
+        }
+        for(int i = 0; i < messagesData.getCount(); i++) {
+            hashVal = hashString(messagesData.getMessage(i), hashVal);
+        }
+        stationData->contentHash = hashVal;
+
         stationData->boardChanged = true;
     }
 
@@ -586,41 +612,41 @@ void nationalRailDataSource::value(const char *val) {
     if (loadingWDSL) return;
     if (tagLevel < 6) return;
 
-    if (tagLevel == 11 && tagPath.endsWith("callingPoint/lt8:locationName")) {
+    if (tagPath.endsWith("callingPoint/lt8:locationName")) {
         if (id >= 0 && stationData && (strlen(stationData->service[id].calling) + strlen(val) + 10) < NR_MAX_CALLING) {
             if (stationData->service[id].calling[0]) strcat(stationData->service[id].calling, ", ");
             strcat(stationData->service[id].calling, val);
             addedStopLocation = true;
         }
-    } else if (tagLevel == 11 && tagPath.endsWith("callingPoint/lt8:st") && addedStopLocation) {
+    } else if (tagPath.endsWith("callingPoint/lt8:st") && addedStopLocation) {
         if (id >= 0 && stationData && (strlen(stationData->service[id].calling) + strlen(val) + 4) < NR_MAX_CALLING) {
             strcat(stationData->service[id].calling, " (");
             strcat(stationData->service[id].calling, val);
             strcat(stationData->service[id].calling, ")");
         }
         addedStopLocation = false;
-    } else if (tagLevel == 8 && tagName == "lt4:operator") {
+    } else if (tagName == "lt4:operator" && tagPath.endsWith("lt8:service/lt4:operator")) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].opco, val, 49);
-    } else if (tagLevel == 8 && tagName == "lt4:std") {
+    } else if (tagName == "lt4:std" && tagPath.endsWith("lt8:service/lt4:std")) {
         if (id < NR_MAX_SERVICES - 1 && stationData) { 
             id++; 
             stationData->numServices++;
             strncpy(stationData->service[id].sTime, val, 5);
         }
-    } else if (tagLevel == 8 && tagName == "lt4:etd") {
+    } else if (tagName == "lt4:etd" && tagPath.endsWith("lt8:service/lt4:etd")) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].etd, val, 10);
-    } else if (tagLevel == 10 && tagPath.indexOf("destination") != -1 && tagPath.endsWith("locationName")) {
+    } else if (tagPath.indexOf("destination") != -1 && tagPath.endsWith("locationName")) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].destination, val, NR_MAX_LOCATION-1);
-    } else if (tagLevel == 10 && tagPath.indexOf("destination") != -1 && tagPath.endsWith("via")) {
+    } else if (tagPath.indexOf("destination") != -1 && tagPath.endsWith("via")) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].via, val, NR_MAX_LOCATION-1);
-    } else if (tagLevel == 8 && tagName == "lt4:platform") {
+    } else if (tagName == "lt4:platform" && tagPath.endsWith("lt8:service/lt4:platform")) {
         if (id >= 0 && stationData) {
             strncpy(stationData->service[id].platform, val, 3);
             if (filterPlatforms && !serviceMatchesFilter(platformFilter, val)) {
                 // Technically Darwin client shuffles this, but here we just flag it
             }
         }
-    } else if (tagLevel == 6 && tagName == "lt4:locationName") {
+    } else if (tagName == "lt4:locationName" && tagPath.indexOf("callingPoint") == -1 && tagPath.indexOf("destination") == -1 && tagPath.indexOf("origin") == -1) {
         if (stationData) strncpy(stationData->location, val, NR_MAX_LOCATION-1);
     } else if (tagPath.endsWith("lt12:lastReportedStationName")) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].lastSeen, val, NR_MAX_LOCATION-1);

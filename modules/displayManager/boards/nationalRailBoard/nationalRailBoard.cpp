@@ -33,7 +33,7 @@ extern const uint8_t NatRailSmall9[];
  */
 NationalRailBoard::NationalRailBoard(appContext *contextPtr)
     : context(contextPtr), activeLayout(nullptr), lastUpdate(0),
-      viaToggle(false), nextViaToggle(0) {
+      viaToggle(false), nextViaToggle(0), lastRenderedHash(0) {
 
   // Ensure activeLayout is explicitly null until configure() is called
   activeLayout = nullptr;
@@ -185,7 +185,7 @@ UpdateStatus NationalRailBoard::updateData() {
     // (WSDL Initialization is handled safely inside the Data Source)
 
     // --- Step 3: Initiation ---
-    LOG_INFO("DISPLAY", "NR Board: Starting data update...");
+    LOG_VERBOSE("DISPLAY", "NR Board: Starting data update...");
     lastUpdateStatus = dataSource.updateData();
     if (lastUpdateStatus == UpdateStatus::PENDING) {
       return UpdateStatus::PENDING;
@@ -200,7 +200,7 @@ UpdateStatus NationalRailBoard::updateData() {
       consecutiveErrors++;
     }
   } else {
-    LOG_INFO("DISPLAY", "NR Board: Data update finished successfully.");
+    LOG_VERBOSE("DISPLAY", "NR Board: Data update finished successfully.");
     consecutiveErrors = 0;
   }
 
@@ -223,25 +223,28 @@ UpdateStatus NationalRailBoard::updateData() {
       activeLayout->locationAndFilters.setFilters(filterText.c_str());
     }
 
-    // Trigger scrolling of calling points if they changed
-    if (data->numServices > 0 && activeLayout) {
-      String msg = data->service[0].calling;
-      if (config.showLastSeenLocation && data->service[0].lastSeen[0]) {
-        if (msg.length() > 0)
-          msg += ". ";
-        msg += "Last seen at ";
-        msg += data->service[0].lastSeen;
-        msg += ".";
+    if (activeLayout && data->contentHash != lastRenderedHash) {
+      // Trigger scrolling of calling points if they changed
+      if (data->numServices > 0) {
+        String msg = data->service[0].calling;
+        if (config.showLastSeenLocation && data->service[0].lastSeen[0]) {
+          if (msg.length() > 0)
+            msg += ". ";
+          msg += "Last seen at ";
+          msg += data->service[0].lastSeen;
+          msg += ".";
+        }
+        if (msg.length() > 0) {
+          activeLayout->msgWidget.setText(msg.c_str());
+        } else {
+          activeLayout->msgWidget.setText(nrAttribution);
+        }
       }
-      if (msg.length() > 0) {
-        activeLayout->msgWidget.setText(msg.c_str());
-      } else {
-        activeLayout->msgWidget.setText(nrAttribution);
-      }
-    }
 
-    // Populate services lists (row 0 and subsequent)
-    populateServices();
+      // Populate services lists (row 0 and subsequent)
+      populateServices();
+      lastRenderedHash = data->contentHash;
+    }
     dataSource.unlockData();
   }
   return lastUpdateStatus;
