@@ -20,7 +20,7 @@
 
 #include <weatherClient.hpp>
 #include <JsonListener.h>
-#include <WiFiClient.h>
+#include <NetworkClientSecure.h>
 #include <logger.hpp>
 #include <memory>
 #include <appContext.hpp>
@@ -145,7 +145,8 @@ void weatherClient::executeFetch() {
     dtostrf(bgStatus.lon, 1, 4, lonBuf);
 
     auto parser = std::make_unique<JsonStreamingParser>();
-    auto httpClient = std::make_unique<WiFiClient>();
+    auto httpClient = std::make_unique<NetworkClientSecure>();
+    httpClient->setInsecure();
 
     #define WRAP_UP_ERROR() { \
         setNextFetchTime(millis() + (1000 * 60)); \
@@ -166,7 +167,7 @@ void weatherClient::executeFetch() {
     
     // --- Step 1: Protocol Handshake ---
     int retryCounter=0;
-    while (!httpClient->connect(apiHost, 80) && (retryCounter++ < 15)){
+    while (!httpClient->connect(apiHost, 443) && (retryCounter++ < 15)){
         vTaskDelay(pdMS_TO_TICKS(200));
     }
     if (retryCounter>=15) {
