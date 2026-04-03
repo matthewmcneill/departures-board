@@ -757,3 +757,11 @@ Generated commit: 7f35aa3
 **Summary**: Diagnosed and resolved a weather condition loading failure caused by OpenWeatherMap deprecating unencrypted HTTP support on the free tier. Upgraded `weatherClient.cpp` to use `NetworkClientSecure` with port `443` and `setInsecure()` rather than the legacy `WiFiClient`. This ensures the streaming JSON parser actually receives the active weather stream and that `WeatherStatus` objects hydrate successfully globally, restoring display icons across all boards.
 **Archive**: N/A (Trivial Execution)
 **Commit**: 6a8a534
+
+## Plan f5efccb6-439e-4bb8-9575-c8b448046318 (Aligning Transit Board Widgets)
+**Date**: 2026-04-03
+**Session**: f3dfc52b-a2fb-4a00-91a1-a4cf25d579a3
+**Action**: Aligning Bus and Tube Widgets to National Rail Pattern
+**Summary**: Unified the widget architecture across National Rail, Tube, and Bus boards by decoupling the service list. Split the list into a static header `row0Widget` and a dynamic scrolling `servicesWidget`. Integrated the `weatherWidget` and `clockWidget` into the TfL and Bus headers to establish visual parity with the National Rail layout. Refactored layout interfaces (`iTflLayout`, `iBusLayout`) internally to cleanly inject DI `TimeManager` dependencies via `.cpp` constructors instead of header inlines. Verified UI geometric conformity using the WASM testing layout simulator.
+**Archive**: [.agents/plans/done/f5efccb6-439e-4bb8-9575-c8b448046318/](.agents/plans/done/f5efccb6-439e-4bb8-9575-c8b448046318/)
+**Commit**: f7244f5

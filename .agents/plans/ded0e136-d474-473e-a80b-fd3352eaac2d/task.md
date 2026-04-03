@@ -1,10 +1,10 @@
 # Transitioning to Rail Data Marketplace (RDM) API
 
-- [ ] Plan implementation architecture
-  - [ ] Review `iDataSource` interface and how boards instantiate data sources
-  - [ ] Review configuration manager for how 'RailData' key is passed
-  - [ ] Write implementation plan with new `rdmDataSource` class
-- [ ] Implement `rdmDataSource` class
+- [x] Plan implementation architecture
+  - [x] Review `iDataSource` interface and how boards instantiate data sources
+  - [x] Review configuration manager for how 'RailData' key is passed
+  - [x] Write implementation plan with new `rdmDataSource` class
+- [/] Implement `rdmDataSource` class
   - [ ] Create header `rdmDataSource.hpp` implementing `iDataSource`
   - [ ] Create implementation `rdmDataSource.cpp` using HTTP GET, `x-apikey`, and JSON parsing
 - [ ] Update display boards to support RDM

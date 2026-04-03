@@ -1,0 +1,6 @@
+- [x] Update `iTflLayout.hpp` to include `weatherWidget` and `clockWidget` and their property definitions.
+- [x] Update `tflBoard.cpp` to split list iteration and render state.
+- [x] Update `tflBoard/layouts/layoutDefault.json` geometry definitions.
+- [x] Update `iBusLayout.hpp` to include `weatherWidget` and `clockWidget` and their property definitions.
+- [x] Update `busBoard.cpp` to split list iteration and render state.
+- [x] Update `busBoard/layouts/layoutDefault.json` geometry definitions.

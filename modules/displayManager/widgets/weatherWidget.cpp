@@ -61,10 +61,21 @@ void weatherWidget::render(U8G2& display) {
     WeatherStatus& ws = board->getWeatherStatus();
     lastIcon = ws.getIconChar();
 
-    blankArea(display, x, y, width, height);
+    U8g2StateSaver saver(display);
     
-    if (ws.isValid()) {
+    // Explicit blanking
+    display.setDrawColor(0);
+    display.drawBox(x, y, width, height);
+    
+    if (ws.isValid() && lastIcon != '?') {
+        display.setDrawColor(1);
+        display.setFont(font ? font : WeatherIcons11);
+        
         char icon[2] = { lastIcon, '\0' };
-        drawText(display, icon, x, y, width, height, TextAlign::CENTER, false, font);
+        int textW = display.getStrWidth(icon);
+        int drawX = x + (width > textW ? (width - textW) / 2 : 0);
+        
+        display.setClipWindow(x, y, x + width - 1, y + height - 1);
+        display.drawStr(drawX, y, icon);
     }
 }
