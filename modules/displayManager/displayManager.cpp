@@ -63,23 +63,6 @@
 
 /** @return True if screen is flipped 180 degrees. */
 bool DisplayManager::getFlipScreen() const { return flipScreen; }
-/** @return True if scheduled sleep is enabled. */
-bool DisplayManager::getSleepEnabled() const { return sleepEnabled; }
-/** @brief Enable or disable automated sleep schedule. */
-void DisplayManager::setSleepEnabled(bool enabled) { sleepEnabled = enabled; }
-/** @return Hour (0-23) when sleep starts. */
-byte DisplayManager::getSleepStarts() const { return sleepStarts; }
-/** @brief Set the hour to start sleep mode. */
-void DisplayManager::setSleepStarts(byte starts) { sleepStarts = starts; }
-/** @return Hour (0-23) when sleep ends. */
-byte DisplayManager::getSleepEnds() const { return sleepEnds; }
-/** @brief Set the hour to end sleep mode. */
-void DisplayManager::setSleepEnds(byte ends) { sleepEnds = ends; }
-/** @return True if sleep is manually forced. */
-bool DisplayManager::getForcedSleep() const { return forcedSleep; }
-/** @brief Manually force the display into sleep mode. */
-void DisplayManager::setForcedSleep(bool active) { forcedSleep = active; }
-
 // --- Singleton Instance ---
 // This will be removed in favor of appContext ownership.
 // DisplayManager displayManager; // Global system display orchestrator
@@ -96,8 +79,7 @@ DisplayManager::DisplayManager()
       activeSlotIndex(0), splashBoard(nullptr), loadingBoard(nullptr),
       wizardBoard(nullptr), helpBoard(nullptr), messageBoard(nullptr),
       firmwareUpdateBoard(nullptr), sleepingBoard(nullptr),
-      diagnosticBoard(nullptr), brightness(20), flipScreen(false),
-      sleepEnabled(false), sleepStarts(23), sleepEnds(8), currentBoard(nullptr),
+      diagnosticBoard(nullptr), brightness(20), flipScreen(false), currentBoard(nullptr),
       lastActivity(0), forcedSleep(false), wifiWarning(0, 56) {
   for (int i = 0; i < MAX_BOARDS; i++) {
     slots[i] = nullptr;
@@ -133,28 +115,13 @@ void DisplayManager::begin(appContext *contextPtr) {
  * @param currentMillis Current system uptime.
  */
 void DisplayManager::tick(unsigned long currentMillis) {
-  // --- Step 1: Handle Sleep Transitions ---
-  // Determine if the screen should be dimmed/clocked based on schedule or
-  // force-sleep.
-  bool shouldSnooze = isSnoozing();
-  iDisplayBoard *sleepBoard = getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
-
-  if (shouldSnooze && currentBoard != sleepBoard && sleepBoard != nullptr) {
-    // Transition TO Sleep: Dim the OLED and swap active board to the clock.
-    showBoard(sleepBoard, "Screensaver sleep schedule triggered");
-    u8g2.setContrast(((SleepingBoard *)sleepBoard)->getDimmedBrightness());
-  } else if (!shouldSnooze && currentBoard == sleepBoard) {
-    // Transition FROM Sleep: Restore user brightness and the last carousel
-    // board.
-    showBoard(getDisplayBoard(activeSlotIndex), "Waking up from screensaver");
-    u8g2.setContrast(brightness);
-    u8g2.clearDisplay(); // Ensure clean surface for data rendering
-  }
+  // --- Step 1: Handle Sleep Transitions (Handled by Scheduler) ---
+  // The SchedulerManager now handles the rotation to a MODE_CLOCK board
+  // which can optionally turn off the OLED via getOledOff().
 
   // --- Step 2: Adaptive Schedule Check ---
-  // If we're not snoozing and system is running, periodically ensure our
-  // current board is still valid.
-  if (!shouldSnooze && context->getAppState() == AppState::RUNNING &&
+  // Periodically ensure our current board is still valid.
+  if (context->getAppState() == AppState::RUNNING &&
       currentMillis - lastScheduleCheck > 3000UL) {
     lastScheduleCheck = currentMillis;
     std::vector<int> activeBoards =
@@ -195,7 +162,7 @@ void DisplayManager::tick(unsigned long currentMillis) {
   // (not a system overlay)
   bool isCarouselBoard = (currentBoard == getDisplayBoard(activeSlotIndex));
 
-  if (!shouldSnooze && context->getAppState() == AppState::RUNNING &&
+  if (context->getAppState() == AppState::RUNNING &&
       isCarouselBoard && !diagModeActive && context != nullptr) {
     const Config &config = context->getConfigManager().getConfig();
     if (config.boardCount > 1) {
@@ -272,11 +239,9 @@ void DisplayManager::setPowerSave(bool off) {
 void DisplayManager::showBoard(iDisplayBoard *board, const char *reason,
                                uint32_t durationMs) {
   if (currentBoard != board) {
-    // --- Step 0: Power Management Safety ---
-    // Ensure the display is active before switching to a new board.
-    // This prevents the screen from being stuck "off" if a board deactivated
-    // while in power-save mode.
-    setPowerSave(false);
+    // --- Step 0: Power Management ---
+    // Ensure the display power state matches the board's requirements.
+    setPowerSave(board != nullptr && board->getOledOff());
 
     // Log the transition for hardware-side diagnostics
     String msg = "showBoard() invoked for: [" +
@@ -495,49 +460,6 @@ MessagePool *DisplayManager::getGlobalMessagePool() {
   return (context != nullptr) ? &context->getGlobalMessagePool() : nullptr;
 }
 
-/**
- * @brief Checks if the system is currently in a sleep state.
- * @return True if the current board is the sleep clock.
- */
-bool DisplayManager::getIsSleeping() const {
-  return (currentBoard != nullptr &&
-          currentBoard == const_cast<DisplayManager *>(this)->getSystemBoard(
-                              SystemBoardId::SYS_SLEEP_CLOCK));
-}
-
-/**
- * @brief Checks if the display should be snoozing based on manual override or
- * schedule.
- * @return True if system should transition to sleep.
- */
-bool DisplayManager::isSnoozing() {
-  // --- Step 1: Explicit overrides ---
-  if (forcedSleep)
-    return true;
-  if (!sleepEnabled)
-    return false;
-
-  // --- Step 2: Schedule evaluation ---
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo))
-    return false; // Time sync required for scheduling
-
-  byte myHour = timeinfo.tm_hour;
-  if (sleepStarts > sleepEnds) {
-    // Range spans midnight (e.g. 23:00 to 07:00)
-    if ((myHour >= sleepStarts) || (myHour < sleepEnds))
-      return true;
-    else
-      return false;
-  } else {
-    // Standard range within one day (e.g. 10:00 to 14:00)
-    if ((myHour >= sleepStarts) && (myHour < sleepEnds))
-      return true;
-    else
-      return false;
-  }
-}
-
 // --- Board Management ---
 
 /**
@@ -716,9 +638,6 @@ void DisplayManager::applyConfig(const Config &config) {
   // --- Step 1: Apply Global Hardware and Power settings ---
   setBrightness(config.brightness);
   setFlipScreen(config.flipScreen);
-  setSleepEnabled(config.sleepEnabled);
-  setSleepStarts((byte)config.sleepStarts);
-  setSleepEnds((byte)config.sleepEnds);
 
   // Save pacing/power flags for tick()
   waitForScrollComplete = config.waitForScrollComplete;
@@ -727,8 +646,6 @@ void DisplayManager::applyConfig(const Config &config) {
   // Sync extra attributes to specialized system boards
   SleepingBoard *sb =
       (SleepingBoard *)getSystemBoard(SystemBoardId::SYS_SLEEP_CLOCK);
-  if (sb)
-    sb->setShowClock(config.showClockInSleep);
 
   // Scan config for the first Screensaver board and use its OLED-off setting
   // for the system sleep screen

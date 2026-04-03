@@ -313,6 +313,12 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
     wifi["pass"] = ""; 
     wifi["passExists"] = appContext.getWifiManager().hasPassword();
 
+    // --- System Limits (Dynamic Export) ---
+    JsonObject limits = doc["limits"].to<JsonObject>();
+    limits["MAX_BOARDS"] = MAX_BOARDS;
+    limits["MAX_KEYS"] = MAX_KEYS;
+    limits["MAX_SCHEDULE_RULES"] = MAX_SCHEDULE_RULES;
+
     String output;
     serializeJson(doc, output);
     request->send(200, "application/json", output);

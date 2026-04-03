@@ -104,9 +104,6 @@ private:
     // Display configuration set by ConfigManager
     int brightness;                ///< Display brightness level (0-255)
     bool flipScreen;               ///< True if display is inverted 180 degrees
-    bool sleepEnabled;             ///< True if scheduled sleep is active
-    byte sleepStarts;              ///< Hour (0-23) to start sleep mode
-    byte sleepEnds;                ///< Hour (0-23) to end sleep mode
     bool forcedSleep;              ///< Manual sleep override
     
     // Unified rendering target (pool or system)
@@ -190,69 +187,6 @@ public:
      * @param newFlipScreen True to invert the display 180 degrees.
      */
     void setFlipScreen(bool newFlipScreen);
-
-    /**
-     * @brief Check if scheduled sleep is enabled.
-     * @return True if the sleep timer is active.
-     */
-    /**
-     * @brief Check if scheduled sleep is currently enabled.
-     * @return True if the sleep timer is active.
-     */
-    bool getSleepEnabled() const;
-    /**
-     * @brief Enable or disable scheduled sleep.
-     * @param newSleepEnabled True to activate the timer.
-     */
-    void setSleepEnabled(bool newSleepEnabled);
-
-    /**
-     * @brief Get the hour the sleep schedule begins.
-     * @return Hour (0-23).
-     */
-    byte getSleepStarts() const;
-
-    /**
-     * @brief Configure the sleep schedule start time.
-     * @param newSleepStarts Hour (0-23).
-     */
-    void setSleepStarts(byte newSleepStarts);
-
-    /**
-     * @brief Get the hour the sleep schedule ends.
-     * @return Hour (0-23).
-     */
-    byte getSleepEnds() const;
-
-    /**
-     * @brief Configure the sleep schedule end time.
-     * @param newSleepEnds Hour (0-23).
-     */
-    void setSleepEnds(byte newSleepEnds);
-
-    /**
-     * @brief Get the manual forced sleep state.
-     * @return True if sleep is manually overridden to active.
-     */
-    bool getForcedSleep() const;
-
-    /**
-     * @brief Manually force the screen into sleep mode.
-     * @param active True to snooze immediately.
-     */
-    void setForcedSleep(bool active);
-
-    /**
-     * @brief Check if the display is currently in a sleep/clock state.
-     * @return True if sleeping.
-     */
-    bool getIsSleeping() const;
-
-    /**
-     * @brief Internal logic to determine if the system SHOULD be snoozing.
-     * @return True if schedule or manual override dictates sleep.
-     */
-    bool isSnoozing();
 
     /**
      * @brief Control the hardware diagnostic grid overlay.

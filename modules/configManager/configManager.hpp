@@ -114,11 +114,10 @@ struct Config {
   char wsdlAPI[48] = "/OpenLDBWS/wsdl.aspx?ver=2021-11-01"; // WSDL path
   char timezone[64] = "Europe/London"; // POSIX timezone string
   float configVersion =
-      2.4f; // Configuration format version number (v2.4 Per-Board OLED Off)
+      2.5f; // Configuration format version number (v2.5 native scheduler)
 
   // --- Display Preferences ---
   bool dateEnabled = false;     // Show date in header
-  bool showClockInSleep = true; // Show clock during snooze
   bool noScrolling = false;     // Disable panel animations
   bool hidePlatform = false;    // Suppress platform columns
   bool flipScreen = false;      // Rotate display 180 degrees
@@ -126,11 +125,6 @@ struct Config {
   bool waitForScrollComplete =
       false;                  // Wait for message to finish before cycling board
   bool prioritiseRss = false; // Show RSS before service messages
-
-  // --- Sleep Settings ---
-  bool sleepEnabled = false; // Timer-based power management
-  int sleepStarts = 23;      // Hour to enter sleep (0-23)
-  int sleepEnds = 8;         // Hour to wake up (0-23)
 
   // --- Refresh & Update Settings ---
   long apiRefreshRate = DATAUPDATEINTERVAL; // Current polling interval
@@ -141,13 +135,13 @@ struct Config {
   // --- Dynamic Board List ---
   BoardConfig boards[MAX_BOARDS]; // Array of configured display boards
   int boardCount = 0;             // Number of active boards in the carousel
-  int defaultBoardIndex = 0;      // Index of the board to show on startup
 
   // --- Schedule & Carousel Settings ---
   ScheduleRule schedules[MAX_SCHEDULE_RULES]; // Time-based routing arrays
   int manualOverrideTimeoutSecs =
       60; // How long to stay out of schedule when button is pressed
   int carouselIntervalSecs = 120; // Pace of rotation between active boards
+  int defaultBoardIndex = 0;      // Index of the board to show at boot or when no schedule is active
 
   char rssUrl[128] = "";      // XML feed URL
   char rssName[48] = "";      // Label for news source

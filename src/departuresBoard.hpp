@@ -39,7 +39,7 @@
 #endif
 
 #ifndef MAX_SCHEDULE_RULES
-#define MAX_SCHEDULE_RULES 15
+#define MAX_SCHEDULE_RULES 24
 #endif
 
 // --- Timing & Intervals (ms) ---

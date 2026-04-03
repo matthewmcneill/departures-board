@@ -381,21 +381,20 @@ void appContext::tick() {
   // 7. Input Device Update
   if (inputDevice) {
     inputDevice->update();
-    if (inputDevice->wasShortTapped()) {
-      if (displayManager.getIsSleeping() || displayManager.getForcedSleep()) {
-        LOG_INFO("INPUT", "Short tap: Waking from sleep");
-        displayManager.setForcedSleep(false);
+    if (inputDevice->wasShortTapped() || inputDevice->wasLongTapped()) {
+      // Any hardware interaction triggers a manual override in the scheduler,
+      // ensuring we stay awake for the configured timeout.
+      bool wasSleeping = (displayManager.getActiveBoardType() == BoardType::CLOCK_BOARD);
+      schedule.triggerManualOverride();
+
+      if (wasSleeping) {
+        LOG_INFO("INPUT", "Hardware button tapped: Waking from sleep/screensaver");
         displayManager.resumeDisplays();
-      } else {
-        LOG_INFO("INPUT", "Short tap: Cycling mode");
+      } else if (inputDevice->wasShortTapped()) {
+        LOG_INFO("INPUT", "Short tap: Cycling next board");
         displayManager.cycleNext();
-      }
-    } else if (inputDevice->wasLongTapped()) {
-      bool currentlySleeping = displayManager.getForcedSleep() || displayManager.getIsSleeping();
-      LOG_INFO("INPUT", String("Long tap: Toggling screensaver. Currently sleeping: ") + currentlySleeping);
-      displayManager.setForcedSleep(!currentlySleeping);
-      if (!displayManager.getForcedSleep()) {
-        displayManager.resumeDisplays();
+      } else {
+        LOG_INFO("INPUT", "Long tap: Manual override refreshed");
       }
     }
   }

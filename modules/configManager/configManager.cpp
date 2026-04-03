@@ -227,14 +227,12 @@ void ConfigManager::writeDefaultConfig() {
   JsonDocument doc;
 
   doc[F("hostname")] = "DeparturesBoard";
-  doc[F("version")] = 2.4; // Current config format version
+  doc[F("version")] = 2.5; // Current config format version
   doc[F("brightness")] = 20;
-  doc[F("sleep")] = false;
-  doc[F("clock")] = true;
   doc[F("showDate")] = false;
   doc[F("flip")] = false;
   doc[F("TZ")] = TimeManager::ukTimezone;
-  doc[F("mode")] = config.defaultBoardIndex;
+  doc[F("overrideTimeout")] = 60;
   doc[F("overrideTimeout")] = 60;
   doc[F("carouselInterval")] = 120;
 
@@ -296,17 +294,13 @@ bool ConfigManager::save() {
   LOG_INFO("CONFIG", "Saving configuration to /config.json...");
   JsonDocument doc;
 
-  doc[F("version")] = 2.4;
+  doc[F("version")] = 2.5;
   doc[F("hostname")] = config.hostname;
   doc[F("noScroll")] = config.noScrolling;
   doc[F("flip")] = config.flipScreen;
   doc[F("brightness")] = config.brightness;
-  doc[F("sleep")] = config.sleepEnabled;
-  doc[F("sleepStarts")] = config.sleepStarts;
-  doc[F("sleepEnds")] = config.sleepEnds;
   doc[F("TZ")] = config.timezone;
   doc[F("showDate")] = config.dateEnabled;
-  doc[F("clock")] = config.showClockInSleep;
   doc[F("fastRefresh")] = (config.apiRefreshRate == FASTDATAUPDATEINTERVAL);
   doc[F("waitForScroll")] = config.waitForScrollComplete;
   doc[F("rssFirst")] = config.prioritiseRss;
@@ -315,7 +309,6 @@ bool ConfigManager::save() {
   doc[F("rssUrl")] = config.rssUrl;
   doc[F("rssName")] = config.rssName;
   doc[F("weatherKeyId")] = config.weatherKeyId;
-  doc[F("mode")] = config.defaultBoardIndex;
   doc[F("overrideTimeout")] = config.manualOverrideTimeoutSecs;
   doc[F("carouselInterval")] = config.carouselIntervalSecs;
 
@@ -382,10 +375,7 @@ void ConfigManager::loadConfig() {
     if (!error) {
       JsonObject settings = doc.as<JsonObject>();
 
-      // Mode/Default Display selection
-      if (settings[F("mode")].is<int>()) {
-        config.defaultBoardIndex = settings[F("mode")];
-      }
+      // System settings
 
       // System settings
       if (settings[F("version")].is<float>())
@@ -402,19 +392,11 @@ void ConfigManager::loadConfig() {
         config.flipScreen = settings[F("flip")];
       if (settings[F("brightness")].is<int>())
         config.brightness = settings[F("brightness")];
-      if (settings[F("sleep")].is<bool>())
-        config.sleepEnabled = settings[F("sleep")];
-      if (settings[F("sleepStarts")].is<int>())
-        config.sleepStarts = settings[F("sleepStarts")];
-      if (settings[F("sleepEnds")].is<int>())
-        config.sleepEnds = settings[F("sleepEnds")];
       if (settings[F("TZ")].is<const char *>())
         strlcpy(config.timezone, settings[F("TZ")], sizeof(config.timezone));
 
       if (settings[F("showDate")].is<bool>())
         config.dateEnabled = settings[F("showDate")];
-      if (settings[F("clock")].is<bool>())
-        config.showClockInSleep = settings[F("clock")];
       if (settings[F("fastRefresh")].is<bool>())
         config.apiRefreshRate = settings[F("fastRefresh")]
                                     ? FASTDATAUPDATEINTERVAL
@@ -596,7 +578,75 @@ void ConfigManager::loadConfig() {
         LOG_INFO(
             "CONFIG",
             "Upgrading configuration to v2.3 (Upstream Merge Features)...");
-        config.configVersion = 2.3f;
+        config.configVersion = 2.4f; // Temporary intermediate state
+        save();
+      }
+
+      if (loadedVersion < 2.5f) {
+        LOG_INFO("CONFIG", "Performing v2.5 sleep/mode migration...");
+
+        // 1. Sleep Migration: Convert legacy sleep timer to a real Schedule Rule + Clock Board
+        bool legacySleep = settings[F("sleep")] | false;
+        if (legacySleep && config.boardCount < MAX_BOARDS) {
+          int startH = settings[F("sleepStarts")] | 23;
+          int endH = settings[F("sleepEnds")] | 8;
+
+          // Find if we already have a clock board
+          int clockIdx = -1;
+          for (int i = 0; i < config.boardCount; i++) {
+            if (config.boards[i].type == MODE_CLOCK) {
+              clockIdx = i;
+              break;
+            }
+          }
+
+          // If no clock board exists, create one
+          if (clockIdx == -1) {
+            clockIdx = config.boardCount++;
+            BoardConfig &bc = config.boards[clockIdx];
+            bc.type = MODE_CLOCK;
+            strlcpy(bc.name, "Snooze Clock", sizeof(bc.name));
+            bc.oledOff = !(settings[F("clock")] | true); // If clock was false, turn OLED off
+          }
+
+          // Install the schedule rule
+          LOG_INFO("CONFIG", "Migrating legacy sleep timer to Scheduler rule.");
+          int ruleIdx = -1;
+          for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
+            if (config.schedules[i].boardIndex == -1) {
+              ruleIdx = i;
+              break;
+            }
+          }
+
+          if (ruleIdx != -1) {
+            ScheduleRule &r = config.schedules[ruleIdx];
+            r.startHour = startH;
+            r.startMinute = 0;
+            r.endHour = endH;
+            r.endMinute = 0;
+            r.boardIndex = clockIdx;
+          }
+        }
+
+        // 2. Mode Migration: If default mode was not 0, swap it to the top so it stays primary
+        int legacyMode = settings[F("mode")] | 0;
+        if (legacyMode > 0 && legacyMode < config.boardCount) {
+          LOG_INFO("CONFIG", "Migrating legacy default mode index to board slot 0.");
+          BoardConfig tmp = config.boards[0];
+          config.boards[0] = config.boards[legacyMode];
+          config.boards[legacyMode] = tmp;
+
+          // Update any schedules pointing to 0 or legacyMode
+          for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
+            if (config.schedules[i].boardIndex == 0)
+              config.schedules[i].boardIndex = legacyMode;
+            else if (config.schedules[i].boardIndex == legacyMode)
+              config.schedules[i].boardIndex = 0;
+          }
+        }
+
+        config.configVersion = 2.5f;
         save();
       }
 

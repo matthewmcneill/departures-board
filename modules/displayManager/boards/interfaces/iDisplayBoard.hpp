@@ -119,6 +119,12 @@ public:
      */
     virtual bool isScrollFinished() { return true; }
 
+    /**
+     * @brief Check if the OLED should be powered off when this board is active.
+     * @return True if the hardware should be put into power-save mode.
+     */
+    virtual bool getOledOff() const { return false; }
+
 protected:
     UpdateStatus lastUpdateStatus = UpdateStatus::NO_DATA; ///< Stores the result of the last updateData() call for inline error handling.
     int consecutiveErrors = 0; ///< Tracks the number of consecutive data fetch failures to defer error overlays.

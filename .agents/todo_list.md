@@ -29,6 +29,7 @@
 - [ ] have the iDataProviders give a data-expiry time so that it can tell the scheduler that it should update (for example just after the last train was expected to depart) or do it at least once every minute.
 
 ### Diagnostics & Testing
+- [ ] Investigate and fix `pio test` native compilation errors. Currently, the Arduino framework test environment lacks a structural `setup`/`loop` entry point causing `undefined reference` linker errors.
 - [ ] Add unit tests for `ConfigManager::hasConfiguredBoards()` to verify it correctly evaluates incomplete default boards as unconfigured, preventing the system from skipping the `BOARD_SETUP` sequence.
 - [ ] Add diagnostic UI to expose real-time FreeRTOS TWDT (Watchdog) metrics and background task states for each data fetcher.
 - [ ] Implement C++ unit testing for the new `dataManager` module to verify priority queue behavior on connection timeouts and duplicate fetch requests.
