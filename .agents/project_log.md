@@ -717,3 +717,11 @@ Generated commit: 7f35aa3
 **Summary**: Resolved an unintended state-machine wipeout occurring during the 4000ms `nextViaToggle` loops that blocked the 5000ms `serviceListWidget` from ever physically scrolling multi-page data on National Rail boards. Stabilized the XML streaming parser by enforcing `indexOf` strict substring validations and fixing a critical integer underflow crash `(id < unsigned)` caused by negative initialization.
 **Archive**: [.agents/plans/done/d97c93b9-4be2-4c25-a5d6-da9529666216/](.agents/plans/done/d97c93b9-4be2-4c25-a5d6-da9529666216/)
 **Commit**: 7790ace
+
+## Plan 6a17e258-0624-4b37-bd3e-becac4c21d61 (v2.5 Config Schema & Sleep Migration)
+**Date**: 2026-04-03
+**Session**: 6a17e258-0624-4b37-bd3e-becac4c21d61
+**Action**: Migrated Legacy Configuration to SchedulerManager Pattern
+**Summary**: Fully migrated legacy configuration definitions (including the removal of sleepEnabled, sleepStarts, and sleepEnds variables from system configuration) into the central SchedulerManager framework via native runtime conversion maps targeting a generic Clock Board. Dynamically scaled UI array bounds by passing `MAX_BOARDS`, `MAX_KEYS`, and `MAX_SCHEDULE_RULES` directly to the web portal via the new `/api/config` REST endpoint. Natively updated portal `index.html` to sync time offsets and support global OTA flags. Validated through local Node.js UI tests, compilation `pio run`, and successful hardware serial boot analysis confirming data translation mappings.
+**Archive**: [.agents/plans/done/6a17e258-0624-4b37-bd3e-becac4c21d61/](.agents/plans/done/6a17e258-0624-4b37-bd3e-becac4c21d61/)
+**Commit**: affd35d
