@@ -51,11 +51,10 @@ enum class NrServiceType : uint8_t {
 /**
  * @brief Data Length Constants
  */
-constexpr size_t NR_MAX_LOCATION = 45;
-constexpr size_t NR_MAX_CALLING = 450;
-constexpr size_t NR_MAX_MSG_LEN = 400;
-constexpr size_t NR_MAX_SERVICES = 9;
-
+constexpr int NR_MAX_LOCATION = 45;
+constexpr int NR_MAX_CALLING = 450;
+constexpr int NR_MAX_MSG_LEN = 400;
+constexpr int NR_MAX_SERVICES = 9;
 /**
  * @brief Data structure for a single train/bus service.
  */

@@ -158,7 +158,7 @@ public:
     /**
      * @brief Populates the layout widgets with the latest data slices.
      */
-    void populateServices();
+    void populateServices(bool row0Only = false);
 
     /**
      * @brief Get the last error string from the data source.

@@ -614,34 +614,36 @@ void nationalRailDataSource::value(const char *val) {
     if (loadingWDSL) return;
     if (tagLevel < 6) return;
 
-    if (tagPath.endsWith("callingPoint/lt8:locationName")) {
+    if (tagPath.indexOf("callingPoint/lt8:locationName") != -1) {
         if (id == 0 && stationData && (strlen(stationData->firstServiceCalling) + strlen(val) + 10) < NR_MAX_CALLING) {
             if (stationData->firstServiceCalling[0]) strcat(stationData->firstServiceCalling, ", ");
             strcat(stationData->firstServiceCalling, val);
             addedStopLocation = true;
         }
-    } else if (tagPath.endsWith("callingPoint/lt8:st") && addedStopLocation) {
+    } else if (tagPath.indexOf("callingPoint/lt8:st") != -1 && addedStopLocation) {
         if (id == 0 && stationData && (strlen(stationData->firstServiceCalling) + strlen(val) + 4) < NR_MAX_CALLING) {
             strcat(stationData->firstServiceCalling, " (");
             strcat(stationData->firstServiceCalling, val);
             strcat(stationData->firstServiceCalling, ")");
         }
         addedStopLocation = false;
-    } else if (tagName == "lt4:operator" && tagPath.endsWith("lt8:service/lt4:operator")) {
+    } else if (tagName == "lt4:operator" && tagPath.indexOf("lt8:service/lt4:operator") != -1) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].opco, val, 49);
-    } else if (tagName == "lt4:std" && tagPath.endsWith("lt8:service/lt4:std")) {
-        if (id < NR_MAX_SERVICES - 1 && stationData) { 
-            id++; 
-            stationData->numServices++;
-            strncpy(stationData->service[id].sTime, val, 5);
+    } else if (tagName == "lt4:std") {
+        if (tagPath.indexOf("lt8:service/lt4:std") != -1) {
+            if (id < NR_MAX_SERVICES - 1 && stationData) { 
+                id++; 
+                stationData->numServices++;
+                strncpy(stationData->service[id].sTime, val, 5);
+            }
         }
-    } else if (tagName == "lt4:etd" && tagPath.endsWith("lt8:service/lt4:etd")) {
+    } else if (tagName == "lt4:etd" && tagPath.indexOf("lt8:service/lt4:etd") != -1) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].etd, val, 10);
-    } else if (tagPath.indexOf("destination") != -1 && tagPath.endsWith("locationName")) {
+    } else if (tagPath.indexOf("destination") != -1 && tagPath.indexOf("locationName") != -1) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].destination, val, NR_MAX_LOCATION-1);
-    } else if (tagPath.indexOf("destination") != -1 && tagPath.endsWith("via")) {
+    } else if (tagPath.indexOf("destination") != -1 && tagPath.indexOf("via") != -1) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].via, val, NR_MAX_LOCATION-1);
-    } else if (tagName == "lt4:platform" && tagPath.endsWith("lt8:service/lt4:platform")) {
+    } else if (tagName == "lt4:platform" && tagPath.indexOf("lt8:service/lt4:platform") != -1) {
         if (id >= 0 && stationData) {
             strncpy(stationData->service[id].platform, val, 3);
             if (filterPlatforms && !serviceMatchesFilter(platformFilter, val)) {
@@ -650,9 +652,9 @@ void nationalRailDataSource::value(const char *val) {
         }
     } else if (tagName == "lt4:locationName" && tagPath.indexOf("callingPoint") == -1 && tagPath.indexOf("destination") == -1 && tagPath.indexOf("origin") == -1) {
         if (stationData) strncpy(stationData->location, val, NR_MAX_LOCATION-1);
-    } else if (tagPath.endsWith("lt12:lastReportedStationName")) {
+    } else if (tagPath.indexOf("lt12:lastReportedStationName") != -1) {
         if (id == 0 && stationData) strncpy(stationData->firstServiceLastSeen, val, NR_MAX_LOCATION-1);
-    } else if (tagPath.endsWith("nrccMessages/lt:message")) {
+    } else if (tagPath.indexOf("nrccMessages/lt:message") != -1) {
         messagesData.addMessage(val);
     }
 }

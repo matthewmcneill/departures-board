@@ -154,7 +154,7 @@ void NationalRailBoard::tick(uint32_t ms) {
     viaToggle = !viaToggle;
     nextViaToggle = ms + 4000;
     dataSource.lockData();
-    populateServices(); // Repopulate to flip via points
+    populateServices(true); // Repopulate only row 0 to flip via points
     dataSource.unlockData();
   }
 
@@ -242,7 +242,7 @@ UpdateStatus NationalRailBoard::updateData() {
       }
 
       // Populate services lists (row 0 and subsequent)
-      populateServices();
+      populateServices(false);
       lastRenderedHash = data->contentHash;
     }
     dataSource.unlockData();
@@ -312,13 +312,15 @@ void NationalRailBoard::render(U8G2 &display) {
 /**
  * @brief Populate generic service widgets from the central data model.
  */
-void NationalRailBoard::populateServices() {
+void NationalRailBoard::populateServices(bool row0Only) {
   if (!activeLayout)
     return;
 
   NationalRailStation *data = dataSource.getStationData();
   activeLayout->row0Widget.clearRows();
-  activeLayout->servicesWidget.clearRows();
+  if (!row0Only) {
+      activeLayout->servicesWidget.clearRows();
+  }
 
   if (data->numServices > 0) {
     for (int i = 0; i < data->numServices; i++) {
@@ -343,8 +345,12 @@ void NationalRailBoard::populateServices() {
                                 data->service[i].platform,
                                 data->service[i].etd};
 
-      activeLayout->row0Widget.addRow(rowData);
-      activeLayout->servicesWidget.addRow(rowData);
+      if (i == 0 || !row0Only) {
+          activeLayout->row0Widget.addRow(rowData);
+      }
+      if (!row0Only) {
+          activeLayout->servicesWidget.addRow(rowData);
+      }
     }
   }
 }
