@@ -35,8 +35,8 @@ This rule defines the mandatory 3-phase testing workflow for all web portal deve
 - You MUST flash the device only AFTER Phase 2 is successful.
 - **Pre-requisite**: Check `.agents/plans/lock.md` for hardware availability (refer to `queue-enforcement.md`).
 - **Commands**:
-    - Flash: `pio device upload`
-    - Monitor: `pio device monitor`
+    - Flash & Monitor safely: Execute the `/flash-test` workflow natively.
+    - Check the system stability: Execute the `/read-flash-logs` workflow.
 - **Action**: Perform a final smoke test of the portal in a real browser directed at the device's IP address.
 
 ## Rationale

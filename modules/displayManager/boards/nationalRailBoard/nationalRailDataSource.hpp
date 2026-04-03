@@ -70,10 +70,6 @@ struct NationalRailService {
     int trainLength;
     byte classesAvailable;
     char opco[50];
-    char calling[NR_MAX_CALLING];
-    char origin[NR_MAX_LOCATION];
-    char lastSeen[NR_MAX_LOCATION]; // Upstream B2.4-W3.1: "Last seen at..."
-    char serviceMessage[NR_MAX_MSG_LEN];
     NrServiceType serviceType; // TRAIN or BUS
 };
 
@@ -87,6 +83,13 @@ struct NationalRailStation {
     char filterPlatform[16];
     bool platformAvailable;
     bool boardChanged;
+    
+    // Details strictly for the first train in the sequence
+    char firstServiceCalling[NR_MAX_CALLING]; // Calling points for the first due service
+    char firstServiceOrigin[NR_MAX_LOCATION]; // Origin station name for the first due service
+    char firstServiceLastSeen[NR_MAX_LOCATION]; // Real-time actual location snippet
+    char firstServiceMessage[NR_MAX_MSG_LEN]; // Specific operator disruption messages for the service
+
     int numServices;
     NationalRailService service[NR_MAX_SERVICES];
     uint32_t contentHash;

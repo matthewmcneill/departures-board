@@ -226,12 +226,12 @@ UpdateStatus NationalRailBoard::updateData() {
     if (activeLayout && data->contentHash != lastRenderedHash) {
       // Trigger scrolling of calling points if they changed
       if (data->numServices > 0) {
-        String msg = data->service[0].calling;
-        if (config.showLastSeenLocation && data->service[0].lastSeen[0]) {
+        String msg = data->firstServiceCalling;
+        if (config.showLastSeenLocation && data->firstServiceLastSeen[0]) {
           if (msg.length() > 0)
             msg += ". ";
           msg += "Last seen at ";
-          msg += data->service[0].lastSeen;
+          msg += data->firstServiceLastSeen;
           msg += ".";
         }
         if (msg.length() > 0) {

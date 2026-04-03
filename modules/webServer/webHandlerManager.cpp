@@ -571,42 +571,46 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
         if (existing) tokenStr = existing->token;
     }
 
-    auto params = std::make_unique<ApiTestParams>();
-    params->type = typeStr;
-    params->token = tokenStr;
-    params->done = false;
+    try {
+        auto params = std::make_unique<ApiTestParams>();
+        params->type = typeStr;
+        params->token = tokenStr;
+        params->done = false;
 
-    // Transfer unique ownership to the DataSource.
-    // After std::move, params is guaranteed to be nullptr for safety.
-    auto testSource = std::make_unique<ApiTestDataSource>(std::move(params));
+        // Transfer unique ownership to the DataSource.
+        // After std::move, params is guaranteed to be nullptr for safety.
+        auto testSource = std::make_unique<ApiTestDataSource>(std::move(params));
 
-    appContext.getDataManager().registerSource(testSource.get());
-    appContext.getDataManager().requestPriorityFetch(testSource.get());
+        appContext.getDataManager().registerSource(testSource.get());
+        appContext.getDataManager().requestPriorityFetch(testSource.get());
 
-    // Yield gracefully until the Background DataManager payload finishes, with absolute 10s timeout
-    int maxWait = 10000 / 50;
-    int cycles = 0;
-    
-    // Pointer to the params inside the testSource for the wait loop
-    ApiTestParams* pRef = testSource->params.get();
+        // Yield gracefully until the Background DataManager payload finishes, with absolute 10s timeout
+        int maxWait = 10000 / 50;
+        int cycles = 0;
+        
+        // Pointer to the params inside the testSource for the wait loop
+        ApiTestParams* pRef = testSource->params.get();
 
-    while(!pRef->done && cycles < maxWait) { 
-        // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
-        // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
-        // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
-        esp_task_wdt_reset(); 
-        vTaskDelay(pdMS_TO_TICKS(50)); 
-        cycles++; 
-    }
+        while(!pRef->done && cycles < maxWait) { 
+            // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
+            // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
+            // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
+            esp_task_wdt_reset(); 
+            vTaskDelay(pdMS_TO_TICKS(50)); 
+            cycles++; 
+        }
 
-    if (!pRef->done) {
-        request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
+        if (cycles >= maxWait) {
+            request->send(408, "application/json", "{\"status\":\"error\",\"msg\":\"Timeout!\"}");
+        } else {
+            request->send(200, "application/json", pRef->jsonObj);
+        }
+        
         appContext.getDataManager().unregisterSource(testSource.get());
-        return;
+    } catch (const std::bad_alloc& e) {
+        LOG_ERROR("SYSTEM", "CRITICAL OOM: Failed to allocate TestDataSource on heap!");
+        request->send(500, "application/json", "{\"status\":\"error\",\"msg\":\"Out of Memory on device\"}");
     }
-
-    request->send(200, "application/json", pRef->jsonObj);
-    appContext.getDataManager().unregisterSource(testSource.get());
 }
 
 void WebHandlerManager::handleWiFiScan(AsyncWebServerRequest *request) {

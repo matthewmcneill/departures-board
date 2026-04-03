@@ -32,24 +32,30 @@
 #include "boards/systemBoard/messageBoard.hpp"
 #include "boards/systemBoard/firmwareUpdateBoard.hpp"
 #include "boards/systemBoard/sleepingBoard.hpp"
+#include <logger.hpp>
 
 
 iDisplayBoard* BoardFactory::createDisplayBoard(int type, appContext* context) {
     BoardType boardType = static_cast<BoardType>(type);
 
-    switch (boardType) {
-        case BoardType::NR_BOARD:
-            return new NationalRailBoard(context);
-        case BoardType::TFL_BOARD:
-            return new TfLBoard(context);
-        case BoardType::BUS_BOARD:
-            return new BusBoard(context);
-        case BoardType::CLOCK_BOARD:
-            return new SleepingBoard(context);
-        case BoardType::DIAGNOSTIC_BOARD:
-            return new DiagnosticBoard(context);
-        default:
-            return nullptr;
+    try {
+        switch (boardType) {
+            case BoardType::NR_BOARD:
+                return new NationalRailBoard(context);
+            case BoardType::TFL_BOARD:
+                return new TfLBoard(context);
+            case BoardType::BUS_BOARD:
+                return new BusBoard(context);
+            case BoardType::CLOCK_BOARD:
+                return new SleepingBoard(context);
+            case BoardType::DIAGNOSTIC_BOARD:
+                return new DiagnosticBoard(context);
+            default:
+                return nullptr;
+        }
+    } catch (const std::bad_alloc& e) {
+        LOG_ERROR("SYSTEM", "CRITICAL OOM: Failed to allocate active board on heap!");
+        return nullptr;
     }
 }
 
@@ -64,37 +70,42 @@ iDisplayBoard* BoardFactory::createSystemBoard(int id, appContext* context) {
     
     iDisplayBoard* newBoard = nullptr;
 
-    switch (boardId) {
-        case SystemBoardId::SYS_BOOT_SPLASH:
-            newBoard = new SplashBoard();
-            break;
-        case SystemBoardId::SYS_BOOT_LOADING:
-            newBoard = new LoadingBoard();
-            break;
-        case SystemBoardId::SYS_WIFI_WIZARD:
-            newBoard = new WizardBoard();
-            break;
-        case SystemBoardId::SYS_SETUP_HELP:
-            newBoard = new HelpBoard();
-            break;
-        case SystemBoardId::SYS_ERROR_NO_DATA:
-        case SystemBoardId::SYS_ERROR_WSDL:
-        case SystemBoardId::SYS_ERROR_TOKEN:
-        case SystemBoardId::SYS_ERROR_CRS:
-        case SystemBoardId::SYS_ERROR_WIFI:
-            newBoard = new MessageBoard();
-            break;
-        case SystemBoardId::SYS_FIRMWARE_UPDATE:
-            newBoard = new FirmwareUpdateBoard();
-            break;
-        case SystemBoardId::SYS_SLEEP_CLOCK:
-            newBoard = new SleepingBoard(context); // Sleeping board takes context in constructor
-            break;
-        case SystemBoardId::SYS_DIAGNOSTIC:
-            newBoard = new DiagnosticBoard(context); // Diagnostic board takes context
-            break;
-        default:
-            return nullptr;
+    try {
+        switch (boardId) {
+            case SystemBoardId::SYS_BOOT_SPLASH:
+                newBoard = new SplashBoard();
+                break;
+            case SystemBoardId::SYS_BOOT_LOADING:
+                newBoard = new LoadingBoard();
+                break;
+            case SystemBoardId::SYS_WIFI_WIZARD:
+                newBoard = new WizardBoard();
+                break;
+            case SystemBoardId::SYS_SETUP_HELP:
+                newBoard = new HelpBoard();
+                break;
+            case SystemBoardId::SYS_ERROR_NO_DATA:
+            case SystemBoardId::SYS_ERROR_WSDL:
+            case SystemBoardId::SYS_ERROR_TOKEN:
+            case SystemBoardId::SYS_ERROR_CRS:
+            case SystemBoardId::SYS_ERROR_WIFI:
+                newBoard = new MessageBoard();
+                break;
+            case SystemBoardId::SYS_FIRMWARE_UPDATE:
+                newBoard = new FirmwareUpdateBoard();
+                break;
+            case SystemBoardId::SYS_SLEEP_CLOCK:
+                newBoard = new SleepingBoard(context); // Sleeping board takes context in constructor
+                break;
+            case SystemBoardId::SYS_DIAGNOSTIC:
+                newBoard = new DiagnosticBoard(context); // Diagnostic board takes context
+                break;
+            default:
+                return nullptr;
+        }
+    } catch (const std::bad_alloc& e) {
+        LOG_ERROR("SYSTEM", "CRITICAL OOM: Failed to allocate system board on heap!");
+        return nullptr;
     }
     
     return newBoard;

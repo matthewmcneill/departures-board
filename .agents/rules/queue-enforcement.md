@@ -8,8 +8,10 @@ When working in parallel, multiple agents might try to access the ESP32 hardware
 ## Requirements
 Before running ANY of the following compilation or hardware commands:
 - `pio run`
-- `pio device upload`
-- `pio device monitor`
+- `/flash-test` (Preferred)
+- `/read-flash-logs`
+- `pio device upload` (Discouraged, use /flash-test)
+- `pio device monitor` (Discouraged, use /read-flash-logs)
 - `npm run build`
 - `npx next build`
 

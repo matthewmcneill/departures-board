@@ -390,14 +390,16 @@ void nationalRailDataSource::executeFetch() {
         uint32_t hashVal = 2166136261u;
         hashVal = hashPrimitive(stationData->numServices, hashVal);
         hashVal = hashString(stationData->location, hashVal);
+        hashVal = hashString(stationData->firstServiceCalling, hashVal);
+        hashVal = hashString(stationData->firstServiceLastSeen, hashVal);
+        hashVal = hashString(stationData->firstServiceOrigin, hashVal);
+        hashVal = hashString(stationData->firstServiceMessage, hashVal);
         for(int i = 0; i < stationData->numServices; i++) {
             hashVal = hashString(stationData->service[i].sTime, hashVal);
             hashVal = hashString(stationData->service[i].destination, hashVal);
             hashVal = hashString(stationData->service[i].platform, hashVal);
             hashVal = hashString(stationData->service[i].etd, hashVal);
-            hashVal = hashString(stationData->service[i].calling, hashVal);
             hashVal = hashString(stationData->service[i].via, hashVal);
-            hashVal = hashString(stationData->service[i].lastSeen, hashVal);
         }
         for(int i = 0; i < messagesData.getCount(); i++) {
             hashVal = hashString(messagesData.getMessage(i), hashVal);
@@ -515,16 +517,16 @@ void nationalRailDataSource::sanitiseData() {
     // Basic sanitization from raildataXmlClient
     removeHtmlTags(stationData->location);
     replaceWord(stationData->location, "&amp;", "&");
+    removeHtmlTags(stationData->firstServiceCalling);
+    replaceWord(stationData->firstServiceCalling, "&amp;", "&");
+    removeHtmlTags(stationData->firstServiceMessage);
+    replaceWord(stationData->firstServiceMessage, "&amp;", "&");
+    fixFullStop(stationData->firstServiceMessage);
     for (int i=0; i<stationData->numServices; i++) {
         removeHtmlTags(stationData->service[i].destination);
         replaceWord(stationData->service[i].destination, "&amp;", "&");
-        removeHtmlTags(stationData->service[i].calling);
-        replaceWord(stationData->service[i].calling, "&amp;", "&");
         removeHtmlTags(stationData->service[i].via);
         replaceWord(stationData->service[i].via, "&amp;", "&");
-        removeHtmlTags(stationData->service[i].serviceMessage);
-        replaceWord(stationData->service[i].serviceMessage, "&amp;", "&");
-        fixFullStop(stationData->service[i].serviceMessage);
     }
     // Note: Sanitization for MessagePool strings happens during addition or after?
     // Current Darwin logic adds them. We'll leave them as is for now or add a sanitize method to Pool.
@@ -613,16 +615,16 @@ void nationalRailDataSource::value(const char *val) {
     if (tagLevel < 6) return;
 
     if (tagPath.endsWith("callingPoint/lt8:locationName")) {
-        if (id >= 0 && stationData && (strlen(stationData->service[id].calling) + strlen(val) + 10) < NR_MAX_CALLING) {
-            if (stationData->service[id].calling[0]) strcat(stationData->service[id].calling, ", ");
-            strcat(stationData->service[id].calling, val);
+        if (id == 0 && stationData && (strlen(stationData->firstServiceCalling) + strlen(val) + 10) < NR_MAX_CALLING) {
+            if (stationData->firstServiceCalling[0]) strcat(stationData->firstServiceCalling, ", ");
+            strcat(stationData->firstServiceCalling, val);
             addedStopLocation = true;
         }
     } else if (tagPath.endsWith("callingPoint/lt8:st") && addedStopLocation) {
-        if (id >= 0 && stationData && (strlen(stationData->service[id].calling) + strlen(val) + 4) < NR_MAX_CALLING) {
-            strcat(stationData->service[id].calling, " (");
-            strcat(stationData->service[id].calling, val);
-            strcat(stationData->service[id].calling, ")");
+        if (id == 0 && stationData && (strlen(stationData->firstServiceCalling) + strlen(val) + 4) < NR_MAX_CALLING) {
+            strcat(stationData->firstServiceCalling, " (");
+            strcat(stationData->firstServiceCalling, val);
+            strcat(stationData->firstServiceCalling, ")");
         }
         addedStopLocation = false;
     } else if (tagName == "lt4:operator" && tagPath.endsWith("lt8:service/lt4:operator")) {
@@ -649,7 +651,7 @@ void nationalRailDataSource::value(const char *val) {
     } else if (tagName == "lt4:locationName" && tagPath.indexOf("callingPoint") == -1 && tagPath.indexOf("destination") == -1 && tagPath.indexOf("origin") == -1) {
         if (stationData) strncpy(stationData->location, val, NR_MAX_LOCATION-1);
     } else if (tagPath.endsWith("lt12:lastReportedStationName")) {
-        if (id >= 0 && stationData) strncpy(stationData->service[id].lastSeen, val, NR_MAX_LOCATION-1);
+        if (id == 0 && stationData) strncpy(stationData->firstServiceLastSeen, val, NR_MAX_LOCATION-1);
     } else if (tagPath.endsWith("nrccMessages/lt:message")) {
         messagesData.addMessage(val);
     }

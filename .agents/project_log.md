@@ -699,3 +699,11 @@ Generated commit: 7f35aa3
 - **Commit**: a27f38f
 - **Summary**: Validated firmware refactoring via Playwright tests, ESP32 compilation, and hardware testing. Fixed UI test expectation for factory reset.
 - **Plan Reference**: [.agents/plans/done/58927b2a-4c78-4d94-a2f7-046154fa4487/](.agents/plans/done/58927b2a-4c78-4d94-a2f7-046154fa4487/)
+
+## Plan d0058584-db94-49b1-8ae1-3c93995d3d1a
+**Date**: 2026-04-03
+**Session**: d0058584-db94-49b1-8ae1-3c93995d3d1a
+**Action**: Implement Declarative Hash-Based UI Data Reconciliation
+**Summary**: Successfully refactored the ESP32 firmware from an imperative push-model to a declarative, hash-based UI reconciliation system. Implemented FNV-1a hashing primitives in `iDataSource` and decoupled rendering cycles across TfL, Bus, and National Rail boards. Reconstructed update logic to only invoke UI draw routines when a structural data difference is detected by comparing the dynamically computed `contentHash` to the `lastRenderedHash`. Fixed minor bugs relating to XML stream parsing logical flips for National Rail board location parameters.
+**Archive**: [.agents/plans/done/d0058584-db94-49b1-8ae1-3c93995d3d1a/](.agents/plans/done/d0058584-db94-49b1-8ae1-3c93995d3d1a/)
+**Commit**: 678176b
