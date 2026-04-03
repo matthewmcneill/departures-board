@@ -11,14 +11,12 @@
  * Description: Implementation of Wi-Fi credentials management and architecture-independent configuration logic.
  *
  * Exported Functions/Classes:
- * - WifiManager: Class for managing WiFi connectivity and captive portal.
- *   - begin(): Initializes WiFi and enters AP mode if no credentials found.
- *   - reapplyConfig(): Responds to hostname configuration changes.
- *   - tick(): Periodic non-blocking lifecycle management loop.
- *   - processDNS(): Intercepts captive portal DNS requests in AP mode.
- *   - updateWiFi(): Persists new WiFi credentials to LittleFS.
- *   - resetSettings(): Erases WiFi configuration and restores ESP WiFi state.
- *   - testConnection(): Connects to standard AP momentarily to validate credentials.
+ * - WifiManager: [Class implementation]
+ *   - begin: Initial non-blocking hardware initialization.
+ *   - tick: Main non-blocking state machine for connection maintenance.
+ *   - updateWiFi: Configuration persistence.
+ *   - resetSettings: Complete credential cleanup.
+ *   - testConnection: Momentary connection probe for verification.
  */
 #include <Arduino.h>
 #include <FS.h>
@@ -32,10 +30,15 @@
 #include <esp_wifi.h>
 
 
-WifiManager::WifiManager() {
+WifiManager::WifiManager() : wifiDisconnectTimer(0) {
     memset(wifiSsid, 0, sizeof(wifiSsid));
     memset(wifiPass, 0, sizeof(wifiPass));
     memset(currentHostname, 0, sizeof(currentHostname));
+    strlcpy(myUrl, "http://0.0.0.0", sizeof(myUrl));
+}
+
+WifiManager::~WifiManager() {
+    // std::unique_ptr automatically handles deallocation of dnsServer
 }
 
 /**
@@ -96,6 +99,11 @@ void WifiManager::transitionTo(WiFiState newState) {
 /**
  * @brief Core initialization routine (Non-Blocking).
  */
+/**
+ * @brief Core initialization routine (Non-Blocking).
+ * Prepares the radio state but does not perform immediate connection; connectivity is managed in tick().
+ * @param hostname Optional hostname to set for station/AP modes.
+ */
 void WifiManager::begin(const char* hostname) {
     if (hostname != nullptr) strlcpy(currentHostname, hostname, sizeof(currentHostname));
     loadWiFiConfig();
@@ -136,6 +144,8 @@ void WifiManager::tick() {
             if (WiFi.status() == WL_CONNECTED) {
                 LOG_INFO("WIFI", String("Connected successfully. IP: ") + WiFi.localIP().toString());
                 isAPMode = false;
+                wifiDisconnectTimer = 0; // Reset downtime tracker
+                updateMyUrl();
                 transitionTo(WiFiState::WIFI_READY);
             } else if (millis() - stateTimer > 15000) { // 15 second timeout for STA
                 LOG_WARN("WIFI", "WiFi connection timed out. Falling back to AP.");
@@ -157,8 +167,7 @@ void WifiManager::tick() {
                 WiFi.softAP(portalName);
                 
                 // Start DNS Hijacker
-                if (dnsServer) delete dnsServer;
-                dnsServer = new DNSServer();
+                dnsServer = std::make_unique<DNSServer>();
                 dnsServer->start(53, "*", apIP);
                 LOG_INFO("WIFI", String("Access Point '") + portalName + "' is online.");
             }
@@ -172,6 +181,11 @@ void WifiManager::tick() {
             
             // Reconnection logic: If we're in STA mode and lost connection
             if (!isAPMode && WiFi.status() != WL_CONNECTED) {
+                // If this is the first tick since disconnection, start the timer
+                if (wifiDisconnectTimer == 0) {
+                    wifiDisconnectTimer = millis();
+                }
+
                 // Wait 10 seconds before attempting to recycle the connection
                 if (millis() - stateTimer > 10000) {
                     LOG_WARN("WIFI", "Primary connection lost. Retrying...");
@@ -180,6 +194,9 @@ void WifiManager::tick() {
             } else {
                 // Reset timer if we are connected or in AP mode
                 stateTimer = millis();
+                if (WiFi.status() == WL_CONNECTED) {
+                    wifiDisconnectTimer = 0;
+                }
             }
             break;
 
@@ -209,6 +226,14 @@ void WifiManager::updateWiFi(const char* ssid, const char* pass) {
     saveWiFiConfig();
 }
 
+/**
+ * @brief Test a WiFi connection without permanently changing stored credentials.
+ * Temporarily disconnects the current session to probe a new network.
+ * @param ssid SSID to test.
+ * @param pass Password to test (empty string to use current stored).
+ * @param ipOut [Out] String to store IP address on successful connection.
+ * @return true if connection was established within timeout.
+ */
 bool WifiManager::testConnection(const char* ssid, const char* pass, String& ipOut) {
     LOG_INFO("WIFI", "WIFI_TEST: Starting connection test...");
     
@@ -281,4 +306,23 @@ void WifiManager::reapplyConfig(const Config& config) {
         // mDNS usually needs to be restarted or updated if the hostname changes
         MDNS.begin(currentHostname);
     }
+}
+
+/**
+ * @brief Update the internal URL string for the Web GUI.
+ */
+void WifiManager::updateMyUrl() {
+    IPAddress ip = WiFi.localIP();
+    snprintf(myUrl, sizeof(myUrl), "http://%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+}
+
+/**
+ * @brief Returns true if WiFi has been disconnected for longer than the timeout period (3 minutes).
+ */
+bool WifiManager::isWifiPersistentError() const {
+    if (isAPMode || (WiFi.status() == WL_CONNECTED)) return false;
+    if (wifiDisconnectTimer == 0) return false;
+    
+    // Over 3 minutes of continuous disconnection
+    return (millis() - wifiDisconnectTimer > 180000);
 }

@@ -86,11 +86,9 @@ test.describe('System Tab Enhancements', () => {
       await route.fulfill({ json: { status: "ok" } });
     });
     
-    // We expect an alert, so we catch it
-    const dialogPromise = page.waitForEvent('dialog');
     await resetBtn.click();
-    const dialog = await dialogPromise;
-    expect(dialog.message()).toContain('Factory reset initiated');
-    await dialog.accept();
+    const modalBody = page.locator('#modal-generic-body');
+    await expect(modalBody).toContainText('Factory reset initiated');
+    await page.locator('#modal-generic-buttons button').click();
   });
 });

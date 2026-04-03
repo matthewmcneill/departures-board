@@ -8,7 +8,7 @@ Address visual and behavioral issues reported in the API key edit dialog:
 
 ### Web Portal UI
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 
 - **Delete Button Refinement**:
     - Re-add `.btn-delete` CSS to the `<style>` section.

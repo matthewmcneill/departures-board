@@ -19,7 +19,7 @@ None required. The queue delay has been set to 500ms as requested, and queue-cle
 
 ### Portal UI (Frontend Queue)
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - **Implement `app.enqueueTest(taskFn)` & `app.clearTestQueue()`:** 
   - Add `testQueue[]` and `isQueueRunning` to `app.state`.
   - Process queue iteratively using `async/await`.
@@ -32,7 +32,7 @@ None required. The queue delay has been set to 500ms as requested, and queue-cle
 
 ### UI Unification (Styles)
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - **Display Status Unification:**
   - Update `renderBoards()` output for `.board-slot-status` to include a text span `<span class="board-status-text" id="board-status-text-${i}">Unknown</span>` directly next to the existing dot.
   - Update `testBoardAsync()` to inject readable text ("Active", "Offline", "Error") alongside the green/red/yellow dot manipulation, matching the `.key-status-text` implementation.

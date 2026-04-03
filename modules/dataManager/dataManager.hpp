@@ -8,16 +8,14 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/dataManager/dataManager.hpp
- * Description: Centralized FreeRTOS queue manager for coordinating background network requests.
- *              By forcing data sources to execute sequentially on Core 0, this module
- *              prevents concurrent TLS allocations, protecting the heap from exhaustion
- *              and preventing Watchdog Timer (WDT) panics.
+ * Description: Centralized FreeRTOS queue manager for transport data fetching.
  *
  * Exported Functions/Classes:
- * - dataManager: Singleton manager class.
- *   - init(): Initializes the FreeRTOS event queue and spawns the pinned Core 0 worker task.
- *   - registerSource(): Registers an iDataSource logic element to the background queueing loop.
- *   - requestPriorityFetch(): Submits a priority wake request.
+ * - dataManager: [Class] Core 0 background worker coordinator.
+ *   - init(): Task spawning entry point.
+ *   - registerSource(): Injects into the polling registry.
+ *   - requestPriorityFetch(): Triggers immediate out-of-band updates.
+ *   - unregisterSource(): Thread-safe removal of data providers.
  */
 
 #pragma once
@@ -37,11 +35,10 @@ class dataManager {
 public:
     dataManager();
     
-    /**
+     /**
      * @brief Initializes the FreeRTOS event queue and spawns the pinned Core 0 worker task.
-     * @param enableDebug Optional flag to enable verbose logging.
      */
-    void init(bool enableDebug = false);
+    void init();
 
     /**
      * @brief Registers a data source with the manager.
@@ -60,13 +57,46 @@ public:
      */
     void unregisterSource(iDataSource* source);
 
+    // --- Migrated Polling State ---
+    unsigned long getNextRoundRobinUpdate() const { return nextRoundRobinUpdate; }
+    void setNextRoundRobinUpdate(unsigned long time) { nextRoundRobinUpdate = time; }
+    
+    unsigned long getLastDataLoadTime() const { return lastDataLoadTime; }
+    bool getNoDataLoaded() const { return noDataLoaded; }
+    void setNoDataLoaded(bool val) { noDataLoaded = val; }
+    
+    int getDataLoadSuccess() const { return dataLoadSuccess; }
+    int getDataLoadFailure() const { return dataLoadFailure; }
+    unsigned long getLastLoadFailure() const { return lastLoadFailure; }
+    UpdateStatus getLastUpdateResult() const { return lastUpdateResult; }
+    void setLastUpdateResult(UpdateStatus status) { lastUpdateResult = status; }
+    
+    int getBackgroundUpdateIndex() const { return backgroundUpdateIndex; }
+    void setBackgroundUpdateIndex(int index) { backgroundUpdateIndex = index; }
+    
+    int getLastActiveSlotIndex() const { return lastActiveSlotIndex; }
+    void setLastActiveSlotIndex(int index) { lastActiveSlotIndex = index; }
+
+    void incrementSuccess() { dataLoadSuccess++; }
+    void incrementFailure() { dataLoadFailure++; lastLoadFailure = millis(); }
+
 private:
     std::vector<iDataSource*> registry;
     SemaphoreHandle_t registryMutex;  // Protects the registry vector across cores
     volatile iDataSource* currentlyExecuting; // Tracks the active fetch target
     QueueHandle_t priorityEventQueue; // FreeRTOS queue holding priority events
     TaskHandle_t workerTaskHandle;
-    bool debugEnabled;
+
+    // --- Polling State Variables ---
+    unsigned long nextRoundRobinUpdate;
+    int backgroundUpdateIndex;
+    unsigned long lastDataLoadTime;
+    bool noDataLoaded;
+    int dataLoadSuccess;
+    int dataLoadFailure;
+    unsigned long lastLoadFailure;
+    UpdateStatus lastUpdateResult;
+    int lastActiveSlotIndex;
 
     /**
      * @brief Static FreeRTOS Entry Point for the dynamic scheduling loop.

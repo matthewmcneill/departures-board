@@ -29,8 +29,8 @@ Physical interaction with the hardware suspends the schedule in favor of a full 
 
 ### Core Logic & State Management
 
-#### [NEW] [schedulerManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/schedulerManager/schedulerManager.hpp)
-#### [NEW] [schedulerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/schedulerManager/schedulerManager.cpp)
+#### [NEW] [schedulerManager.hpp](modules/schedulerManager/schedulerManager.hpp)
+#### [NEW] [schedulerManager.cpp](modules/schedulerManager/schedulerManager.cpp)
 - **Responsibility**: A dedicated manager to encapsulate time-based evaluation, ensuring Single Responsibility. 
 - **State**: Maintains `bool isManualOverrideActive` and `unsigned long overrideTimestamp`.
 - **Primary Methods**: 
@@ -42,7 +42,7 @@ Physical interaction with the hardware suspends the schedule in favor of a full 
     - It returns an array of the newly valid `boardIndex` integers from all overlapping valid rules.
     - **Empty Schedule Fallback**: If zero valid rules are found (e.g., the schedule is entirely empty, or no time blocks match the current hour), it implicitly returns *all* configured boards to ensure the device continues to carousel normally rather than remaining blank.
 
-#### [MODIFY] [configManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.hpp)
+#### [MODIFY] [configManager.hpp](modules/configManager/configManager.hpp)
 - Add a new `ScheduleRule` struct (Simplified 1-to-1 mapping):
   ```cpp
   struct ScheduleRule {
@@ -57,23 +57,23 @@ Physical interaction with the hardware suspends the schedule in favor of a full 
 - Add `int manualOverrideTimeoutSecs = 60;` to the `Config` struct.
 - Add `int carouselIntervalSecs = 120;` to the `Config` struct (Default to 2 minutes).
 
-#### [MODIFY] [displayManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.cpp)
+#### [MODIFY] [displayManager.cpp](modules/displayManager/displayManager.cpp)
 - Refactor the carousel rotation logic (`cycleNext()`).
 - Instead of unconditionally rotating `activeBoardIndex = (activeBoardIndex + 1) % config.boardCount`, it will query `appContext::getSchedulerManager()->getActiveBoards()` and rotate solely through that valid subset.
 - Update the rotation pacing logic to use `config.carouselIntervalSecs` instead of any hardcoded intervals, allowing user configuration of the carousel rotation speed.
 
-#### [MODIFY] [configManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.cpp)
+#### [MODIFY] [configManager.cpp](modules/configManager/configManager.cpp)
 - **`save()`**: Add `manualOverrideTimeoutSecs`, `carouselIntervalSecs`, and the `schedules` array to the JSON output.
 - **`loadConfig()`**: Map the new JSON keys back to the `Config` struct.
 - **`writeDefaultConfig()`**: Initialize the new scheduling fields with sensible defaults (60s override, 120s carousel).
 
-#### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - Hook into the existing `buttonHandler` (or physical GPIO interrupt system). 
 - When the button is pressed to skip a board, invoke `appContext::getSchedulerManager()->triggerManualOverride()`.
 
 ### Web Portal Integration
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/web/index.html)
+#### [MODIFY] [index.html](web/index.html)
 - **HTML**: Replace the `#tab-schedule` placeholder with a functional list view.
 - **HTML**: Add `modal-schedule` for rule editing (Selection, Range, Target).
 - **CSS**: Add `.schedule-rule-card` styles for mobile-first readability.

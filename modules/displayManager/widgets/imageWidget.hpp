@@ -8,13 +8,12 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/imageWidget.hpp
- * Description: Renders static XBM-encoded monochrome bitmap images (branding/icons). 
- *              Optimized for PROGMEM storage to minimize RAM footprint.
+ * Description: Renders static XBM-encoded monochrome bitmap images.
  *
  * Exported Functions/Classes:
- * - imageWidget: UI widget for static bitmap display.
- *   - tick(): No-op lifecycle hook.
- *   - render(): Primary drawing method.
+ * - imageWidget: [Class] UI widget for static bitmap display.
+ *   - render(): Paints the XBM bits to the display buffer.
+ *   - tick(): No-op (static logic).
  */
 
 #ifndef IMAGE_WIDGET_HPP

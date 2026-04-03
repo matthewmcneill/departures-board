@@ -12,14 +12,12 @@
  *              Allows for board-level tuning via platformio.ini flags.
  *
  * Exported Functions/Classes:
- * - MAX_BOARDS: Maximum number of configurable display boards.
- * - DATAUPDATEINTERVAL: Default data refresh interval (ms).
- * - FASTDATAUPDATEINTERVAL: Accelerated refresh for urgent updates.
- * - UGDATAUPDATEINTERVAL: TfL Underground refresh rate.
- * - BUSDATAUPDATEINTERVAL: Bus data refresh rate.
- * - SCREENSAVERINTERVAL: Cycling interval for snooze screens (ms).
- * - MAX_CONFIG_CONSUMERS: Maximum classes subscribing to config updates.
- * - MAX_BUS_ATCO_HISTORY: Maximum ATCO history depth.
+ * - Build Configuration: [Macros/Constants]
+ *   - VERSION_MAJOR/MINOR: Application versioning.
+ *   - SCREEN_WIDTH/HEIGHT: Hardware resolution (256x64).
+ *   - MAX_BOARDS/MAX_SCHEDULE_RULES: Memory bounds for collections.
+ *   - DATAUPDATEINTERVAL...: Domain-specific polling intervals (ms).
+ *   - BUTTON_PIN: Physical GPIO for user interaction.
  */
 
 #pragma once
@@ -41,7 +39,7 @@
 #endif
 
 #ifndef MAX_SCHEDULE_RULES
-#define MAX_SCHEDULE_RULES 15
+#define MAX_SCHEDULE_RULES 24
 #endif
 
 #ifndef MAX_KEYS

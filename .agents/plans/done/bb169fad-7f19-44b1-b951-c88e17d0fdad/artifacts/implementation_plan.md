@@ -17,22 +17,22 @@ The current boot sequence is slowed down by a "network storm" where all departur
 ## Proposed Changes
 
 ### [Component: appContext]
-#### [MODIFY] [appContext.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.cpp)
+#### [MODIFY] [appContext.cpp](modules/appContext/appContext.cpp)
 - **Current Issue**: Calls `configManager.notifyConsumersToReapplyConfig()` while still in the `BOOTING` state.
 - **Fix**: Move this call to occur immediately after the transition to `AppState::RUNNING`.
 
 ### [Component: systemManager]
-#### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - **Current Issue**: "Board switch detected" fast-path triggers `updateData()` even if the `AppState` is not yet `RUNNING`.
 - **Fix**: Add a check for `context->getAppState() == AppState::RUNNING` in the board switch logic.
 
 ### [Component: weatherClient]
-#### [MODIFY] [weatherClient.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/weatherClient/weatherClient.cpp)
+#### [MODIFY] [weatherClient.cpp](modules/weatherClient/weatherClient.cpp)
 - **Current Issue**: Attempts fetches even if no API key is available.
 - **Fix**: Add an early return in `updateWeather()` if the `apiKey` string length is zero.
 
 ### [Component: rssClient]
-#### [MODIFY] [rssClient.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/rssClient/rssClient.cpp)
+#### [MODIFY] [rssClient.cpp](lib/rssClient/rssClient.cpp)
 - **Current Issue**: Attempts fetches for empty URLs.
 - **Fix**: Add an early return in `executeFetch()` if the URL is empty.
 

@@ -7,11 +7,16 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/splashBoard.hpp
+ * Module: modules/displayManager/boards/systemBoard/splashBoard.hpp
  * Description: Display board for rendering the initial system boot logo and copyright information.
  *
  * Exported Functions/Classes:
- * - SplashBoard: Class extending iDisplayBoard for the initial splash sequence.
+ * - SplashBoard: [Class] Core screen for the 5-second initial splash sequence.
+ *   - setNotice(): Injects the textual notice displayed below the logo.
+ *   - init(): Handles service injection.
+ *   - render(): Draws the branding logo and copyright text.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks.
+ *   - tick(): Logic entry point.
  */
 
 #ifndef SPLASH_BOARD_HPP
@@ -20,6 +25,7 @@
 class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
+#include <memory>
 #include "../../widgets/imageWidget.hpp"
 #include "../../widgets/progressBarWidget.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
@@ -33,12 +39,12 @@ class SplashBoard : public iDisplayBoard {
 private:
     appContext* context;
     char noticeMessage[64];
-    imageWidget* splashLogo;
+    std::unique_ptr<imageWidget> splashLogo;
     WeatherStatus weatherStatus;
 
 protected:
     SplashBoard();
-    friend class DisplayManager;
+    friend class BoardFactory;
 
 public:
     const char* getBoardName() const override { return "SYS: Boot Splash"; }
@@ -58,7 +64,7 @@ public:
     void configure(const struct BoardConfig& config) override { (void)config; }
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
     const char* getLastErrorMsg() override { return ""; }
     WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };

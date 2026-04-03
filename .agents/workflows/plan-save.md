@@ -14,6 +14,7 @@ description: Persist the current session's artifacts, generating context_bridge.
     - **🐛 Active Quirks, Bugs & Discoveries**: Any hidden context discovered (e.g. quirks of an API) or unresolved bugs being tracked.
     - **💻 Commands Reference**: The literal terminal commands currently relied on for building or testing so the next agent doesn't guess flags.
     - **🌿 Execution Environment**: The active Git branch state and the physical hardware testing state (e.g. is hardware attached, or are we using WASM?).
+    - **⚠️ PORTABILITY RULE**: You MUST use repository-relative paths (e.g., `modules/foo/bar.cpp`) for all in-repo file references. You are **STRICTLY PROHIBITED** from using absolute paths starting with `/Users/` (or equivalents) for project files. The only exceptions are absolute paths to the session's `/brain` directory.
 4. **Distillation**: Rewrite the `implementation_plan.md`, `task.md`, generated `context_bridge.md`, and `sessions.md` into the `.agents/plans/[TargetPlanId]/` directory. (Be sure to copy all current brain artifacts and embedded image resources).
 5. Extract the Plan's succinct title and description.
 6. Create or update the `.agents/plans/[TargetPlanId]/PLAN.md` file to structurally match the YAML frontmatter found in `.agents/skills`:

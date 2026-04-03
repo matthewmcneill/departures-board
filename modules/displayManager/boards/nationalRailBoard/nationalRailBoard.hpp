@@ -8,20 +8,22 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/nationalRailBoard/nationalRailBoard.hpp
- * Description: Controller for the National Rail departure board. Manages the 
- *              lifecycle of the NR data source, coordinates with the UI layout, 
- *              and handles station-specific configuration (CRS codes, tokens, filters).
+ * Description: Controller for the National Rail departure board.
  *
  * Exported Functions/Classes:
- * - NationalRailBoard: Core controller class for NR displays.
+ * - NationalRailBoard: [Class] Core controller for NR displays.
+ *   - getBoardName(): Semantic identity for telemetry.
  *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
- *   - tick(): Logic update for timing and toggles.
- *   - render(): Full frame drawing.
- *   - renderAnimationUpdate(): Targeted redraw for animation quality.
+ *   - tick() / render(): Logic and drawing entry points.
  *   - updateData(): Triggers asynchronous SOAP fetch from OpenLDBWS.
- *   - configure(): Applies BoardConfig settings to local state.
+ *   - configure(): Applies BoardConfig settings.
  *   - getLastErrorMsg(): Accessor for data source error strings.
  *   - getWeatherStatus(): Accessor for shared weather state.
+ *   - isScrollFinished(): Scrolling completion check.
+ *   - setNrToken / getNrToken: SOAP security token management.
+ *   - setCrsCode / getCrsCode: Primary station CRS management.
+ *   - setCallingCrsCode / getCallingCrsCode: Destination filtering management.
+ *   - populateServices(): Internal widget synchronization.
  */
 
 #ifndef NATIONAL_RAIL_BOARD_HPP
@@ -63,6 +65,7 @@ private:
     char cachedOrdinals[16][8];
     char firstOrdinal[4];
     WeatherStatus weatherStatus;
+    uint32_t lastRenderedHash;
 
 public:
     const char* getBoardName() const override { return "DATA: National Rail"; }
@@ -148,14 +151,14 @@ public:
 
     /**
      * @brief Trigger an asynchronous data refresh.
-     * @return UPD_SUCCESS, UPD_PENDING, or error code.
+     * @return UpdateStatus code.
      */
-    int updateData() override;
+    UpdateStatus updateData() override;
 
     /**
      * @brief Populates the layout widgets with the latest data slices.
      */
-    void populateServices();
+    void populateServices(bool row0Only = false);
 
     /**
      * @brief Get the last error string from the data source.

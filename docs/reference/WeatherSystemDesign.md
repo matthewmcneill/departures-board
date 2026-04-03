@@ -50,10 +50,9 @@ While XBM was initially considered, we implemented a **Human-Readable Font Sourc
 
 This approach balances the storage efficiency of XBM with the ease of use of a standard text API.
 
-## 4. Non-Blocking I/O (Yield Mechanism)
+## 4. Non-Blocking I/O (Task Yielding)
 
-The `weatherClient` participates in the system-wide **Yield Mechanism**:
-- Long-running HTTP GET requests and JSON parsing loops periodically invoke a `yieldCallback`.
+The `weatherClient` supports single-core ESP32 stability by yielding execution context during intensive JSON parsing. Using `vTaskDelay(1)` every 500 bytes ensures that the Wi-Fi stack has sufficient CPU time to process network interrupts without triggering the Task Watchdog Timer.
 ## 5. API Key Management & Testing
 
 ### 5.1 Multi-Key Selection Strategy

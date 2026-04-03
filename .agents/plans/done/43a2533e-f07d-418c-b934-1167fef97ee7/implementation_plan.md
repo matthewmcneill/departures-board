@@ -1,6 +1,6 @@
 # Implementation Plan: Secure Password/Key Placeholder Pattern
 
-Migrate the WiFi password and API key fields to the canonical "Placeholder Pattern" as defined in [PasswordFieldImplementationGuide.md](file:///Users/mcneillm/Documents/Projects/departures-board/docs/PasswordFieldImplementationGuide.md).
+Migrate the WiFi password and API key fields to the canonical "Placeholder Pattern" as defined in [PasswordFieldImplementationGuide.md](docs/PasswordFieldImplementationGuide.md).
 
 ## Skill Audits
 - [x] Reviewed by `house-style-documentation` - passed
@@ -20,21 +20,21 @@ Migrate the WiFi password and API key fields to the canonical "Placeholder Patte
 ### **1. Backend: Core & Config**
 Refactor the secret management to use existence flags instead of masked strings.
 
-#### [MODIFY] [wifiManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/wifiManager/wifiManager.hpp)
+#### [MODIFY] [wifiManager.hpp](modules/wifiManager/wifiManager.hpp)
 - Add `bool hasPassword() const` method.
 - Deprecate/remove `getPassMasked()`.
 
-#### [MODIFY] [wifiManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/wifiManager/wifiManager.cpp)
+#### [MODIFY] [wifiManager.cpp](modules/wifiManager/wifiManager.cpp)
 - Implement `hasPassword()`.
 - Update `updateWiFi` to only update if `pass` is non-empty (removing magic string check).
 
-#### [MODIFY] [configManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.hpp)
+#### [MODIFY] [configManager.hpp](modules/configManager/configManager.hpp)
 - Add `bool hasToken()` to `ApiKey` struct or `ConfigManager` helper.
 
 ### **2. Backend: Web API**
 Update REST handlers to implement the new data flow.
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - **GET `/api/config`**: Return `passExists: true` and `tokenExists: true` instead of masked strings.
 - **POST `/api/saveall`**: Update WiFi logic to skip password update if field is missing or empty.
 - **POST `/api/keys`**: Update `handleSaveKey` to skip token update if field is empty.
@@ -43,7 +43,7 @@ Update REST handlers to implement the new data flow.
 ### **3. Frontend: Portal**
 Implement the visual and logic changes in the web UI.
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - **CSS**: Add `input.existing-password-mask::placeholder` styles for authentic dot spacing.
 - **HTML**:
     - Update WiFi and Key token inputs to use `value=""` and dynamically set `placeholder="••••••••"` if `passExists`/`tokenExists` is true.
@@ -58,28 +58,28 @@ Implement the visual and logic changes in the web UI.
 ### **Phase 2: Network Robustness**
 Implement failover logic for prolonged WiFi disconnections.
 
-#### [MODIFY] [displayManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.hpp)
+#### [MODIFY] [displayManager.hpp](modules/displayManager/displayManager.hpp)
 - Add `SYS_ERROR_WIFI` to `SystemBoardId` enum.
 
-#### [MODIFY] [displayManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.cpp)
+#### [MODIFY] [displayManager.cpp](modules/displayManager/displayManager.cpp)
 - Add case for `SYS_ERROR_WIFI` in `getSystemBoard`, returning a `MessageBoard` with "WIFI DISCONNECTED" content.
 
-#### [MODIFY] [systemManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.hpp)
+#### [MODIFY] [systemManager.hpp](modules/systemManager/systemManager.hpp)
 - Add `unsigned long wifiDisconnectTimer = 0;` and `bool isWifiPersistentError() const;`
 
-#### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 - In `tick()`:
     - If `WiFi.status() != WL_CONNECTED`, increment `wifiDisconnectTimer`.
     - If `wifiConnected` becomes true, reset `wifiDisconnectTimer` and set `nextDataUpdate = 0` for immediate refresh.
 - Implement `isWifiPersistentError()` to return `true` if `wifiDisconnectTimer > 180000` (3 mins).
 
-#### [MODIFY] [nationalRailBoard.cpp, tflBoard.cpp, busBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/boards/)
+#### [MODIFY] [nationalRailBoard.cpp, tflBoard.cpp, busBoard.cpp](modules/boards/)
 - In `render()`:
     - `if (context->getSystemManager().isWifiPersistentError()) { context->getDisplayManager().getSystemBoard(SystemBoardId::SYS_ERROR_WIFI)->render(display); return; }`
 - In `renderAnimationUpdate()`:
     - `if (context->getSystemManager().isWifiPersistentError()) { return; }` // System board doesn't need anim updates.
 
-#### [MODIFY] [wifiStatusWidget.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/wifiStatusWidget.cpp)
+#### [MODIFY] [wifiStatusWidget.cpp](modules/displayManager/widgets/wifiStatusWidget.cpp)
 - Implement a slow blink (1s) for the disconnection icon if disconnected for > 30s to increase prominence.
 
 ---
@@ -87,7 +87,7 @@ Implement failover logic for prolonged WiFi disconnections.
 ### **Phase 4: API Key Sequential Validation**
 Optimize the frontend to prevent resource contention on the ESP32.
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - **JS**:
     - Add `this.runSequentialTests()` method that iterates through `this.state.keys` and calls `this.testKeyAsync()` for each, awaiting completion.
     - Update `renderKeys()` to NOT trigger `testKeyAsync` automatically.

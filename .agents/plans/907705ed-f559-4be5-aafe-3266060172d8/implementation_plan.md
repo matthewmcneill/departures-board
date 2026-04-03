@@ -6,17 +6,17 @@ The goal is to provide a more integrated experience for managing long-running ba
 
 ### VS Code Integration
 
-#### [NEW] [tasks.json](file:///Users/mcneillm/Documents/Projects/departures-board/.vscode/tasks.json)
+#### [NEW] [tasks.json](.vscode/tasks.json)
 Create a VS Code tasks configuration defining two long-running tasks:
 1. **Watch Serial Monitor**: Runs `pio device monitor` with auto-selection of the environment.
 2. **Start Dev Server**: Runs the Python development server for the layout simulator.
 
 ### Workflows
 
-#### [NEW] [monitor.md](file:///Users/mcneillm/Documents/Projects/departures-board/.agents/workflows/monitor.md)
+#### [NEW] [monitor.md](.agents/workflows/monitor.md)
 Update the `/monitor` workflow to guide the user to the VS Code task, or trigger it via the `code` CLI (if possible) or informative message.
 
-#### [NEW] [dev-server.md](file:///Users/mcneillm/Documents/Projects/departures-board/.agents/workflows/dev-server.md)
+#### [NEW] [dev-server.md](.agents/workflows/dev-server.md)
 Update the `/dev-server` workflow to start the integrated server task.
 
 

@@ -7,11 +7,15 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/wizardBoard.hpp
+ * Module: modules/displayManager/boards/systemBoard/wizardBoard.hpp
  * Description: UI Board specifically built to orchestrate the dynamic Wi-Fi setup instructions.
  *
  * Exported Functions/Classes:
- * - WizardBoard: Class extending iDisplayBoard for user provisioning screens.
+ * - WizardBoard: [Class] User provisioning guide for Wi-Fi credentials.
+ *   - setWizardIp(): Injects the local access point IP address for display.
+ *   - init(): Service injection point.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks.
+ *   - tick() / render(): Logic and drawing entry points.
  */
 
 #ifndef WIZARD_BOARD_HPP
@@ -36,7 +40,7 @@ private:
 
 protected:
     WizardBoard();
-    friend class DisplayManager;
+    friend class BoardFactory;
 
 public:
     const char* getBoardName() const override { return "SYS: Setup Wizard"; }
@@ -56,7 +60,7 @@ public:
     void tick(uint32_t ms) override;
     void render(U8G2& display) override;
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override { (void)display; (void)currentMillis; }
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
     const char* getLastErrorMsg() override { return ""; }
     WeatherStatus& getWeatherStatus() override { return weatherStatus; }
 };

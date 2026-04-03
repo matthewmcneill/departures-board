@@ -8,20 +8,26 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/tflBoard/tflDataSource.hpp
- * Description: TfL data source implementing iDataSource. Fetches arrival data
- *              from the TfL Unified API.
+ * Description: TfL data source implementing iDataSource.
  *
  * Exported Functions/Classes:
- * - tflDataSource: Data client for TfL Unified API.
+ * - tflDataSource: [Class] Data client for TfL Unified API.
+ *   - updateData(): Initiates JSON fetch.
+ *   - getLastUpdateStatus(): Retrieval of fetch result codes.
+ *   - getLastErrorMsg(): Accessor for source error strings.
+ *   - testConnection(): Validates API credentials and station IDs.
+ *   - getNextFetchTime() / setNextFetchTime(): Polling interval management.
+ *   - getPriorityTier(): Context-aware fetch prioritization.
  *   - configure(): Sets Naptan ID and optional API key.
- *   - updateData(): Performs SSL GET request and parses JSON response.
+ *   - setFilter(): Applies line-specific filtering.
+ *   - setDirectionFilter(): Applies Inbound/Outbound filtering.
+ *   - setResultLimit(): Maximum arrivals to fetch.
+ *   - setTestMode(): Enable lightweight auth-only validation mode.
  *   - getStationData(): Accessor for parsed station metadata.
  *   - getMessagesData(): Accessor for line disruption messages.
- *   - setResultLimit(): Limit arrivals result count for performance.
- *   - setTestMode(): Enable lightweight auth-only validation mode.
  *   - executeFetch(): Internal synchronous HTTPS pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning JSON parse.
- *   - serviceNumbers: Static array of stable pointers for numbering (1-20).
+ * - TflService: [Struct] Single service arrival record.
+ * - TflStation: [Struct] Station departure board model.
  */
 
 #ifndef TFL_DATA_SOURCE_HPP
@@ -38,10 +44,13 @@
 #include <freertos/semphr.h>
 #include <Arduino.h>
 
-#define TFL_MAX_LOCATION 45
-#define TFL_MAX_LINE 20
-#define TFL_MAX_SERVICES 9
-#define TFL_MAX_FETCH 20
+/**
+ * @brief Data Length Constants
+ */
+constexpr size_t TFL_MAX_LOCATION = 45;
+constexpr size_t TFL_MAX_LINE = 20;
+constexpr size_t TFL_MAX_SERVICES = 9;
+constexpr size_t TFL_MAX_FETCH = 20;
 
 /**
  * @brief Data structure for a single London Underground service.
@@ -62,9 +71,10 @@ struct TflStation {
     int numServices;
     bool boardChanged;
     TflService service[TFL_MAX_FETCH];
+    uint32_t contentHash;
 };
 
-typedef void (*tflDataSourceCallback) ();
+
 
 class tflDataSource : public iDataSource, public JsonListener {
 private:
@@ -74,7 +84,7 @@ private:
     MessagePool renderMessages; // Safe local copy for UI rendering
 
     SemaphoreHandle_t dataMutex; // Thread-safe lock protecting data transfers
-    volatile int taskStatus; // Cross-thread execution status tracking (e.g., UPD_PENDING)
+    volatile UpdateStatus taskStatus; // Cross-thread execution status tracking (e.g., UpdateStatus::PENDING)
 
     char lastErrorMsg[128];
 
@@ -95,7 +105,6 @@ private:
     char tubeId[13];
     char lineFilter[32];
     int directionFilter = 0; // 0: Any, 1: Inbound, 2: Outbound
-    tflDataSourceCallback callback;
 
     // Internal Utilities
     bool pruneFromPhrase(char* input, const char* target);
@@ -108,12 +117,12 @@ public:
     virtual ~tflDataSource() = default;
 
     // iDataSource Implementation
-    int updateData() override;
-    int getLastUpdateStatus() const { return taskStatus; }
+    UpdateStatus updateData() override;
+    UpdateStatus getLastUpdateStatus() const { return taskStatus; }
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
-    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+    UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
     uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
-    uint8_t getPriorityTier() override;
+    PriorityTier getPriorityTier() override;
     void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
     // Configuration & Data Access
@@ -123,7 +132,7 @@ public:
      * @param apiKey Your TfL API App Key
      * @param cb Optional completion callback
      */
-    void configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb);
+    void configure(const char* naptanId, const char* apiKey);
     void setFilter(const char* filter) { 
         if (filter) strlcpy(lineFilter, filter, sizeof(lineFilter)); 
         else lineFilter[0] = '\0';

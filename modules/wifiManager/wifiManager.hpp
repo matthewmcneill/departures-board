@@ -11,24 +11,20 @@
  * Description: Wi-Fi credentials management and architecture-independent configuration logic.
  *
  * Exported Functions/Classes:
- * - WifiManager: Class for managing WiFi connectivity and captive portal.
- *   - begin(): Initializes WiFi and enters AP mode if no credentials found.
- *   - reapplyConfig(): Responds to hostname configuration changes.
- *   - tick(): Periodic non-blocking lifecycle management loop.
- *   - processDNS(): Intercepts captive portal DNS requests in AP mode.
- *   - updateWiFi(): Persists new WiFi credentials to LittleFS.
- *   - resetSettings(): Erases WiFi configuration and restores ESP WiFi state.
- *   - getAPMode(): Returns true if currently operating in Setup/AP Mode.
- *   - isReady(): Returns true if WiFi is ready (either STA connected or AP active).
- *   - getSSID(): Returns the current stored SSID.
- *   - hasPassword(): Returns true if a password is set.
- *   - testConnection(): Connects to standard AP momentarily to validate credentials.
+ * - WifiManager: [Class] Standard ESP32 WiFi lifecycle manager.
+ *   - begin(): Connects to station or initializes AP recovery mode.
+ *   - tick(): State machine for connection monitoring.
+ *   - isWifiPersistentError(): Heartbeat for connectivity health.
+ *   - updateWiFi(): Persists new credentials to non-volatile storage.
+ *   - resetSettings(): Factory reset for network configuration.
+ *   - testConnection(): Validation probe for new credentials.
  */
 
 #ifndef WIFI_MANAGER_HPP
 #define WIFI_MANAGER_HPP
 
 #include <Arduino.h>
+#include <memory>
 #include <iConfigurable.hpp>
 
 class DNSServer; // Forward declaration
@@ -57,8 +53,10 @@ private:
     WiFiState currentState = WiFiState::WIFI_INIT;
     unsigned long stateTimer = 0;
     int connectionRetries = 0;
+    unsigned long wifiDisconnectTimer = 0; ///< Continuous downtime counter (ms)
+    char myUrl[24];                        ///< Formatted string URL for local IP
 
-    DNSServer* dnsServer = nullptr;
+    std::unique_ptr<DNSServer> dnsServer;
 
     void loadWiFiConfig();
     void saveWiFiConfig();
@@ -66,6 +64,7 @@ private:
 
 public:
     WifiManager();
+    ~WifiManager();
 
     /**
      * @brief Initialize WiFi using LittleFS credentials. If it fails, spins up an Access Point and DNS hijacker.
@@ -129,6 +128,22 @@ public:
      * @return true on success
      */
     bool testConnection(const char* ssid, const char* pass, String& ipOut);
+
+    /**
+     * @brief Update the internal URL string for the Web GUI based on current IP.
+     */
+    void updateMyUrl();
+
+    /**
+     * @brief Returns the internal URL string for the Web GUI.
+     */
+    const char* getMyUrl() const { return myUrl; }
+
+    /**
+     * @brief Returns true if WiFi has been disconnected for a prolonged period
+     * (e.g. 3 mins).
+     */
+    bool isWifiPersistentError() const;
 };
 
 #endif

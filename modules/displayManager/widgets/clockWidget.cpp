@@ -12,12 +12,11 @@
  * Description: Implementation of the real-time clock drawing logic.
  *
  * Exported Functions/Classes:
- * - clockWidget: Graphical widget for real-time display.
- *   - setFont(): Update the typography.
- *   - setBlink(): Toggle the 1Hz colon animation.
- *   - tick(): Logic update for blink timing.
- *   - render(): Primary drawing method.
- *   - renderAnimationUpdate(): Targeted redraw for the colon/minutes.
+ * - clockWidget: [Class implementation]
+ *   - setFont: Update the primary typography.
+ *   - setBlink: Toggle the 1Hz colon animation.
+ *   - tick: Logic update for blink timing.
+ *   - render: Primary drawing method.
  */
 
 #include "clockWidget.hpp"
@@ -26,7 +25,13 @@
 #include <time.h>
 
 /**
- * @brief Initialize the clock with its time manager and layout.
+ * @brief Initialize the clock with its time manager and default layout.
+ * @param _timeMgr Pointer to the TimeManager dependency.
+ * @param _x X coordinate.
+ * @param _y Y coordinate.
+ * @param _w Width (-1 for auto).
+ * @param _h Height (-1 for auto).
+ * @param _font Optional font override.
  */
 clockWidget::clockWidget(TimeManager* _timeMgr, int _x, int _y, int _w, int _h, const uint8_t* _font)
     : iGfxWidget(_x, _y, _w, _h), showColon(true), oldColon(true), blinkEnabled(true), lastBlinkMs(0), lastMinute(-1), lastSecond(-1), format(ClockFormat::HH_MM), font(_font), secondaryFont(nullptr), timeMgr(_timeMgr) {
@@ -50,8 +55,8 @@ void clockWidget::setFormat(ClockFormat newFormat) {
 }
 
 /**
- * @brief Handle 1Hz pulse for the colon blink.
- * @param currentMillis Milliseconds since boot.
+ * @brief Logic pulse for the blinking animation logic.
+ * @param currentMillis System uptime in milliseconds.
  */
 void clockWidget::tick(uint32_t currentMillis) {
     if (!isVisible || !blinkEnabled) return;

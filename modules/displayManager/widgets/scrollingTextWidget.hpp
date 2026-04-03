@@ -8,18 +8,16 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/scrollingTextWidget.hpp
- * Description: Generic UI component that handles horizontal marquee scrolling 
- *              logic for any arbitrary text.
+ * Description: UI component for horizontal marquee marquee scrolling logic.
  *
  * Exported Functions/Classes:
- * - scrollingTextWidget: Base graphics widget for scrolling strings.
- *   - setText(): Assign new string to scroll.
- *   - setFont(): Update the rendering font.
+ * - scrollingTextWidget: [Class] Base graphics widget for scrolling strings.
+ *   - setText(): Assigns new text to scroll.
+ *   - setFont(): Updates the rendering font.
  *   - isScrollFinished(): State check for loop completion.
- *   - resetScroll(): Force scroller back to start.
- *   - tick(): Logic update for pixel shifts.
- *   - render(): Primary drawing method.
- *   - renderAnimationUpdate(): Targeted redraw for smooth scrolling.
+ *   - resetScroll(): Forces scroller back to start position.
+ *   - tick(): Marquee logic for pixel shifts.
+ *   - render(): Initial full-frame drawing.
  */
 
 #ifndef SCROLLING_TEXT_WIDGET_HPP

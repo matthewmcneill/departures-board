@@ -6,7 +6,7 @@ The goal is to encapsulate connection and authentication testing logic within da
 
 ### Display Manager Interfaces
 
-#### [MODIFY] [iDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/interfaces/iDataSource.hpp)
+#### [MODIFY] [iDataSource.hpp](modules/displayManager/boards/interfaces/iDataSource.hpp)
 
 Define the `iDataSourceTest` interface to standardize connection/auth verification.
 
@@ -29,22 +29,22 @@ public:
 
 ### Data Source Implementations
 
-#### [MODIFY] [nationalRailDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
-#### [MODIFY] [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
+#### [MODIFY] [nationalRailDataSource.hpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
+#### [MODIFY] [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
 
 - Inherit from `iDataSourceTest`.
 - Implement `testConnection()` by performing an optimized Darwin lookup for a default station (e.g., "HWD").
 - Encapsulate the "HWD" and SOAP address defaults within this method.
 
-#### [MODIFY] [tflDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.hpp)
-#### [MODIFY] [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp)
+#### [MODIFY] [tflDataSource.hpp](modules/displayManager/boards/tflBoard/tflDataSource.hpp)
+#### [MODIFY] [tflDataSource.cpp](modules/displayManager/boards/tflBoard/tflDataSource.cpp)
 
 - Inherit from `iDataSourceTest`.
 - Implement `testConnection()` by performing a single-result lookup for a default station (e.g., Bond Street).
 
 ### Web Server
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 
 - Refactor `handleTestKey()` to use the new `iDataSourceTest` interface.
 - Remove hardcoded station IDs and optimized configuration logic, delegating to the data source.

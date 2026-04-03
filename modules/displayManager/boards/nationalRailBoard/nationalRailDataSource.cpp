@@ -8,16 +8,15 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp
- * Description: Implementation of National Rail data source ported from raildataXmlClient.
+ * Description: Implementation of National Rail data source.
  *
  * Exported Functions/Classes:
- * - nationalRailDataSource: Data client for Darwin (National Rail SOAP API).
- *   - init(): Initializes the WSDL parser and SSL handshake.
- *   - updateData(): High-level trigger for polling departure info.
- *   - getStationData(): Returns parsed station name and meta.
- *   - getMessagesData(): Accessor for rail disruption messages.
- *   - setSoapAddress(): Manually set SOAP endpoint (bypasses WSDL).
- *   - configure(): Set API token and station parameters.
+ * - nationalRailDataSource: [Class implementation]
+ *   - init() / refreshWsdl(): Discovery and endpoint management.
+ *   - updateData(): Initiates asynchronous SOAP fetch.
+ *   - executeFetch(): Internal synchronous SOAP pipeline (XML streaming).
+ *   - testConnection(): Validates station IDs and tokens.
+ *   - configure(): Sets API token and station parameters.
  */
 
 #include "nationalRailDataSource.hpp"
@@ -37,15 +36,16 @@ extern class appContext appContext;
 
 nationalRailDataSource::nationalRailDataSource() 
     : loadingWDSL(false), tagLevel(0), isTestMode(false), id(-1), coaches(0), addedStopLocation(false), 
-      filterPlatforms(false), keepRoute(false), nrTimeOffset(0), callback(nullptr),
+      filterPlatforms(false), keepRoute(false), nrTimeOffset(0),
       messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
-    stationData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
-    renderData = std::unique_ptr<NationalRailStation>(new (std::nothrow) NationalRailStation());
-    if (stationData) memset(stationData.get(), 0, sizeof(NationalRailStation));
-    if (renderData) memset(renderData.get(), 0, sizeof(NationalRailStation));
+    stationData = std::make_unique<NationalRailStation>();
+    renderData = std::make_unique<NationalRailStation>();
+    
+    memset(stationData.get(), 0, sizeof(NationalRailStation));
+    memset(renderData.get(), 0, sizeof(NationalRailStation));
     
     dataMutex = xSemaphoreCreateMutex();
-    taskStatus = UPD_NO_DATA;
+    taskStatus = UpdateStatus::NO_DATA;
     
     lastErrorMessage[0] = '\0';
     soapHost[0] = '\0';
@@ -56,6 +56,14 @@ nationalRailDataSource::nationalRailDataSource()
     callingCrsCode[0] = '\0';
 }
 
+/**
+ * @brief Configure API credentials and station parameters.
+ * @param token OpenLDBWS access token.
+ * @param crs 3-letter station CRS code.
+ * @param filter Platform filter CSV string.
+ * @param callingCrs Destination station filter (optional).
+ * @param offset Minutes to offset results.
+ */
 void nationalRailDataSource::configure(const char* token, const char* crs, const char* filter, const char* callingCrs, int offset) {
     if (token) strlcpy(nrToken, token, sizeof(nrToken));
     if (crs) strlcpy(crsCode, crs, sizeof(crsCode));
@@ -65,6 +73,10 @@ void nationalRailDataSource::configure(const char* token, const char* crs, const
     filterPlatforms = (platformFilter[0] != '\0');
 }
 
+/**
+ * @brief Utility to sort services by scheduled time.
+ * Handles midnight rollover (e.g. 23:59 vs 00:05).
+ */
 bool nationalRailDataSource::compareTimes(const NationalRailService& a, const NationalRailService& b) {
     int h1, m1, h2, m2;
     sscanf(a.sTime, "%d:%d", &h1, &m1);
@@ -77,8 +89,12 @@ bool nationalRailDataSource::compareTimes(const NationalRailService& a, const Na
     return m1 < m2;
 }
 
-int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb) {
-    callback = cb;
+/**
+ * @brief Initialize the data source.
+ * Attempts to load cached endpoints from LittleFS; falls back to WSDL discovery.
+ * @return Success if endpoints are valid.
+ */
+UpdateStatus nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI) {
     
     // Attempt to load discovered SOAP endpoints from dedicated cache file
     if (LittleFS.exists(F("/darwin_wsdl_cache.json"))) {
@@ -89,7 +105,7 @@ int nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI, nrDa
             strlcpy(soapHost, doc[F("host")], sizeof(soapHost));
             strlcpy(soapAPI, doc[F("api")], sizeof(soapAPI));
             LOG_INFO("DATA", "NR Source: Initialized from standalone cache: " + String(soapHost) + String(soapAPI));
-            return UPD_SUCCESS;
+            return UpdateStatus::SUCCESS;
         }
         LOG_WARN("DATA", "NR Source: Cache file corrupted or invalid. Wiping.");
         LittleFS.remove(F("/darwin_wsdl_cache.json"));
@@ -107,23 +123,36 @@ void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
     LOG_INFO("DATA", "NR Source: Soap address manually set to " + String(soapHost) + String(soapAPI) + " (Test Mode enabled)");
 }
 
-int nationalRailDataSource::updateData() {
-    if (taskStatus == UPD_PENDING) {
-        return UPD_PENDING;
+/**
+ * @brief Request an asynchronous data refresh from the DataManager.
+ * @return UpdateStatus::PENDING.
+ */
+UpdateStatus nationalRailDataSource::updateData() {
+    if (taskStatus == UpdateStatus::PENDING) {
+        return UpdateStatus::PENDING;
     }
     
+    // Intercept completion from background task, acknowledge it to the UI, and rest.
+    if (taskStatus == UpdateStatus::SUCCESS) {
+        taskStatus = UpdateStatus::NO_CHANGE;
+        return UpdateStatus::SUCCESS;
+    }
+    if (taskStatus == UpdateStatus::NO_CHANGE) {
+        return UpdateStatus::NO_CHANGE;
+    }
+
     LOG_INFO("DATA", "NR Source: Requesting priority fetch from DataManager");
-    taskStatus = UPD_PENDING;
+    taskStatus = UpdateStatus::PENDING;
     appContext.getDataManager().requestPriorityFetch(this);
-    return UPD_PENDING;
+    return UpdateStatus::PENDING;
 }
 
-uint8_t nationalRailDataSource::getPriorityTier() {
+PriorityTier nationalRailDataSource::getPriorityTier() {
     // If we've never successfully loaded data, it's critically empty -> High Priority
     if (renderData && renderData->numServices == 0) {
-        return TIER_HIGH;
+        return PriorityTier::PRIO_HIGH;
     }
-    return TIER_MEDIUM;
+    return PriorityTier::PRIO_MEDIUM;
 }
 
 /**
@@ -131,16 +160,28 @@ uint8_t nationalRailDataSource::getPriorityTier() {
  */
 void nationalRailDataSource::executeFetch() {
     LOG_INFO("DATA", "NR Source: executeFetch() entry. Free heap: " + String(ESP.getFreeHeap()));
+    
+    // --- Self-Initialization ---
+    if (!isInitialized()) {
+        LOG_INFO("DATA", "NR Source: Data source uninitialized. Running deferred init on background task...");
+        UpdateStatus initStatus = init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
+        if (initStatus != UpdateStatus::SUCCESS) {
+            LOG_ERROR("DATA", "NR Source: Background initialization failed.");
+            taskStatus = initStatus;
+            return;
+        }
+    }
+
     unsigned long perfTimer = millis();
     bool bChunked = false;
     lastErrorMessage[0] = '\0';
 
     id = -1; coaches = 0; addedStopLocation = false; keepRoute = false;
 
-    WiFiClientSecure *httpsClient = new (std::nothrow) WiFiClientSecure();
+    auto httpsClient = std::make_unique<WiFiClientSecure>();
     if (!httpsClient) {
         LOG_ERROR("DATA", "NR Source: Failed to allocate WiFiClientSecure for update!");
-        taskStatus = UPD_DATA_ERROR;
+        taskStatus = UpdateStatus::DATA_ERROR;
         return;
     }
     httpsClient->setInsecure();
@@ -160,25 +201,23 @@ void nationalRailDataSource::executeFetch() {
         LOG_ERROR("DATA", "NR Source: Connection failed after retries!");
         snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SOAP connection failed");
         httpsClient->stop();
-        delete httpsClient;
-        taskStatus = UPD_NO_RESPONSE;
+        taskStatus = UpdateStatus::NO_RESPONSE;
         return;
     }
 
     LOG_INFO("DATA", "NR Source: Connection established. Free heap: " + String(ESP.getFreeHeap()));
 
     // Allocate temporary stations on the heap AFTER SSL link is up to conserve peak heap
-    NationalRailStation* xStation = nullptr;
+    std::unique_ptr<NationalRailStation> xStation = nullptr;
     if (!isTestMode) {
-        xStation = new (std::nothrow) NationalRailStation();
+        xStation = std::make_unique<NationalRailStation>();
         if (!xStation) {
             LOG_ERROR("DATA", "NR Source: Failed to allocate memory for station data update!");
             httpsClient->stop();
-            delete httpsClient;
-            taskStatus = UPD_DATA_ERROR;
+            taskStatus = UpdateStatus::DATA_ERROR;
             return;
         }
-        memset(xStation, 0, sizeof(NationalRailStation));
+        memset(xStation.get(), 0, sizeof(NationalRailStation));
     }
 
     String data;
@@ -235,16 +274,13 @@ void nationalRailDataSource::executeFetch() {
     LOG_DEBUG("DATA", "NR Request:\n" + debugReq);
 
     httpsClient->print(requestBody);
-
-    if (callback) callback(1, 0);
     
     unsigned long ticker = millis() + 350;
     int retry = 0;
     while(!httpsClient->available() && retry < 80) { delay(100); retry++; }
     if (retry >= 80) {
         LOG_ERROR("DATA", "NR Source: Request timeout!");
-        delete xStation;
-        taskStatus = UPD_TIMEOUT;
+        taskStatus = UpdateStatus::TIMEOUT;
         return;
     }
 
@@ -281,15 +317,12 @@ void nationalRailDataSource::executeFetch() {
                 LOG_ERROR("DATA", "NR Source: Error Body: " + faultBody.substring(0, 300));
                 
                 httpsClient->stop();
-                delete httpsClient;
-                if (xStation) delete xStation;
-                taskStatus = UPD_HTTP_ERROR;
+                taskStatus = UpdateStatus::HTTP_ERROR;
                 return;
             } else if (isTestMode) {
                 LOG_INFO("DATA", "NR Source: Test Mode validated HTTP 200 via fast-exit.");
                 httpsClient->stop();
-                delete httpsClient;
-                taskStatus = UPD_SUCCESS;
+                taskStatus = UpdateStatus::SUCCESS;
                 return;
             }
         } else if (line.startsWith("Transfer-Encoding:") && line.indexOf("chunked") >= 0) {
@@ -337,7 +370,6 @@ void nationalRailDataSource::executeFetch() {
                     if (yieldCounter % 500 == 0) vTaskDelay(1); // Single-core compatibility yield
                     
                     if (millis() > ticker && stationData) {
-                        if (callback) callback(2, stationData->numServices);
                         ticker = millis() + 350;
                     }
                 }
@@ -347,7 +379,6 @@ void nationalRailDataSource::executeFetch() {
         }
     }
     httpsClient->stop();
-    delete httpsClient;
     LOG_INFO("DATA", "NR Source: XML parse complete. Bytes: " + String(bytesRecv));
 
     // After parsing, sanitize and check changes
@@ -356,6 +387,25 @@ void nationalRailDataSource::executeFetch() {
     // For now, always treat a successful parse as a change to trigger board refresh
     // Simplifies memory and is generally what's needed for departures
     if (stationData) {
+        uint32_t hashVal = 2166136261u;
+        hashVal = hashPrimitive(stationData->numServices, hashVal);
+        hashVal = hashString(stationData->location, hashVal);
+        hashVal = hashString(stationData->firstServiceCalling, hashVal);
+        hashVal = hashString(stationData->firstServiceLastSeen, hashVal);
+        hashVal = hashString(stationData->firstServiceOrigin, hashVal);
+        hashVal = hashString(stationData->firstServiceMessage, hashVal);
+        for(int i = 0; i < stationData->numServices; i++) {
+            hashVal = hashString(stationData->service[i].sTime, hashVal);
+            hashVal = hashString(stationData->service[i].destination, hashVal);
+            hashVal = hashString(stationData->service[i].platform, hashVal);
+            hashVal = hashString(stationData->service[i].etd, hashVal);
+            hashVal = hashString(stationData->service[i].via, hashVal);
+        }
+        for(int i = 0; i < messagesData.getCount(); i++) {
+            hashVal = hashString(messagesData.getMessage(i), hashVal);
+        }
+        stationData->contentHash = hashVal;
+
         stationData->boardChanged = true;
     }
 
@@ -368,13 +418,11 @@ void nationalRailDataSource::executeFetch() {
     for (int i = 0; i < messagesData.getCount(); i++) {
         renderMessages.addMessage(messagesData.getMessage(i));
     }
-    taskStatus = UPD_SUCCESS;
+    taskStatus = UpdateStatus::SUCCESS;
     xSemaphoreGive(dataMutex);
 
-    if (callback && renderData) callback(3, renderData->numServices);
+    if (renderData) { // Removed callback trigger
     snprintf(lastErrorMessage, sizeof(lastErrorMessage), "SUCCESS [%ld] %lums", bytesRecv, (unsigned long)(millis()-perfTimer));
-    
-    delete xStation;
     
     // Dynamic Scheduling Calculation
     uint32_t now = millis();
@@ -406,15 +454,16 @@ void nationalRailDataSource::executeFetch() {
         LOG_DEBUG("DATA", "--------------------------");
     }
 #endif
+    }
     return;
 }
 
 /**
  * @brief Performs a lightweight connection and authentication test using a minimal payload.
  * @param token Optional token to test (overrides stored configuration).
- * @return int Update status code.
+ * @return UpdateStatus code.
  */
-int nationalRailDataSource::testConnection(const char* token, const char* stationId) {
+UpdateStatus nationalRailDataSource::testConnection(const char* token, const char* stationId) {
     LOG_INFO("DATA", "NR Source: Performing lightweight Auth-only check via testConnection");
     
     // Save current state to avoid clobbering an active board's settings
@@ -448,7 +497,7 @@ int nationalRailDataSource::testConnection(const char* token, const char* statio
     // Execute update (in test mode it uses minimal payload)
     // Synchronously execute it for testConnection
     executeFetch();
-    int result = taskStatus;
+    UpdateStatus result = taskStatus;
     
     // Restore state
     isTestMode = prevTestMode;
@@ -457,8 +506,8 @@ int nationalRailDataSource::testConnection(const char* token, const char* statio
     strlcpy(soapHost, prevSoapHost, sizeof(soapHost));
     strlcpy(soapAPI, prevSoapApi, sizeof(soapAPI));
     
-    // Convert UPD_NO_CHANGE (1) to UPD_SUCCESS (0) for test result consistency since we don't care about board state changing
-    if (result == UPD_NO_CHANGE) result = UPD_SUCCESS;
+    // Convert UPD_NO_CHANGE (1) to UpdateStatus::SUCCESS (0) for test result consistency since we don't care about board state changing
+    if (result == UpdateStatus::NO_CHANGE) result = UpdateStatus::SUCCESS;
     
     return result;
 }
@@ -468,16 +517,16 @@ void nationalRailDataSource::sanitiseData() {
     // Basic sanitization from raildataXmlClient
     removeHtmlTags(stationData->location);
     replaceWord(stationData->location, "&amp;", "&");
+    removeHtmlTags(stationData->firstServiceCalling);
+    replaceWord(stationData->firstServiceCalling, "&amp;", "&");
+    removeHtmlTags(stationData->firstServiceMessage);
+    replaceWord(stationData->firstServiceMessage, "&amp;", "&");
+    fixFullStop(stationData->firstServiceMessage);
     for (int i=0; i<stationData->numServices; i++) {
         removeHtmlTags(stationData->service[i].destination);
         replaceWord(stationData->service[i].destination, "&amp;", "&");
-        removeHtmlTags(stationData->service[i].calling);
-        replaceWord(stationData->service[i].calling, "&amp;", "&");
         removeHtmlTags(stationData->service[i].via);
         replaceWord(stationData->service[i].via, "&amp;", "&");
-        removeHtmlTags(stationData->service[i].serviceMessage);
-        replaceWord(stationData->service[i].serviceMessage, "&amp;", "&");
-        fixFullStop(stationData->service[i].serviceMessage);
     }
     // Note: Sanitization for MessagePool strings happens during addition or after?
     // Current Darwin logic adds them. We'll leave them as is for now or add a sanitize method to Pool.
@@ -565,45 +614,47 @@ void nationalRailDataSource::value(const char *val) {
     if (loadingWDSL) return;
     if (tagLevel < 6) return;
 
-    if (tagLevel == 11 && tagPath.endsWith("callingPoint/lt8:locationName")) {
-        if (id >= 0 && stationData && (strlen(stationData->service[id].calling) + strlen(val) + 10) < NR_MAX_CALLING) {
-            if (stationData->service[id].calling[0]) strcat(stationData->service[id].calling, ", ");
-            strcat(stationData->service[id].calling, val);
+    if (tagPath.indexOf("callingPoint/lt8:locationName") != -1) {
+        if (id == 0 && stationData && (strlen(stationData->firstServiceCalling) + strlen(val) + 10) < NR_MAX_CALLING) {
+            if (stationData->firstServiceCalling[0]) strcat(stationData->firstServiceCalling, ", ");
+            strcat(stationData->firstServiceCalling, val);
             addedStopLocation = true;
         }
-    } else if (tagLevel == 11 && tagPath.endsWith("callingPoint/lt8:st") && addedStopLocation) {
-        if (id >= 0 && stationData && (strlen(stationData->service[id].calling) + strlen(val) + 4) < NR_MAX_CALLING) {
-            strcat(stationData->service[id].calling, " (");
-            strcat(stationData->service[id].calling, val);
-            strcat(stationData->service[id].calling, ")");
+    } else if (tagPath.indexOf("callingPoint/lt8:st") != -1 && addedStopLocation) {
+        if (id == 0 && stationData && (strlen(stationData->firstServiceCalling) + strlen(val) + 4) < NR_MAX_CALLING) {
+            strcat(stationData->firstServiceCalling, " (");
+            strcat(stationData->firstServiceCalling, val);
+            strcat(stationData->firstServiceCalling, ")");
         }
         addedStopLocation = false;
-    } else if (tagLevel == 8 && tagName == "lt4:operator") {
+    } else if (tagName == "lt4:operator" && tagPath.indexOf("lt8:service/lt4:operator") != -1) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].opco, val, 49);
-    } else if (tagLevel == 8 && tagName == "lt4:std") {
-        if (id < NR_MAX_SERVICES - 1 && stationData) { 
-            id++; 
-            stationData->numServices++;
-            strncpy(stationData->service[id].sTime, val, 5);
+    } else if (tagName == "lt4:std") {
+        if (tagPath.indexOf("lt8:service/lt4:std") != -1) {
+            if (id < NR_MAX_SERVICES - 1 && stationData) { 
+                id++; 
+                stationData->numServices++;
+                strncpy(stationData->service[id].sTime, val, 5);
+            }
         }
-    } else if (tagLevel == 8 && tagName == "lt4:etd") {
+    } else if (tagName == "lt4:etd" && tagPath.indexOf("lt8:service/lt4:etd") != -1) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].etd, val, 10);
-    } else if (tagLevel == 10 && tagPath.indexOf("destination") != -1 && tagPath.endsWith("locationName")) {
+    } else if (tagPath.indexOf("destination") != -1 && tagPath.indexOf("locationName") != -1) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].destination, val, NR_MAX_LOCATION-1);
-    } else if (tagLevel == 10 && tagPath.indexOf("destination") != -1 && tagPath.endsWith("via")) {
+    } else if (tagPath.indexOf("destination") != -1 && tagPath.indexOf("via") != -1) {
         if (id >= 0 && stationData) strncpy(stationData->service[id].via, val, NR_MAX_LOCATION-1);
-    } else if (tagLevel == 8 && tagName == "lt4:platform") {
+    } else if (tagName == "lt4:platform" && tagPath.indexOf("lt8:service/lt4:platform") != -1) {
         if (id >= 0 && stationData) {
             strncpy(stationData->service[id].platform, val, 3);
             if (filterPlatforms && !serviceMatchesFilter(platformFilter, val)) {
                 // Technically Darwin client shuffles this, but here we just flag it
             }
         }
-    } else if (tagLevel == 6 && tagName == "lt4:locationName") {
+    } else if (tagName == "lt4:locationName" && tagPath.indexOf("callingPoint") == -1 && tagPath.indexOf("destination") == -1 && tagPath.indexOf("origin") == -1) {
         if (stationData) strncpy(stationData->location, val, NR_MAX_LOCATION-1);
-    } else if (tagPath.endsWith("lt12:lastReportedStationName")) {
-        if (id >= 0 && stationData) strncpy(stationData->service[id].lastSeen, val, NR_MAX_LOCATION-1);
-    } else if (tagPath.endsWith("nrccMessages/lt:message")) {
+    } else if (tagPath.indexOf("lt12:lastReportedStationName") != -1) {
+        if (id == 0 && stationData) strncpy(stationData->firstServiceLastSeen, val, NR_MAX_LOCATION-1);
+    } else if (tagPath.indexOf("nrccMessages/lt:message") != -1) {
         messagesData.addMessage(val);
     }
 }
@@ -619,23 +670,22 @@ void nationalRailDataSource::attribute(const char *attr) {
     }
 }
 
-int nationalRailDataSource::refreshWsdl() {
+UpdateStatus nationalRailDataSource::refreshWsdl() {
     LOG_INFO("DATA", "NR Source: Refreshing WSDL to discover latest SOAP endpoints...");
     
     Config& cfg = appContext.getConfigManager().getConfig();
     const char* host = cfg.wsdlHost;
     const char* api = cfg.wsdlAPI;
     
-    WiFiClientSecure *client = new (std::nothrow) WiFiClientSecure();
-    if (!client) return UPD_DATA_ERROR;
+    auto client = std::make_unique<WiFiClientSecure>();
+    if (!client) return UpdateStatus::DATA_ERROR;
     
     client->setInsecure();
     client->setTimeout(10000);
     
     if (!client->connect(host, 443)) {
         LOG_ERROR("DATA", "NR Source: Failed to connect to WSDL host: " + String(host));
-        delete client;
-        return UPD_NO_RESPONSE;
+        return UpdateStatus::NO_RESPONSE;
     }
     
     String request = "GET " + String(api) + " HTTP/1.1\r\n" +
@@ -665,7 +715,6 @@ int nationalRailDataSource::refreshWsdl() {
         }
     }
     client->stop();
-    delete client;
     
     if (soapURL.length() > 0) {
         LOG_INFO("DATA", "NR Source: Successfully discovered SOAP URL: " + soapURL);
@@ -690,11 +739,11 @@ int nationalRailDataSource::refreshWsdl() {
                 serializeJson(doc, output);
                 appContext.getConfigManager().saveFile(F("/darwin_wsdl_cache.json"), output);
                 
-                return UPD_SUCCESS;
+                return UpdateStatus::SUCCESS;
             }
         }
     }
     
     LOG_ERROR("DATA", "NR Source: Failed to extract soap:address from WSDL response.");
-    return UPD_DATA_ERROR;
+    return UpdateStatus::DATA_ERROR;
 }

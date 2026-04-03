@@ -9,6 +9,14 @@
  *
  * Module: modules/displayManager/boards/systemBoard/sleepingBoard.cpp
  * Description: Implementation of the burn-in protection sleep clock.
+ *
+ * Exported Functions/Classes:
+ * - SleepingBoard: [Class implementation]
+ *   - SleepingBoard(): Constructor, initializes bounce offsets.
+ *   - onActivate(): Handles display power state transitions.
+ *   - configure(): Pulls OLED power settings from configuration.
+ *   - tick(): Logic-only origin shifting every 60 seconds.
+ *   - render(): Draws the large-format bouncing clock and date.
  */
 
 #include <appContext.hpp>
@@ -21,6 +29,10 @@
 
 /**
  * @brief Initialize the sleep board with burn-in protection enabled.
+ */
+/**
+ * @brief Construct a new Sleeping Board.
+ * @param contextPtr Pointer to shared application context.
  */
 SleepingBoard::SleepingBoard(appContext* contextPtr) 
     : context(contextPtr), showClock(true), dimmedBrightness(2), 
@@ -68,9 +80,12 @@ void SleepingBoard::tick(uint32_t ms) {
     }
 }
 
+
+
 /**
- * @brief Render the oversized bouncing clock.
- * @param display Reference to U8g2.
+ * @brief Main rendering entry point for the sleep board.
+ * Draws the oversized bouncing clock font using current burn-in offsets.
+ * @param display Global U8G2 graphics instance.
  */
 void SleepingBoard::render(U8G2& display) {
     if (!showClock) return;

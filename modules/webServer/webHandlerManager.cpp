@@ -9,16 +9,13 @@
  *
  * Module: modules/webServer/webHandlerManager.cpp
  * Description: Implementation of the modern web portal handlers.
- * Provides a RESTful API for system configuration, hardware monitoring, and 
- * network lifecycle management.
  *
  * Exported Functions/Classes:
- * - WebHandlerManager: Principal class for web service lifecycle management.
- *   - begin(): Registers all routes with the AsyncWebServer.
- *   - handlePortalRoot(): Serves gzipped SPA assets with concurrency protection.
- *   - handleGetStatus(): Evaluates hardware health and connectivity metrics.
- *   - handleGetConfig(): Serializes unified project configuration.
- *   - handleSaveAll(): Performs atomic validation and persistence of settings.
+ * - WebHandlerManager: [Class implementation]
+ *   - begin: Strategic route registration.
+ *   - handlePortalRoot: High-memory delivery of SPA assets.
+ *   - handleGetStatus: Telemetry serialization.
+ *   - handleSaveAll: Atomic configuration engine.
  */
 
 #include "webHandlerManager.hpp"
@@ -35,6 +32,7 @@
 #include "../displayManager/boards/busBoard/busDataSource.hpp"
 #include "../../lib/rssClient/rssClient.hpp"
 #include "../weatherClient/weatherClient.hpp"
+#include <memory>
 #include <atomic>
 
 extern class appContext appContext;
@@ -53,6 +51,11 @@ WebHandlerManager::WebHandlerManager(AsyncWebServer& server, ConfigManager& conf
     : _server(server), _config(config) {
 }
 
+/**
+ * @brief Registers all web portal routes with the underlying server.
+ * Implements a mix of static asset delivery and dynamic JSON API endpoints.
+ * Includes security-sensitive POST body reconstruction helper.
+ */
 void WebHandlerManager::begin() {
     LOG_INFO("WEB", "Initializing WebHandlerManager on /portal...");
 
@@ -167,6 +170,8 @@ void WebHandlerManager::handlePortalRoot(AsyncWebServerRequest *request) {
 
 /**
  * @brief API Handler for GET /api/status. Returns system health and connectivity metrics.
+ * Provides real-time telemetry for the Web UI dashboard.
+ * @param request Pointer to the incoming AsyncWebServerRequest.
  */
 void WebHandlerManager::handleGetStatus(AsyncWebServerRequest *request) {
     // LOG_DEBUG("WEB_API", "GET /api/status called - returning system health");
@@ -307,6 +312,12 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
     wifi["ssid"] = appContext.getWifiManager().getSSID();
     wifi["pass"] = ""; 
     wifi["passExists"] = appContext.getWifiManager().hasPassword();
+
+    // --- System Limits (Dynamic Export) ---
+    JsonObject limits = doc["limits"].to<JsonObject>();
+    limits["MAX_BOARDS"] = MAX_BOARDS;
+    limits["MAX_KEYS"] = MAX_KEYS;
+    limits["MAX_SCHEDULE_RULES"] = MAX_SCHEDULE_RULES;
 
     String output;
     serializeJson(doc, output);
@@ -512,8 +523,10 @@ struct ApiTestParams {
 
 class ApiTestDataSource : public iDataSource {
 public:
-    ApiTestParams* params;
-    ApiTestDataSource(ApiTestParams* p) : params(p) {}
+    std::unique_ptr<ApiTestParams> params;
+    uint32_t nextFetch = 0;
+    
+    ApiTestDataSource(std::unique_ptr<ApiTestParams> p) : params(std::move(p)) {}
     void executeFetch() override {
         bool success = false; String errorMsg = "Unsupported test type";
 
@@ -523,17 +536,17 @@ public:
             if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
         } else if (params->type == "rail") {
             nationalRailDataSource ds;
-            success = (ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : "PAD") == UPD_SUCCESS);
+            success = (ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : "PAD") == UpdateStatus::SUCCESS);
             if (!success) errorMsg = ds.getLastErrorMsg();
         } else if (params->type == "tfl") {
             tflDataSource ds;
-            int res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
-            success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
+            UpdateStatus res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
+            success = (res == UpdateStatus::SUCCESS || res == UpdateStatus::NO_CHANGE);
             if (!success) errorMsg = ds.getLastErrorMsg();
         } else if (params->type == "bus") {
             busDataSource ds;
-            int res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
-            success = (res == UPD_SUCCESS || res == UPD_NO_CHANGE);
+            UpdateStatus res = ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : nullptr);
+            success = (res == UpdateStatus::SUCCESS || res == UpdateStatus::NO_CHANGE);
             if (!success) errorMsg = ds.getLastErrorMsg();
         } else if (params->type == "clock") {
             success = true;
@@ -545,12 +558,12 @@ public:
         
         params->done = true;
     }
-    int updateData() override { return 0; }
-    int testConnection(const char*, const char*) override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
+    UpdateStatus testConnection(const char*, const char*) override { return UpdateStatus::SUCCESS; }
     const char* getLastErrorMsg() const override { return ""; }
-    uint32_t getNextFetchTime() override { return 0; }
-    uint8_t getPriorityTier() override { return TIER_CRITICAL; } // Test connections must run immediately
-    void setNextFetchTime(uint32_t) override {}
+    uint32_t getNextFetchTime() override { return nextFetch; }
+    PriorityTier getPriorityTier() override { return PriorityTier::PRIO_CRITICAL; } // Test connections must run immediately
+    void setNextFetchTime(uint32_t t) override { nextFetch = t; }
 };
 
 void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const String& body) {
@@ -564,36 +577,46 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
         if (existing) tokenStr = existing->token;
     }
 
-    ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, "", false, ""};
-    ApiTestDataSource* testSource = new ApiTestDataSource(params);
+    try {
+        auto params = std::make_unique<ApiTestParams>();
+        params->type = typeStr;
+        params->token = tokenStr;
+        params->done = false;
 
-    appContext.getDataManager().registerSource(testSource);
-    appContext.getDataManager().requestPriorityFetch(testSource);
+        // Transfer unique ownership to the DataSource.
+        // After std::move, params is guaranteed to be nullptr for safety.
+        auto testSource = std::make_unique<ApiTestDataSource>(std::move(params));
 
-    // Yield gracefully until the Background DataManager payload finishes, with absolute 10s timeout
-    int maxWait = 10000 / 50;
-    int cycles = 0;
-    while(!params->done && cycles < maxWait) { 
-        // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
-        // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
-        // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
-        esp_task_wdt_reset(); 
-        vTaskDelay(pdMS_TO_TICKS(50)); 
-        cycles++; 
+        appContext.getDataManager().registerSource(testSource.get());
+        appContext.getDataManager().requestPriorityFetch(testSource.get());
+
+        // Yield gracefully until the Background DataManager payload finishes, with absolute 10s timeout
+        int maxWait = 10000 / 50;
+        int cycles = 0;
+        
+        // Pointer to the params inside the testSource for the wait loop
+        ApiTestParams* pRef = testSource->params.get();
+
+        while(!pRef->done && cycles < maxWait) { 
+            // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
+            // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
+            // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
+            esp_task_wdt_reset(); 
+            vTaskDelay(pdMS_TO_TICKS(50)); 
+            cycles++; 
+        }
+
+        if (cycles >= maxWait) {
+            request->send(408, "application/json", "{\"status\":\"error\",\"msg\":\"Timeout!\"}");
+        } else {
+            request->send(200, "application/json", pRef->jsonObj);
+        }
+        
+        appContext.getDataManager().unregisterSource(testSource.get());
+    } catch (const std::bad_alloc& e) {
+        LOG_ERROR("SYSTEM", "CRITICAL OOM: Failed to allocate TestDataSource on heap!");
+        request->send(500, "application/json", "{\"status\":\"error\",\"msg\":\"Out of Memory on device\"}");
     }
-
-    if (!params->done) {
-        request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
-        appContext.getDataManager().unregisterSource(testSource);
-        delete testSource;
-        delete params;
-        return;
-    }
-
-    request->send(200, "application/json", params->jsonObj);
-    appContext.getDataManager().unregisterSource(testSource);
-    delete testSource;
-    delete params;
 }
 
 void WebHandlerManager::handleWiFiScan(AsyncWebServerRequest *request) {
@@ -680,13 +703,13 @@ void WebHandlerManager::handleTestFeed(AsyncWebServerRequest *request) {
     LOG_INFO("WEB_API", "Testing RSS Feed: " + url);
     
     rssClient& rss = appContext.getRss();
-    int res = rss.loadFeed(url);
+    UpdateStatus res = rss.loadFeed(url);
     
     JsonDocument doc;
-    doc["status"] = (res == 0) ? "ok" : "fail";
-    if (res == 0) {
+    doc["status"] = (res == UpdateStatus::SUCCESS || res == UpdateStatus::NO_CHANGE) ? "ok" : "fail";
+    if (res == UpdateStatus::SUCCESS || res == UpdateStatus::NO_CHANGE) {
         doc["count"] = rss.numRssTitles;
-        doc["title"] = rss.numRssTitles > 0 ? rss.rssTitle[0] : "No items found";
+        doc["title"] = rss.numRssTitles > 0 ? String(rss.rssTitle[0]) : "No items found";
     } else {
         doc["msg"] = rss.getLastError();
     }
@@ -716,8 +739,25 @@ void WebHandlerManager::handleTestWeather(AsyncWebServerRequest *request) {
     
     LOG_INFO("WEB_API", "Testing Weather using coordinates: 51.7487° N, 3.3816° W (Pen-y-darren)");
     
-    // Pass both. WeatherClient handles the logic of which to use.
     bool success = weather.updateWeather(ws, keyId, token);
+    
+    if (success) {
+        int maxWait = 12000 / 50; // 12 seconds max
+        int cycles = 0;
+        
+        while(weather.isFetchPending() && cycles < maxWait) { 
+            esp_task_wdt_reset();
+            vTaskDelay(pdMS_TO_TICKS(50)); 
+            cycles++; 
+        }
+
+        if (weather.isFetchPending()) {
+            success = false;
+            strcpy(weather.lastErrorMsg, "Timeout waiting for queue");
+        } else {
+            success = (ws.status == WeatherUpdateStatus::READY);
+        }
+    }
     
     JsonDocument doc;
     doc["status"] = success ? "ok" : "fail";
@@ -748,16 +788,27 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
         if (key) tokenStr = key->token;
     }
 
-    ApiTestParams* params = new ApiTestParams{typeStr, tokenStr, stationId, false, ""};
-    ApiTestDataSource* testSource = new ApiTestDataSource(params);
+    auto params = std::make_unique<ApiTestParams>();
+    params->type = typeStr;
+    params->token = tokenStr;
+    params->station = stationId;
+    params->done = false;
+
+    // Transfer unique ownership to the DataSource.
+    // After std::move, params is guaranteed to be nullptr for safety.
+    auto testSource = std::make_unique<ApiTestDataSource>(std::move(params));
 
     // Hand execution to DataManager Core 0 queue to shield from OOM concurrent TLS
-    appContext.getDataManager().registerSource(testSource);
-    appContext.getDataManager().requestPriorityFetch(testSource);
+    appContext.getDataManager().registerSource(testSource.get());
+    appContext.getDataManager().requestPriorityFetch(testSource.get());
 
     int maxWait = 10000 / 50;
     int cycles = 0;
-    while(!params->done && cycles < maxWait) { 
+    
+    // Pointer to the params inside the testSource for the wait loop
+    ApiTestParams* pRef = testSource->params.get();
+
+    while(!pRef->done && cycles < maxWait) { 
         // Feed the FreeRTOS Task Watchdog Timer. This loop executes on the async_tcp thread (Core 1).
         // Since ESPAsyncWebServer handlers are synchronous, waiting 10s without returning 
         // to the event loop will trigger a TWDT panic (default 5s) if we don't manually check in.
@@ -766,18 +817,16 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
         cycles++; 
     }
     
-    if (!params->done) {
+    if (!pRef->done) {
         request->send(503, "application/json", "{\"status\":\"error\",\"msg\":\"Validation Queue Full or Timeout\"}");
-        appContext.getDataManager().unregisterSource(testSource);
-        delete testSource;
-        delete params;
+        appContext.getDataManager().unregisterSource(testSource.get());
+        // Smart pointers automatically handle cleanup
         return;
     }
 
-    request->send(200, "application/json", params->jsonObj);
-    appContext.getDataManager().unregisterSource(testSource);
-    delete testSource;
-    delete params;
+    request->send(200, "application/json", pRef->jsonObj);
+    appContext.getDataManager().unregisterSource(testSource.get());
+    // Smart pointers automatically handle cleanup
 }
 
 /**

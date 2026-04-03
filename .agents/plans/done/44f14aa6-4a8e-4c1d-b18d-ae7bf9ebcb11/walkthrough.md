@@ -1,0 +1,13 @@
+# Walkthrough: Relocating Attribution Constants
+
+## Goal
+The global attribution constants for API providers (`nrAttributionn`, `tflAttribution`, `btAttribution`) were originally exposed from `src/departuresBoard.cpp` into the global scope. The objective was to remove this structural debt by taking them out of the global scope and localizing them inside the individual board controllers that actually utilize the information.
+
+## Changes Made
+- Removed the global `extern const char` instantiations from the `src/departuresBoard.cpp` file.
+- **National Rail Board**: Created a strictly localized `nrAttributionn` variable within [nationalRailBoard.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp).
+- **TfL Board**: Created a strictly localized `tflAttribution` variable within [tflBoard.cpp](modules/displayManager/boards/tflBoard/tflBoard.cpp).
+- **Bus Board**: Created a strictly localized `btAttribution` variable within [busBoard.cpp](modules/displayManager/boards/busBoard/busBoard.cpp).
+
+## Validation Results
+The constants preserve exactly the same naming and value attributes locally within those translation units so the respective board layouts remain completely intact whilst benefiting from enhanced encapsulation.

@@ -4,6 +4,11 @@
  *
  * Module: modules/displayManager/widgets/weatherWidget.hpp
  * Description: Renders the current weather icon from the injected appContext.
+ *
+ * Exported Functions/Classes:
+ * - weatherWidget: [Class] Renders the current weather icon.
+ *   - setFont(): Injects the icon font.
+ *   - render(): Draws the weather glyph based on current context state.
  */
 
 #ifndef WEATHER_WIDGET_HPP

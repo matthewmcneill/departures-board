@@ -1,0 +1,12 @@
+# Task List: National Rail Heap Optimization
+- `[x]` **Phase 1: Struct Redesign**
+  - `[x]` Modify `NationalRailService` to remove `calling`, `origin`, `lastSeen`, and `serviceMessage`.
+  - `[x]` Add `firstServiceCalling`, `firstServiceOrigin`, `firstServiceLastSeen`, and `firstServiceMessage` to `NationalRailStation`.
+- `[x]` **Phase 2: Data Source & Rendering Plumbing**
+  - `[x]` Update `nationalRailDataSource.cpp`'s `value()` parser to conditionally copy these massive buffers only when `id == 0`.
+  - `[x]` Update `NationalRailBoard.cpp` scrolling string fetch to use the new `firstService` fields.
+- `[x]` **Phase 3: Defensive Allocation**
+  - `[x]` Wrap `BoardFactory::createDisplayBoard` instantiations in `try...catch(const std::bad_alloc& e)`.
+  - `[x]` Wrap `ApiTestDataSource` dynamic instantiations in `webHandlerManager.cpp` with `try...catch(const std::bad_alloc& e)`.
+- `[x]` **Phase 4: Verification**
+  - `[x]` Flash to hardware and monitor memory when multiple boards are applied simultaneously.

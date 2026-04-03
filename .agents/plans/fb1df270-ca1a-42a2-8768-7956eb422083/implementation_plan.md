@@ -80,16 +80,16 @@ void NationalRailBoard::configure(const BoardConfig& config) {
 
 ## Proposed Changes
 ### Backend & Config
-#### [MODIFY] [configManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.hpp)
+#### [MODIFY] [configManager.hpp](modules/configManager/configManager.hpp)
 Add `char layout[32] = ""` to `BoardConfig`.
-#### [MODIFY] [configManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.cpp)
+#### [MODIFY] [configManager.cpp](modules/configManager/configManager.cpp)
 Update `save()` and `loadConfig()` JSON mapping methods to serialize and deserialize `doc["boards"][i]["layout"]`.
 ### Board Controllers
-#### [MODIFY] [nationalRailBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
+#### [MODIFY] [nationalRailBoard.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
 Move `activeLayout` initialization out of constructor into `configure()`, checking `strcmp(config.layout, "replica")`.
-#### [MODIFY] [busBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/busBoard.cpp)
+#### [MODIFY] [busBoard.cpp](modules/displayManager/boards/busBoard/busBoard.cpp)
 Move `activeLayout` initialization to `configure()`.
-#### [MODIFY] [tflBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflBoard.cpp)
+#### [MODIFY] [tflBoard.cpp](modules/displayManager/boards/tflBoard/tflBoard.cpp)
 Move `activeLayout` initialization to `configure()`.
 
 ## Verification Plan

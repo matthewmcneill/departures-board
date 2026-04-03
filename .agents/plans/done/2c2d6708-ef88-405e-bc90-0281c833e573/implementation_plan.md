@@ -53,7 +53,7 @@ Based on a closer re-examination of the provided images:
 
 ### Display Manager Widgets
 
-#### [MODIFY] [clockWidget.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/clockWidget.hpp)
+#### [MODIFY] [clockWidget.hpp](modules/displayManager/widgets/clockWidget.hpp)
 
 - Add `enum class ClockFormat { HH_MM, HH_MM_SS };`
 - Add `ClockFormat format;` member variable.
@@ -62,7 +62,7 @@ Based on a closer re-examination of the provided images:
 - Add `setSecondaryFont(const uint8_t* newFont)` method.
 - Add `@designer_prop` annotations for the new format and secondary font properties to expose them to the UI/Layout JSON.
 
-#### [MODIFY] [clockWidget.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/clockWidget.cpp)
+#### [MODIFY] [clockWidget.cpp](modules/displayManager/widgets/clockWidget.cpp)
 
 - Update constructor to initialize `format` to `HH_MM` and `secondaryFont` to `nullptr`.
 - Update `render()` to handle the two formats:
@@ -72,7 +72,7 @@ Based on a closer re-examination of the provided images:
   - **Baseline Alignment**: Since v3.0 uses `setFontPosTop()` globally, calculate the baseline of the primary font (`mainBaselineY = drawY + display.getAscent()`). If a secondary font is used, calculate its top Y coordinate relative to the main baseline (`smallDrawY = mainBaselineY - display.getAscent()`) using the metrics of the secondary font.
 - Update `renderAnimationUpdate()` to trigger a partial redraw if the format includes seconds and the seconds value changes.
 
-#### [MODIFY] [layoutDefault.json (National Rail)](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/layouts/layoutDefault.json)
+#### [MODIFY] [layoutDefault.json (National Rail)](modules/displayManager/boards/nationalRailBoard/layouts/layoutDefault.json)
 
 - Update the `sysClock` widget configuration to test the new format.
 - Add `"format": "HH_MM_SS"` and `"secondaryFont": "NatRailClockSmall7"`.

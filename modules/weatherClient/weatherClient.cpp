@@ -10,12 +10,12 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/weatherClient/weatherClient.cpp
- * Description: Implementation of the OpenWeatherMap JSON client.
+ * Description: Implementation of the OpenWeatherMap JSON client using streaming parser.
  *
  * Exported Functions/Classes:
- * - weatherClient::weatherClient: Constructor.
- * - weatherClient::updateWeather: Connects to OpenWeatherMap API and parses JSON with key and token support.
- * - weatherClient::reapplyConfig: Provisions setting from global configuration.
+ * - weatherClient: [Class implementation]
+ *   - updateWeather: Strategic UI entry point for weather sync.
+ *   - executeFetch: Background thread implementation of HTTP/JSON sequence.
  */
 
 #include <weatherClient.hpp>
@@ -32,12 +32,28 @@ extern class appContext appContext;
  */
 void weatherClient::reapplyConfig(const Config& config) {
     bool hasOwmKey = false;
+    activeApiKey = "";
+
+    // First try the specifically chosen weatherKeyId
     for (int i = 0; i < config.keyCount; i++) {
-        if (strcmp(config.keys[i].type, "owm") == 0) {
+        if (strlen(config.weatherKeyId) > 0 && strcmp(config.keys[i].id, config.weatherKeyId) == 0) {
+            activeApiKey = String(config.keys[i].token);
             hasOwmKey = true;
             break;
         }
     }
+    
+    // Fallback to first OWM key if designated key isn't found
+    if (!hasOwmKey) {
+        for (int i = 0; i < config.keyCount; i++) {
+            if (strcmp(config.keys[i].type, "owm") == 0) {
+                activeApiKey = String(config.keys[i].token);
+                hasOwmKey = true;
+                break;
+            }
+        }
+    }
+
     setWeatherEnabled(hasOwmKey);
 }
 
@@ -49,11 +65,12 @@ weatherClient::weatherClient() {
 }
 
 /**
- * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
- * @param status Reference to the WeatherStatus object to update (must have valid lat/lon).
- * @param apiKeyId Optional ID of a stored API key to use.
- * @param overrideToken Optional raw token to override stored keys (used for testing).
- * @return True if the metadata was successfully fetched and parsed, otherwise false.
+ * @brief Strategic UI entry point for weather synchronization.
+ * Checks for duplicate requests and existing data freshness before queuing a background task.
+ * @param status Reference to the WeatherStatus object (Double Buffer destination).
+ * @param apiKeyId Pointer to the specific API key reference from config.
+ * @param overrideToken Optional raw override for testing/validation bypass.
+ * @return true if the fetch was successfully queued or found to be redundant.
  */
 bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, const char* overrideToken) {
     if (fetchPending) {
@@ -111,21 +128,24 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
 }
 
 /**
- * @brief Internal blocking method that executes the HTTP protocol and coordinates streaming parse.
+ * @brief Core synchronous implementation of the HTTP and JSON parsing pipeline.
+ * Designed to be executed within a dedicated background task.
+ * Manages sockets, error handling, and memory-safe struct synchronization.
  */
 void weatherClient::executeFetch() {
-    if (activeApiKey.length() == 0) return;
+    if (activeApiKey.length() == 0) {
+        setNextFetchTime(millis() + 600000);
+        return;
+    }
     unsigned long perfTimer = millis();
     strcpy(lastErrorMsg, "");
     
-    char latBuf[32], lonBuf[32];
+    char latBuf[16], lonBuf[16];
     dtostrf(bgStatus.lat, 1, 4, latBuf);
     dtostrf(bgStatus.lon, 1, 4, lonBuf);
-    String lat = String(latBuf);
-    String lon = String(lonBuf);
 
-    std::unique_ptr<JsonStreamingParser> parser(new (std::nothrow) JsonStreamingParser());
-    std::unique_ptr<WiFiClient> httpClient(new (std::nothrow) WiFiClient());
+    auto parser = std::make_unique<JsonStreamingParser>();
+    auto httpClient = std::make_unique<WiFiClient>();
 
     #define WRAP_UP_ERROR() { \
         setNextFetchTime(millis() + (1000 * 60)); \
@@ -158,11 +178,21 @@ void weatherClient::executeFetch() {
 
     // --- Step 2: GET Request ---
     {
-        String request = "GET /data/2.5/weather?units=metric&lang=en&lat=" + lat + "&lon=" + lon + "&appid=" + activeApiKey + " HTTP/1.1\r\n" +
-                         "Host: " + String(apiHost) + "\r\n" +
-                         "User-Agent: ESP32-Departures-Board\r\n" +
-                         "Connection: close\r\n\r\n";
-        LOG_DEBUG("DATA", "Weather Client: Requesting URL"); 
+        char request[512];
+        int len = snprintf(request, sizeof(request), 
+                 "GET /data/2.5/weather?units=metric&lang=en&lat=%s&lon=%s&appid=%s HTTP/1.1\r\n"
+                 "Host: %s\r\n"
+                 "User-Agent: ESP32-Departures-Board\r\n"
+                 "Connection: close\r\n\r\n",
+                 latBuf, lonBuf, activeApiKey.c_str(), apiHost);
+
+        if (len >= (int)sizeof(request)) {
+            LOG_ERRORf("DATA", "Weather Client: Request URL too long! (%d bytes)", len);
+            bgStatus.status = WeatherUpdateStatus::DATA_ERROR;
+            WRAP_UP_ERROR();
+        }
+
+        LOG_DEBUGf("DATA", "Weather Client: Requesting URL (Length: %d)", len); 
         httpClient->print(request);
     }
     retryCounter=0;
@@ -258,7 +288,7 @@ void weatherClient::executeFetch() {
     
 #ifdef ENABLE_DEBUG_LOG
     UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
-    LOG_DEBUG("DATA", "Weather Task Stack High Water Mark: " + String(hwm) + " words");
+    LOG_DEBUGf("DATA", "Weather Task Stack High Water Mark: %d words", (int)hwm);
 #endif
     fetchPending = false;
     return;
@@ -292,7 +322,7 @@ void weatherClient::value(String value) {
         // Only read the first weather entry in the array
         if (currentKey == F("description")) {
             strlcpy(bgStatus.description, value.c_str(), sizeof(bgStatus.description));
-            LOG_DEBUG("DATA", "Weather Parser: Description=" + value);
+            LOG_DEBUGf("DATA", "Weather Parser: Description=%s", value.c_str());
         }
         else if (currentKey == F("id")) {
             bgStatus.conditionId = value.toInt();
@@ -302,7 +332,7 @@ void weatherClient::value(String value) {
             // OWM icon codes like "01d" or "01n". If ends with 'n', it's night.
             if (value.length() >= 3) {
                 bgStatus.isNight = (value.charAt(2) == 'n');
-                LOG_DEBUG("DATA", "Weather Parser: Icon=" + value + " (isNight=" + String(bgStatus.isNight ? "true" : "false") + ")");
+                LOG_DEBUGf("DATA", "Weather Parser: Icon=%s (isNight=%s)", value.c_str(), bgStatus.isNight ? "true" : "false");
             }
         }
     }
@@ -313,7 +343,7 @@ void weatherClient::value(String value) {
     // Windspeed reported in mps, converting to knots (1 m/s ≈ 1.94384 knots)
     else if (currentKey == F("speed")) {
         bgStatus.windSpeed = value.toFloat() * 1.94384;
-        LOG_DEBUG("DATA", "Weather Parser: Wind=" + value + " (" + String(bgStatus.windSpeed) + " knots)");
+        LOG_DEBUGf("DATA", "Weather Parser: Wind=%s (%.2f knots)", value.c_str(), bgStatus.windSpeed);
     }
 }
 

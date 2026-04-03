@@ -1,10 +1,10 @@
 # PlatformIO
 .pio/
-.vscode/
 *.bin
 *.hex
 *.elf
 tmp/
+.agents/tmp/
 
 # Fonts (Generated)
 modules/displayManager/fonts/fonts.cpp
@@ -48,3 +48,4 @@ test-results/
 *build_log*.txt
 *build_log*.log
 logs/
+.env

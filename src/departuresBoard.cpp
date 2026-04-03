@@ -4,8 +4,9 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
- * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
- * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ * This work is licensed under Creative Commons
+ * Attribution-NonCommercial-ShareAlike 4.0 International. To view a copy of
+ * this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Supported Hardware:
  * - ESP32 "Mini" (env: esp32dev)
@@ -22,17 +23,20 @@
  * 16 CS#         DISPLAY_CS_PIN DISPLAY_CS_PIN  (e.g., IO26, D10)
  *
  * NOTE ON HARDWARE SPI:
- * Because we are using the U8G2_..._HW_SPI (Hardware SPI) version of the display 
- * library rather than a Software SPI setup, the U8g2 library intentionally doesn't ask 
- * for the Clock and Data pin numbers simply because those pins are physically hardwired
- * inside the ESP32 chip to dedicated hardware micro-controllers for maximum performance.
+ * Because we are using the U8G2_..._HW_SPI (Hardware SPI) version of the
+ * display library rather than a Software SPI setup, the U8g2 library
+ * intentionally doesn't ask for the Clock and Data pin numbers simply because
+ * those pins are physically hardwired inside the ESP32 chip to dedicated
+ * hardware micro-controllers for maximum performance.
  *
- * When we tell PlatformIO to build for board = arduino_nano_esp32 or board = esp32dev, 
- * it pulls in the specific Arduino Core variants for those boards under the hood. 
- * The core automatically maps the default Hardware SPI pathways to the correct pins 
- * for that respective board without us having to lift a finger in our codebase!
+ * When we tell PlatformIO to build for board = arduino_nano_esp32 or board =
+ * esp32dev, it pulls in the specific Arduino Core variants for those boards
+ * under the hood. The core automatically maps the default Hardware SPI pathways
+ * to the correct pins for that respective board without us having to lift a
+ * finger in our codebase!
  *
- * V3.0 Architecture removes direct driver dependencies via interface abstraction.
+ * V3.0 Architecture removes direct driver dependencies via interface
+ * abstraction.
  */
 
 #include "departuresBoard.hpp"
@@ -44,12 +48,12 @@
 
 /*
  * Module: src/departuresBoard.cpp
- * Description: Main application entry point for the Departures Board.
+ * Description: Main application entry point for the Departures Board firmware.
  *              Manages hardware initialization and the core executive loop.
  *
  * Exported Functions/Classes:
- * - setup: Hardware and software initialization.
- * - loop: Main application polling and animation loop.
+ * - setup: Hardware and software initialization bootstrap.
+ * - loop: Primary executive rendering and maintenance loop.
  */
 
 // -----------------------------------------------------------------------------
@@ -58,68 +62,41 @@
 
 // Core Library Includes
 #include <Arduino.h>
-#include <LittleFS.h>
-
-// Networking & Web Libraries
-#include <WiFi.h>
-#include <ESPmDNS.h>
 
 // Internal Modules & Managers
+#include <appContext.hpp>
 #include <logger.hpp>
-#include <wifiManager.hpp>
-#include <configManager.hpp>
-#include <timeManager.hpp>
-#include <boards/systemBoard/loadingBoard.hpp>
-#include <boards/systemBoard/splashBoard.hpp>
-#include <displayManager.hpp>
-#include <otaUpdater.hpp>
-#include <webServer.hpp>
-
-// API Service Clients
-#include <weatherClient.hpp>
-#include <githubClient.hpp>
-#include <rssClient.hpp>
-
 
 // -----------------------------------------------------------------------------
 // Definitions & Macros
 // -----------------------------------------------------------------------------
 
-#include "departuresBoard.hpp"
-
 // -----------------------------------------------------------------------------
 // Global Object Instantiations
 // -----------------------------------------------------------------------------
 
-#include <appContext.hpp>
-
-appContext appContext;
+appContext appContext; // Global context managing application state and shared services
 
 // -----------------------------------------------------------------------------
-// Environment Variables & State Management 
+// Environment Variables & State Management
 // -----------------------------------------------------------------------------
 
-// API Credits and Attribution Text
-extern const char nrAttributionn[] = "Powered by National Rail Enquiries"; // Mandatory attribution for National Rail
-extern const char tflAttribution[] = "Powered by TfL Open Data"; // Mandatory attribution for TfL
-extern const char btAttribution[] = "Powered by bustimes.org"; // Mandatory attribution for bus data
-
-
+// (Attribution constants moved to specific board implementations)
 
 // -----------------------------------------------------------------------------
 // Boot Setup
 // -----------------------------------------------------------------------------
 
 /**
- * @brief Initialize hardware and software components.
+ * @brief Initialize all system hardware and software components.
+ * Configures serial logging, starts the appContext orchestrator, and enters the boot splash sequence.
  */
 void setup(void) {
-  Logger::begin();
+  LOG_BEGIN(115200);
 
-  LOG_INFO("SYSTEM", "Starting boot sequence...");  
+  LOG_INFO("SYSTEM", "Starting boot sequence...");
   appContext.begin();
   LOG_INFO("SYSTEM", "appContext.begin() finished.");
-
 }
 
 // -----------------------------------------------------------------------------
@@ -130,13 +107,19 @@ void setup(void) {
  * @brief Executive rendering and state management loop.
  */
 void loop(void) {
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO
+  // Print heap usage every 10 seconds if DEBUG flag is at least LOG level.
   static unsigned long lastSerialHeartbeat = 0;
   if (millis() - lastSerialHeartbeat > 10000) {
     char diagMsg[128];
-    snprintf(diagMsg, sizeof(diagMsg), "Alive | Heap: %lu (Max Block: %lu) | Temp: %.1fC", 
-             (unsigned long)ESP.getFreeHeap(), (unsigned long)ESP.getMaxAllocHeap(), temperatureRead());
+    snprintf(diagMsg, sizeof(diagMsg),
+             "Alive | Heap: %lu (Max Block: %lu) | Temp: %.1fC",
+             (unsigned long)ESP.getFreeHeap(),
+             (unsigned long)ESP.getMaxAllocHeap(), temperatureRead());
     LOG_INFO("HEARTBEAT", diagMsg);
     lastSerialHeartbeat = millis();
   }
+#endif
+
   appContext.tick();
 }

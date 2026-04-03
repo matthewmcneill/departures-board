@@ -18,7 +18,11 @@
  *   - redact(): Filters sensitive strings from logs.
  */
 
-#include <logger.hpp>
+#include "logger.hpp"
+#include <Arduino.h>
+#include <stdarg.h>
+
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_ERROR
 
 std::vector<String> Logger::secrets; // Registry of sensitive strings to be redacted
 
@@ -36,7 +40,6 @@ void Logger::begin(unsigned long baud) {
  * @param message The text to be framed.
  */
 void Logger::logSplashMessage(const char* message) {
-#if CORE_DEBUG_LEVEL > 0
   if (message == nullptr) return;
   size_t len = strlen(message);
   
@@ -48,7 +51,6 @@ void Logger::logSplashMessage(const char* message) {
   Serial.println(" ###");
   for (size_t i = 0; i < len + 8; i++) Serial.print("#");
   Serial.println("\n");
-#endif
 }
 
 /**
@@ -67,15 +69,44 @@ void Logger::registerSecret(const String& secret) {
  * @return A safe version of the string with sensitive data hidden.
  */
 String Logger::redact(const String& message) {
-  if (secrets.empty()) return message;
+  if (secrets.empty() || message.length() == 0) return message;
+
+  bool found = false;
+  for (const String& secret : secrets) {
+    if (secret.length() > 0 && message.indexOf(secret) >= 0) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) return message;
 
   String redactedMessage = message;
   for (const String& secret : secrets) {
-    if (secret.length() > 0 && redactedMessage.indexOf(secret) >= 0) {
-      redactedMessage.replace(secret, "***REDACTED***");
-    }
+    if (secret.length() > 0) redactedMessage.replace(secret, "***REDACTED***");
   }
   return redactedMessage;
+}
+
+/**
+ * @brief Scans a char buffer and replaces any registered secrets with asterisks in-place.
+ */
+void Logger::redactInPlace(char* buffer, size_t bufferSize) {
+  if (secrets.empty() || buffer == nullptr || bufferSize == 0) return;
+
+  for (const String& secret : secrets) {
+    if (secret.length() == 0) continue;
+    const char* secretStr = secret.c_str();
+    size_t secretLen = secret.length();
+    
+    char* match = strstr(buffer, secretStr);
+    while (match) {
+      // Overwrite with '*' in-place
+      for (size_t i = 0; i < secretLen; i++) {
+        match[i] = '*';
+      }
+      match = strstr(match + secretLen, secretStr);
+    }
+  }
 }
 
 /**
@@ -85,13 +116,11 @@ String Logger::redact(const String& message) {
  * @param message The raw message to be logged.
  */
 void Logger::printRedacted(const String& icon, const char* category, const String& message) {
-#if CORE_DEBUG_LEVEL > 0
   Serial.print(icon);
   Serial.print(" [");
   Serial.print(category);
   Serial.print("] ");
   Serial.println(redact(message));
-#endif
 }
 
 /**
@@ -102,17 +131,19 @@ void Logger::printRedacted(const String& icon, const char* category, const Strin
  * @param message The raw literal string to be logged.
  */
 void Logger::printRedacted(const String& icon, const char* category, const char* message) {
-#if CORE_DEBUG_LEVEL > 0
   Serial.print(icon);
   Serial.print(" [");
   Serial.print(category);
   Serial.print("] ");
-  if (secrets.empty()) {
+  
+  if (secrets.empty() || message == nullptr) {
     Serial.println(message);
   } else {
-    Serial.println(redact(String(message)));
+    char buffer[256];
+    strlcpy(buffer, message, sizeof(buffer));
+    redactInPlace(buffer, sizeof(buffer));
+    Serial.println(buffer);
   }
-#endif
 }
 
 /**
@@ -126,6 +157,15 @@ void Logger::_info(const char* category, const char* message) {
   printRedacted("🔘", category, message);
 }
 
+void Logger::_infof(const char* category, const char* format, ...) {
+  char buffer[256];
+  va_list args;
+  va_start(args, format);
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+  printRedacted("🔘", category, buffer);
+}
+
 /**
  * @brief Logs a warning message. Called internally by the LOG_WARN macro.
  */
@@ -135,6 +175,15 @@ void Logger::_warn(const char* category, const String& message) {
 
 void Logger::_warn(const char* category, const char* message) {
   printRedacted("🟡", category, message);
+}
+
+void Logger::_warnf(const char* category, const char* format, ...) {
+  char buffer[256];
+  va_list args;
+  va_start(args, format);
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+  printRedacted("🟡", category, buffer);
 }
 
 /**
@@ -148,6 +197,15 @@ void Logger::_error(const char* category, const char* message) {
   printRedacted("🔴", category, message);
 }
 
+void Logger::_errorf(const char* category, const char* format, ...) {
+  char buffer[256];
+  va_list args;
+  va_start(args, format);
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+  printRedacted("🔴", category, buffer);
+}
+
 /**
  * @brief Logs a debug message. Called internally by the LOG_DEBUG macro.
  */
@@ -158,3 +216,34 @@ void Logger::_debug(const char* category, const String& message) {
 void Logger::_debug(const char* category, const char* message) {
   printRedacted("🔵", category, message);
 }
+
+void Logger::_debugf(const char* category, const char* format, ...) {
+  char buffer[256];
+  va_list args;
+  va_start(args, format);
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+  printRedacted("🔵", category, buffer);
+}
+
+/**
+ * @brief Logs a verbose message. Called internally by the LOG_VERBOSE macro.
+ */
+void Logger::_verbose(const char* category, const String& message) {
+  printRedacted("🟣", category, message);
+}
+
+void Logger::_verbose(const char* category, const char* message) {
+  printRedacted("🟣", category, message);
+}
+
+void Logger::_verbosef(const char* category, const char* format, ...) {
+  char buffer[256];
+  va_list args;
+  va_start(args, format);
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+  printRedacted("🟣", category, buffer);
+}
+
+#endif // CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_ERROR

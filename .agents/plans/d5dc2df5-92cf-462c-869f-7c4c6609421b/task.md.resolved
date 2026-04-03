@@ -1,0 +1,12 @@
+# House Style Documentation Pass
+
+- [x] Load the `@.agents/skills/house-style-docs` skill and review syntax requirement.
+- [x] Review documentation in core modules:
+    - [x] [modules/systemManager/systemManager.hpp](modules/systemManager/systemManager.hpp)
+    - [x] [modules/webServer/webServer.hpp](modules/webServer/webServer.hpp)
+    - [x] [modules/configManager/configManager.hpp](modules/configManager/configManager.hpp)
+    - [x] [src/departuresBoard.cpp](src/departuresBoard.cpp)
+- [ ] Create implementation plan to outline changes.
+- [ ] Receive user approval of implementation plan.
+- [ ] Execute edits to enforce Doxygen-style comments and same-line trail comments.
+- [ ] Verify there are no logic changes or remaining missing docstrings.

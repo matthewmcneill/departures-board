@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary": "Implementation plan outlining changes to appContext and systemManager to create a unified 0-100% boot progress bar and fix the firstLoad data deadlock.",
+  "updatedAt": "2026-04-02T00:14:54.714340Z"
+}

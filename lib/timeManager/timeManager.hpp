@@ -11,8 +11,12 @@
  * Description: Responsible for fetching network time from NTP servers
  *              and maintaining the local system clock timezone mapping.
  *
- * Provides:
- * - TimeManager: The central class handling initialization of the system clock.
+ * Exported Functions/Classes:
+ * - TimeManager: [Class] Central handling for NTP synchronization.
+ *   - initialize(): Performs blocking/non-blocking NTP sync.
+ *   - setTimezone(): Applies POSIX timezone rules.
+ *   - updateCurrentTime(): Syncs inner struct with chip RTC.
+ *   - getCurrentTime(): Accesor for stabilized time struct.
  */
 
 #pragma once

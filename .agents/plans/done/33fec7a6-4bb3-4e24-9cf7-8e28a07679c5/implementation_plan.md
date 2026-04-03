@@ -6,16 +6,16 @@ Implement a high-speed, minimal Darwin SOAP call to validate API keys without re
 
 ### [displayManager]
 
-#### [MODIFY] [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
+#### [MODIFY] [nationalRailDataSource.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
 - **Token Corruption Fix**: Switch to `strlcpy` for token handling.
 - **v12 Payload**: Update `data` and `soapAction` to use the 2021 namespace and `GetDepartureBoard` with `numRows=1`.
 
-#### [MODIFY] [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp)
+#### [MODIFY] [tflDataSource.cpp](modules/displayManager/boards/tflBoard/tflDataSource.cpp)
 - **Lightweight Auth**: Implement `setTestMode` to perform a minimal Victoria Line status check instead of a full station pull.
 
 ### [webServer]
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - **National Rail Test**: 
     - Use `/OpenLDBWS/ldb12.asmx` as the endpoint.
     - Use `PAD` (Paddington) for the validation query.

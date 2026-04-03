@@ -18,7 +18,7 @@ I have completed the technical implementation for stabilizing the ESP32 web conf
 
 ### ✅ Frontend (Verified Locally)
 Verified using the local Browser Subagent. All icons render correctly from the symbol library.
-![Select Board Type Modal](file:///Users/mcneillm/.gemini/antigravity/brain/22f20efa-bc34-401f-8bd4-52f2a9602e3b/select_board_type_modal_1774691717848.png)
+![Select Board Type Modal](select_board_type_modal_1774691717848.png)
 
 ### ✅ Build Integrity (Verified)
 The project compiles successfully with `pio run`.

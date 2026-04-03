@@ -16,11 +16,11 @@ This plan generalizes the prioritization logic within the `scrollingMessagePoolW
 
 Enhance the base `scrollingMessagePoolWidget` to handle interleaved priority logic internally.
 
-#### [MODIFY] [scrollingMessagePoolWidget.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/scrollingMessagePoolWidget.hpp)
+#### [MODIFY] [scrollingMessagePoolWidget.hpp](modules/displayManager/widgets/scrollingMessagePoolWidget.hpp)
 - Add `void setPriorityMessage(const char* msg)`: Sets the interleaved message.
 - Add `char priorityMessage[512]` and `bool showPriorityNext` to private state.
 
-#### [MODIFY] [scrollingMessagePoolWidget.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/scrollingMessagePoolWidget.cpp)
+#### [MODIFY] [scrollingMessagePoolWidget.cpp](modules/displayManager/widgets/scrollingMessagePoolWidget.cpp)
 - Update `loadNextMessage()`:
     - If `priorityMessage` is set AND `showPriorityNext` is true:
         - Load `priorityMessage`, set `showPriorityNext = false`.
@@ -33,7 +33,7 @@ Enhance the base `scrollingMessagePoolWidget` to handle interleaved priority log
 
 Update the NR controller to use the new generalized priority slot.
 
-#### [MODIFY] [nationalRailBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
+#### [MODIFY] [nationalRailBoard.cpp](modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp)
 - **`updateData()`**: Replace `msgWidget.setText()` with `msgWidget.setPriorityMessage()` for calling points.
 - **`onActivate()`**: Ensure Station Messages pool is added before the Global pool.
 

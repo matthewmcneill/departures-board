@@ -8,20 +8,20 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/serviceListWidget.hpp
- * Description: High-level table widget for rendering multi-column transport data. 
- *              Supports configurable alignments, clipping, and automatic pagination 
- *              for large data sets.
+ * Description: High-level table widget for rendering multi-column transport data.
  *
  * Exported Functions/Classes:
- * - ColumnDef: Configuration structure for column width and alignment.
- * - serviceListWidget: Graphics widget for tabular service information.
- *   - setColumns(): Define the table schema.
- *   - setPageTimeout(): Configure rotation speed for paginated data.
- *   - clearRows() / addRow(): Data ingestion methods.
- *   - drawRow(): Internal utility for rendering a single record.
- *   - tick(): Logic update for pagination timing.
- *   - render(): Primary drawing method.
- *   - renderAnimationUpdate(): Targeted page transition animation.
+ * - ColumnDef: [Struct] Configuration for column width and alignment.
+ * - serviceListWidget: [Class] Graphics widget for tabular service information.
+ *   - setColumns(): Defines the table schema.
+ *   - setFont(): Sets the row typography.
+ *   - setScrollDuration(): Configures animation speed.
+ *   - setScrollDwell(): Configures page pause time.
+ *   - setDataLimits(): Configures data slicing/pagination skip.
+ *   - clearRows(): Data ingestion methods.
+ *   - addRow(): Appends a single row.
+ *   - tick(): Handles pagination state and animation lerping.
+ *   - render(): Draws the visible data window.
  */
 
 #ifndef SERVICE_LIST_WIDGET_HPP

@@ -8,16 +8,15 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/locationAndFiltersWidget.hpp
- * Description: A consolidated header widget that dynamically allocates space 
- *              to a fixed (truncated) location label and a scrolling filter info text.
+ * Description: Consolidated header with station name and scrolling filter info.
  *
  * Exported Functions/Classes:
- * - locationAndFiltersWidget: Consolidated metadata component.
- *   - setLocation(): Update the fixed station name.
- *   - setFilters(): Update the scrolling filter string.
- *   - setFont(): Assign typography to both elements.
- *   - tick(): Update scrolling animation logic.
- *   - render(): Draw combined components with dynamic spacing.
+ * - locationAndFiltersWidget: [Class] Consolidated metadata component.
+ *   - setLocation(): Updates the station name (fixed/truncated).
+ *   - setFilters(): Updates the scrolling marquee filter string.
+ *   - setFont(): Assigns common typography.
+ *   - tick(): Marquee logic for overflow text.
+ *   - render(): Draws the combined layout with split weighted heuristics.
  */
 
 #ifndef LOCATION_AND_FILTERS_WIDGET_HPP

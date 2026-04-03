@@ -13,14 +13,14 @@
  *              indicator for firmware init and connection sequences.
  *
  * Exported Functions/Classes:
- * - LoadingBoard: System board for startup sequences.
- *   - setProgress(): Update the active task and percentage.
+ * - LoadingBoard: [Class] System board for startup sequences.
+ *   - setProgress(): Update the active task and percentage (0-100).
  *   - setHeading(): Set the primary display title (e.g. "Initializing").
  *   - setBuildTime(): Display the compiled binary timestamp.
  *   - setNotice(): Set a secondary status string.
  *   - init(): Dependency injection for app context.
- *   - tick(): Logic update for progress bar.
- *   - render(): Full frame drawing.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - tick() / render(): Logic and drawing entry points.
  *   - renderAnimationUpdate(): Targeted redraw for smooth progress.
  */
 
@@ -48,7 +48,7 @@ private:
     
 protected:
     LoadingBoard();
-    friend class DisplayManager;
+    friend class BoardFactory;
     friend class FirmwareUpdateBoard;
 
 public:
@@ -99,7 +99,7 @@ public:
     void render(U8G2& display) override;
 
     /** @return Always 0 for system boards. */
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
 
     /** @return Empty string for system boards. */
     const char* getLastErrorMsg() override { return ""; }

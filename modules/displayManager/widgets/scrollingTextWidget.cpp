@@ -11,6 +11,13 @@
  *
  * Module: modules/displayManager/widgets/scrollingTextWidget.cpp
  * Description: Implementation of generic marquee scrolling logic.
+ *
+ * Exported Functions/Classes:
+ * - scrollingTextWidget: [Class implementation]
+ *   - setText(): Buffer assignment with change detection and layout invalidation.
+ *   - resetScroll(): Rewinds pixel offset and resets timers.
+ *   - tick(): Main progression math for pixel shifting and loop resets.
+ *   - render(): Initial full-frame drawing with static/scroll detection.
  */
 
 #include "scrollingTextWidget.hpp"
@@ -20,7 +27,12 @@
 extern DisplayManager displayManager;
 
 /**
- * @brief Construct a new scrolling text widget.
+ * @brief Initialize the scrolling text widget.
+ * @param _x X coordinate.
+ * @param _y Y coordinate.
+ * @param _w Width (0 for full screen).
+ * @param _h Height.
+ * @param _font Optional font override.
  */
 scrollingTextWidget::scrollingTextWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
     : iGfxWidget(_x, _y, _w, _h), scrollX(0), messageWidth(0), lastScrollMs(0), 
@@ -30,7 +42,9 @@ scrollingTextWidget::scrollingTextWidget(int _x, int _y, int _w, int _h, const u
 }
 
 /**
- * @brief Assigns new text to the widget, resetting alignment and math.
+ * @brief Assign new text to the widget.
+ * Triggers a recalculation of layout metrics if the text has changed.
+ * @param newText Null-terminated string.
  */
 void scrollingTextWidget::setText(const char* newText) {
     if (newText == nullptr) {
@@ -91,7 +105,8 @@ void scrollingTextWidget::tick(uint32_t currentMillis) {
  * @brief Paints the widget entirely on-demand.
  */
 /**
- * @brief Full frame render for the scrolling text string.
+ * @brief Paints the widget entirely on-demand.
+ * Dynamically determines if scrolling is required based on text width.
  * @param display U8g2 reference.
  */
 void scrollingTextWidget::render(U8G2& display) {

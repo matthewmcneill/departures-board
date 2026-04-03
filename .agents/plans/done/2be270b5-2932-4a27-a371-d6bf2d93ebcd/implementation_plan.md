@@ -6,38 +6,38 @@ Audit findings revealed that `TimeManager::initialize()`, which handles NTP serv
 
 ### [TimeManager & AppContext]
 
-#### [MODIFY] [timeManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/timeManager/timeManager.hpp)
+#### [MODIFY] [timeManager.hpp](lib/timeManager/timeManager.hpp)
 - Remove `extern struct tm timeinfo` global declaration.
 - Add a private `struct tm currentTime` member to `TimeManager`.
 - Add `bool updateCurrentTime()` which calls `getLocalTime(&currentTime)`.
 - Add `const struct tm& getCurrentTime() const` accessor.
 
-#### [MODIFY] [timeManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/lib/timeManager/timeManager.cpp)
+#### [MODIFY] [timeManager.cpp](lib/timeManager/timeManager.cpp)
 - Remove global `struct tm timeinfo`.
 - Implement new accessors.
 
-#### [MODIFY] [appContext.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.hpp)
+#### [MODIFY] [appContext.hpp](modules/appContext/appContext.hpp)
 - Add `TimeManager& getTimeManager()` accessor.
 
-#### [MODIFY] [appContext.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/appContext/appContext.cpp)
+#### [MODIFY] [appContext.cpp](modules/appContext/appContext.cpp)
 - Call `timeManager.initialize()` during the `BOOTING` sequence in `tick()` after WiFi is ready.
 
 ### [Clock Widget Refactoring]
 
-#### [MODIFY] [clockWidget.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/clockWidget.hpp)
+#### [MODIFY] [clockWidget.hpp](modules/displayManager/widgets/clockWidget.hpp)
 - Add `TimeManager* timeMgr` private member.
 - Update constructor to require a `TimeManager*`.
 
-#### [MODIFY] [clockWidget.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/clockWidget.cpp)
+#### [MODIFY] [clockWidget.cpp](modules/displayManager/widgets/clockWidget.cpp)
 - Remove `extern struct tm timeinfo`.
 - Update `renderAnimationUpdate` and `render` to use `timeMgr->updateCurrentTime()` and `timeMgr->getCurrentTime()`.
 
-#### [MODIFY] [headerWidget.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/headerWidget.cpp)
+#### [MODIFY] [headerWidget.cpp](modules/displayManager/widgets/headerWidget.cpp)
 - Update to use `appContext->getTimeManager()` if available, otherwise fallback to local `getLocalTime` (or better, inject `TimeManager`).
 
 ### [Board Integration]
 
-#### [MODIFY] [sleepingBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/systemBoard/sleepingBoard.cpp) (and others using `clockWidget`)
+#### [MODIFY] [sleepingBoard.cpp](modules/displayManager/boards/systemBoard/sleepingBoard.cpp) (and others using `clockWidget`)
 - Pass `context->getTimeManager()` when instantiating or initializing `clockWidget`.
 
 ## Verification Plan

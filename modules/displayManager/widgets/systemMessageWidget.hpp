@@ -8,15 +8,12 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/systemMessageWidget.hpp
- * Description: Full-screen modal widget for system alerts, diagnostic messages, 
- *              and setup configuration screens. Provides consistent centered 
- *              typography for multi-line notifications.
+ * Description: Full-screen modal widget for system alerts and diagnostics.
  *
  * Exported Functions/Classes:
- * - systemMessageWidget: Graphics widget for system-level notifications.
- *   - setMessage(): Batch update title and up to 3 diagnostic lines.
- *   - tick(): No-op lifecycle hook.
- *   - render(): Primary drawing method.
+ * - systemMessageWidget: [Class] Graphics widget for multiline notifications.
+ *   - setMessage(): Batch updates the primary title and diagnostic lines.
+ *   - render(): Draws the multi-line message centered in the bounding box.
  */
 
 #ifndef SYSTEM_MESSAGE_WIDGET_HPP

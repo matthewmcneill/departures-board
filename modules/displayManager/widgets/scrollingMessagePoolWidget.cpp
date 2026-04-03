@@ -9,19 +9,31 @@
  *
  * Module: modules/displayManager/widgets/scrollingMessagePoolWidget.cpp
  * Description: Implementation of the message pool rotation logic.
+ *
+ * Exported Functions/Classes:
+ * - scrollingMessagePoolWidget: [Class implementation]
+ *   - addMessagePool(): Registers a data source.
+ *   - clearPools(): Resets all tracked pools and indices.
+ *   - tick(): Automated marquee management and pool traversal.
  */
 
 #include "scrollingMessagePoolWidget.hpp"
 
 /**
- * @brief Construct a new scrolling message pool widget.
+ * @brief Initialize the message pool widget.
+ * @param _x X coordinate.
+ * @param _y Y coordinate.
+ * @param _w Width.
+ * @param _h Height.
+ * @param _font Optional font override.
  */
 scrollingMessagePoolWidget::scrollingMessagePoolWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
     : scrollingTextWidget(_x, _y, _w, _h, _font), currentPoolIndex(0), currentMessageIndex(0) {
 }
 
 /**
- * @brief Attach a message pool to this widget's lifecycle.
+ * @brief Register a MessagePool as a data source for the rotation.
+ * @param pool Managed pointer to an existing pool.
  */
 void scrollingMessagePoolWidget::addMessagePool(MessagePool* pool) {
     if (pool != nullptr) {
@@ -76,6 +88,8 @@ bool scrollingMessagePoolWidget::loadNextMessage() {
 
 /**
  * @brief Ticks the underlying scroller and handles transitions.
+ * Automatically loads the next message when the current one finishes.
+ * @param currentMillis System runtime in milliseconds.
  */
 void scrollingMessagePoolWidget::tick(uint32_t currentMillis) {
     if (!isVisible) return;

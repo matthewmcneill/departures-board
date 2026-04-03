@@ -7,8 +7,15 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/systemBoard/wizardBoard.cpp
+ * Module: modules/displayManager/boards/systemBoard/wizardBoard.cpp
  * Description: Implementation of the Wizard config board.
+ *
+ * Exported Functions/Classes:
+ * - WizardBoard: [Class implementation]
+ *   - setWizardIp(): Updates the captive portal IP address for display.
+ *   - onActivate(): Resets the rotation timer.
+ *   - tick(): Logic-only state rotation (8-second stages).
+ *   - render(): Draws branding, SSID, and connection URL.
  */
 
 #include <appContext.hpp>
@@ -24,6 +31,10 @@ WizardBoard::WizardBoard() : currentIp(0,0,0,0), lastStageSwitch(0), currentStag
  * @brief Sets the IP address to be displayed by the wizard.
  *
  * @param ip The IP address to display.
+ */
+/**
+ * @brief Set the IP address shown to the user.
+ * @param ip IPAddress object from the WiFi manager.
  */
 void WizardBoard::setWizardIp(IPAddress ip) {
     currentIp = ip;
@@ -60,6 +71,11 @@ void WizardBoard::tick(uint32_t ms) {
     }
 }
 
+/**
+ * @brief Main rendering entry point for the wizard.
+ * Renders setup branding, instructions, and connection details.
+ * @param display Global U8G2 graphics instance.
+ */
 void WizardBoard::render(U8G2& display) {
     drawText(display, "WiFi Setup Mode", 0, 0, 256, 16, TextAlign::CENTER, false, NatRailTall12);
     

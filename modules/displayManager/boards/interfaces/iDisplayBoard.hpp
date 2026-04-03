@@ -8,22 +8,20 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/interfaces/iDisplayBoard.hpp
- * Description: Core abstract interface for all display boards (screens). 
- *              Follows the State Pattern for UI lifecycle (Activate/Deactivate), 
- *              Logic (Tick), and Drawing (Render). Acts as the bridge between 
- *              DisplayManager and board-specific implementations.
+ * Description: Core abstract interface for all display boards (screens).
  *
  * Exported Functions/Classes:
- * - iDisplayBoard: Primary interface for displayable application models.
+ * - iDisplayBoard: [Interface] Primary class for displayable application models.
  *   - getBoardName(): Semantic identity for telemetry.
  *   - onActivate() / onDeactivate(): Lifecycle state transitions.
  *   - tick() / render(): Logic and drawing entry points.
  *   - updateData(): Explicit request to refresh backend data.
+ *   - getLastErrorMsg(): Accessor for source error strings.
+ *   - getLastUpdateStatus(): Retrieval of fetch result codes.
  *   - configure(): Provision settings from BoardConfig.
  *   - renderAnimationUpdate(): High-speed partial-frame updates.
- *   - getLastUpdateStatus(): Retrieval of fetch result codes.
- *   - getLastErrorMsg(): Accessor for source error strings.
  *   - getWeatherStatus(): Shared weather state accessor.
+ *   - isScrollFinished(): Pagination/scrolling completion check.
  */
 
 #ifndef I_DISPLAY_BOARD_HPP
@@ -31,6 +29,7 @@
 
 #include <U8g2lib.h>
 #include <stdint.h>
+#include "../../../dataManager/iDataSource.hpp"
 #include <weatherStatus.hpp>
 
 /**
@@ -76,7 +75,7 @@ public:
      * @brief Forces an immediate data update.
      * @return Update status code.
      */
-    virtual int updateData() = 0;
+    virtual UpdateStatus updateData() = 0;
 
     /**
      * @brief Retrieves the last error message from the board's data source.
@@ -86,9 +85,9 @@ public:
 
     /**
      * @brief Retrieves the HTTP or internal result code from the last updateData() call.
-     * @return Result code (e.g., 0 for Success, 5 for Unauthorised).
+     * @return Result code (e.g., UpdateStatus::SUCCESS).
      */
-    virtual int getLastUpdateStatus() const { return lastUpdateStatus; }
+    virtual UpdateStatus getLastUpdateStatus() const { return lastUpdateStatus; }
 
     /**
      * @brief Apply a specific configuration to this board.
@@ -120,8 +119,14 @@ public:
      */
     virtual bool isScrollFinished() { return true; }
 
+    /**
+     * @brief Check if the OLED should be powered off when this board is active.
+     * @return True if the hardware should be put into power-save mode.
+     */
+    virtual bool getOledOff() const { return false; }
+
 protected:
-    int lastUpdateStatus = -1; ///< Stores the result of the last updateData() call for inline error handling.
+    UpdateStatus lastUpdateStatus = UpdateStatus::NO_DATA; ///< Stores the result of the last updateData() call for inline error handling.
     int consecutiveErrors = 0; ///< Tracks the number of consecutive data fetch failures to defer error overlays.
 };
 

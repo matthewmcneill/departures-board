@@ -9,15 +9,14 @@
  *
  * Module: modules/webServer/webHandlerManager.hpp
  * Description: Decoupled manager for modern web portal endpoints and assets.
- *Handles route registration, asset serving, and JSON API orchestration.
  *
  * Exported Functions/Classes:
- * - WebHandlerManager: Principal class for web service lifecycle management.
- *   - begin(): Registers all routes with the AsyncWebServer.
- *   - handlePortalRoot(): Serves gzipped SPA assets with concurrency protection.
- *   - handleGetStatus(): Evaluates hardware health and connectivity metrics.
- *   - handleGetConfig(): Serializes unified project configuration.
- *   - handleSaveAll(): Performs atomic validation and persistence of settings.
+ * - WebHandlerManager: [Class] Service lifecycle for the web portal.
+ *   - begin(): Route registration.
+ *   - handlePortalRoot(): SPA delivery.
+ *   - handleSaveAll(): Atomic config persistence.
+ *   - handleWiFiScan(): Network discovery endpoint.
+ *   - handleGetStatus(): Real-time telemetry provider.
  */
 
 #pragma once

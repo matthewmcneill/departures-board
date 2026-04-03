@@ -7,21 +7,17 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/boards/busBoard/src/busDataSource.cpp
- * Description: Implementation of busDataSource, ported from busDataClient.
- *              Handles HTTPS requests to bustimes.org and scrapes HTML for arrivals.
+ * Module: modules/displayManager/boards/busBoard/busDataSource.cpp
+ * Description: Implementation of busDataSource.
  *
  * Exported Functions/Classes:
- * - busDataSource::busDataSource: Constructor initializing internal state.
- * - busDataSource::configure: Sets the ATCO code and route filters.
- * - busDataSource::updateData: Main loop for fetching and parsing bus data.
- * - busDataSource::stripTag: Helper to remove HTML tags.
- * - busDataSource::replaceWord: Helper to replace strings in place.
- * - busDataSource::trim: Helper to remove whitespace.
- * - busDataSource::equalsIgnoreCase: Case-insensitive string comparison.
- * - busDataSource::serviceMatchesFilter: Checks if a service ID matches user filters.
- * - busDataSource::cleanFilter: Normalizes raw filter strings.
- * - busDataSource::getStopLongName: Fetches friendly stop name via JSON API.
+ * - busDataSource: [Class implementation]
+ *   - configure(): Sets the ATCO code and route filters.
+ *   - updateData(): Initiates JSON fetch.
+ *   - executeFetch(): Internal synchronous HTTPS scraping pipeline.
+ *   - testConnection(): Validates station IDs.
+ *   - getStopLongName(): Fetches friendly stop name via JSON API.
+ *   - cleanFilter(): Normalizes raw filter strings.
  */
 
 #include "busDataSource.hpp"
@@ -46,7 +42,8 @@ const char* busDataSource::serviceNumbers[BUS_MAX_FETCH] = { "1", "2", "3", "4",
 #define PBT_EXPECTED 5
 
 /**
- * @brief Constructs a new busDataSource object.
+ * @brief Initialize the Bus data source.
+ * Allocates background and render buffers (BusStop) and creates synchronization mutexes.
  */
 busDataSource::busDataSource() : callback(nullptr), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::unique_ptr<BusStop>(new (std::nothrow) BusStop());
@@ -55,7 +52,7 @@ busDataSource::busDataSource() : callback(nullptr), messagesData(4), renderMessa
     if (renderData) memset(renderData.get(), 0, sizeof(BusStop));
     
     dataMutex = xSemaphoreCreateMutex();
-    taskStatus = UPD_NO_DATA;
+    taskStatus = UpdateStatus::NO_DATA;
 
     lastErrorMsg[0] = '\0';
     busAtco[0] = '\0';
@@ -64,7 +61,7 @@ busDataSource::busDataSource() : callback(nullptr), messagesData(4), renderMessa
 }
 
 /**
- * @brief Configures the data source with stop location and filters.
+ * @brief Configure station ID and route filters.
  * @param atco ATCO code for the bus stop.
  * @param filter CSV list of routes to include.
  * @param cb Feedback callback for connection status.
@@ -77,23 +74,32 @@ void busDataSource::configure(const char* atco, const char* filter, busDataSourc
 }
 
 /**
- * @brief Fetches latest bus arrival data from bustimes.org.
- * @return int Update status code (e.g., UPD_SUCCESS or UPD_NO_CHANGE).
+ * @brief Trigger an asynchronous data refresh from bustimes.org.
+ * Marks the task as pending and requests a priority fetch from the DataManager.
+ * @return UpdateStatus::PENDING.
  */
-int busDataSource::updateData() {
-    if (taskStatus == UPD_PENDING) {
-        return UPD_PENDING;
+UpdateStatus busDataSource::updateData() {
+    if (taskStatus == UpdateStatus::PENDING) {
+        return UpdateStatus::PENDING;
     }
     
+    if (taskStatus == UpdateStatus::SUCCESS) {
+        taskStatus = UpdateStatus::NO_CHANGE;
+        return UpdateStatus::SUCCESS;
+    }
+    if (taskStatus == UpdateStatus::NO_CHANGE) {
+        return UpdateStatus::NO_CHANGE;
+    }
+
     LOG_INFO("DATA", "Bus Source: Requesting priority fetch from DataManager");
-    taskStatus = UPD_PENDING;
+    taskStatus = UpdateStatus::PENDING;
     appContext.getDataManager().requestPriorityFetch(this);
-    return UPD_PENDING;
+    return UpdateStatus::PENDING;
 }
 
-uint8_t busDataSource::getPriorityTier() {
-    if (renderData && renderData->numServices == 0) return TIER_HIGH;
-    return TIER_MEDIUM;
+PriorityTier busDataSource::getPriorityTier() {
+    if (renderData && renderData->numServices == 0) return PriorityTier::PRIO_HIGH;
+    return PriorityTier::PRIO_MEDIUM;
 }
 
 /**
@@ -109,7 +115,7 @@ void busDataSource::executeFetch() {
     std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
     if (!httpsClient) {
         LOG_ERROR("DATA", "Bus Board: Memory allocation failed for client!");
-        taskStatus = UPD_DATA_ERROR;
+        taskStatus = UpdateStatus::DATA_ERROR;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
@@ -126,13 +132,23 @@ void busDataSource::executeFetch() {
     if (retryCounter >= 10) {
         strcpy(lastErrorMsg, "Connection timeout");
         LOG_WARN("DATA", lastErrorMsg);
-        taskStatus = UPD_NO_RESPONSE;
+        taskStatus = UpdateStatus::NO_RESPONSE;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
 
     // --- Step 2: Send HTTP Request ---
-    String request = "GET /stops/" + String(busAtco) + F("/departures HTTP/1.0\r\nHost: ") + String(apiHost) + F("\r\nConnection: close\r\n\r\n");
+    char request[256];
+    int len = snprintf(request, sizeof(request), "GET /stops/%s/departures HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n", busAtco, apiHost);
+    
+    if (len >= (int)sizeof(request)) {
+        LOG_ERRORf("DATA", "Bus Source: Request URL too long! (%d bytes)", len);
+        httpsClient->stop();
+        taskStatus = UpdateStatus::DATA_ERROR;
+        setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
+        return;
+    }
+    
     httpsClient->print(request);
     if (callback) callback();
     
@@ -146,7 +162,7 @@ void busDataSource::executeFetch() {
         httpsClient->stop();
         strcpy(lastErrorMsg, "Response timeout");
         LOG_WARN("DATA", lastErrorMsg);
-        taskStatus = UPD_TIMEOUT;
+        taskStatus = UpdateStatus::TIMEOUT;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
@@ -157,12 +173,12 @@ void busDataSource::executeFetch() {
         httpsClient->stop();
         if (statusLine.indexOf(F("401")) > 0 || statusLine.indexOf(F("429")) > 0) {
             strcpy(lastErrorMsg, "Not Authorized");
-            taskStatus = UPD_UNAUTHORISED;
+            taskStatus = UpdateStatus::UNAUTHORISED;
             setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
             return;
         } else {
             strlcpy(lastErrorMsg, statusLine.c_str(), sizeof(lastErrorMsg));
-            taskStatus = UPD_HTTP_ERROR;
+            taskStatus = UpdateStatus::HTTP_ERROR;
             setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
             return;
         }
@@ -183,7 +199,7 @@ void busDataSource::executeFetch() {
     std::unique_ptr<BusStop> xBusStop(new (std::nothrow) BusStop());
     if (!xBusStop) {
         LOG_ERROR("DATA", "Bus Board: Memory allocation failed for xBusStop!");
-        taskStatus = UPD_DATA_ERROR;
+        taskStatus = UpdateStatus::DATA_ERROR;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
@@ -324,6 +340,21 @@ void busDataSource::executeFetch() {
         xSemaphoreTake(dataMutex, portMAX_DELAY);
         stationData->numServices = xBusStop->numServices;
         memcpy(stationData->service, xBusStop->service, sizeof(BusService) * BUS_MAX_SERVICES);
+        
+        uint32_t hashVal = 2166136261u;
+        hashVal = hashPrimitive(stationData->numServices, hashVal);
+        hashVal = hashString(stationData->location, hashVal);
+        for(int i = 0; i < stationData->numServices; i++) {
+            hashVal = hashString(stationData->service[i].sTime, hashVal);
+            hashVal = hashString(stationData->service[i].expectedTime, hashVal);
+            hashVal = hashString(stationData->service[i].destination, hashVal);
+            hashVal = hashString(stationData->service[i].routeNumber, hashVal);
+        }
+        for(size_t i = 0; i < messagesData.getCount(); i++) {
+            hashVal = hashString(messagesData.getMessage(i), hashVal);
+        }
+        stationData->contentHash = hashVal;
+
         if (renderData) {
             memcpy(renderData.get(), stationData.get(), sizeof(BusStop));
         }
@@ -331,11 +362,11 @@ void busDataSource::executeFetch() {
         for (int i = 0; i < messagesData.getCount(); i++) {
             renderMessages.addMessage(messagesData.getMessage(i));
         }
-        taskStatus = stationData->boardChanged ? UPD_SUCCESS : UPD_NO_CHANGE;
+        taskStatus = stationData->boardChanged ? UpdateStatus::SUCCESS : UpdateStatus::NO_CHANGE;
         xSemaphoreGive(dataMutex);
 
         snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS %ums [%ld]", (uint32_t)(millis() - perfTimer), dataReceived);
-        LOG_INFO("DATA", "Bus (ATCO: " + String(busAtco) + "): Found " + String(stationData->numServices) + " services.");
+        LOG_INFOf("DATA", "Bus (ATCO: %s): Found %d services.", busAtco, (int)stationData->numServices);
 #ifdef ENABLE_DEBUG_LOG
         UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
         LOG_DEBUG("DATA", "Bus Task Stack High Water Mark: " + String(hwm) + " words");
@@ -360,34 +391,35 @@ void busDataSource::executeFetch() {
         uint32_t interval = BASELINE_MIN_INTERVAL;
         if (renderData && renderData->numServices > 0) interval = 45000;
         setNextFetchTime(millis() + interval);
-        LOG_INFO("DATA", "Bus Source: executeFetch() finished. Next fetch in " + String(interval) + "ms.");
+        LOG_INFOf("DATA", "Bus Source: executeFetch() finished. Next fetch in %dms.", (int)interval);
         return;
     }
-    taskStatus = UPD_DATA_ERROR;
+    taskStatus = UpdateStatus::DATA_ERROR;
     setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
     return;
 }
 
 /**
  * @brief Performs a lightweight connection and authentication test.
- *        Bus API currently does not require authentication.
+ * Bus API currently does not require authentication.
  * @param token Optional token to test (ignored for bus).
- * @return int Update status code.
+ * @param stationId Optional station/stop ID to test.
+ * @return UpdateStatus code.
  */
-int busDataSource::testConnection(const char* token, const char* stationId) {
+UpdateStatus busDataSource::testConnection(const char* token, const char* stationId) {
     if (stationId && strlen(stationId) > 0) {
-        LOG_INFO("DATA", "Bus Board: Performing station-specific check for ATCO: " + String(stationId));
+        LOG_INFOf("DATA", "Bus Board: Performing station-specific check for ATCO: %s", stationId);
         char prevAtco[13];
         strlcpy(prevAtco, busAtco, sizeof(prevAtco));
         strlcpy(busAtco, stationId, sizeof(busAtco));
         executeFetch();
-        int result = taskStatus;
+        UpdateStatus result = taskStatus;
         strlcpy(busAtco, prevAtco, sizeof(busAtco));
         return result;
     }
     LOG_INFO("DATA", "Bus Board: testConnection called without stationId. Bypassing request as no auth required.");
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS");
-    return UPD_SUCCESS; // bustimes.org doesn't use a token for now, return ok for the UI
+    return UpdateStatus::SUCCESS; // bustimes.org doesn't use a token for now, return ok for the UI
 }
 
 /**
@@ -508,20 +540,29 @@ void busDataSource::startObject() {}
  * @brief Fetches friendly stop name using the bustimes JSON API.
  * @param locationId ATCO code.
  * @param locationName Buffer to store result.
- * @return int Update status code.
+ * @return UpdateStatus code.
  */
-int busDataSource::getStopLongName(const char *locationId, char *locationName) {
+UpdateStatus busDataSource::getStopLongName(const char *locationId, char *locationName) {
     std::unique_ptr<JsonStreamingParser> parser(new (std::nothrow) JsonStreamingParser());
     std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
     if (!parser || !httpsClient) {
         LOG_ERROR("DATA", "Bus Board: Memory allocation failed for getStopLongName!");
-        return UPD_DATA_ERROR;
+        return UpdateStatus::DATA_ERROR;
     }
 
     parser->setListener(this);
     httpsClient->setInsecure();
-    if (!httpsClient->connect(apiHost, 443)) return UPD_NO_RESPONSE;
-    String request = "GET /api/stops/" + String(locationId) + " HTTP/1.0\r\nHost: " + String(apiHost) + "\r\nConnection: close\r\n\r\n";
+    if (!httpsClient->connect(apiHost, 443)) return UpdateStatus::NO_RESPONSE;
+    
+    char request[256];
+    int len = snprintf(request, sizeof(request), "GET /api/stops/%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n", locationId, apiHost);
+    
+    if (len >= (int)sizeof(request)) {
+        LOG_ERRORf("DATA", "Bus Source: getStopLongName URL too long! (%d bytes)", len);
+        httpsClient->stop();
+        return UpdateStatus::DATA_ERROR;
+    }
+    
     httpsClient->print(request);
     while (httpsClient->connected() || httpsClient->available()) {
         if (httpsClient->available()) parser->parse(httpsClient->read());
@@ -529,5 +570,5 @@ int busDataSource::getStopLongName(const char *locationId, char *locationName) {
     }
     httpsClient->stop();
     strlcpy(locationName, longName.c_str(), 80); // locationName is size 80 usually
-    return UPD_SUCCESS;
+    return UpdateStatus::SUCCESS;
 }

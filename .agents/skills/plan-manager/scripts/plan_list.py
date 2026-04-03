@@ -7,7 +7,8 @@ def list_plans():
     show_all = "--all" in sys.argv
     use_stdout = "--stdout" in sys.argv
 
-    base_dir = "/Users/mcneillm/Documents/Projects/departures-board/.agents/plans"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.abspath(os.path.join(script_dir, "../../../plans"))
     lockfile = os.path.join(base_dir, "lock.md")
     output_file = os.path.join(base_dir, "plan_list_view.md")
     
@@ -46,6 +47,7 @@ def list_plans():
     
     pending_lines = []
     wip_lines = []
+    saved_lines = []
     
     pending_lines.append("| Plan ID | Title | Description | Created |")
     pending_lines.append("|:---|:---|:---|:---|")
@@ -53,8 +55,12 @@ def list_plans():
     wip_lines.append("| Plan ID | Title | Description | Created |")
     wip_lines.append("|:---|:---|:---|:---|")
     
+    saved_lines.append("| Plan ID | Title | Description | Created |")
+    saved_lines.append("|:---|:---|:---|:---|")
+    
     wip_count = 0
     pending_count = 0
+    saved_count = 0
     
     for pf in sorted(plan_files):
         if not show_all and "/done/" in pf:
@@ -95,10 +101,18 @@ def list_plans():
                 elif status == "READY":
                     pending_lines.append(row)
                     pending_count += 1
+                elif status == "SAVED":
+                    saved_lines.append(row)
+                    saved_count += 1
                 elif status == "DONE" and show_all:
                     pending_lines.append(f"| `{plan_id}` | **DONE**: {name} | {desc} | {created} |")
                     pending_count += 1
                 
+    if saved_count > 0:
+        output_lines.append("\n### 💾 Saved (Unqueued) Plans")
+        output_lines.append("*Tip: Use `/plan-queue [Plan ID]` to mark a plan as READY.*")
+        output_lines.extend(saved_lines)
+
     if pending_count > 0:
         output_lines.append("\n### ⏳ Pending Queue")
         output_lines.extend(pending_lines)

@@ -16,23 +16,23 @@ This plan addresses the issue where the firmware and web UI show outdated build 
 
 ---
 
-#### [NEW] [build_timestamp.py](file:///Users/mcneillm/Documents/Projects/departures-board/scripts/build_timestamp.py)
+#### [NEW] [build_timestamp.py](scripts/build_timestamp.py)
 A new PlatformIO pre-script to generate the C++ build time header.
 
-#### [MODIFY] [portalBuilder.py](file:///Users/mcneillm/Documents/Projects/departures-board/scripts/portalBuilder.py)
+#### [MODIFY] [portalBuilder.py](scripts/portalBuilder.py)
 Update to dynamically replace the hardcoded date in `web/index.html` during the asset generation phase.
 
-#### [MODIFY] [platformio.ini](file:///Users/mcneillm/Documents/Projects/departures-board/platformio.ini)
+#### [MODIFY] [platformio.ini](platformio.ini)
 Register the new `build_timestamp.py` script.
 
 ### Firmware (C++)
 
 ---
 
-#### [MODIFY] [systemManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/systemManager/systemManager.cpp)
+#### [MODIFY] [systemManager.cpp](modules/systemManager/systemManager.cpp)
 Include the generated header and use the new macro for `getBuildTime()`.
 
-#### [MODIFY] [displayManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.cpp)
+#### [MODIFY] [displayManager.cpp](modules/displayManager/displayManager.cpp)
 Include the generated header and use the macro for the loading screen build time.
 
 ## Open Questions

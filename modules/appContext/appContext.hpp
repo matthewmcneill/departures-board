@@ -23,12 +23,19 @@
  *              Serves as the primary dependency injection point for the system.
  *
  * Exported Functions/Classes:
- * - appContext: Lifecycle owner for Config, Display, Network, and OTA managers.
- * - yieldCallbackWrapper: Static wrapper to trigger display yield from any context.
- * - raildataYieldWrapper: Callback adaptor for National Rail data source events.
+ * - appContext: [Class] Lifecycle owner for Config, Display, Network, and OTA managers.
+ *   - begin(): Master initialization sequence for all hardware and FS services.
+ *   - tick(): Central administrative loop for state transitions and maintenance.
+ *   - softResetBoard(): Signals all managers to perform a non-volatile reload.
+ *   - getBuildTime(): Returns the firmware version string (YYMMDDHHMM).
+ *   - setInputDevice(std::unique_ptr<buttonHandler>): Attaches an interaction driver.
+ *   - getConfigManager()/getDisplayManager()/getWebServer(): Service discovery points.
+ *   - getAppState(): Returns the current system operating mode (BOOTING, RUNNING, etc).
  */
 
 #pragma once
+
+#include <memory>
 
 #include <configManager.hpp>
 #include <displayManager.hpp>
@@ -38,7 +45,6 @@
 #include <rssClient.hpp>
 #include <wifiManager.hpp>
 #include <timeManager.hpp>
-#include "systemManager.hpp"
 #include <messaging/messagePool.hpp>
 #include <dataManager.hpp>
 #include "schedulerManager.hpp"
@@ -62,7 +68,6 @@ private:
     DisplayManager displayManager;  ///< Rendering and board lifecycle
     otaUpdater otaAssetUpdater;     ///< Firmware update lifecycle
     WebServerManager webServer;     ///< Local GUI and API service
-    systemManager sysManager;       ///< Global application and network state
     weatherClient weather;          ///< External weather conditions client
     rssClient rss;                  ///< News feed scroller client
     WifiManager wifiManager;        ///< WiFi configuration and connectivity manager
@@ -72,12 +77,23 @@ private:
     schedulerManager schedule;      ///< Evaluates which display boards to show
     AppState currentState;          ///< Current tracked system state
     bool webServerInitialized;      ///< Checks if webServer was safely started
+    
+    // --- Migrated from systemManager ---
+    bool firstLoad;                 ///< True during initial boot sequence
+    int startupProgressPercent;     ///< Aggregated boot progress (0-100)
+    int prevProgressBarPosition;    ///< Cached UI value to avoid redraw flicker
+    std::unique_ptr<class buttonHandler> inputDevice; ///< Generic input device for interaction
 
 public:
     /**
      * @brief Construct the application context.
      */
     appContext();
+
+    /**
+     * @brief Essential for RAII unique_ptr members with forward declarations.
+     */
+    ~appContext();
 
     /**
      * @brief Initialize all sub-managers in the correct dependency order.
@@ -98,8 +114,6 @@ public:
     otaUpdater& getOtaUpdater() { return otaAssetUpdater; }
     /** @brief Get the local web server and API manager. */
     WebServerManager& getWebServer() { return webServer; }
-    /** @brief Get the global application networking state manager. */
-    systemManager& getsystemManager() { return sysManager; }
     /** @brief Get the weather external API client. */
     weatherClient& getWeather() { return weather; }
     /** @brief Get the WiFi connection manager. */
@@ -116,19 +130,31 @@ public:
     MessagePool& getGlobalMessagePool() { return globalMessagePool; }
     /** @brief Get the current high-level state of the application. */
     AppState getAppState() const { return currentState; }
+
+    /**
+     * @brief Performs a soft reload of the application state based on new
+     * configuration. Signals all consumers to refresh themselves.
+     */
+    void softResetBoard();
+
+    /**
+     * @brief Get the Build Timestamp of the running firmware.
+     * @return String formatted build timestamp (YYMMDDHHMM).
+     */
+    String getBuildTime();
+
+    /** @brief Set the hardware input device for interaction. */
+    void setInputDevice(std::unique_ptr<class buttonHandler> device);
+
+    /** @brief Get the boot progress percentage. */
+    int getStartupProgressPercent() const { return startupProgressPercent; }
+    /** @brief Set the boot progress percentage. */
+    void setStartupProgressPercent(int percent) { startupProgressPercent = percent; }
+    
+    /** @brief Check if this is the first system load. */
+    bool getFirstLoad() const { return firstLoad; }
+    /** @brief Set the first load flag. */
+    void setFirstLoad(bool load) { firstLoad = load; }
 };
 
-// Global yield wrappers for non-blocking I/O
-
-/**
- * @brief Global wrapper to trigger DisplayManager's non-blocking yield.
- *        Used by data clients to keep the web server alive during long I/O.
- */
-void yieldCallbackWrapper();
-
-/**
- * @brief Adaptor for National Rail data source which provides progress events.
- * @param stage Current parsing stage.
- * @param nServices Number of services found so far.
- */
-void raildataYieldWrapper(int stage, int nServices);
+// Global yield wrappers for non-blocking I/O - DEPRECATED for v3.0 FreeRTOS flow

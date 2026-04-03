@@ -6,14 +6,14 @@ The TfL and Bus boards in the layout simulator will be updated to include an "Or
 
 ### 1. Layout Definitions (modules/displayManager/boards/*/layouts)
 
-#### [MODIFY] [layoutDefault.json (TfL)](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/layouts/layoutDefault.json)
+#### [MODIFY] [layoutDefault.json (TfL)](modules/displayManager/boards/tflBoard/layouts/layoutDefault.json)
 Update columns and labels:
 - Column 0: "Order" (width: 20, index 1, 2, 3...)
 - Column 1: "Line" (width: 40)
 - Column 2: "Destination" (width: 140)
 - Column 3: "Time" (width: 56)
 
-#### [MODIFY] [layoutDefault.json (Bus)](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/layouts/layoutDefault.json)
+#### [MODIFY] [layoutDefault.json (Bus)](modules/displayManager/boards/busBoard/layouts/layoutDefault.json)
 Update columns and labels:
 - Column 0: "Order" (width: 20, index 1, 2, 3...)
 - Column 1: "Route" (width: 25, route number)
@@ -22,7 +22,7 @@ Update columns and labels:
 
 ### 2. Mock Data (tools/layoutsim/mock_data)
 
-#### [MODIFY] [tflBoard.json](file:///Users/mcneillm/Documents/Projects/departures-board/tools/layoutsim/mock_data/tflBoard.json)
+#### [MODIFY] [tflBoard.json](tools/layoutsim/mock_data/tflBoard.json)
 Reorder and align the `services` array to [Order, Line, Destination, Time/Status, Platform]:
 - Index 0: "1", "2", "3" (Order)
 - Index 1: Line Name (e.g., "District")
@@ -31,7 +31,7 @@ Reorder and align the `services` array to [Order, Line, Destination, Time/Status
 - Index 4: Platform (e.g., "1", "2")
 - Index 5: (Empty string to satisfy 5-element parser minimum)
 
-#### [MODIFY] [busBoard.json](file:///Users/mcneillm/Documents/Projects/departures-board/tools/layoutsim/mock_data/busBoard.json)
+#### [MODIFY] [busBoard.json](tools/layoutsim/mock_data/busBoard.json)
 Reorder and align the `services` array to [Order, Route, Destination, Time/Status, Stop]:
 - Index 0: "1", "2", "3" (Order)
 - Index 1: Route (e.g., "341")
@@ -43,15 +43,15 @@ Reorder and align the `services` array to [Order, Route, Destination, Time/Statu
 ## Verification Plan
 ### 3. Data Sources (modules/displayManager/boards/*)
 
-#### [MODIFY] [tflDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.hpp)
+#### [MODIFY] [tflDataSource.hpp](modules/displayManager/boards/tflBoard/tflDataSource.hpp)
 - Add `char platformName[TFL_MAX_LOCATION]` to the `TflService` struct.
 
-#### [MODIFY] [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp)
+#### [MODIFY] [tflDataSource.cpp](modules/displayManager/boards/tflBoard/tflDataSource.cpp)
 - Parse the `platformName` field from the TfL API JSON into the `TflService` struct.
 
 ### 4. Board Controllers (modules/displayManager/boards/*)
 
-#### [MODIFY] [tflBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflBoard.cpp)
+#### [MODIFY] [tflBoard.cpp](modules/displayManager/boards/tflBoard/tflBoard.cpp)
 Update `updateData()` logic for multidimensional uniqueness:
 - Check if all services share the same **Line Name**.
 - Check if all services share the same **Platform** (Direction).
@@ -62,7 +62,7 @@ Update `updateData()` logic for multidimensional uniqueness:
   - Column 2: "Destination" (Optionally append platform if not hoisted)
   - Column 3: "Time"
 
-#### [MODIFY] [busBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/busBoard.cpp)
+#### [MODIFY] [busBoard.cpp](modules/displayManager/boards/busBoard/busBoard.cpp)
 Update `updateData()` logic:
 - Populate `servicesWidget` with 4 columns:
   - Column 0: "Order" (1, 2, 3...)
@@ -72,7 +72,7 @@ Update `updateData()` logic:
 
 ### 5. Web Server (modules/webServer)
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 Fix missing field persistence in `handleGetConfig` and `handleSaveAll`:
 - Add `tflLineFilter`, `tflDirectionFilter`, and `showServiceOrdinals` to the JSON export and import logic.
 

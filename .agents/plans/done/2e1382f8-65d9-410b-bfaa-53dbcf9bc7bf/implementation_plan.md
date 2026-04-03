@@ -16,32 +16,32 @@ Following photographic evidence of real Tube displays, this plan transitions the
 
 ### TfL Data Component
 
-#### [MODIFY] [tflDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.hpp)
+#### [MODIFY] [tflDataSource.hpp](modules/displayManager/boards/tflBoard/tflDataSource.hpp)
 - Add `const char* orderNum` field to the `TflService` struct.
 - Define a `static const char*` array for numbers `"1"` to `"9"`.
 
-#### [MODIFY] [tflDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflDataSource.cpp)
+#### [MODIFY] [tflDataSource.cpp](modules/displayManager/boards/tflBoard/tflDataSource.cpp)
 - In the background update process (JSON parsing or data sanitization stage), assign the appropriate stable pointer from the `serviceNumbers` array to each `TflService` object.
 
 ### TfL Board / Layout Component
 
-#### [MODIFY] [layoutDefault.json](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/layouts/layoutDefault.json)
+#### [MODIFY] [layoutDefault.json](modules/displayManager/boards/tflBoard/layouts/layoutDefault.json)
 - Add a new "Order" column at index 0. Re-calculate widths (e.g., 20px / 50px / 130px / 56px).
 
-#### [MODIFY] [layoutDefault.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/layouts/layoutDefault.cpp)
+#### [MODIFY] [layoutDefault.cpp](modules/displayManager/boards/tflBoard/layouts/layoutDefault.cpp)
 - Manually update the `ColumnDef` array to include the new column for the order number.
 
-#### [MODIFY] [tflBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/tflBoard/tflBoard.cpp)
+#### [MODIFY] [tflBoard.cpp](modules/displayManager/boards/tflBoard/tflBoard.cpp)
 - Update `updateData()` to extract the `orderNum` directly from the `TflService` object.
 - Pass the stable pointer to the new column (index 0).
 - **Eliminate** all `snprintf` and `strlcpy` operations for service formatting.
 
 ### Bus Board Component (Consistency)
 
-#### [MODIFY] [busDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/busDataSource.hpp)
+#### [MODIFY] [busDataSource.hpp](modules/displayManager/boards/busBoard/busDataSource.hpp)
 - Add `const char* orderNum` field to the `BusService` struct.
 
-#### [MODIFY] [busBoard.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/busBoard/busBoard.cpp)
+#### [MODIFY] [busBoard.cpp](modules/displayManager/boards/busBoard/busBoard.cpp)
 - Adopt the same 4-column numbering logic for consistency.
 
 ## Resource Impact Assessment

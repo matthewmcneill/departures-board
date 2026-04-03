@@ -8,19 +8,36 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/widgets/labelWidget.cpp
- * Description: Implementation of the labelWidget class. Handles string boundary 
- *              calculations, ellipsis truncation, and U8G2 layout alignments.
+ * Description: Implementation of stateful text rendering with alignment.
+ *
+ * Exported Functions/Classes:
+ * - labelWidget: [Class implementation]
+ *   - setText(): Assigns the display string buffer.
+ *   - setFont(): Assigns the typography for rendering.
+ *   - setAlignment(): Configures horizontal justification.
+ *   - render(): Paints the text to the display buffer.
  */
 
 #include "labelWidget.hpp"
 #include "drawingPrimitives.hpp"
 #include <string.h>
 
+/**
+ * @brief Initialize the label widget with default alignment.
+ * @param _x X coordinate.
+ * @param _y Y coordinate (baseline).
+ * @param _w Width (-1 for auto).
+ * @param _h Height (-1 for auto).
+ */
 labelWidget::labelWidget(int _x, int _y, int _w, int _h) 
     : iGfxWidget(_x, _y, _w, _h), font(nullptr), alignment(0), isTruncated(false) {
     memset(textBuffer, 0, sizeof(textBuffer));
 }
 
+/**
+ * @brief Set the label text.
+ * @param text C-string source.
+ */
 void labelWidget::setText(const char* text) {
     if (text) {
         strncpy(textBuffer, text, sizeof(textBuffer) - 1);

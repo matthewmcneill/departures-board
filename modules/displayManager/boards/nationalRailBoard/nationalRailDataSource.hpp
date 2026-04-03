@@ -11,15 +11,18 @@
  * Description: National Rail data source implementing iDataSource.
  *
  * Exported Functions/Classes:
- * - nationalRailDataSource: Data client for Darwin (National Rail SOAP API).
- *   - init(): Initializes the WSDL parser and SSL handshake.
+ * - nationalRailDataSource: [Class] Data client for Darwin (National Rail SOAP API).
+ *   - init() / refreshWsdl(): SOAP discovery and WSDL parsing.
  *   - updateData(): High-level trigger for polling departure info.
- *   - getStationData(): Returns parsed station name and meta.
+ *   - getStationData(): Returns parsed station metadata.
  *   - getMessagesData(): Accessor for rail disruption messages.
- *   - setSoapAddress(): Manually set SOAP endpoint (bypasses WSDL).
- *   - configure(): Set API token and station parameters.
+ *   - configure(): Sets API token and station parameters.
  *   - executeFetch(): Internal synchronous SOAP fetching pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning SOAP processing.
+ *   - lockData() / unlockData(): Thread synchronization.
+ *   - testConnection(): Validates station codes and tokens.
+ *   - getNextFetchTime() / setNextFetchTime(): Polling interval management.
+ * - NationalRailService: [Struct] Single service arrival record.
+ * - NationalRailStation: [Struct] Station-level departure container.
  */
 
 #ifndef NATIONAL_RAIL_DATA_SOURCE_HPP
@@ -36,17 +39,22 @@
 
 #include <Arduino.h>
 
-// Service Type Constants
-#define NR_SERVICE_OTHER 0
-#define NR_SERVICE_TRAIN 1
-#define NR_SERVICE_BUS 2
+/**
+ * @brief Service Type Constants
+ */
+enum class NrServiceType : uint8_t {
+    OTHER = 0,
+    TRAIN = 1,
+    BUS = 2
+};
 
-// Data Length Constants
-#define NR_MAX_LOCATION 45
-#define NR_MAX_CALLING 450
-#define NR_MAX_MSG_LEN 400
-#define NR_MAX_SERVICES 9
-
+/**
+ * @brief Data Length Constants
+ */
+constexpr int NR_MAX_LOCATION = 45;
+constexpr int NR_MAX_CALLING = 450;
+constexpr int NR_MAX_MSG_LEN = 400;
+constexpr int NR_MAX_SERVICES = 9;
 /**
  * @brief Data structure for a single train/bus service.
  */
@@ -61,11 +69,7 @@ struct NationalRailService {
     int trainLength;
     byte classesAvailable;
     char opco[50];
-    char calling[NR_MAX_CALLING];
-    char origin[NR_MAX_LOCATION];
-    char lastSeen[NR_MAX_LOCATION]; // Upstream B2.4-W3.1: "Last seen at..."
-    char serviceMessage[NR_MAX_MSG_LEN];
-    int serviceType; // TRAIN or BUS
+    NrServiceType serviceType; // TRAIN or BUS
 };
 
 /**
@@ -78,11 +82,19 @@ struct NationalRailStation {
     char filterPlatform[16];
     bool platformAvailable;
     bool boardChanged;
+    
+    // Details strictly for the first train in the sequence
+    char firstServiceCalling[NR_MAX_CALLING]; // Calling points for the first due service
+    char firstServiceOrigin[NR_MAX_LOCATION]; // Origin station name for the first due service
+    char firstServiceLastSeen[NR_MAX_LOCATION]; // Real-time actual location snippet
+    char firstServiceMessage[NR_MAX_MSG_LEN]; // Specific operator disruption messages for the service
+
     int numServices;
     NationalRailService service[NR_MAX_SERVICES];
+    uint32_t contentHash;
 };
 
-typedef void (*nrDataSourceCallback) (int state, int id);
+
 
 class nationalRailDataSource : public iDataSource, public xmlListener {
 private:
@@ -92,7 +104,7 @@ private:
     MessagePool renderMessages; // Safe local copy for UI rendering
 
     SemaphoreHandle_t dataMutex; // Thread-safe lock protecting data transfers
-    volatile int taskStatus; // Cross-thread execution status tracking (e.g., UPD_PENDING)
+    volatile UpdateStatus taskStatus; // Cross-thread execution status tracking (e.g., UpdateStatus::PENDING)
 
     char lastErrorMessage[128];
 
@@ -121,7 +133,6 @@ private:
     char crsCode[4];
     char callingCrsCode[4];
     int nrTimeOffset;
-    nrDataSourceCallback callback;
 
     // Internal Utility Methods (ported from raildataXmlClient)
     static bool compareTimes(const NationalRailService& a, const NationalRailService& b);
@@ -131,7 +142,6 @@ private:
     void fixFullStop(char* input);
     void trim(char* &start, char* &end);
     bool equalsIgnoreCase(const char* a, int a_len, const char* b);
-    void setYieldCallback(nrDataSourceCallback cb) { callback = cb; }
 
     bool serviceMatchesFilter(const char* filter, const char* serviceId);
     void sanitiseData();
@@ -143,7 +153,7 @@ public:
 
     // DataManager Scheduling Implementations
     uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
-    uint8_t getPriorityTier() override;
+    PriorityTier getPriorityTier() override;
     void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
 private:
@@ -157,13 +167,13 @@ private:
 
 public:
     // iDataSource Implementation
-    int updateData() override;
-    int getLastUpdateStatus() const { return taskStatus; }
+    UpdateStatus updateData() override;
+    UpdateStatus getLastUpdateStatus() const { return taskStatus; }
     const char* getLastErrorMsg() const override { return lastErrorMessage; }
-    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+    UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
     // Configuration & Data Access
-    int init(const char *wsdlHost, const char *wsdlAPI, nrDataSourceCallback cb);
+    UpdateStatus init(const char *wsdlHost, const char *wsdlAPI);
     bool isInitialized() const { return soapHost[0] != '\0'; }
     void configure(const char* token, const char* crs, const char* filter = "", const char* callingCrs = "", int offset = 0);
     
@@ -188,9 +198,9 @@ public:
     /**
      * @brief Performs a full WSDL discovery to find the latest SOAP endpoints.
      *        Updates the global config and persists to disk on success.
-     * @return int Update status code.
+     * @return UpdateStatus code.
      */
-    int refreshWsdl();
+    UpdateStatus refreshWsdl();
 };
 
 #endif // NATIONAL_RAIL_DATA_SOURCE_HPP

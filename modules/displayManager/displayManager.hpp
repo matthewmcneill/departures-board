@@ -44,19 +44,11 @@ class appContext;
 #include <U8g2lib.h>
 #include <variant>
 #include "iConfigurable.hpp"
-#include <boards/nationalRailBoard/nationalRailBoard.hpp>
-#include <boards/tflBoard/tflBoard.hpp>
-#include <boards/busBoard/busBoard.hpp>
-#include <boards/systemBoard/diagnosticBoard.hpp>
-#include <boards/systemBoard/splashBoard.hpp>
-#include <boards/systemBoard/loadingBoard.hpp>
-#include <boards/systemBoard/wizardBoard.hpp>
-#include <boards/systemBoard/helpBoard.hpp>
-#include <boards/systemBoard/messageBoard.hpp>
-#include <boards/systemBoard/firmwareUpdateBoard.hpp>
-#include <boards/systemBoard/sleepingBoard.hpp>
+#include "boards/interfaces/iDisplayBoard.hpp"
 #include <widgets/wifiStatusWidget.hpp>
 #include <messaging/messagePool.hpp>
+
+#include "departuresBoard.hpp"
 
 #include "departuresBoard.hpp"
 
@@ -90,27 +82,21 @@ enum class SystemBoardId {
     SYS_DIAGNOSTIC       // Hardware calibration grid
 };
 
-/**
- * @brief Type-safe union overlay spanning the maximum memory footprint 
- *        of any hardware Board class implementation.
- */
-using BoardVariant = std::variant<std::monostate, NationalRailBoard, TfLBoard, BusBoard, SleepingBoard, DiagnosticBoard>;
-
 class DisplayManager : public iConfigurable {
 private:
     U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2; ///< Concrete hardware display driver instance
-    BoardVariant slots[MAX_BOARDS]; // Memory pool for statically allocated boards
+    iDisplayBoard* slots[MAX_BOARDS]; // Memory pool for heap allocated boards
     int activeSlotIndex;           // Currently selected slot in the pool (0 to MAX_BOARDS-1)
 
     // System Boards Memory
-    SplashBoard splashBoard;
-    LoadingBoard loadingBoard;
-    WizardBoard wizardBoard;
-    HelpBoard helpBoard;
-    MessageBoard messageBoard;
-    FirmwareUpdateBoard firmwareUpdateBoard;
-    SleepingBoard sleepingBoard;
-    DiagnosticBoard diagnosticBoard;
+    iDisplayBoard* splashBoard;
+    iDisplayBoard* loadingBoard;
+    iDisplayBoard* wizardBoard;
+    iDisplayBoard* helpBoard;
+    iDisplayBoard* messageBoard;
+    iDisplayBoard* firmwareUpdateBoard;
+    iDisplayBoard* sleepingBoard;
+    iDisplayBoard* diagnosticBoard;
     
     wifiStatusWidget wifiWarning;
     appContext* context; ///< Reference to parent context for DI
@@ -118,9 +104,6 @@ private:
     // Display configuration set by ConfigManager
     int brightness;                ///< Display brightness level (0-255)
     bool flipScreen;               ///< True if display is inverted 180 degrees
-    bool sleepEnabled;             ///< True if scheduled sleep is active
-    byte sleepStarts;              ///< Hour (0-23) to start sleep mode
-    byte sleepEnds;                ///< Hour (0-23) to end sleep mode
     bool forcedSleep;              ///< Manual sleep override
     
     // Unified rendering target (pool or system)
@@ -185,7 +168,7 @@ public:
      * @param status The error code from a data source.
      * @return The corresponding system board ID for delegation.
      */
-    SystemBoardId mapErrorToId(int status);
+    SystemBoardId mapErrorToId(UpdateStatus status);
 
     /**
      * @brief Trigger a synchronized render of the current board.
@@ -204,69 +187,6 @@ public:
      * @param newFlipScreen True to invert the display 180 degrees.
      */
     void setFlipScreen(bool newFlipScreen);
-
-    /**
-     * @brief Check if scheduled sleep is enabled.
-     * @return True if the sleep timer is active.
-     */
-    /**
-     * @brief Check if scheduled sleep is currently enabled.
-     * @return True if the sleep timer is active.
-     */
-    bool getSleepEnabled() const;
-    /**
-     * @brief Enable or disable scheduled sleep.
-     * @param newSleepEnabled True to activate the timer.
-     */
-    void setSleepEnabled(bool newSleepEnabled);
-
-    /**
-     * @brief Get the hour the sleep schedule begins.
-     * @return Hour (0-23).
-     */
-    byte getSleepStarts() const;
-
-    /**
-     * @brief Configure the sleep schedule start time.
-     * @param newSleepStarts Hour (0-23).
-     */
-    void setSleepStarts(byte newSleepStarts);
-
-    /**
-     * @brief Get the hour the sleep schedule ends.
-     * @return Hour (0-23).
-     */
-    byte getSleepEnds() const;
-
-    /**
-     * @brief Configure the sleep schedule end time.
-     * @param newSleepEnds Hour (0-23).
-     */
-    void setSleepEnds(byte newSleepEnds);
-
-    /**
-     * @brief Get the manual forced sleep state.
-     * @return True if sleep is manually overridden to active.
-     */
-    bool getForcedSleep() const;
-
-    /**
-     * @brief Manually force the screen into sleep mode.
-     * @param active True to snooze immediately.
-     */
-    void setForcedSleep(bool active);
-
-    /**
-     * @brief Check if the display is currently in a sleep/clock state.
-     * @return True if sleeping.
-     */
-    bool getIsSleeping() const;
-
-    /**
-     * @brief Internal logic to determine if the system SHOULD be snoozing.
-     * @return True if schedule or manual override dictates sleep.
-     */
-    bool isSnoozing();
 
     /**
      * @brief Control the hardware diagnostic grid overlay.
@@ -328,11 +248,11 @@ public:
      * @brief Obtain the specific Board object stored in a slot.
      */
     /**
-     * @brief Retrieve the raw BoardVariant pointer for a specific slot.
+     * @brief Retrieve the board pointer for a specific slot.
      * @param slotIndex Index (0 to MAX_BOARDS-1).
-     * @return BoardVariant* Pointer to the variant storage.
+     * @return iDisplayBoard** Pointer to the struct storage.
      */
-    BoardVariant* getSlot(int slotIndex);
+    iDisplayBoard** getSlot(int slotIndex);
 
     /**
      * @brief Retrieve the board implementation from a specific slot.
@@ -382,6 +302,3 @@ public:
      */
     void reapplyConfig(const Config& config) override { applyConfig(config); }
 };
-
-// Global instance exposed
-extern DisplayManager displayManager;

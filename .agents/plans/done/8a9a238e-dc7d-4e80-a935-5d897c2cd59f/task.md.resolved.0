@@ -1,0 +1,6 @@
+# Task List
+- [ ] Remove LittleFS.h and WiFi.h from configManager.hpp
+- [ ] Add LittleFS.h and WiFi.h to configManager.cpp (if missing)
+- [ ] Remove WiFi.h from systemManager.hpp
+- [ ] Remove SPIFFS.h from webServer.cpp
+- [ ] Remove duplicate departuresBoard.hpp from departuresBoard.cpp

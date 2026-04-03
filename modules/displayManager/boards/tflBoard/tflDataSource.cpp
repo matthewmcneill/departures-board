@@ -8,16 +8,16 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/tflBoard/tflDataSource.cpp
- * Description: Implementation of TfL data source ported from TfLdataClient.
+ * Description: Implementation of TfL data source.
  *
  * Exported Functions/Classes:
- * - tflDataSource: Data client for TfL Unified API.
+ * - tflDataSource: [Class implementation]
  *   - configure(): Sets Naptan ID and optional API key.
- *   - updateData(): Performs SSL GET request and parses JSON response.
- *   - getStation(): Accessor for parsed station metadata.
- *   - getServicesCount(): Returns current found arrivals.
- *   - getService(): Accessor for individual arrival data.
- *   - getMessagesCount(): Accessor for line disruption messages.
+ *   - updateData(): Initiates JSON fetch.
+ *   - executeFetch(): Internal synchronous HTTPS pipeline.
+ *   - testConnection(): Validates API credentials and station IDs.
+ *   - getStationData(): Accessor for parsed station metadata.
+ *   - getMessagesData(): Accessor for line disruption messages.
  */
 
 #include "tflDataSource.hpp"
@@ -34,14 +34,18 @@ extern class appContext appContext;
 
 const char* tflDataSource::serviceNumbers[TFL_MAX_FETCH] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
 
-tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
+/**
+ * @brief Initialize the TfL data source.
+ * Allocates background and render buffers (TflStation) and creates synchronization mutexes.
+ */
+tflDataSource::tflDataSource() : id(0), maxServicesRead(false), messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
     stationData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     renderData = std::unique_ptr<TflStation>(new (std::nothrow) TflStation());
     if (stationData) memset(stationData.get(), 0, sizeof(TflStation));
     if (renderData) memset(renderData.get(), 0, sizeof(TflStation));
     
     dataMutex = xSemaphoreCreateMutex();
-    taskStatus = UPD_NO_DATA;
+    taskStatus = UpdateStatus::NO_DATA;
 
     lastErrorMsg[0] = '\0';
     tflAppkey[0] = '\0';
@@ -51,26 +55,43 @@ tflDataSource::tflDataSource() : id(0), maxServicesRead(false), callback(nullptr
     isTestMode = false;
 }
 
-void tflDataSource::configure(const char* naptanId, const char* apiKey, tflDataSourceCallback cb) {
+/**
+ * @brief Configure station ID and API key.
+ * @param naptanId The TfL Naptan ID.
+ * @param apiKey Your TfL API App Key.
+ */
+void tflDataSource::configure(const char* naptanId, const char* apiKey) {
     if (naptanId) strlcpy(tubeId, naptanId, sizeof(tubeId));
     if (apiKey) strlcpy(tflAppkey, apiKey, sizeof(tflAppkey));
-    callback = cb;
 }
 
-int tflDataSource::updateData() {
-    if (taskStatus == UPD_PENDING) {
-        return UPD_PENDING;
+/**
+ * @brief Trigger an asynchronous data refresh.
+ * Marks the task as pending and requests a priority fetch from the DataManager.
+ * @return UpdateStatus::PENDING.
+ */
+UpdateStatus tflDataSource::updateData() {
+    if (taskStatus == UpdateStatus::PENDING) {
+        return UpdateStatus::PENDING;
     }
     
+    if (taskStatus == UpdateStatus::SUCCESS) {
+        taskStatus = UpdateStatus::NO_CHANGE;
+        return UpdateStatus::SUCCESS;
+    }
+    if (taskStatus == UpdateStatus::NO_CHANGE) {
+        return UpdateStatus::NO_CHANGE;
+    }
+
     LOG_INFO("DATA", "TfL Source: Requesting priority fetch from DataManager");
-    taskStatus = UPD_PENDING;
+    taskStatus = UpdateStatus::PENDING;
     appContext.getDataManager().requestPriorityFetch(this);
-    return UPD_PENDING;
+    return UpdateStatus::PENDING;
 }
 
-uint8_t tflDataSource::getPriorityTier() {
-    if (renderData && renderData->numServices == 0) return TIER_HIGH;
-    return TIER_MEDIUM;
+PriorityTier tflDataSource::getPriorityTier() {
+    if (renderData && renderData->numServices == 0) return PriorityTier::PRIO_HIGH;
+    return PriorityTier::PRIO_MEDIUM;
 }
 
 /**
@@ -89,7 +110,7 @@ void tflDataSource::executeFetch() {
 
     if (!xStation || !parser || !httpsClient) {
         LOG_ERROR("DATA", "TfL Board: Memory allocation failed!");
-        taskStatus = UPD_DATA_ERROR;
+        taskStatus = UpdateStatus::DATA_ERROR;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
@@ -101,7 +122,7 @@ void tflDataSource::executeFetch() {
     httpsClient->setConnectionTimeout(5000);
 
     if (!httpsClient->connect(apiHost, 443)) {
-        taskStatus = UPD_NO_RESPONSE;
+        taskStatus = UpdateStatus::NO_RESPONSE;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
@@ -120,13 +141,12 @@ void tflDataSource::executeFetch() {
     request += F("\r\nConnection: close\r\n\r\n");
     
     httpsClient->print(request);
-    if (callback) callback();
 
     unsigned long ticker = millis() + 350;
     int retry = 0;
     while(!httpsClient->available() && retry < 40) { delay(200); retry++; }
     if (retry >= 40) {
-        taskStatus = UPD_TIMEOUT;
+        taskStatus = UpdateStatus::TIMEOUT;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
@@ -134,7 +154,7 @@ void tflDataSource::executeFetch() {
     String statusLine = httpsClient->readStringUntil('\n');
     if (!statusLine.startsWith(F("HTTP/")) || statusLine.indexOf(F("200 OK")) == -1) {
         httpsClient->stop();
-        taskStatus = UPD_HTTP_ERROR;
+        taskStatus = UpdateStatus::HTTP_ERROR;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
@@ -170,7 +190,7 @@ void tflDataSource::executeFetch() {
             // network hardware interrupts service without triggering Task Watchdog Timers (TWDT).
             yieldCounter++;
             if (yieldCounter % 500 == 0) vTaskDelay(1);
-            if (millis() > ticker) { if (callback) callback(); ticker = millis() + 350; }
+            if (millis() > ticker) { ticker = millis() + 350; }
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
@@ -178,7 +198,7 @@ void tflDataSource::executeFetch() {
 
     if (isTestMode) {
         snprintf(lastErrorMsg, sizeof(lastErrorMsg), "AUTH SUCCESS %lums", (unsigned long)(millis()-perfTimer));
-        taskStatus = UPD_SUCCESS;
+        taskStatus = UpdateStatus::SUCCESS;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         return;
     }
@@ -200,7 +220,7 @@ void tflDataSource::executeFetch() {
                         dataReceived++;
                         yieldCounter++;
                         if (yieldCounter % 500 == 0) vTaskDelay(1);
-                        if (millis() > ticker) { if (callback) callback(); ticker = millis() + 350; }
+                        if (millis() > ticker) { ticker = millis() + 350; }
                     }
                     vTaskDelay(pdMS_TO_TICKS(10));
                 }
@@ -227,6 +247,20 @@ void tflDataSource::executeFetch() {
             if (m == 0) strcpy(stationData->service[i].expectedTime, "Due");
             else sprintf(stationData->service[i].expectedTime, "%d mins", m);
         }
+
+        uint32_t hashVal = 2166136261u;
+        hashVal = hashPrimitive(stationData->numServices, hashVal);
+        hashVal = hashString(stationData->location, hashVal);
+        for(int i = 0; i < stationData->numServices; i++) {
+            hashVal = hashString(stationData->service[i].destination, hashVal);
+            hashVal = hashString(stationData->service[i].lineName, hashVal);
+            hashVal = hashString(stationData->service[i].expectedTime, hashVal);
+            hashVal = hashPrimitive(stationData->service[i].timeToStation, hashVal);
+        }
+        for(int i = 0; i < messagesData.getCount(); i++) {
+            hashVal = hashString(messagesData.getMessage(i), hashVal);
+        }
+        stationData->contentHash = hashVal;
     }
 
     bool changed = true;
@@ -248,7 +282,7 @@ void tflDataSource::executeFetch() {
     for (int i = 0; i < messagesData.getCount(); i++) {
         renderMessages.addMessage(messagesData.getMessage(i));
     }
-    taskStatus = changed ? UPD_SUCCESS : UPD_NO_CHANGE;
+    taskStatus = changed ? UpdateStatus::SUCCESS : UpdateStatus::NO_CHANGE;
     xSemaphoreGive(dataMutex);
 
     snprintf(lastErrorMsg, sizeof(lastErrorMsg), "SUCCESS %lums [%ld]", (unsigned long)(millis()-perfTimer), dataReceived);
@@ -279,9 +313,9 @@ void tflDataSource::executeFetch() {
 /**
  * @brief Performs a lightweight connection and authentication test.
  * @param token Optional token to test (overrides stored configuration).
- * @return int Update status code.
+ * @return UpdateStatus code.
  */
-int tflDataSource::testConnection(const char* token, const char* stationId) {
+UpdateStatus tflDataSource::testConnection(const char* token, const char* stationId) {
     LOG_INFO("DATA", "TfL Board: Performing lightweight Auth-only check via testConnection");
     
     // Save current state to avoid clobbering an active board's settings
@@ -304,15 +338,15 @@ int tflDataSource::testConnection(const char* token, const char* stationId) {
     // Execute update
     // Synchronously execute it for testConnection
     executeFetch();
-    int result = taskStatus;
+    UpdateStatus result = taskStatus;
     
     // Restore state
     isTestMode = prevTestMode;
     strlcpy(tflAppkey, prevKey, sizeof(tflAppkey));
     strlcpy(tubeId, prevTubeId, sizeof(tubeId));
     
-    // Convert UPD_NO_CHANGE (1) to UPD_SUCCESS (0) for test result consistency since we don't care about board state changing
-    if (result == UPD_NO_CHANGE) result = UPD_SUCCESS;
+    // Convert NO_CHANGE (1) to SUCCESS (0) for test result consistency since we don't care about board state changing
+    if (result == UpdateStatus::NO_CHANGE) result = UpdateStatus::SUCCESS;
 
     return result;
 }

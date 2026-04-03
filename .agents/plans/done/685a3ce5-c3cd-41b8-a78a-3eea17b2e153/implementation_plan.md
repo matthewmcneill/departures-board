@@ -6,11 +6,11 @@ This plan details the changes for improving the Screensaver Clock configuration 
 
 ### Configuration Model (Backend/C++)
 
-#### [MODIFY] [configManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.hpp)
+#### [MODIFY] [configManager.hpp](modules/configManager/configManager.hpp)
 - Add `MODE_CLOCK = 3` to the `BoardTypes` enum to formally recognize the clock type.
 - Add `int brightness = -1;` to the `BoardConfig` struct. A value of `-1` will signify using the global system brightness.
 
-#### [MODIFY] [configManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.cpp)
+#### [MODIFY] [configManager.cpp](modules/configManager/configManager.cpp)
 - **`save()`**: Include the per-board `brightness` field in the `boards` JSON array.
 - **`loadConfig()`**: Read the per-board `brightness` field from the `boards` JSON array (default to `-1`).
 - **`validate()`**: Add a `case MODE_CLOCK:` to the `switch (bc.type)` block to mark clocks as always complete.
@@ -19,7 +19,7 @@ This plan details the changes for improving the Screensaver Clock configuration 
 
 ### Web Portal (Frontend/Web)
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/web/index.html)
+#### [MODIFY] [index.html](web/index.html)
 - **CSS**: 
     - Add a global style for `input[type="range"]` to use `accent-color: var(--primary);` ensuring all sliders (system and board) are orange.
 - **HTML**:
@@ -45,7 +45,7 @@ This plan details the changes for improving the Screensaver Clock configuration 
 ### Automated Tests
 - **Pio Build**: Run `pio run` to verify that the C++ changes compile correctly.
 - **Playwright Tests**:
-    - Create a new test file [clock_config.spec.ts](file:///Users/mcneillm/Documents/Projects/departures-board/test/web/tests/clock_config.spec.ts) based on the existing `portal.spec.ts`.
+    - Create a new test file [clock_config.spec.ts](test/web/tests/clock_config.spec.ts) based on the existing `portal.spec.ts`.
     - **Verify**:
         - Selecting "Screensaver / Clock" correctly hides the "Filter" field.
         - The new "Brightness" slider appears and is functional.

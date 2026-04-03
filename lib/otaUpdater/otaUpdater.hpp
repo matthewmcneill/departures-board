@@ -9,12 +9,14 @@
  *
  * Module: lib/otaUpdater/otaUpdater.hpp
  * Description: Encapsulates firmware lifecycle targeting GitHub releases
- *              and manages over-the-air updates from the Web UI.
+ *              and manages over-the-air updates.
  *
  * Exported Functions/Classes:
- * - isFirmwareUpdateAvailable: Logic to compare local version with remote tags.
- * - otaUpdater: Class wrapping daily maintenance and manual update hooks.
- * - ota: Global orchestration instance.
+ * - otaUpdater: [Class] Wraps maintenance and manual update hooks.
+ *   - tick: Daily maintenance log/check.
+ *   - checkForFirmwareUpdate: Manual GitHub release probe and install.
+ *   - checkPostWebUpgrade: Resource reconciliation after FS updates.
+ * - isFirmwareUpdateAvailable: Semantic version comparison helper.
  */
 
 #pragma once

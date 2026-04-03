@@ -13,12 +13,14 @@
  *              is in a scheduled sleep state.
  *
  * Exported Functions/Classes:
- * - SleepingBoard: System board for inactivity periods.
+ * - SleepingBoard: [Class] System board for inactivity periods.
  *   - setShowClock(): Toggle time visibility.
  *   - setDimmedBrightness(): Configure display contrast for night mode.
- *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
- *   - tick(): Logic update for burn-in protection shifts.
- *   - render(): Primary drawing method for the large clock.
+ *   - setOledOff(): Toggle full display power-down.
+ *   - init(): Service injection point.
+ *   - onActivate() / onDeactivate(): Display lifecycle hooks.
+ *   - tick() / render(): Logic and drawing entry points.
+ *   - configure(): Applies standard settings from BoardFactory.
  */
 
 #pragma once
@@ -81,7 +83,7 @@ public:
 
     // Minimal interface implementations
     /** @return Always 0 for system boards. */
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
 
     /** @brief No-op animation tick. */
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override {}

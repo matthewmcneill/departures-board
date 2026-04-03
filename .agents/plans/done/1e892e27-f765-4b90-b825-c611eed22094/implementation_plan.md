@@ -6,7 +6,7 @@ Reorder the bottom navigation buttons in the web portal to follow the user flow 
 
 ### Web Portal
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 
 - Reorder `<a>` tags in `<nav class="bottom-nav">`:
   1. WIFI (`tab-wifi`)

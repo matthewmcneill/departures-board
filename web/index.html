@@ -1865,7 +1865,11 @@
         </div>
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 1rem;">
           <input type="checkbox" name="firmwareUpdatesEnabled" id="auto-update" style="width: auto; margin:0;" />
-          Automatically install updates
+          Enable firmware updates
+        </label>
+        <label id="label-update-daily" style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 0.5rem; margin-left: 1.5rem;">
+          <input type="checkbox" name="updateDaily" id="auto-update-daily" style="width: auto; margin:0;" />
+          Perform daily check (approx. 3am)
         </label>
       </article>
 
@@ -2105,6 +2109,10 @@
 
           <!-- Primary filter (e.g. Platforms / Lines) -->
           <label id="label-filter-primary">Filter<input type="text" name="filter" placeholder="Optional" /></label>
+          <label id="label-time-offset" style="display: none;">Time Offset (Minutes)
+            <input type="number" name="timeOffset" step="1" min="0" max="60" placeholder="0" />
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Hide services departing in less than this many minutes.</p>
+          </label>
 
           <!-- Upstream B2.4: Tube Specific Filters -->
           <div id="tube-filters-extra" style="display: none;">
@@ -2310,10 +2318,11 @@
   <!-- ========================================================= -->
   <script>
     // Handles state management, API communication, and dynamic rendering.
-    const PLACEHOLDER_DOTS = "••••••••";
-    const MAX_KEYS = 8; // Matching platformio.ini
-    const MAX_BOARDS = 6; // Matching platformio.ini
-    const MAX_SCHEDULE_RULES = 15;
+    // Global constants - these are defaults which may be overridden by /api/config limits
+    let MAX_KEYS = 8;
+    let MAX_BOARDS = 6;
+    let MAX_SCHEDULE_RULES = 24;
+    const PLACEHOLDER_DOTS = '••••••••';
 
     const PROVIDER_LOGOS = {
       rail: '<svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg>',
@@ -2521,13 +2530,22 @@
           this.state.config = await res.json();
           this.state.keys = this.state.config.keys || [];
 
+          // Apply dynamic limits from firmware if present
+          if (this.state.config.limits) {
+            const lim = this.state.config.limits;
+            if (lim.MAX_BOARDS) MAX_BOARDS = lim.MAX_BOARDS;
+            if (lim.MAX_KEYS) MAX_KEYS = lim.MAX_KEYS;
+            if (lim.MAX_SCHEDULE_RULES) MAX_SCHEDULE_RULES = lim.MAX_SCHEDULE_RULES;
+            console.log("Hardware limits applied:", lim);
+          }
+
           // Fetch curated feeds
           const rssRes = await fetch('/rss.json').catch(() => null);
           if (rssRes && rssRes.ok) {
             this.state.curatedFeeds = await rssRes.json();
           }
 
-          this.migrateLegacySleep();
+          // Schema migration is now handled natively by the firmware in v2.5+
           this.render();
           this.renderSchedule();
           this.refreshEyes();
@@ -2695,6 +2713,7 @@
         sysForm.rssFirst.checked = cfg.system.rssFirst;
 
         document.getElementById('auto-update').checked = cfg.system.firmwareUpdatesEnabled;
+        document.getElementById('auto-update-daily').checked = cfg.system.updateDaily || false;
         document.getElementById('fw-version-text').innerText = `Version: B${cfg.system.configVersion || '3.0'}`;
         if (cfg.wifi) {
           this.updateSSIDDropdown(cfg.wifi.ssid);
@@ -2836,21 +2855,7 @@
         this.saveAll();
       },
 
-      migrateLegacySleep: function () {
-        if (!this.state.config) return;
-        const cfg = this.state.config;
-        const hasSchedules = cfg.schedules && cfg.schedules.some(s => s.board !== -1);
-
-        if (cfg.system?.sleepEnabled && !hasSchedules) {
-          console.log("Migrating legacy sleep settings to schedule...");
-          const startH = cfg.system.sleepEnds || 7;
-          const endH = cfg.system.sleepStarts || 23;
-          const boardIdx = cfg.boards.findIndex(b => b.id) || 0;
-
-          cfg.schedules[0] = { startH: startH, startM: 0, endH: endH, endM: 0, board: boardIdx };
-          cfg.system.sleepEnabled = false;
-        }
-      },
+      // Legacy migrateLegacySleep removed in v2.5
 
       renderBoards: function () {
         document.getElementById('max-boards-count').textContent = MAX_BOARDS;
@@ -3236,6 +3241,7 @@
         form.tflLine.value = b.tflLine || '';
         form.tflDir.value = b.tflDir || 0;
         if (form.layout) form.layout.value = b.layout || '';
+        if (form.timeOffset) form.timeOffset.value = b.timeOffset || 0;
 
         // Use a hidden input or state to preserve offset if not editable in this UI yet
         this.state.editingBoardOffset = b.offset || 0;
@@ -3338,6 +3344,9 @@
         if (diagRowLon) diagRowLon.style.display = (t === 3) ? 'none' : 'table-row';
         if (diagRowTime) diagRowTime.style.display = (t === 3) ? 'table-row' : 'none';
         if (diagRowTz) diagRowTz.style.display = (t === 3) ? 'table-row' : 'none';
+
+        const timeOffsetLabel = document.getElementById('label-time-offset');
+        if (timeOffsetLabel) timeOffsetLabel.style.display = (t === 0) ? 'block' : 'none';
 
         const btnLocationApi = document.getElementById('btn-location-api');
         const btnLocationGps = document.getElementById('btn-location-gps');
@@ -3787,7 +3796,7 @@
           tflLine: f.tflLine.value,
           tflDir: parseInt(f.tflDir.value),
           layout: f.layout ? f.layout.value : '',
-          offset: this.state.editingBoardOffset || 0
+          timeOffset: parseInt(f.timeOffset.value) || 0
         };
         if (!this.state.config) this.state.config = { boards: [] };
         if (this.state.editingIndex === -1) this.state.config.boards.push(b);
@@ -3841,6 +3850,7 @@
             firmwareUpdatesEnabled: document.getElementById('auto-update').checked,
             waitForScroll: sysForm.waitForScroll.checked,
             rssFirst: sysForm.rssFirst.checked,
+            updateDaily: document.getElementById('auto-update-daily').checked,
             overrideTimeout: parseInt(document.getElementById('schedule-override-timeout').value),
             carouselInterval: parseInt(document.getElementById('schedule-carousel-interval').value)
           },

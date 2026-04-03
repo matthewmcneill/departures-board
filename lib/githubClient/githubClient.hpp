@@ -9,20 +9,13 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/githubClient/githubClient.h
+ * Module: lib/githubClient/githubClient.hpp
  * Description: Client to query the GitHub REST API for release information.
  *
  * Exported Functions/Classes:
- * - class github: JSON streaming parser and API client for fetching GitHub releases.
- *   - github(): Constructor.
- *   - getLatestRelease(): Polls the GitHub API to fetch latest release metadata.
- *   - getLastError(): Retrieves the last error message from the client.
- *   - accessToken: Attribute for GitHub API authorization.
- *   - releaseId: Attribute storing the ID of the fetched release.
- *   - releaseDescription: Attribute storing the description/name of the release.
- *   - releaseAssets: Attribute storing the number of available assets.
- *   - releaseAssetURL: Attribute array of asset download URLs.
- *   - releaseAssetName: Attribute array of asset names.
+ * - github: [Class] API client using streaming JSON parser.
+ *   - getLatestRelease(): Polls GitHub for release metadata.
+ *   - getLastError(): Diagnostic error retrieval.
  */
 #pragma once
 #include <JsonListener.h>

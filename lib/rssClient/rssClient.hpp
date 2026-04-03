@@ -9,16 +9,16 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/rssClient/rssClient.h
+ * Module: lib/rssClient/rssClient.hpp
  * Description: Client to fetch and parse RSS feeds via HTTP/HTTPS.
  *
  * Exported Functions/Classes:
- * - rssClient: Main service class for RSS feed integration.
- * - rssClient::loadFeed: Fetches and parses an RSS feed from a URL.
- * - rssClient::setYieldCallback: Registers a callback for non-blocking I/O.
- * - rssClient::reapplyConfig: Updates RSS settings from central configuration.
- *   - executeFetch(): Internal synchronous HTTP pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
+ * - rssClient: [Class] XML news feed manager.
+ *   - loadFeed(): Strategic entry point for manual headline sync.
+ *   - updateData(): Background-driven schedule update.
+ *   - executeFetch(): Worker-thread background fetch implementation with snprintf.
+ *   - addRssMessage(): Syncs headlines to the global MessagePool using char buffers.
+ *   - startTag() / endTag(): XML path tracking using fixed-size char buffers.
  */
 
 #pragma once
@@ -34,23 +34,21 @@
 #define MAX_RSS_TITLES 5
 #define MAX_RSS_TITLE_SIZE 140
 
+class MessagePool; // Forward declaration
+struct Config;     // Forward declaration
+
 class rssClient: public xmlListener, public iConfigurable, public iDataSource {
 
     private:
 
-        String grandParentTagName = "";
-        String parentTagName = "";
-        String tagName = "";
-        String tagPath = "";
+        char tagPath[64] = "";
         int tagLevel = 0;
-        String currentPath = "";
         char lastErrorMessage[128];
-        void (*yieldCallback)() = nullptr;
         
         bool rssEnabled = false;
         bool rssAddedtoMsgs = false;
         uint32_t nextFetchTimeMillis = 0;
-        volatile int lastRssUpdateResult = 0;
+        volatile UpdateStatus lastRssUpdateResult = UpdateStatus::SUCCESS;
         char rssURL[128] = "";
         char rssName[48] = "";
 
@@ -104,8 +102,8 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
         unsigned long getNextRssUpdate() const { return nextFetchTimeMillis; }
         void setNextRssUpdate(unsigned long val) { nextFetchTimeMillis = val; }
 
-        int getLastRssUpdateResult() const { return lastRssUpdateResult; }
-        void setLastRssUpdateResult(int val) { lastRssUpdateResult = val; }
+        UpdateStatus getLastRssUpdateResult() const { return lastRssUpdateResult; }
+        void setLastRssUpdateResult(UpdateStatus val) { lastRssUpdateResult = val; }
 
         const char* getRssURL() const { return rssURL; }
         void setRssURL(const char* url) { strncpy(rssURL, url, sizeof(rssURL)-1); }
@@ -117,18 +115,13 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
          * @brief Default constructor for the RSS client.
          */
         rssClient();
-        /**
-         * @brief Registers a callback function to be invoked during blocking I/O operations.
-         * @param cb Pointer to the yield function.
-         */
-        void setYieldCallback(void (*cb)()) { yieldCallback = cb; }
 
 /**
  * @brief Connects to the provided URL, fetches the RSS feed, and streams the XML to extract item titles.
  * @param url The URL of the RSS feed to fetch (supports HTTP and HTTPS).
  * @return Connection status constant.
  */
-        int loadFeed(String url);
+        UpdateStatus loadFeed(String url);
 /**
  * @brief Retrieves the last error message encountered during RSS fetch operations.
  * @return A string containing the error description.
@@ -142,11 +135,21 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
          */
         virtual void reapplyConfig(const Config& config) override;
 
+        /**
+         * @brief Append RSS headlines to the scrolling message pool.
+         */
+        void addRssMessage(MessagePool& pool, const Config& config);
+
+        /**
+         * @brief Clean up RSS messages from the board message pool.
+         */
+        void removeRssMessage(MessagePool& pool);
+
         // --- iDataSource Interface Methods ---
-        int updateData() override;
-        int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+        UpdateStatus updateData() override;
+        UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
         uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
-        uint8_t getPriorityTier() override { return TIER_LOW; } // RSS is low priority background data
+        PriorityTier getPriorityTier() override { return PriorityTier::PRIO_LOW; } // RSS is low priority background data
         void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
         const char* getLastErrorMsg() const override { return getLastError(); }
         void executeFetch() override;

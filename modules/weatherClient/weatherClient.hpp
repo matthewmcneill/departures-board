@@ -9,19 +9,18 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: modules/weatherClient/weatherClient.h
+ * Module: modules/weatherClient/weatherClient.hpp
  * Description: Client to fetch and parse weather data from the OpenWeatherMap REST API.
  *              Stateless implementation that updates provided WeatherStatus objects.
  *
  * Exported Functions/Classes:
- * - weatherClient: Main service class for OpenWeatherMap integration.
- * - weatherClient::updateWeather: Fetches and parses weather data for a status object.
- * - weatherClient::setYieldCallback: Registers a callback for non-blocking I/O.
- * - weatherClient::reapplyConfig: Updates API keys from central configuration.
- *   - executeFetch(): Internal synchronous HTTP pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning network requests.
+ * - weatherClient: [Class] Service for OpenWeatherMap integration.
+ *   - updateWeather(): UI-driven manual sync.
+ *   - executeFetch(): Task-worker entry for background fetching.
+ *   - reapplyConfig(): Dynamic API key and preference sync.
  */
 #pragma once
+#include <Arduino.h>
 #include <JsonStreamingParser.h>
 #include "iConfigurable.hpp"
 #include "weatherStatus.hpp"
@@ -38,7 +37,6 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
         String currentKey = "";
         String currentObject = "";
         int weatherItem = 0;
-        void (*yieldCallback)() = nullptr;
 
         WeatherStatus bgStatus; // Background Double Buffer used during active HTTP parsing
         WeatherStatus* activeStatus = nullptr; // Pointer to the UI-facing active status structure
@@ -59,11 +57,11 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
         char lastErrorMsg[128];
 
         // iDataSource boilerplate implementations (as updateWeather is used specifically)
-        int updateData() override { return 0; }
+        UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
         const char* getLastErrorMsg() const override { return lastErrorMsg; }
-        int testConnection(const char* token = nullptr, const char* stationId = nullptr) override { return 0; }
+        UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override { return UpdateStatus::SUCCESS; }
         uint32_t getNextFetchTime() override { return nextWeatherUpdate; }
-        uint8_t getPriorityTier() override { return activeApiKey.length() == 0 ? 255 : TIER_LOW; } // Weather is low priority
+        PriorityTier getPriorityTier() override { return activeApiKey.length() == 0 ? static_cast<PriorityTier>(255) : PriorityTier::PRIO_LOW; } // Weather is low priority
         void setNextFetchTime(uint32_t forceTimeMillis) override { nextWeatherUpdate = forceTimeMillis; }
 
         bool getWeatherEnabled() const { return weatherEnabled; }
@@ -76,11 +74,14 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
         void setWeatherMsg(const char* newMsg) { strncpy(weatherMsg, newMsg, sizeof(weatherMsg)-1); }
 
         /**
+         * @brief Check if a background fetch is currently queued or executing.
+         */
+        bool isFetchPending() const { return fetchPending; }
+
+        /**
          * @brief Default constructor for the weather client.
          */
         weatherClient();
-
-        void setYieldCallback(void (*cb)()) { yieldCallback = cb; }
 
 /**
  * @brief Connects to OpenWeatherMap API, retrieves the current weather for a location, and parses the JSON response.
@@ -139,5 +140,3 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
     public:
         void executeFetch() override;
 };
-
-extern weatherClient* currentWeather;

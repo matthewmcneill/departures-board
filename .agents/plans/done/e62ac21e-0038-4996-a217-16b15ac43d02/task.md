@@ -1,0 +1,21 @@
+- [x] Audit raw pointer allocations (`new` and `delete`) in `src/` and `modules/`.
+- [x] Draft `implementation_plan.md` for RAII migration.
+- [x] Review plan with user.
+- [/] **Execution Phase**
+  - [/] App / System Context Refactor
+    - [ ] `appContext.cpp`: Migrate `buttonHandler` to `std::make_unique`.
+    - [ ] `systemManager.cpp`: Remove manual `delete inputDevice`.
+  - [ ] Web Services Refactor
+    - [ ] `webServer.cpp`: Migrate `WebHandlerManager` to `std::make_unique`.
+    - [ ] `webHandlerManager.cpp`: Migrate `ApiTestParams` and `ApiTestDataSource` to smart pointers.
+  - [ ] WiFi & Weather Clients Refactor
+    - [ ] `wifiManager.cpp`: Migrate `DNSServer` to `std::make_unique`.
+    - [ ] `weatherClient.cpp`: Modernize raw `unique_ptr(new T())` to `std::make_unique<T>()`.
+  - [ ] Display Manager & Data Sources Refactor
+    - [ ] `nationalRailDataSource.cpp`: Replace transient network objects with `std::unique_ptr`.
+    - [ ] `splashBoard.cpp`: Overhaul `splashLogo` into a managed `std::unique_ptr`.
+    - [ ] `diagnosticBoard.cpp`: Refine `activeLayout` allocation.
+    - [ ] Board Controllers (`busBoard`, `tflBoard`, `nationalRailBoard`): Remove `delete activeLayout`.
+- [ ] Verification
+  - [ ] `pio check`
+  - [ ] `/flash-test` and `/monitor` validation.

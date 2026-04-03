@@ -11,6 +11,13 @@
  *
  * Module: modules/displayManager/widgets/progressBarWidget.cpp
  * Description: Implementation of animated progress bar rendering.
+ *
+ * Exported Functions/Classes:
+ * - progressBarWidget: [Class implementation]
+ *   - setMessage(): Updates the status label (supports PROGMEM).
+ *   - setPercent(): Starts/snaps to a progress value with optional animation.
+ *   - tick(): Interpolates current percentage during active animations.
+ *   - render(): Paints the label and the checkered stipple progress bar.
  */
 
 #include "progressBarWidget.hpp"
@@ -19,7 +26,12 @@
 #include <string.h>
 
 /**
- * @brief Initialize the progress bar with its position and dimensions.
+ * @brief Initialize the progress bar with its position and default font.
+ * @param _x X coordinate.
+ * @param _y Y coordinate.
+ * @param _w Width (-1 for full screen).
+ * @param _h Height (-1 for auto).
+ * @param _font Optional font override.
  */
 progressBarWidget::progressBarWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
     : iGfxWidget(_x, _y, _w, _h), currentPercent(0), targetPercent(0), startPercent(0), animStartTime(0), animDurationMs(0), oldPercent(0), textChanged(false), showPercentText(false), font(_font) {
@@ -28,8 +40,9 @@ progressBarWidget::progressBarWidget(int _x, int _y, int _w, int _h, const uint8
 }
 
 /**
- * @brief Set the caption message string.
- * @param newMessage Pointer to the string character array.
+ * @brief Set the status text displayed above the bar.
+ * Matches existing content to avoid redundant redraws.
+ * @param newMessage Pointer to the C-string.
  */
 void progressBarWidget::setMessage(const char* newMessage) {
     if (newMessage == nullptr) return;
@@ -40,8 +53,9 @@ void progressBarWidget::setMessage(const char* newMessage) {
 }
 
 /**
- * @brief Set the caption message from a Flash-stored string.
- * @param newMessage PROGMEM string helper.
+ * @brief Set the status text from a Flash-stored string (PROGMEM).
+ * Reducer for memory-constrained strings.
+ * @param newMessage Flash string pointer.
  */
 void progressBarWidget::setMessage(const __FlashStringHelper* newMessage) {
     char buf[256];
@@ -61,9 +75,10 @@ void progressBarWidget::setShowPercentText(bool show) {
 }
 
 /**
- * @brief Set the progress value with optional animation duration.
- * @param percent Value from 0-100.
- * @param durationMs Animation length in milliseconds.
+ * @brief Sets the target progress percentage.
+ * Triggers interpolation logic on subsequent calls to tick().
+ * @param percent Target value (0-100).
+ * @param durationMs Animation length in milliseconds (0 = snap).
  */
 void progressBarWidget::setPercent(int percent, uint32_t durationMs) {
     // Clamp to valid range

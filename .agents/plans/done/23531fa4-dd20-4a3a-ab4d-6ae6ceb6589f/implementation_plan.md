@@ -30,24 +30,24 @@ This plan refines the "Clock" board dialog by removing irrelevant fields, adding
 
 ### Configuration & Backend
 
-#### [MODIFY] [configManager.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.hpp)
+#### [MODIFY] [configManager.hpp](modules/configManager/configManager.hpp)
 - Add `int brightness = 0` to `BoardConfig` struct (0 = Use Global).
 - Add `MODE_CLOCK = 3` to `BoardTypes` enum.
 
-#### [MODIFY] [configManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/configManager/configManager.cpp)
+#### [MODIFY] [configManager.cpp](modules/configManager/configManager.cpp)
 - Update JSON serialization/deserialization to support per-board `brightness`.
 - Update `validate()` to support `MODE_CLOCK`.
 
-#### [MODIFY] [displayManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/displayManager.cpp)
+#### [MODIFY] [displayManager.cpp](modules/displayManager/displayManager.cpp)
 - In `showBoard()`, if the board has a `brightness > 0`, apply it to the hardware. Otherwise, revert to the global system brightness.
 
 ### Web API & UI
 
-#### [MODIFY] [webHandlerManager.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/webServer/webHandlerManager.cpp)
+#### [MODIFY] [webHandlerManager.cpp](modules/webServer/webHandlerManager.cpp)
 - Update `handleTestBoard()` for "clock" type to return real NTP sync status and current system time.
 - Sync `brightness` in `handleGetConfig` and `handleSaveAll`.
 
-#### [MODIFY] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+#### [MODIFY] [index.html](portal/index.html)
 - **Add Brightness Controls**: Add a "Use Global" checkbox and a range input to the board editor modal.
 - **Slider Logic**: Add an event listener to the checkbox to enable/disable the slider.
 - **Toggle Visibility**: Hide "Filter" and show "Brightness" controls when board type is Clock.

@@ -9,26 +9,29 @@
  *
  * Module: modules/displayManager/boards/busBoard/busDataSource.hpp
  * Description: Bus-specific data source implementing iDataSource.
- *              Fetches and parses bus arrival information from bustimes.org.
  *
  * Exported Functions/Classes:
- * - BusService: Structure representing a single bus service arrival.
- * - BusStop: Structure holding data for a bus stop, including multiple services.
- * - busDataSourceCallback: Callback for when bus data is updated.
- * - busDataSource: Class that fetches and parses bus arrival information.
- * - busDataSource::updateData: Fetches latest bus arrival data.
- * - busDataSource::configure: Configures the data source with stop location and filters.
- * - busDataSource::getStationData: Returns the current station data.
- * - busDataSource::getStopLongName: Retrieves the long name of a bus stop.
- * - busDataSource::cleanFilter: Cleans a raw filter string.
+ * - busDataSource: [Class] Data client for bustimes.org.
+ *   - updateData(): Initiates JSON fetch.
+ *   - getLastUpdateStatus(): Retrieval of fetch result codes.
+ *   - getLastErrorMsg(): Accessor for source error strings.
+ *   - testConnection(): Validates station IDs.
+ *   - getNextFetchTime() / setNextFetchTime(): Polling interval management.
+ *   - getPriorityTier(): Context-aware fetch prioritization.
+ *   - configure(): Sets ATCO code and route filters.
+ *   - getStationData(): Accessor for parsed station metadata.
+ *   - getMessagesData(): Accessor for disruption messages.
+ *   - getStopLongName(): Retrieves human-readable stop name.
+ *   - cleanFilter(): Utility for route string normalization.
  *   - executeFetch(): Internal synchronous HTTPS scraping pipeline.
- *   - fetchTask(): FreeRTOS static entry point for pinning HTML scraping.
- *   - serviceNumbers: Static array of stable pointers for numbering (1-20).
+ * - BusService: [Struct] Single service arrival record.
+ * - BusStop: [Struct] Bus stop arrival board model.
  */
 
 #ifndef BUS_DATA_SOURCE_HPP
 #define BUS_DATA_SOURCE_HPP
 
+#include <Arduino.h>
 #include "../../../dataManager/iDataSource.hpp"
 #include "../../messaging/messagePool.hpp"
 #include <JsonListener.h>
@@ -38,10 +41,13 @@
 #include <freertos/semphr.h>
 #include <memory>
 
-#define BUS_MAX_LOCATION 45   // Maximum length of a location string
-#define BUS_MAX_LINE_NAME 9   // Maximum length of a bus line name
-#define BUS_MAX_SERVICES 9    // Maximum number of services to store on the board
-#define BUS_MAX_FETCH 20      // Number of services to fetch from the API
+/**
+ * @brief Data Length Constants
+ */
+constexpr size_t BUS_MAX_LOCATION = 45;   // Maximum length of a location string
+constexpr size_t BUS_MAX_LINE_NAME = 9;   // Maximum length of a bus line name
+constexpr size_t BUS_MAX_SERVICES = 9;    // Maximum number of services to store on the board
+constexpr size_t BUS_MAX_FETCH = 20;      // Number of services to fetch from the API
 
 /**
  * @brief Represents a single bus service arrival.
@@ -62,6 +68,7 @@ struct BusStop {
     int numServices;                      // Number of services currently loaded
     bool boardChanged;                    // Flag indicating if the board content has changed
     BusService service[BUS_MAX_SERVICES]; // Array of bus services
+    uint32_t contentHash;                 // Hash of active displayable payload
 };
 
 /**
@@ -83,7 +90,7 @@ private:
     static const uint32_t BASELINE_MIN_INTERVAL = 30000;
     
     SemaphoreHandle_t dataMutex;          // Thread-safe lock protecting data transfers
-    volatile int taskStatus;              // Cross-thread execution status tracking (e.g., UPD_PENDING)
+    volatile UpdateStatus taskStatus;     // Cross-thread execution status tracking (e.g., UpdateStatus::PENDING)
     
     // Internal parser state (migrated from busDataClient)
     const char* apiHost = "bustimes.org";   // API host address
@@ -156,10 +163,10 @@ public:
     // iDataSource implementation
     /**
      * @brief Fetches latest bus arrival data.
-     * @return int Success status or error code.
+     * @return UpdateStatus Success status or error code.
      */
-    int updateData() override;
-    int getLastUpdateStatus() const { return taskStatus; }
+    UpdateStatus updateData() override;
+    UpdateStatus getLastUpdateStatus() const { return taskStatus; }
 
     /**
      * @brief Returns the last error message.
@@ -167,16 +174,16 @@ public:
      */
     const char* getLastErrorMsg() const override { return lastErrorMsg; }
     uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
-    uint8_t getPriorityTier() override;
+    PriorityTier getPriorityTier() override;
     void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
     /**
      * @brief Performs a lightweight connection and authentication test.
      * @param token Optional token to test (overrides stored configuration). Can be nullptr for data sources that do not use keys.
      * @param stationId Optional station/stop ID to test (overrides stored configuration).
-     * @return 0 for success (UPD_SUCCESS), non-zero for error (UPD_*).
+     * @return UpdateStatus::SUCCESS for success, otherwise an error status.
      */
-    int testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
+    UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
     // Bus specific methods
     /**
@@ -198,9 +205,9 @@ public:
      * @brief Retrieves the long name of a bus stop.
      * @param locationId ATCO code or location ID.
      * @param locationName Buffer to store the long name.
-     * @return int Success status.
+     * @return UpdateStatus Success status.
      */
-    int getStopLongName(const char *locationId, char *locationName);
+    UpdateStatus getStopLongName(const char *locationId, char *locationName);
 
     /**
      * @brief Cleans a raw filter string.

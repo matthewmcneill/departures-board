@@ -8,10 +8,11 @@
  * Description: Interface defining the superset of widgets available to Bus layouts.
  *
  * Exported Functions/Classes:
- * - iBusLayout: Base class for Bus arrival layouts.
- *   - tick(uint32_t currentMillis): Periodic logic update.
- *   - render(U8G2& display): Full screen render.
- *   - renderAnimationUpdate(U8G2& display, uint32_t currentMillis): High-speed animation pass.
+ * - iBusLayout: [Interface] Base class for Bus arrival layouts.
+ *   - iBusLayout(): Constructor with context injection.
+ *   - tick(): View-specific timing logic.
+ *   - render(): Full screen rendering.
+ *   - renderAnimationUpdate(): High-speed animation pass.
  */
 
 #pragma once

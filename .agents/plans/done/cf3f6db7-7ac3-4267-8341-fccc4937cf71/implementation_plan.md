@@ -4,7 +4,7 @@ The goal is to modernize the "Active Displays" list by adopting an ordered "slot
 
 ## Proposed Changes
 
-### [Web Portal] [index.html](file:///Users/mcneillm/Documents/Projects/departures-board/portal/index.html)
+### [Web Portal] [index.html](portal/index.html)
 
 #### [MODIFY] UI Layout & Styles
 - **Ordered List Layout**: Implement a single-column vertical list of `.board-slot` cards. This ensures the execution order (0-5) is visually clear.

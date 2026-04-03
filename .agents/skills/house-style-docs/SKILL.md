@@ -124,7 +124,7 @@ Whenever an implementation plan is produced, it MUST be reviewed and updated to 
 ### Structure:
 - **Goal Description**: Clear, concise explanation of the objective.
 - **User Review Required**: Highlight critical decisions or breaking changes using GitHub alerts.
-- **Proposed Changes**: Grouped by component, using `[MODIFY]`, `[NEW]`, and `[DELETE]` tags with absolute file links.
+- **Proposed Changes**: Grouped by component, using `[MODIFY]`, `[NEW]`, and `[DELETE]` tags with repository-relative file links (e.g., `[file.cpp](modules/foo/file.cpp)`). Absolute paths to the project directory are FORBIDDEN.
 - **Verification Plan**: Practical steps for automated and manual verification.
 
 ---

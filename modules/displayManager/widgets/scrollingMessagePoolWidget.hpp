@@ -15,9 +15,9 @@
  *
  * Exported Functions/Classes:
  * - scrollingMessagePoolWidget: UI component for managed message rotation.
- *   - addMessagePool(): Register a data source to the rotation.
- *   - tick(): Automated pool traversal and scroller logic.
- *   - loadNextMessage(): Internal selection logic.
+ *   - addMessagePool(MessagePool*): Registers a data source to the rotation.
+ *   - clearPools(): Removes all pools and resets the rotation state.
+ *   - tick(uint32_t): Handles automated pool traversal and marquee logic.
  */
 
 #ifndef SCROLLING_MESSAGE_POOL_WIDGET_HPP

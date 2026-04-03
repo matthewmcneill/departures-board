@@ -6,12 +6,22 @@
  *
  * Module: modules/displayManager/boards/systemBoard/diagnosticBoard.hpp
  * Description: Controller for the hardware diagnostic and calibration board.
- *              Renders a coordinate grid and alignment boxes.
+ *
+ * Exported Functions/Classes:
+ * - DiagnosticBoard: [Class] Core controller for hardware diagnostics.
+ *   - getBoardName(): Semantic identity for telemetry.
+ *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
+ *   - tick() / render(): Logic and drawing entry points.
+ *   - configure(): Logic for applying optional display parameters.
+ *   - updateData(): No-op data pull (fixed logic result).
+ *   - getLastErrorMsg(): Error accessor.
+ *   - getWeatherStatus(): Shared weather state accessor.
  */
 
 #ifndef DIAGNOSTIC_BOARD_HPP
 #define DIAGNOSTIC_BOARD_HPP
 
+#include <memory>
 #include "../interfaces/iDisplayBoard.hpp"
 #include "layouts/layoutDiagnostic.hpp"
 
@@ -20,7 +30,7 @@ class appContext;
 class DiagnosticBoard : public iDisplayBoard {
 private:
     appContext* context;
-    layoutTestDiagnostic* activeLayout;
+    std::unique_ptr<layoutTestDiagnostic> activeLayout;
     WeatherStatus weather;
 
 public:
@@ -37,7 +47,7 @@ public:
     void renderAnimationUpdate(U8G2& display, uint32_t currentMillis) override;
     void configure(const struct BoardConfig& config) override;
     const char* getLastErrorMsg() override { return nullptr; }
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
     WeatherStatus& getWeatherStatus() override { return weather; }
 };
 
