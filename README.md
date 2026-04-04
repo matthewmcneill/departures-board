@@ -1,168 +1,56 @@
-# departures-board [![License Badge](https://img.shields.io/badge/BY--NC--SA%204.0%20License-grey?style=flat&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Antigravity Departures Board 
 
-This is an ESP32 based Departures Board replicating those at many UK railway stations (using data provided by National Rail's public API), London Underground Arrivals boards (using data provided by TfL) and UK wide bus stops (using data provided by bustimes.org). This implementation uses a 3.12" OLED display panel with SSD1322 display controller onboard. STL files are also provided for 3D printing the custom desktop case. A small number of pre-assembled departure boards are also available exclusively from our [store](https://store.gadec.co.uk).
+[![License Badge](https://img.shields.io/badge/BY--NC--SA%204.0%20License-grey?style=flat&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
-A model railway (00 gauge) version of this project is also available [here](https://github.com/gadec-uk/tiny-departures-board).
+## About the System
 
-## Features
-* All processing is done onboard by the ESP32 processor, no middleware servers
-* Smooth animation matching the real departures and arrivals boards
-* Displays up to the next 9 departures with scheduled time, platform number, destination, calling stations and expected departure time
-* Optionally only show services calling at a selected railway station
-* Optionally display an alternate railway station between specific hours of the day
-* Displays Network Rail service messages
-* Train information (operator, class, number of coaches etc.)
-* Displays up to the next 9 arrivals with time to station (London Underground mode)
-* TfL station and network service messages (London Underground mode)
-* In Bus mode, displays up to the next 9 departures with service number, destination, vehicle registration and schedule/expected time
-* Optionally display RSS headline feeds with UK news, sports and rail news
-* Fully-featured browser based configuration screens - choose any station on the UK network / London Tube & DLR network / UK Bus Stops
-* Automatic firmware updates (optional)
-* Displays the weather at the selected location (optional)
-* STL files provided for custom 3D printed case
+The **Departures Board** is an ESP32-powered IoT device designed to provide at-a-glance, real-time transport information. It drives a high-contrast OLED display to replicate the departure boards at UK railway stations, London Underground platforms, and UK bus stops.
 
-![Image](https://github.com/user-attachments/assets/6ce61d63-7d64-43c7-b7f4-8f0893a5d708)
+## Getting Started
 
-## Quick Start
+To keep the project clean, user setup has been split into three distinct stages:
 
-### What you'll need
+- **Stage 1:** 🛠️ **[Hardware Guide (docs/Hardware.md)](docs/Hardware.md)**: Details on setting up the hardware, including the ESP32, OLED Screen SPI wiring, and 3D printing the case.
+- **Stage 2:** 🚀 **[Loading Software (docs/LoadingSoftware.md)](docs/LoadingSoftware.md)**: Steps for flashing the initial firmware images via esptool or the web installer.
+- **Stage 3:** ⚙️ **[Configuring the Device (docs/ConfiguringDevice.md)](docs/ConfiguringDevice.md)**: First-time WiFi access point setup, entering your API tokens, and configuring the displays and the schedules.
 
-1. An ESP32 D1 Mini board (or clone) - either USB-C or Micro-USB version with CH9102 recommended. For example, from [AliExpress](https://www.aliexpress.com/item/1005005972627549.html).
-2. A 3.12" 256x64 OLED Display Panel with SSD1322 display controller onboard. For example, from [AliExpress](https://www.aliexpress.com/item/1005008558326731.html).
-3. A 3D printed case using the [STL](https://github.com/gadec-uk/departures-board/tree/main/stl) files provided. If you don't have a 3D printer, you can use a 3D print service, local library or group.
-4. A National Rail Darwin Lite API token (these are free of charge - request one [here](https://realtime.nationalrail.co.uk/OpenLDBWSRegistration)).
-5. Optionally, an OpenWeather Map API token to display weather conditions at the selected station (these are also free, sign-up for a free developer account [here](https://home.openweathermap.org/users/sign_up)).
-6. Some intermediate soldering skills.
+---
 
-<img src="https://github.com/user-attachments/assets/5ae96896-62cc-4880-a3a8-79ac505e7605" align="center">
+> [!NOTE]
+> **Massive Credit to Gadec**  
+> This project was originally conceived, designed, and developed by **[Gadec](https://github.com/gadec-uk)**. The physical case designs, the original display paradigms, and the initial inspiration for this hardware project belong entirely to their original `departures-board` repository. If you love this project, please consider supporting the original author by [buying them a coffee!](https://buymeacoffee.com/gadec.uk)
 
-### Preparing the OLED display for 4-Wire SPI Mode
+A model railway (00 gauge) version of the original project is also available [here](https://github.com/gadec-uk/tiny-departures-board).
 
-<img src="https://github.com/user-attachments/assets/cd176b57-ced6-486b-9a0d-9eee150dc813" align="right">
-As supplied, the display is usually shipped with 8-bit 80XX mode enabled. This needs to be changed to 4-Wire SPI mode by removing one link and adding another (the image shows where to make these changes on the rear of the circuit board).
+### Why this Fork is Different
 
-### Wiring Guide
+This v3.0 repository is an **Object-Oriented, agent-driven rewrite** engineered for maximum extensibility. While the underlying logic has been completely modernized, it is **fully compatible** with the original hardware: 
 
-Solder the 4 SPI connections, plus power and ground. The wires **MUST** be soldered to the **BACK** of the ESP32 Mini board (the side without the components) to enable it to sit in place in the case. You can solder directly to the pins on the OLED screen or for the best fit (if you are a more experienced solderer) de-solder and remove the header pins and solder directly to the board. You cannot use Dupont connectors, they will not fit the custom case design.
+* **Seamless Migration**: If you want to move over from the original `gadec-uk/departures-board`, this system uses the exact same physical casing constraints and OLED SPI wiring. It will migrate existing Gadec setups.
+* **More Layouts & Data**: We have introduced a fully dynamic WASM-based display simulator, expanded transit mode options, and implemented automated scrolling message pooling for diverse RSS and alert APIs.
+* **Easier Configuration**: Features an ultra-lightweight, natively executed C++ web portal running securely on the ESP32. This provides an intuitive, robust interface for offline setup and transit configuration.
+* **Agentic Capabilities via Antigravity:** Developed utilizing *[Antigravity](https://github.com/matthewmcneill/antigravity)* agentic capabilities, empowering LLM agents to rapidly add layouts or API integrations.
 
-| OLED Pin | ESP32 Mini Pin |
-|:---------|:-------------:|
-| 1 VSS | GND |
-| 2 VCC_IN | 3.3v |
-| 4 D0/CLK | IO18 |
-| 5 D1/DIN | IO23 |
-| 14 D/C# | IO5 |
-| 16 CS# | IO26 |
+![Image](docs/assets/main_board.jpg)
 
-<img src="https://github.com/user-attachments/assets/a0ac50ab-f8d4-4528-ac38-7fb4c9ac0137" align="center">
+---
 
-### Installing the firmware
+## Developing departures-board
 
-The project uses the Arduino framework and the ESP32 v3.2.0 core. If you want to build from source, you'll need [PlatformIO](https://platformio.org).
+Whether developing locally or iteratively using AI agents, our rigorous system architecture allows for extensive customizations. Start your journey with our Developer Guide:
 
-The easiest way to install the firmware for the first time is to use the online web based installer [here](https://departures-board.github.io). You will need to use Chrome or Edge as your browser as Safari/Firefox do not support Web Serial.
+- 📚 **[Developer Guide (docs/DeveloperGuide.md)](docs/DeveloperGuide.md)**: Agentic usage instructions, local build environments, and the gateway to our deep structural specifications (like the Memory Architecture and WebAssembly Simulator).
 
-Alternatively, you can download pre-compiled firmware images from the [releases](https://github.com/gadec-uk/departures-board/releases). These can be installed over the USB serial connection using [esptool](https://github.com/espressif/esptool). If you have python installed, install with *pip install esptool*. For convenience, a pre-compiled executable version for Windows is included [here](https://github.com/gadec-uk/departures-board/tree/main/esptool).
+---
 
-If the board is not recognised you are probably using a version with the CP2104 USB-to-Serial chip. Drivers for the CP2104 are [here](https://www.silabs.com/developer-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads)
+## Licence & Attributions
 
-Attach the ESP32 Mini board via it's USB port and use the following command to flash the firmware:
+This work is licensed under **Creative Commons Attribution-NonCommercial-ShareAlike 4.0**. To view a copy of this licence, visit [https://creativecommons.org/licenses/by-nc-sa/4.0/](https://creativecommons.org/licenses/by-nc-sa/4.0/). 
 
-```
-esptool.py --chip esp32 --baud 460800 write_flash -z \
-  0x1000 bootloader.bin \
-  0xe000 boot_app0.bin \
-  0x8000 partitions.bin \
-  0x10000 firmware.bin
-```
+> **Note:** The terms of the licence strictly prohibit commercial use of this work, which includes *any* reselling of the work in kit or assembled form for commercial gain.
 
-The tool should automatically find the correct serial port. If it fails to, you can manually specify the correct port by adding *--port COMx* (replace *COMx* with your actual port, e.g. COM3, /dev/ttyUSB0, etc.).
-
-If using the pre-compiled esptool.exe version on Windows, save the esptool.exe and the four firmware (.bin) files to the same directory. Open a command prompt (Windows Key + R, type cmd and press enter) and change to the directory you saved the files into. Now type the following command on one line and press enter:
-```
-.\esptool --chip esp32 --baud 460800 write_flash -z 0x1000 bootloader.bin 0xe000 boot_app0.bin 0x8000 partitions.bin 0x10000 firmware.bin
-```
-
-Subsequent updates can be carried out automatically over-the-air or you can manually update from the Web GUI.
-
-### First time configuration
-
-WiFiManager is used to setup the initial WiFi connection on first boot. The ESP32 will broadcast a temporary WiFi network named "Departures Board", connect to the network and follow the on-screen instuctions. You can also watch a video walkthrough of setup and configuration process below.
-[![Departures Board Setup Video](https://github.com/user-attachments/assets/176f0489-d846-42de-913f-eb838d9ab941)](https://youtu.be/PZVyE_SoLBU)
-
-Once the ESP32 has established an Internet connection, the next step is to enter your API keys (if you do not enter a National Rail token, the board will only operate in Tube and Bus modes). Finally, select a station location. Start typing the location name and valid choices will be displayed as you type.
-
-### Web GUI
-
-At start-up, the ESP32's IP address is displayed. To change the station or to configure other miscellaneous settings, open the web page at that address. The settings available are:
-- **Board Mode** - switch between National Rail Departures, London Underground Arrivals or UK Bus Stops modes (**firmware v1.8 or above**)
-- **Station** - start typing a few characters of a station name and select from the drop-down station picker displayed (National Rail mode).
-- **Only show services calling at** - filter services based on *calling at* location (National Rail mode - if you want to see the next trains *to* a particular station).
-- **Only show these platforms** - filter services based on the platform they depart from. Note: there are many services for which platform number is not supplied, these would also be filtered out.
-- **Alternate station** - automatically switch to displaying an alternate station between the hours set here (National Rail mode).
-- **Only show services calling at (alternate active)** - as above, but applies when the alternate station is active.
-- **Only show these platforms (alternate active)** - as above, but applies when the alternate station is active.
-- **Underground Station** - start typing a few characters of an Underground or DLR station name and select from the drop-down station picker displayed (London Underground mode).
-- **Bus Stop ATCO code** - Type the ATCO number of the bus stop you want to monitor (see [below](#bus-stop-atco-codes) for details).
-- **Only show these Bus services** - filter buses by service numbers (enter a list of the service numbers, comma separated).
-- **Recently verfied ATCO codes** - quickly select from recently used bus stop ATCO codes.
-- **Brightness** - adjusts the brightness of the OLED screen.
-- **Show the date on screen** - displays the date in the upper-right corner (useful if you're also using this as a desk clock!)
-- **Include bus replacement services** - optionally include bus replacement services (National Rail mode - shown with a small bus icon in place of platform number).
-- **Include current weather at station location** - this option requires a valid OpenWeather Map API key (National Rail/Bus mode).
-- **Show platform numbers if available** - deselecting this option will hide platform numbers (National Rail).
-- **Enable automatic firmware updates at startup** - automatically checks for AND installs the latest firmware from this repository when the system starts up.
-- **Enable daily check for firmware updates** - when enabled, the system will check for and install any updates just after midnight if the board is powered on.
-- **Enable overnight sleep mode (screensaver)** - if you're running the board 24/7, you can help prevent screen burn-in by enabling this option overnight.
-- ***Flip the display 180°** - Rotates the display (the case design provides two different viewing angles depending on orientation).
-- ***Set custom hostname for this board** - change the hostname from the default "DeparturesBoard", useful if you are running multiple boards.
-- ***Custom (non-UK) time zone (only for clock)** - if you're not based in the UK you can set the clock to display in your local time zone (see [below](#custom-time-zones) for details).
-- ***Suppress calling at / information messages** - removes all horizontally scrolling text (much lower functionality but less distracting).
-- ***Increase API refresh rate** - Reduces the interval between data refreshes (National Rail mode). Uses more data and is not usually required.
-- ***Display RSS news headlines feed** - Displays the top headlines from the selected feed after any other service messages (Rail/Tube mode).
-- ***Display departures offset by** - Displays future (or past) services offset by the selected time. This does not affect the clock display (Rail mode).
-
-Items marked * are on the *Advanced Options* tab.
-
-A drop-down menu (top-right) adds the following options:
-- **Check for Updates** - manually checks for and installs any updates to the firmware.
-- **Edit API Keys** - view/edit your National Rail, OpenWeather Map and Transport for London API keys.
-- **Clear WiFi Settings** - deletes the stored WiFi credentials and restarts in WiFiManager mode (useful to change WiFi network).
-- **Restart System** - restarts the ESP32.
-
-#### Other Web GUI Endpoints
-
-A few other urls have been implemented, primarily for debugging/developer use:
-- **/factoryreset** - deletes all configuration information, api keys and WiFi credentials. The entire setup process will need to be repeated.
-- **/update** - for manual firmware updates. Download the latest binary from the [releases](https://github.com/gadec-uk/departures-board/releases). Only the **firmware.bin** file should be uploaded via */update*. The other .bin files are not used for upgrades. This method is *not* recommended for normal use.
-- **/info** - displays some basic information about the current running state.
-- **/formatffs** - formats the filing system, erasing the configuration files (but not the WiFi credentials).
-- **/dir** - displays a (basic) directory listing of the file system with the ability to view/delete files.
-- **/upload** - upload a file to the file system.
-- **/control** - an endpoint for automation of sleep mode. Takes optional parameters *sleep* and *clock* - e.g. /control?sleep=1&clock=0 will force sleep mode and turn off the display completely. /control?sleep=0 will revert to normal operation. Always returns current state as json.
-
-### Bus Stop ATCO codes
-Every UK bus stop has a unique ATCO code number. To find the ATCO code of the stop you want to monitor, go to [bustimes.org/search](https://bustimes.org/search) and type a location in the search box. Select the location from the list of places shown and then select the particular stop you want from the list. The ATCO code is shown on the stop information page. After entering the code in the Departures Board setup screen, tap the **Verify** button and the location will be shown confirming your selection. You must use the **Verify** button *before* you can save changes. Up to ten of the most recently verified ATCO codes are saved and can be selected from a dropdown list for quick access.
-
-<img src="https://github.com/user-attachments/assets/8a41ec6d-5f15-4102-b3d5-c09260986319" align="center">
-
-### Custom Time Zones
-To set a custom time zone for the departure board clock, you will need to enter the POSIX time zone string for your location. Some examples are `CST6CDT,M3.2.0/2,M11.1.0/2` for Canada (Central Time) and `AEST-10AEDT,M10.1.0,M4.1.0/3` for Australia (Eastern Time). The easiest way to find the correct syntax is to ask your favourite AI chat engine *"What is the POSIX time zone string for ..."*. Note that changing the time zone only affects the clock (and date) display. Service times are *always* shown in UK time.
-
-### Donating
-
-<a href="https://buymeacoffee.com/gadec.uk"><img src="https://github.com/user-attachments/assets/e5960046-051a-45af-8730-e23d4725ab53" align="left" width="160" style="margin-right: 15px;" /></a>
-This software is completely free for non-commercial use without obligation. If you would like to support me and encourage ongoing updates, you can [buy me a coffee!](https://buymeacoffee.com/gadec.uk)
-
-
-### Agent Collaboration (Antigravity Workflows)
-This project uses **Antigravity Workflows** for managing multiple agent sessions in parallel. To prevent hardware and build conflicts, use the following commands:
-- `/queue-plan`: Queue the current implementation plan for execution.
-- `/queue-list`: List the current state of the execution queue.
-- `/queue-do-next`: Release the current lock and hand over to the next session.
-- `/queue-do-this`: Claim the lock for this session and start work.
-- `/queue-pick`: Pick a specific task from the queue to work on next.
-- `/queue-release`: Force release the current hardware lock.
-
-### Licence
-This work is licensed under **Creative Commons Attribution-NonCommercial-ShareAlike 4.0**. To view a copy of this licence, visit [https://creativecommons.org/licenses/by-nc-sa/4.0/](https://creativecommons.org/licenses/by-nc-sa/4.0/). Note: the terms of the licence prohibit commericial use of this work, this includes *any* reselling of the work in kit or assembled form for commercial gain.
+### Data API Attributions
+The underlying data that drives this board is provided freely via APIs by UK transit authorities. We strictly adhere to their accreditation requirements:
+- Powered by National Rail Enquiries (OpenLDBWS Lite).
+- Powered by TfL Open Data. Contains OS data © Crown copyright and database rights 2016 and Geomni UK Map data © and database rights [2019].
+- UK Bus data provided by `bustimes.org` API.

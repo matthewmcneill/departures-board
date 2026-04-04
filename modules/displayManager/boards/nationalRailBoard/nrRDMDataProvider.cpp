@@ -168,8 +168,8 @@ void nrRDMDataProvider::executeFetch() {
             filter["trainServices"][0]["operator"] = true;
             filter["trainServices"][0]["length"] = true;
             filter["trainServices"][0]["destination"][0]["locationName"] = true;
-
-            filter["trainServices"][0]["destination"][0]["locationName"] = true;
+            filter["trainServices"][0]["subsequentCallingPoints"][0]["callingPoint"][0]["locationName"] = true;
+            filter["trainServices"][0]["subsequentCallingPoints"][0]["callingPoint"][0]["st"] = true;
 
             YieldingWiFiClient yieldingStream(wifiStream);
             JsonDocument doc;
@@ -218,6 +218,28 @@ void nrRDMDataProvider::executeFetch() {
                         strlcpy(s.destination, destinations[0]["locationName"], NR_MAX_LOCATION);
                     }
                     
+                    // Extract Calling Points for First Service
+                    if (sIdx == 0) {
+                        JsonArray sub_cps = svc["subsequentCallingPoints"].as<JsonArray>();
+                        if (sub_cps.size() > 0) {
+                            JsonArray callingPoints = sub_cps[0]["callingPoint"].as<JsonArray>();
+                            for (JsonVariant cp : callingPoints) {
+                                if (cp["locationName"].is<const char*>()) {
+                                    if (stationData->firstServiceCalling[0] != '\0') {
+                                        strlcat(stationData->firstServiceCalling, ", ", NR_MAX_CALLING);
+                                    }
+                                    strlcat(stationData->firstServiceCalling, cp["locationName"].as<const char*>(), NR_MAX_CALLING);
+                                    
+                                    if (cp["st"].is<const char*>()) {
+                                        strlcat(stationData->firstServiceCalling, " (", NR_MAX_CALLING);
+                                        strlcat(stationData->firstServiceCalling, cp["st"].as<const char*>(), NR_MAX_CALLING);
+                                        strlcat(stationData->firstServiceCalling, ")", NR_MAX_CALLING);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Coach Formation logic if 'formation' block is added here in future
                     sIdx++;
                 }

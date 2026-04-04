@@ -1,0 +1,88 @@
+{
+  "header": {
+    "title": "Manchester Piccadilly",
+    "callingPoint": "via Main Line",
+    "platform": "",
+    "firstServiceCalling": ""
+  },
+  "services": [
+    [
+      "1st",
+      null,
+      "Manchester Piccadilly",
+      "3",
+      null
+    ],
+    [
+      "2nd",
+      "19:36",
+      "Wilmslow",
+      "9",
+      "On time"
+    ],
+    [
+      "3rd",
+      "19:37",
+      "Alderley Edge",
+      "7",
+      "On time"
+    ],
+    [
+      "4th",
+      "19:37",
+      "Liverpool Lime Street",
+      "14",
+      "19:39"
+    ],
+    [
+      "5th",
+      null,
+      "Manchester Piccadilly",
+      "8",
+      null
+    ],
+    [
+      "6th",
+      "19:43",
+      "Sleaford",
+      "13",
+      "On time"
+    ],
+    [
+      "7th",
+      "19:45",
+      "Holyhead",
+      "14",
+      "On time"
+    ],
+    [
+      "8th",
+      "19:46",
+      "Stoke-on-Trent",
+      null,
+      "Cancelled"
+    ],
+    [
+      "9th",
+      null,
+      "Manchester Piccadilly",
+      "2",
+      null
+    ],
+    [
+      "10th",
+      null,
+      "Manchester Piccadilly",
+      null,
+      null
+    ]
+  ],
+  "messages": [
+    "Major engineering work is taking place between London Euston and Milton Keynes Central from Good Friday 3 April to Wednesday 8 April. More details and the full impact to your journey can be found in <a href=\"https://www.nationalrail.co.uk/engineering-works/euston-3-apr-20260403/\">Status and Disruptions. </a>",
+    "Major engineering work is taking place between Preston and Glasgow Central / Edinburgh from Saturday 4 April to Easter Monday 6 April. More details and the full impact to your journey can be found in <a href=\"https://www.nationalrail.co.uk/engineering-works/preston-edinburgh-glasgow-central-4-apr-20260404/\">Status and Disruptions.</a>"
+  ],
+  "weather": {
+    "id": 800,
+    "isNight": false
+  }
+}

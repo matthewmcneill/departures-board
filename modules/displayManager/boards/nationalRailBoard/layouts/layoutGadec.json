@@ -7,37 +7,11 @@
       "geometry": {
         "x": 0,
         "y": 0,
-        "w": 228,
-        "h": 11
-      },
-      "visible": true,
-      "font": "NatRailSmall9"
-    },
-    {
-      "id": "msgWidget",
-      "type": "scrollingMessagePoolWidget",
-      "geometry": {
-        "x": 0,
-        "y": 27,
         "w": 256,
-        "h": 12
+        "h": 13
       },
       "visible": true,
       "font": "NatRailSmall9"
-    },
-    {
-      "id": "sysClock",
-      "type": "clockWidget",
-      "geometry": {
-        "x": 98,
-        "y": 52,
-        "w": 60,
-        "h": 12
-      },
-      "visible": true,
-      "blink": false,
-      "format": "HH_MM_SS",
-      "font": "NatRailClockLarge9"
     },
     {
       "id": "row0Widget",
@@ -46,7 +20,7 @@
         "x": 0,
         "y": 13,
         "w": 256,
-        "h": 14
+        "h": 15
       },
       "visible": true,
       "skipRows": 0,
@@ -81,13 +55,25 @@
       ]
     },
     {
+      "id": "msgWidget",
+      "type": "scrollingMessagePoolWidget",
+      "geometry": {
+        "x": 0,
+        "y": 28,
+        "w": 256,
+        "h": 13
+      },
+      "visible": true,
+      "font": "NatRailSmall9"
+    },
+    {
       "id": "servicesWidget",
       "type": "serviceListWidget",
       "geometry": {
         "x": 0,
-        "y": 40,
+        "y": 41,
         "w": 256,
-        "h": 13
+        "h": 14
       },
       "visible": true,
       "skipRows": 1,
@@ -123,51 +109,32 @@
       ]
     },
     {
+      "id": "sysClock",
+      "type": "clockWidget",
+      "geometry": {
+        "x": 96,
+        "y": 53,
+        "w": 64,
+        "h": 11
+      },
+      "visible": true,
+      "blink": false,
+      "format": "HH_MM_SS",
+      "font": "NatRailClockLarge9"
+    },
+    {
       "id": "noDataLabel",
       "type": "labelWidget",
       "geometry": {
         "x": 10,
-        "y": 39,
+        "y": 41,
         "w": 236,
         "h": 14
       },
       "visible": false,
       "font": "NatRailTall12",
       "text": "No services found."
-    },
-    {
-      "id": "wifiWarning",
-      "type": "wifiStatusWidget",
-      "geometry": {
-        "x": 242,
-        "y": 1,
-        "w": 12,
-        "h": 11
-      },
-      "visible": true
-    },
-    {
-      "id": "weather",
-      "type": "weatherWidget",
-      "geometry": {
-        "x": 229,
-        "y": 0,
-        "w": 11,
-        "h": 11
-      },
-      "visible": true
     }
   ],
-  "primitives": [
-    {
-      "type": "line",
-      "id": "header_sep",
-      "geometry": {
-        "x1": 0,
-        "y1": 11,
-        "x2": 256,
-        "y2": 11
-      }
-    }
-  ]
+  "primitives": []
 }

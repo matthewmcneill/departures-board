@@ -76,12 +76,20 @@ void scrollingTextWidget::resetScroll() {
  * @brief Main progression math for animation ticks.
  */
 void scrollingTextWidget::tick(uint32_t currentMillis) {
-    if (!isVisible || !needsScroll) return;
+    if (!isVisible) return;
 
     // --- Step 1: Initial Delay ---
     // Wait 3 seconds before starting the animation.
     if (lastScrollMs == 0) {
         lastScrollMs = currentMillis + 3000; 
+        return;
+    }
+
+    if (!needsScroll) {
+        // Static text dwell logic
+        if (currentMillis > lastScrollMs + 2000) { // Total 5 sec dwell
+            scrollFinished = true;
+        }
         return;
     }
 
@@ -139,7 +147,6 @@ void scrollingTextWidget::render(U8G2& display) {
     } else {
         // If it fits, we just center it statically
         drawText(display, currentText, x, y, renderW, renderH, TextAlign::CENTER, false);
-        scrollFinished = true; // Automatically signal done since it never scrolls
     }
 }
 
@@ -160,7 +167,10 @@ void scrollingTextWidget::renderAnimationUpdate(U8G2& display, uint32_t currentM
         needsLayout = false;
     }
 
-    if (!needsScroll) return; // Static text avoids costly loop redrawing
+    if (!needsScroll) {
+        tick(currentMillis); // Process static text dwell timer
+        return; 
+    }
 
     int oldScrollX = scrollX;
     tick(currentMillis); 

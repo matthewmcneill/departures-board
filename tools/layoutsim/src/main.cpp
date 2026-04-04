@@ -169,6 +169,16 @@ void syncData() {
     for (int i = 0; i < mdm.getMessageCount(); i++) {
         g_msgPool->addMessage(mdm.getMessage(i));
     }
+
+    // Inject interleaved mock calling points natively!
+    iGfxWidget* msgW = DesignerRegistry::getInstance().getWidget("msgWidget");
+    if (msgW) {
+        if (strlen(mdm.getStationFirstServiceCalling()) > 0) {
+            ((scrollingMessagePoolWidget*)msgW)->setInterleavedMessage(mdm.getStationFirstServiceCalling());
+        } else {
+            ((scrollingMessagePoolWidget*)msgW)->setInterleavedMessage("");
+        }
+    }
 }
 
 /**
@@ -243,6 +253,7 @@ const char* getLayoutMetadata() {
                     geom["y"] = widget->getY();
                     geom["w"] = widget->getW();
                     geom["h"] = widget->getH();
+                    w["visible"] = widget->getVisible();
                 }
             }
         }

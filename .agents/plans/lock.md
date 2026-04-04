@@ -1,4 +1,4 @@
 ## Lock Status
-- **Locked By**: 3b32bb43-d444-4041-a1c0-9a2082cd37bb
-- **Reason**: Restore Layout Simulator (WASM) Engine Build Pipeline
-- **Since**: 2026-04-04T00:59:27+01:00
+- **Locked By**: 0db834c6-1914-4bb7-a9da-ffeefacc2179
+- **Reason**: National Rail Message Alternation
+- **Since**: 2026-04-04T18:27:30+01:00

@@ -106,9 +106,11 @@ public:
     column_setup = []
     
     # First pass: Process widgets for the constructor (always needed)
+    present_widgets = set()
     for w in widgets:
         json_id = w["id"]
         wid = widget_map.get(json_id, json_id)
+        present_widgets.add(wid)
         
         # Extracted coordinates from geometry block if present
         geom = w.get("geometry", w)
@@ -163,6 +165,13 @@ public:
         
         if "scrollDwellMs" in w:
             constructor_body.append(f"    {wid}.setScrollDwell({w['scrollDwellMs']});")
+
+    # Pass 1.5: Disable visibility for natively mapped widgets not specified in the JSON
+    if board_type == "NR":
+        nr_superset = {"locationAndFilters", "weather", "wifiWarning", "sysClock", "row0Widget", "servicesWidget", "msgWidget", "noDataLabel"}
+        for wid in nr_superset:
+            if wid not in present_widgets:
+                constructor_body.append(f"    {wid}.setVisible(false);")
 
     # Second pass: Generate tick, render, and animation calls in JSON order
     render_calls = []

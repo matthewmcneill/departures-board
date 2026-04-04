@@ -78,6 +78,9 @@ public:
         auto const& widgetEntries = DesignerRegistry::getInstance().getAllEntries();
         for (auto const& [name, entry] : widgetEntries) {
             validationStatus[name] = "missing_style";
+            if (entry.widget) {
+                entry.widget->setVisible(false);
+            }
         }
 
         JsonArray widgets = doc["widgets"];
@@ -98,6 +101,8 @@ public:
                 }
                 if (w["visible"].is<bool>()) {
                     widget->setVisible(w["visible"].as<bool>());
+                } else {
+                    widget->setVisible(true);
                 }
 
                 if (w["font"].is<const char*>()) {

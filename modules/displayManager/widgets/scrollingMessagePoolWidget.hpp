@@ -43,6 +43,9 @@ private:
      */
     bool loadNextMessage();
 
+    char interleavedMessage[512];
+    bool showingInterleavedNext;
+
 public:
     /**
      * @brief Construct a new scrolling message pool widget.
@@ -65,6 +68,12 @@ public:
      * @brief Clears all registered message pools.
      */
     void clearPools();
+
+    /**
+     * @brief Sets the interleaved message to display between pool strings.
+     * @param msg The message to interleave.
+     */
+    void setInterleavedMessage(const char* msg);
 
     /**
      * @brief Overrides tick to handle pool transitions when a scroll finishes.

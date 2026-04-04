@@ -28,7 +28,8 @@
  * @param _font Optional font override.
  */
 scrollingMessagePoolWidget::scrollingMessagePoolWidget(int _x, int _y, int _w, int _h, const uint8_t* _font)
-    : scrollingTextWidget(_x, _y, _w, _h, _font), currentPoolIndex(0), currentMessageIndex(0) {
+    : scrollingTextWidget(_x, _y, _w, _h, _font), currentPoolIndex(0), currentMessageIndex(0), showingInterleavedNext(true) {
+    interleavedMessage[0] = '\0';
 }
 
 /**
@@ -48,15 +49,38 @@ void scrollingMessagePoolWidget::clearPools() {
     pools.clear();
     currentPoolIndex = 0;
     currentMessageIndex = 0;
+    showingInterleavedNext = true;
+    interleavedMessage[0] = '\0';
     resetScroll();
     setText("");
+}
+
+void scrollingMessagePoolWidget::setInterleavedMessage(const char* msg) {
+    if (msg) {
+        strlcpy(interleavedMessage, msg, sizeof(interleavedMessage));
+    } else {
+        interleavedMessage[0] = '\0';
+    }
 }
 
 /**
  * @brief Searches through injected pools for the next available string.
  */
 bool scrollingMessagePoolWidget::loadNextMessage() {
-    if (pools.empty()) return false;
+    if (interleavedMessage[0] != '\0' && showingInterleavedNext) {
+        setText(interleavedMessage);
+        showingInterleavedNext = false;
+        return true;
+    }
+
+    if (pools.empty()) {
+        if (interleavedMessage[0] != '\0') {
+            setText(interleavedMessage);
+            showingInterleavedNext = false;
+            return true;
+        }
+        return false;
+    }
 
     size_t poolsChecked = 0;
     while (poolsChecked < pools.size()) {
@@ -71,6 +95,7 @@ bool scrollingMessagePoolWidget::loadNextMessage() {
                     // Load into the marquee engine
                     setText(msg);
                     currentMessageIndex++;
+                    showingInterleavedNext = true;
                     return true;
                 }
             }
@@ -81,6 +106,13 @@ bool scrollingMessagePoolWidget::loadNextMessage() {
         currentPoolIndex = (currentPoolIndex + 1) % pools.size();
         currentMessageIndex = 0;
         poolsChecked++;
+    }
+
+    // If all pools are completely empty, gracefully fall back
+    if (interleavedMessage[0] != '\0') {
+        setText(interleavedMessage);
+        showingInterleavedNext = false;
+        return true;
     }
 
     return false;

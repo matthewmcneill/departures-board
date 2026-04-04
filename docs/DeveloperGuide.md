@@ -88,7 +88,18 @@ The application communicates over the serial port at a baud rate of **115200**.
   pio device monitor -b 115200
   ```
 
----
+ ---
+ 
+ ## Advanced Documentation & References
+ 
+ For a complete understanding of how the system is designed at a low level, please begin with our formal specifications. These documents serve as the gateways to our extensive library of deep-dive architectural references:
+ 
+ * **[System Specification Document](SystemSpecificationDocument.md)**: Details the complete firmware architecture, data models, memory strategies, component diagrams, and the embedded web design system. It bridges into our internal `reference/` guides for specific subsystems.
+ * **[Designer Specification Document](DesignerSpecificationDocument.md)**: Details the UI layout simulator, the WebAssembly engine pipeline, and how layouts are converted from JSON to C++.
+ * **[Display Layouts Reference](DisplayLayoutsReference.md)**: Comprehensive guide on creating layouts, widget APIs.
+ * **[Upstream Merges](UpstreamMerges.md)**: Tracks changes published by the original `gadec-uk` upstream repository and documents how those modifications have been integrated, adapted, or rejected in this v3.0 object-oriented architecture.
+ 
+ ---
  
  ## Layout Simulator
  
@@ -101,8 +112,6 @@ The application communicates over the serial port at a baud rate of **115200**.
      python3 tools/layoutsim/scripts/dev_server.py
      ```
  3.  Access the simulator at: [http://localhost:8000/tools/layoutsim/web/index.html](http://localhost:8000/tools/layoutsim/web/index.html)
- 
- For detailed information on creating layouts, widget APIs, and rebuilding the WASM engine, see the [Display Layouts Reference](DisplayLayoutsReference.md).
  
  ---
  
@@ -119,8 +128,11 @@ This project supports **Antigravity Workflows** for agentic coding. If you are u
 * **`workflows/`**: Pre-defined sequences of steps to automate common processes.
 
 ### Useful Antigravity Commands
-You can interact with the agent manager using several slash commands in chat:
-- `/queue-plan`: Queue the current implementation plan for execution.
+
+This project uses **Antigravity Workflows** for managing multiple agent sessions in parallel. To prevent hardware and build conflicts, developers or agents should use the following native commands via the chat interface:
+
+- `/plan-start` / `/queue-do-this`: Claim the hardware lock for this session and start work.
+- `/plan-queue` / `/queue-plan`: Queue the current implementation plan for execution.
 - `/queue-list`: List the current state of the execution queue.
-- `/queue-do-this`: Claim the lock for this session and start work.
 - `/queue-release`: Force release the current hardware lock.
+- `/flash-test`: Safely build and flash firmware via serial without conflicts.

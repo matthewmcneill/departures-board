@@ -776,3 +776,9 @@ Generated commit: 7f35aa3
 - **Commit:** 9c2535a
 - **Metadata:** [.agents/plans/done/90fc3ff9-29f4-4305-8276-fc82d3d8c8ef/](.agents/plans/done/90fc3ff9-29f4-4305-8276-fc82d3d8c8ef/)
 
+
+## [c5361aa] 2026-04-04 18:26 - National Rail Message Alternation
+- **Summary:** Refactored scrollingMessagePoolWidget and layout geometry to allow interleaved calling point messages and expanded column dimensions.
+- **Commit:** c5361aa
+- **Metadata:** [.agents/plans/done/0db834c6-1914-4bb7-a9da-ffeefacc2179/](.agents/plans/done/0db834c6-1914-4bb7-a9da-ffeefacc2179/)
+

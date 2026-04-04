@@ -23,7 +23,7 @@ def harvest_national_rail(crs, api_url, out_path):
     """
     print(f"Harvesting National Rail data for {crs} via {api_url}...")
     try:
-        response = requests.get(f"{api_url}/all/{crs}/10")
+        response = requests.get(f"{api_url}/all/{crs}/10?expand=true")
         response.raise_for_status()
         data = response.json()
 
@@ -31,7 +31,8 @@ def harvest_national_rail(crs, api_url, out_path):
             "header": {
                 "title": data.get("locationName", "Unknown Station"),
                 "callingPoint": "via " + (data.get("filterLocationName", "") if data.get("filterLocationName") else "Main Line"),
-                "platform": ""
+                "platform": "",
+                "firstServiceCalling": ""
             },
             "services": [],
             "messages": [m.get("value", "") for m in data.get("nrccMessages", []) if m.get("value")],
@@ -45,6 +46,21 @@ def harvest_national_rail(crs, api_url, out_path):
             plat = s.get("platform", "-")
             status = s.get("etd", "On Time")
             
+            if i == 0:
+                sub_cps = s.get("subsequentCallingPoints") or []
+                if len(sub_cps) > 0 and (sub_cps[0].get("callingPoint") or []):
+                    cps = []
+                    for cp in sub_cps[0].get("callingPoint", []):
+                        if cp.get("locationName"):
+                            name = cp.get("locationName")
+                            st = cp.get("st") or cp.get("etd")
+                            if st:
+                                cps.append(f"{name} ({st})")
+                            else:
+                                cps.append(name)
+                    if cps:
+                        mock_data["header"]["firstServiceCalling"] = f"Calling at {', '.join(cps)}"
+
             mock_data["services"].append([ordinal, time, dest, plat, status])
 
         with open(out_path, 'w') as f:

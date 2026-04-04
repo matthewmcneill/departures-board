@@ -92,7 +92,7 @@ void NationalRailBoard::onActivate() {
     // Initial attribution text
     const char* attr = activeDataSource->getAttributionString();
     if (attr) {
-        activeLayout->msgWidget.setText(attr);
+        activeLayout->msgWidget.setInterleavedMessage(attr);
     }
   }
   lastUpdate = 0;
@@ -256,11 +256,11 @@ UpdateStatus NationalRailBoard::updateData() {
           msg += ".";
         }
         if (msg.length() > 0) {
-          activeLayout->msgWidget.setText(msg.c_str());
+          activeLayout->msgWidget.setInterleavedMessage(msg.c_str());
         } else {
           const char* attr = activeDataSource->getAttributionString();
           if (attr) {
-            activeLayout->msgWidget.setText(attr);
+            activeLayout->msgWidget.setInterleavedMessage(attr);
           }
         }
       }

@@ -618,7 +618,7 @@
                         } else if (config && config.geometry) {
                             x = config.geometry.x; y = config.geometry.y; width = config.geometry.w; height = config.geometry.h;
                         }
-                        addElementToUI(targetGroup, grid, w.id, 'widget', x, y, width, height, config, w.validation_status, w.type);
+                        addElementToUI(targetGroup, grid, w.id, 'widget', x, y, width, height, config, w.validation_status, w.type, w.visible);
                     });
                 }
 
@@ -631,7 +631,7 @@
                         let w = (p.w !== undefined) ? p.w : (p.x1 !== undefined ? Math.abs(p.x2 - p.x1) : 1);
                         let h = (p.h !== undefined) ? p.h : (p.y1 !== undefined ? Math.abs(p.y2 - p.y1) : 1);
                         if (w === 0) w = 1; if (h === 0) h = 1;
-                        addElementToUI(groupPrimitives, grid, id, 'primitive', x, y, w, h, p, 'primitive');
+                        addElementToUI(groupPrimitives, grid, id, 'primitive', x, y, w, h, p, 'primitive', undefined, p.visible !== undefined ? p.visible : true);
                     });
                 }
 
@@ -657,7 +657,7 @@
             } catch (e) { console.error('Overlay error:', e); }
         }
 
-        function addElementToUI(container, grid, id, type, x, y, w, h, config, status, cppType) {
+        function addElementToUI(container, grid, id, type, x, y, w, h, config, status, cppType, wasmVisible) {
             const item = document.createElement('div');
             item.className = `element-item ${type}`;
             if (id === selectedId) item.classList.add('active');
@@ -710,7 +710,7 @@
                         w: w !== undefined ? w : 10,
                         h: h !== undefined ? h : 10
                     },
-                    visible: config && config.visible !== undefined ? config.visible : true
+                    visible: wasmVisible !== undefined ? wasmVisible : (config && config.visible !== undefined ? config.visible : true)
                 };
 
                 if (finalType === 'labelWidget') {

@@ -49,6 +49,7 @@ private:
     char stationTitle[MOCK_MAX_STR];
     char stationCalling[MOCK_MAX_STR];
     char stationPlatform[16];
+    char firstServiceCalling[MOCK_MAX_STR];
     
     int weatherConditionId = 800; // Default clear
     bool weatherIsNight = false;
@@ -64,6 +65,7 @@ public:
         strcpy(stationTitle, "London Euston");
         strcpy(stationCalling, "via Birmingham");
         strcpy(stationPlatform, "1");
+        firstServiceCalling[0] = '\0';
         serviceCount = 0;
         messageCount = 0;
     }
@@ -91,6 +93,7 @@ public:
             if (!header["title"].isNull()) strlcpy(stationTitle, header["title"], sizeof(stationTitle));
             if (!header["callingPoint"].isNull()) strlcpy(stationCalling, header["callingPoint"], sizeof(stationCalling));
             if (!header["platform"].isNull()) strlcpy(stationPlatform, header["platform"], sizeof(stationPlatform));
+            if (!header["firstServiceCalling"].isNull()) strlcpy(firstServiceCalling, header["firstServiceCalling"], sizeof(firstServiceCalling));
         }
 
         JsonArray svcs = doc["services"];
@@ -170,6 +173,12 @@ public:
      * @return Const char string pointer
      */
     const char* getStationPlatform() const { return stationPlatform; }
+
+    /**
+     * @brief Retrieves the parsed first service calling points string
+     * @return Const char string pointer
+     */
+    const char* getStationFirstServiceCalling() const { return firstServiceCalling; }
     
     /**
      * @brief Returns total number of active mock departures
