@@ -782,3 +782,7 @@ Generated commit: 7f35aa3
 - **Commit:** c5361aa
 - **Metadata:** [.agents/plans/done/0db834c6-1914-4bb7-a9da-ffeefacc2179/](.agents/plans/done/0db834c6-1914-4bb7-a9da-ffeefacc2179/)
 
+## [2812530] 2026-04-04 19:24 - WebAssembly Simulator Visibility Calibration
+- **Summary:** Unified native Pass 1.5 logic into WASM Engine to enforce accurate widget disabling dynamically via HTML JSON IDE metadata injection mapping. Includes proxy mock generation for Huxley endpoints.
+- **Commit:** 2812530
+- **Metadata:** [.agents/plans/done/c1dd6ccd-e49f-45a4-8a4f-aa06a64ad59d/](.agents/plans/done/c1dd6ccd-e49f-45a4-8a4f-aa06a64ad59d/)
