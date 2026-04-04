@@ -99,6 +99,10 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
         bool getRssAddedtoMsgs() const { return rssAddedtoMsgs; }
         void setRssAddedtoMsgs(bool val) { rssAddedtoMsgs = val; }
 
+        /**
+         * @brief Retrieve the required display attribution for the active feed.
+         * @return Pointer to the RSS Name string.
+         */
         const char* getAttributionString() const override { return rssName; }
 
         unsigned long getNextRssUpdate() const { return nextFetchTimeMillis; }

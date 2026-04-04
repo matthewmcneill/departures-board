@@ -765,3 +765,9 @@ Generated commit: 7f35aa3
 **Summary**: Unified the widget architecture across National Rail, Tube, and Bus boards by decoupling the service list. Split the list into a static header `row0Widget` and a dynamic scrolling `servicesWidget`. Integrated the `weatherWidget` and `clockWidget` into the TfL and Bus headers to establish visual parity with the National Rail layout. Refactored layout interfaces (`iTflLayout`, `iBusLayout`) internally to cleanly inject DI `TimeManager` dependencies via `.cpp` constructors instead of header inlines. Verified UI geometric conformity using the WASM testing layout simulator.
 **Archive**: [.agents/plans/done/f5efccb6-439e-4bb8-9575-c8b448046318/](.agents/plans/done/f5efccb6-439e-4bb8-9575-c8b448046318/)
 **Commit**: f7244f5
+
+## [bed0471] 2026-04-04 13:17 - National Rail RDM Consolidation
+- **Summary:** Resolved National Rail 401 Unauthorized API error by repairing 36-byte token truncation in National Rail layout state machine. Sanitized Darwin HTML entities out of station scrolling messages. Updated OpenWeatherMap and Rail Delivery Group attributions.
+- **Commit:** bed0471
+- **Metadata:** [.agents/plans/done/ded0e136-d474-473e-a80b-fd3352eaac2d/](.agents/plans/done/ded0e136-d474-473e-a80b-fd3352eaac2d/)
+
