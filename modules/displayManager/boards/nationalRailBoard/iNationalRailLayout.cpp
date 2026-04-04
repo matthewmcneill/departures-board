@@ -30,6 +30,7 @@ iNationalRailLayout::iNationalRailLayout(appContext* context)
       row0Widget(0, 0, 0, 0),
       servicesWidget(0, 0, 0, 0),
       msgWidget(0, 0, 0, 0),
-      noDataLabel(0, 0, 0, 0) {
+      noDataLabel(0, 0, 0, 0),
+      platformWidget(0, 0, 0, 0) {
     noDataLabel.setVisible(false);
 }

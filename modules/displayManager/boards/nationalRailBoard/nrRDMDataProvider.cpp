@@ -19,7 +19,10 @@
  */
 
 #include "nrRDMDataProvider.hpp"
+#include <appContext.hpp>
 #include <ArduinoJson.h>
+
+extern class appContext appContext;
 #include <HTTPClient.h>
 #include <Arduino.h>
 #include <Stream.h>
@@ -267,5 +270,40 @@ void nrRDMDataProvider::executeFetch() {
     
     http.end();
     LOG_INFOf("DATA_RDM", "Fetch complete. Free Heap: %d", ESP.getFreeHeap());
-    setNextFetchTime(millis() + 30000);
+
+    uint32_t interval = 30000; // default baseline
+
+    if (stationData && stationData->numServices > 0) {
+        appContext.getTimeManager().updateCurrentTime();
+        struct tm now_tm = appContext.getTimeManager().getCurrentTime();
+        
+        const NationalRailService& firstSvc = stationData->service[0];
+        String targetTimeStr = firstSvc.etd;
+        
+        if (targetTimeStr == "On time" || targetTimeStr == "Delayed" || targetTimeStr == "Cancelled") {
+            targetTimeStr = firstSvc.sTime;
+        }
+        
+        if (targetTimeStr.length() == 5 && targetTimeStr.indexOf(':') == 2) {
+            int t_hour = targetTimeStr.substring(0, 2).toInt();
+            int t_min = targetTimeStr.substring(3).toInt();
+            
+            long current_sec_of_day = now_tm.tm_hour * 3600 + now_tm.tm_min * 60 + now_tm.tm_sec;
+            long target_sec_of_day = t_hour * 3600 + t_min * 60;
+            
+            long delta_sec = target_sec_of_day - current_sec_of_day;
+            if (delta_sec < -43200) delta_sec += 86400; // Midnight rollover
+            if (delta_sec > 43200) delta_sec -= 86400;  // Reverse midnight rollover
+            
+            long refresh_delay_sec = delta_sec + 15; // 15 seconds AFTER departure
+            
+            if (refresh_delay_sec < 15) refresh_delay_sec = 15;
+            if (refresh_delay_sec > 60) refresh_delay_sec = 60;
+            
+            interval = refresh_delay_sec * 1000;
+            LOG_INFOf("DATA_RDM", "Intelligent Polling: Target=%s, Delta=%lds, Delay=%lds", targetTimeStr.c_str(), delta_sec, refresh_delay_sec);
+        }
+    }
+
+    setNextFetchTime(millis() + interval);
 }

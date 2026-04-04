@@ -37,7 +37,7 @@ ROOT_DIR = env.get("PROJECT_DIR", os.getcwd())
 PORTAL_DIR = os.path.join(ROOT_DIR, "web")
 OUTPUT_H = os.path.join(ROOT_DIR, "modules/webServer/portalAssets.h")
 OUTPUT_CPP = os.path.join(ROOT_DIR, "modules/webServer/portalAssets.cpp")
-ASSETS = ["index.html", "rss.json"] 
+ASSETS = ["index.html", "rss.json", "screenshot.html"] 
 
 def should_rebuild():
     if not os.path.exists(OUTPUT_H) or not os.path.exists(OUTPUT_CPP):

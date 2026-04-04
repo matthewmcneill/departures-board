@@ -44,6 +44,7 @@
 - [ ] Add unit test or manual verification suite for `determineInitialTab` across all state transitions to ensure long-term stability as more tabs are added.
 - [ ] **Unit Testing**: Implement `unit_testing_host` scenarios for `drawText` to verify fast-path logic and rough-cut truncation accuracy under extreme string lengths.
 - [ ] **Unit Testing**: Implement `ConfigManager` migration scenarios to verify v2.3 -> v2.4 legacy `turnOffOledInSleep` to per-board `oledOff` mapping.
+- [ ] Fix `configManagerTests.cpp` compilation failure during `pio test` due to out-of-date API usage.
 
 ### Simulator Parity
 - [ ] **Simulator Parity**: Update the WebAssembly `layoutsim` mock data injection (`syncData()` in `main.cpp`) to accurately populate the `location` memory array rather than defaulting to `stationName`, preventing false-blank simulator displays for National Rail layouts.

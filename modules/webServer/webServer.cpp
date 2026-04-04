@@ -55,7 +55,7 @@ void WebServerManager::init() {
 
   // Initialize and register new portal handlers
   _handlerManager =
-      std::make_unique<WebHandlerManager>(*_server, appContext.getConfigManager());
+      std::make_unique<WebHandlerManager>(*_server, appContext);
   _handlerManager->begin();
 
   _server->begin();

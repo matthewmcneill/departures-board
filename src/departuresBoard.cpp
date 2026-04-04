@@ -66,6 +66,7 @@
 // Internal Modules & Managers
 #include <appContext.hpp>
 #include <logger.hpp>
+#include "buildTime.hpp"
 
 // -----------------------------------------------------------------------------
 // Definitions & Macros
@@ -93,6 +94,12 @@ appContext appContext; // Global context managing application state and shared s
  */
 void setup(void) {
   LOG_BEGIN(115200);
+
+#ifdef BUILD_TIME
+  LOG_INFOf("SYSTEM", "Departures Board Version %d.%d (Build: %s)", VERSION_MAJOR, VERSION_MINOR, BUILD_TIME);
+#else
+  LOG_INFOf("SYSTEM", "Departures Board Version %d.%d", VERSION_MAJOR, VERSION_MINOR);
+#endif
 
   LOG_INFO("SYSTEM", "Starting boot sequence...");
   appContext.begin();

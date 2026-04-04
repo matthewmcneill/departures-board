@@ -1,0 +1,79 @@
+# Drafted SWR Font Characters
+
+Based on the image provided, here is a visual draft in the project's standard `fonts*.txt` format for the missing characters needed for the SWR platform widget. 
+
+## Condensed "Plat" Label Font
+
+This font is highly condensed (2-4 pixels wide) to fit the "Plat" string within the tight left-hand margin, as observed on the physical layouts.
+
+```text
+Font: SWRPlatformLabelCondensed
+Glyph count: 4
+b0: 3, b1: 2
+
+Character U+0050 (Char: 'P')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+###.
+#..#
+#..#
+###.
+#...
+#...
+#...
+
+Character U+0061 (Char: 'a')
+Width: 3, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 4
+.##
+..#
+.##
+#.#
+.##
+
+Character U+006C (Char: 'l')
+Width: 1, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 2
+#
+#
+#
+#
+#
+#
+#
+
+Character U+0074 (Char: 't')
+Width: 3, Height: 6, X-Offset: 0, Y-Offset: 2, dX: 4
+.#.
+.#.
+###
+.#.
+.#.
+..#
+```
+
+## Large Platform Number Font
+
+The platform number (such as "8") is significantly larger than any other element on the board, spanning the equivalent of two full service rows (approximately 15–16 pixels in height and 9-10 columns wide).
+
+```text
+Font: SWRPlatformNumberHuge
+Glyph count: 1
+b0: 3, b1: 2
+
+Character U+0038 (Char: '8')
+Width: 11, Height: 16, X-Offset: 0, Y-Offset: 2, dX: 13
+..#######..
+.##.....##.
+##.......##
+##.......##
+##.......##
+##.......##
+.##.....##.
+..#######..
+.##.....##.
+##.......##
+##.......##
+##.......##
+##.......##
+##.......##
+.##.....##.
+..#######..
+```

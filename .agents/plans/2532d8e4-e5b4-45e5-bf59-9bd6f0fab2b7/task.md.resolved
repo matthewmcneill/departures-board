@@ -1,0 +1,2 @@
+- [x] Edit `iNationalRailLayout.hpp`: Expand superset to include `labelWidget platformWidget`
+- [x] Edit `nationalRailBoard.cpp`: Inject state-dependent text extraction into the layout update cycle.

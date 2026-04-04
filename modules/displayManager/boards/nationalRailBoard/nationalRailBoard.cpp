@@ -240,6 +240,9 @@ UpdateStatus NationalRailBoard::updateData() {
         if (filterText.length() > 0)
           filterText += " ";
         filterText += "[Plat " + String(platformFilter) + "]";
+        activeLayout->platformWidget.setText(platformFilter);
+      } else {
+        activeLayout->platformWidget.setText("A");
       }
       activeLayout->locationAndFilters.setFilters(filterText.c_str());
     }

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hardware Screen Capture - Departures Board</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --text: #e0e0e0;
+      --accent: rgb(245, 124, 0);
+      --border: #333333;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 2rem;
+      max-width: 800px;
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      color: var(--accent);
+    }
+    .canvas-container {
+      background: #000;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+      border: 1px solid #444;
+    }
+    /* We scale the 256x64 canvas via CSS to appear larger for the user (x2 scaling) */
+    canvas {
+      image-rendering: pixelated;
+      width: 512px;
+      height: 128px;
+      border: 1px solid #333;
+      box-shadow: 0 0 20px rgba(245, 124, 0, 0.15);
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    button {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid #555;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      font-size: 0.95rem;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    button:hover {
+        filter: brightness(1.2);
+    }
+    button:active {
+        transform: scale(0.97);
+    }
+    .status {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.85rem;
+      margin-top: 15px;
+      min-height: 20px;
+    }
+    .warning-box {
+      font-size: 0.85rem;
+      color: #bbb;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 20px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Hardware Framebuffer Capture</h1>
+    
+    <div class="canvas-container">
+      <canvas id="screenshot-canvas" width="256" height="64"></canvas>
+    </div>
+
+    <div class="controls">
+      <button onclick="refreshScreenshot()" class="primary">Refresh Frame</button>
+      <button onclick="downloadPNG()">Download PNG</button>
+    </div>
+
+    <div class="status" id="status-text">Click Refresh to capture the current physical display state.</div>
+    
+    <div class="warning-box">
+      <strong>Note:</strong> This tool extracts the raw <i>U8g2</i> binary memory buffer directly from the ESP32 while it is running. Due to differences in sync timing between the hardware SPI driver and the web socket task, very minor horizontal tearing may occasionally be visible if capturing mid-animation.
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('screenshot-canvas');
+    const ctx = canvas.getContext('2d');
+    const statusText = document.getElementById('status-text');
+
+    // Draw an initial placeholder
+    ctx.fillStyle = "#0c0c0c";
+    ctx.fillRect(0, 0, 256, 64);
+    ctx.fillStyle = "#f57c00";
+    ctx.font = "10px monospace";
+    ctx.fillText("Waiting for capture...", 65, 36);
+
+    async function refreshScreenshot() {
+      try {
+        statusText.style.color = "#aaa";
+        statusText.innerText = "Requesting buffer from hardware...";
+        const startTime = Date.now();
+        
+        const response = await fetch('/api/screenshot', { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        
+        if (bytes.length !== 2048) {
+            console.warn(`Unexpected buffer footprint: ${bytes.length} bytes`);
+        }
+
+        // Initialize ImageData block
+        const imgData = ctx.createImageData(256, 64);
+        
+        // Fill background (very dark grey to simulate OFF pixels on OLED)
+        for (let i = 0; i < imgData.data.length; i += 4) {
+            imgData.data[i] = 12;     // R
+            imgData.data[i+1] = 12;   // G
+            imgData.data[i+2] = 12;   // B
+            imgData.data[i+3] = 255;  // Alpha
+        }
+
+        // Decouple U8G2_R0 1-bit per pixel memory layout.
+        // It is logically organized into 8 horizontal strips (pages).
+        // Each page is 8 pixels high and 256 pixels long.
+        for (let page = 0; page < 8; page++) {
+            for (let x = 0; x < 256; x++) {
+                const byteIndex = page * 256 + x;
+                if (byteIndex >= bytes.length) break;
+                
+                const byte = bytes[byteIndex];
+                
+                for (let bit = 0; bit < 8; bit++) {
+                    // Test if bit is high to determine illuminated pixel
+                    if ((byte & (1 << bit)) !== 0) {
+                        const y = page * 8 + bit;
+                        const pixelIndex = (y * 256 + x) * 4;
+                        
+                        // Hardware amber OLED emulation
+                        imgData.data[pixelIndex] = 255;     // R
+                        imgData.data[pixelIndex+1] = 153;   // G
+                        imgData.data[pixelIndex+2] = 0;     // B
+                    }
+                }
+            }
+        }
+        
+        ctx.putImageData(imgData, 0, 0);
+        const elapsed = Date.now() - startTime;
+        statusText.style.color = "#4caf50";
+        statusText.innerText = `Rendered successfully in ${elapsed}ms (${bytes.length} bytes)`;
+
+      } catch (e) {
+        statusText.style.color = "#f44336";
+        statusText.innerText = "Error grabbing screenshot: " + e.message;
+      }
+    }
+
+    function downloadPNG() {
+      // Create a temporary link element
+      const link = document.createElement('a');
+      // Set the href to the data URL of the canvas image
+      link.href = canvas.toDataURL('image/png');
+      link.download = `departures-board-${Date.now()}.png`;
+      link.click();
+    }
+  </script>
+</body>
+</html>

@@ -143,6 +143,17 @@ public:
     int getBrightness() const { return brightness; }
 
     /**
+     * @brief Obtain raw pointer access to the U8g2 memory driver byte array buffer.
+     *        Warning: Thread safety required out of bounds of DisplayManager.
+     */
+    const uint8_t* getRawFramebuffer() { return u8g2.getBufferPtr(); }
+
+    /**
+     * @brief Calculate exact RAM footprint of the initialized U8g2 buffer array.
+     */
+    size_t getFramebufferSize() { return (size_t)8 * u8g2.getBufferTileHeight() * u8g2.getBufferTileWidth(); }
+
+    /**
      * @brief Switch to a new board and optionally block for an animation duration.
      * @param board Pointer to the board implementation to render.
      * @param reason The semantic trigger or event causing this board to be explicitly shown.

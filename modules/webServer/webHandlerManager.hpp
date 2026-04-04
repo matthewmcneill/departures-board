@@ -23,7 +23,7 @@
 
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
-#include <configManager.hpp>
+class appContext;
 
 /**
  * @brief Manages the registration and execution of web handlers for the modern portal.
@@ -33,9 +33,9 @@ public:
     /**
      * @brief Constructor for WebHandlerManager.
      * @param server Reference to the active AsyncWebServer.
-     * @param config Reference to the ConfigManager.
+     * @param context Reference to the global appContext.
      */
-    WebHandlerManager(AsyncWebServer& server, ConfigManager& config);
+    WebHandlerManager(AsyncWebServer& server, appContext& context);
 
     /**
      * @brief Register all portal routes with the server.
@@ -44,7 +44,7 @@ public:
 
 private:
     AsyncWebServer& _server; // Reference to the underlying network server
-    ConfigManager& _config;   // Reference to the global configuration coordinator
+    appContext& _context;    // Reference to the central application context
 
     // --- Route Handlers ---
     
@@ -72,6 +72,7 @@ private:
     void handleOTACheck(AsyncWebServerRequest *request);
     void handleStationPicker(AsyncWebServerRequest *request);
     void handleSetDiagMode(AsyncWebServerRequest *request);
+    void handleScreenshot(AsyncWebServerRequest *request);
 
     // --- Helpers ---
     void sendGzipFlash(AsyncWebServerRequest *request, const uint8_t* data, size_t len, const char* contentType);

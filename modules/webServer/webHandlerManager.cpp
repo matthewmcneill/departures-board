@@ -46,10 +46,10 @@ const int MAX_CONCURRENT_HIGH_MEM = 1; // Limit for memory-intensive web respons
 /**
  * @brief Constructor for the WebHandlerManager.
  * @param server Reference to the AsyncWebServer.
- * @param config Reference to the ConfigManager.
+ * @param context Reference to the global appContext.
  */
-WebHandlerManager::WebHandlerManager(AsyncWebServer& server, ConfigManager& config) 
-    : _server(server), _config(config) {
+WebHandlerManager::WebHandlerManager(AsyncWebServer& server, class appContext& context) 
+    : _server(server), _context(context) {
 }
 
 /**
@@ -93,6 +93,9 @@ void WebHandlerManager::begin() {
     _server.on("/web", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handlePortalRoot(request); });
     _server.on("/web/", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handlePortalRoot(request); });
     _server.on("/web/index.html", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handlePortalRoot(request); });
+    _server.on("/screenshot.html", HTTP_GET, [this](AsyncWebServerRequest *request) { 
+        this->sendGzipFlash(request, screenshot_html_gz, screenshot_html_gz_len, "text/html"); 
+    });
 
     // API: System & Config (Unified)
     _server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetStatus(request); });
@@ -101,6 +104,7 @@ void WebHandlerManager::begin() {
     _server.on("/api/reboot", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleReboot(request); });
     _server.on("/api/ota/check", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleOTACheck(request); });
     _server.on("/api/system/diag", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleSetDiagMode(request); });
+    _server.on("/api/screenshot", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleScreenshot(request); });
 
     // API: Feeds & Weather Diagnostics (More specific routes MUST come first in ESPAsyncWebServer)
     _server.on("/api/feeds/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestFeed(request); });
@@ -194,7 +198,7 @@ void WebHandlerManager::handleGetStatus(AsyncWebServerRequest *request) {
     struct tm timeinfo = appContext.getTimeManager().getCurrentTime();
     strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &timeinfo);
     doc["local_time"] = timeBuf;
-    doc["timezone"] = _config.getConfig().timezone;
+    doc["timezone"] = _context.getConfigManager().getConfig().timezone;
     
     // Add Network Details
     doc["gateway"] = WiFi.gatewayIP().toString();
@@ -238,7 +242,7 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
         if (activeHighMemRequests > 0) activeHighMemRequests--;
     });
 
-    const Config& config = _config.getConfig();
+    const Config& config = _context.getConfigManager().getConfig();
     JsonDocument doc;
 
     // --- System Settings ---
@@ -337,7 +341,7 @@ void WebHandlerManager::handleSaveAll(AsyncWebServerRequest *request, const Stri
         return;
     }
 
-        Config& config = _config.getConfig();
+        Config& config = _context.getConfigManager().getConfig();
         
         // --- Step 1: Update Global System Settings ---
         if (doc["system"].is<JsonObject>()) {
@@ -424,11 +428,11 @@ void WebHandlerManager::handleSaveAll(AsyncWebServerRequest *request, const Stri
         }
 
         // --- Step 5: Persist and Notify ---
-        _config.save();
+        _context.getConfigManager().save();
 
         request->send(200, "application/json", "{\"status\":\"ok\"}");
         
-        _config.requestReload();
+        _context.getConfigManager().requestReload();
 
         // If we were in AP mode, we should reboot to connect to the new network
         if (appContext.getWifiManager().getAPMode()) {
@@ -454,7 +458,7 @@ void WebHandlerManager::handleDeepDeleteBoard(AsyncWebServerRequest *request) {
 }
 
 void WebHandlerManager::handleGetKeys(AsyncWebServerRequest *request) {
-    const Config& config = _config.getConfig();
+    const Config& config = _context.getConfigManager().getConfig();
     JsonDocument doc;
     JsonArray arr = doc.to<JsonArray>();
 
@@ -489,7 +493,7 @@ void WebHandlerManager::handleSaveKey(AsyncWebServerRequest *request, const Stri
         strlcpy(key.token, token, sizeof(key.token));
     } else {
         // Find existing key to preserve token
-        ApiKey* existing = _config.getKeyById(key.id);
+        ApiKey* existing = _context.getConfigManager().getKeyById(key.id);
         if (existing) {
             strlcpy(key.token, existing->token, sizeof(key.token));
         }
@@ -500,7 +504,7 @@ void WebHandlerManager::handleSaveKey(AsyncWebServerRequest *request, const Stri
         return;
     }
 
-    _config.updateKey(key);
+    _context.getConfigManager().updateKey(key);
     request->send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
@@ -510,7 +514,7 @@ void WebHandlerManager::handleDeleteKey(AsyncWebServerRequest *request) {
         return;
     }
 
-    _config.deleteKey(request->arg("id").c_str());
+    _context.getConfigManager().deleteKey(request->arg("id").c_str());
     request->send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
@@ -578,7 +582,7 @@ void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const Stri
     String tokenStr = doc["token"] | "";
     
     if (tokenStr.isEmpty()) {
-        ApiKey* existing = _config.getKeyById(doc["id"] | "");
+        ApiKey* existing = _context.getConfigManager().getKeyById(doc["id"] | "");
         if (existing) tokenStr = existing->token;
     }
 
@@ -789,7 +793,7 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
     
     String tokenStr = "";
     if (keyId.length() > 0) {
-        ApiKey* key = _config.getKeyById(keyId.c_str());
+        ApiKey* key = _context.getConfigManager().getKeyById(keyId.c_str());
         if (key) tokenStr = key->token;
     }
 
@@ -979,5 +983,25 @@ void WebHandlerManager::handleStationPicker(AsyncWebServerRequest *request) {
 void WebHandlerManager::sendGzipFlash(AsyncWebServerRequest *request, const uint8_t* data, size_t len, const char* contentType) {
     AsyncWebServerResponse *response = request->beginResponse(200, contentType, data, len);
     response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+}
+
+void WebHandlerManager::handleScreenshot(AsyncWebServerRequest *request) {
+    LOG_INFO("WEB_API", "GET /api/screenshot called - capturing raw hardware display buffer");
+    
+    size_t bufferSize = _context.getDisplayManager().getFramebufferSize();
+    const uint8_t* buffer = _context.getDisplayManager().getRawFramebuffer();
+    
+    if (buffer == nullptr || bufferSize == 0) {
+        request->send(500, "text/plain", "Hardware buffer unavailable");
+        return;
+    }
+
+    // Deliver the raw memory block exactly as it looks in SSD1322 native space
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/octet-stream", buffer, bufferSize);
+    // Explicitly prevent any caching
+    response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    response->addHeader("Pragma", "no-cache");
+    response->addHeader("Expires", "0");
     request->send(response);
 }

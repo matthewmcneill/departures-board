@@ -45,6 +45,7 @@ public:
     serviceListWidget servicesWidget; // Main services list
     scrollingMessagePoolWidget msgWidget; // Ticker tape messages
     labelWidget noDataLabel;        // Fallback info label
+    labelWidget platformWidget;     // Dynamic platform number / letter
 
     /**
      * @brief Constructor for the National Rail view.
@@ -67,6 +68,7 @@ public:
         servicesWidget.tick(currentMillis);
         msgWidget.tick(currentMillis);
         noDataLabel.tick(currentMillis);
+        platformWidget.tick(currentMillis);
     }
 
     /**
@@ -82,6 +84,7 @@ public:
         servicesWidget.render(display);
         msgWidget.render(display);
         noDataLabel.render(display);
+        platformWidget.render(display);
     }
 
     /**
@@ -97,6 +100,7 @@ public:
         row0Widget.renderAnimationUpdate(display, currentMillis);
         servicesWidget.renderAnimationUpdate(display, currentMillis);
         msgWidget.renderAnimationUpdate(display, currentMillis);
+        platformWidget.renderAnimationUpdate(display, currentMillis);
     }
 };
 

@@ -432,8 +432,8 @@ void nrDARWINDataProvider::executeFetch() {
     if (renderData && renderData->numServices > 0) {
         // Very simplistic intelligent polling placeholder:
         // We could parse renderData->service[0].sTime or etd to find exactly when to wake up.
-        // For now, if we have services, we enforce a baseline wait of 45 seconds to conserve API limits.
-        interval = 45000;
+        // For now, if we have services, we enforce a baseline wait of 60 seconds to conserve API limits.
+        interval = 60000;
     }
     
     setNextFetchTime(now + interval);

@@ -15,11 +15,15 @@
 
 #include <Arduino.h>
 
-// Original: index.html (166968 bytes), Minified: 119400 bytes, Gzipped: (27618 bytes)
+// Original: index.html (167464 bytes), Minified: 119805 bytes, Gzipped: (27740 bytes)
 extern const uint8_t index_html_gz[] __attribute__((section(".rodata")));
 extern const uint32_t index_html_gz_len __attribute__((section(".rodata")));
 
 // Original: rss.json (831 bytes), Minified: 791 bytes, Gzipped: (301 bytes)
 extern const uint8_t rss_json_gz[] __attribute__((section(".rodata")));
 extern const uint32_t rss_json_gz_len __attribute__((section(".rodata")));
+
+// Original: screenshot.html (6681 bytes), Minified: 4667 bytes, Gzipped: (2047 bytes)
+extern const uint8_t screenshot_html_gz[] __attribute__((section(".rodata")));
+extern const uint32_t screenshot_html_gz_len __attribute__((section(".rodata")));
 
