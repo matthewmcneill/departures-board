@@ -119,6 +119,12 @@ public:
      */
     virtual void unlockData() {}
 
+    /**
+     * @brief Gets the provider-specific semantic attribution string.
+     * @return Attribution string, or nullptr if none.
+     */
+    virtual const char* getAttributionString() const { return nullptr; }
+
 protected:
     uint32_t hashString(const char* str, uint32_t hash = 2166136261u) {
         if (!str) return hash;

@@ -29,9 +29,7 @@ public:
     }
     const char* SSID() { return "Simulator-WiFi"; }
     int8_t RSSI() { 
-        // Logic Injection: If connected, return -50 (good signal). 
-        // Future: could add setRssi to SystemState.
-        return -50; 
+        return SystemState::getInstance().getWifiRssi(); 
     }
 };
 

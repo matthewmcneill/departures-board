@@ -11,26 +11,24 @@
  * Description: National Rail data source implementing iDataSource.
  *
  * Exported Functions/Classes:
- * - nationalRailDataSource: [Class] Data client for Darwin (National Rail SOAP API).
- *   - init() / refreshWsdl(): SOAP discovery and WSDL parsing.
- *   - updateData(): High-level trigger for polling departure info.
- *   - getStationData(): Returns parsed station metadata.
- *   - getMessagesData(): Accessor for rail disruption messages.
- *   - configure(): Sets API token and station parameters.
- *   - executeFetch(): Internal synchronous SOAP fetching pipeline.
- *   - lockData() / unlockData(): Thread synchronization.
- *   - testConnection(): Validates station codes and tokens.
- *   - getNextFetchTime() / setNextFetchTime(): Polling interval management.
- * - NationalRailService: [Struct] Single service arrival record.
- * - NationalRailStation: [Struct] Station-level departure container.
+ * - nrDARWINDataProvider: Concrete legacy DARWIN backend provider implementing iNationalRailDataProvider.
+ *   - init(): Attempts discovery initialization for SOAP endpoints via cached parameters.
+ *   - refreshWsdl(): SOAP discovery and WSDL parsing over HTTPS.
+ *   - updateData(): Intercept and request a priority update from the data manager.
+ *   - getStationData(): Returns pointer to parsed station metadata payload.
+ *   - getMessagesData(): Accessor for rail disruption string pool.
+ *   - configure(): Bootstrapping routine to sink configuration parameters into instance.
+ *   - executeFetch(): Internal blocking HTTP REST/SOAP engine for retrieving and parsing XML payload.
+ *   - lockData() / unlockData(): Thread synchronization protecting the double buffer.
+ *   - testConnection(): Validates station codes and tokens using lightweight query.
+ *   - getNextFetchTime() / setNextFetchTime(): Polling interval tracking mapping.
  */
 
-#ifndef NATIONAL_RAIL_DATA_SOURCE_HPP
-#define NATIONAL_RAIL_DATA_SOURCE_HPP
+#ifndef NR_DARWIN_DATA_PROVIDER_HPP
+#define NR_DARWIN_DATA_PROVIDER_HPP
 
-#include "../../../dataManager/iDataSource.hpp"
+#include "iNationalRailDataProvider.hpp"
 #include "../xmlListener/xmlListener.hpp"
-#include "../../messaging/messagePool.hpp"
 #include <memory>
 
 #include <freertos/FreeRTOS.h>
@@ -40,75 +38,21 @@
 #include <Arduino.h>
 
 /**
- * @brief Service Type Constants
+ * @brief Concrete XML implementation of iNationalRailDataProvider for the legacy DARWIN LDBWS API.
  */
-enum class NrServiceType : uint8_t {
-    OTHER = 0,
-    TRAIN = 1,
-    BUS = 2
-};
-
-/**
- * @brief Data Length Constants
- */
-constexpr int NR_MAX_LOCATION = 45;
-constexpr int NR_MAX_CALLING = 450;
-constexpr int NR_MAX_MSG_LEN = 400;
-constexpr int NR_MAX_SERVICES = 9;
-/**
- * @brief Data structure for a single train/bus service.
- */
-struct NationalRailService {
-    char sTime[6];
-    char destination[NR_MAX_LOCATION];
-    char via[NR_MAX_LOCATION];
-    char etd[11];
-    char platform[4];
-    bool isCancelled;
-    bool isDelayed;
-    int trainLength;
-    byte classesAvailable;
-    char opco[50];
-    NrServiceType serviceType; // TRAIN or BUS
-};
-
-/**
- * @brief Container for station-level departure data.
- */
-struct NationalRailStation {
-    char location[NR_MAX_LOCATION];
-    char stationName[NR_MAX_LOCATION];
-    char filterVia[NR_MAX_LOCATION];
-    char filterPlatform[16];
-    bool platformAvailable;
-    bool boardChanged;
-    
-    // Details strictly for the first train in the sequence
-    char firstServiceCalling[NR_MAX_CALLING]; // Calling points for the first due service
-    char firstServiceOrigin[NR_MAX_LOCATION]; // Origin station name for the first due service
-    char firstServiceLastSeen[NR_MAX_LOCATION]; // Real-time actual location snippet
-    char firstServiceMessage[NR_MAX_MSG_LEN]; // Specific operator disruption messages for the service
-
-    int numServices;
-    NationalRailService service[NR_MAX_SERVICES];
-    uint32_t contentHash;
-};
-
-
-
-class nationalRailDataSource : public iDataSource, public xmlListener {
+class nrDARWINDataProvider : public iNationalRailDataProvider, public xmlListener {
 private:
-    std::unique_ptr<NationalRailStation> stationData; // Background parse buffer for Double Buffering
-    std::unique_ptr<NationalRailStation> renderData;  // Active UI buffer containing validated results
-    MessagePool messagesData; // Background pool for disruption strings
-    MessagePool renderMessages; // Safe local copy for UI rendering
+    std::unique_ptr<NationalRailStation> stationData; // Internal background writing buffer
+    std::unique_ptr<NationalRailStation> renderData;  // Thread-safe protected readable payload
+    MessagePool messagesData; // Mutable string pool for alerts
+    MessagePool renderMessages; // Immutable presented pool
 
     SemaphoreHandle_t dataMutex; // Thread-safe lock protecting data transfers
     volatile UpdateStatus taskStatus; // Cross-thread execution status tracking (e.g., UpdateStatus::PENDING)
 
-    char lastErrorMessage[128];
+    char lastErrorMessage[128]; // Detailed string descriptor of errors
 
-    // Darwin API / SOAP details
+    // Darwin API / SOAP endpoints tracking
     char soapHost[48];
     char soapAPI[48];
     String soapURL;
@@ -128,13 +72,13 @@ private:
     char platformFilter[54];
     bool keepRoute;
 
-    // Configuration
+    // Configuration Settings
     char nrToken[37];
     char crsCode[4];
     char callingCrsCode[4];
     int nrTimeOffset;
 
-    // Internal Utility Methods (ported from raildataXmlClient)
+    // Internal Utility Methods (ported from legacy raildataXmlClient)
     static bool compareTimes(const NationalRailService& a, const NationalRailService& b);
     void removeHtmlTags(char* input);
     void replaceWord(char* input, const char* target, const char* replacement);
@@ -148,8 +92,8 @@ private:
     void deleteService(int x);
 
 public:
-    nationalRailDataSource();
-    virtual ~nationalRailDataSource() = default;
+    nrDARWINDataProvider();
+    virtual ~nrDARWINDataProvider() = default;
 
     // DataManager Scheduling Implementations
     uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
@@ -157,7 +101,7 @@ public:
     void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
 
 private:
-    uint32_t nextFetchTimeMillis;
+    uint32_t nextFetchTimeMillis; // Real-world millis representation to delay API polling
     static const uint32_t BASELINE_MIN_INTERVAL = 30000;
 
     /**
@@ -166,26 +110,41 @@ private:
     void setSoapAddress(const char* host, const char* api);
 
 public:
-    // iDataSource Implementation
+    // --- iDataSource overrides ---
+    
     UpdateStatus updateData() override;
-    UpdateStatus getLastUpdateStatus() const { return taskStatus; }
+    UpdateStatus getLastUpdateStatus() const override { return taskStatus; }
     const char* getLastErrorMsg() const override { return lastErrorMessage; }
     UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override;
 
+    /**
+     * @brief Returns the strict legal attribution string for the Darwin API.
+     * @return Literal static string for the OLED message widget.
+     */
+    const char* getAttributionString() const override { return "Powered by National Rail Enquiries"; }
+
+
     // Configuration & Data Access
+    
+    /**
+     * @brief Initialize the data source discovering SOAP endpoints.
+     * @param wsdlHost Host location resolving WSDL mappings.
+     * @param wsdlAPI Relative address fragment mapping configuration.
+     * @return UpdateStatus evaluation depending on network routing capabilities.
+     */
     UpdateStatus init(const char *wsdlHost, const char *wsdlAPI);
     bool isInitialized() const { return soapHost[0] != '\0'; }
-    void configure(const char* token, const char* crs, const char* filter = "", const char* callingCrs = "", int offset = 0);
+    void configure(const char* token, const char* crs, const char* filter = "", const char* callingCrs = "", int offset = 0) override;
     
-    NationalRailStation* getStationData() { return renderData.get(); }
-    MessagePool* getMessagesData() { return &renderMessages; }
+    NationalRailStation* getStationData() override { return renderData.get(); }
+    MessagePool* getMessagesData() override { return &renderMessages; }
     void cleanFilter(const char* rawFilter, char* cleanedFilter, size_t maxLen);
 
     // iDataSource Mutex controls
     void lockData() override { if(dataMutex) xSemaphoreTake(dataMutex, portMAX_DELAY); }
     void unlockData() override { if(dataMutex) xSemaphoreGive(dataMutex); }
 
-    // xmlListener Implementation
+    // --- xmlListener overrides ---
     void startTag(const char *tagName) override;
     void endTag(const char *tagName) override;
     void parameter(const char *param) override;
@@ -198,9 +157,9 @@ public:
     /**
      * @brief Performs a full WSDL discovery to find the latest SOAP endpoints.
      *        Updates the global config and persists to disk on success.
-     * @return UpdateStatus code.
+     * @return UpdateStatus code depending on HTTP success status boundary.
      */
     UpdateStatus refreshWsdl();
 };
 
-#endif // NATIONAL_RAIL_DATA_SOURCE_HPP
+#endif // NR_DARWIN_DATA_PROVIDER_HPP

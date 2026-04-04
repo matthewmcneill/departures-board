@@ -124,6 +124,33 @@ public:
                 messageCount++;
             }
         }
+
+        JsonObject mods = doc["configModifiers"];
+        if (!mods.isNull()) {
+            if (mods["filter"].is<const char*>() && strlen(mods["filter"].as<const char*>()) > 0) {
+                char temp[MOCK_MAX_STR];
+                snprintf(temp, sizeof(temp), "%s [%s]", stationCalling, mods["filter"].as<const char*>());
+                strlcpy(stationCalling, temp, sizeof(stationCalling));
+            }
+            if (mods["callingPoint"].as<bool>()) {
+                strlcpy(stationCalling, "Calling at...", sizeof(stationCalling));
+            }
+            if (mods["ordinals"].as<bool>()) {
+                for(int i = 0; i < serviceCount; i++) {
+                    snprintf(services[i].ordinal, sizeof(services[i].ordinal), "%d", i+1);
+                }
+            }
+            if (mods["lastSeen"].as<bool>()) {
+                if(messageCount == 0 && MOCK_MAX_MSGS > 0) {
+                    strlcpy(messages[0], "[Last reported at 14:32]", MOCK_MAX_STR);
+                    messageCount = 1;
+                } else if(messageCount > 0) {
+                    char temp[MOCK_MAX_STR];
+                    snprintf(temp, sizeof(temp), "%s [Last reported at 14:32]", messages[0]);
+                    strlcpy(messages[0], temp, sizeof(messages[0]));
+                }
+            }
+        }
     }
 
     /**

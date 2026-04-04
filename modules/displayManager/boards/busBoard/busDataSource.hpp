@@ -176,6 +176,8 @@ public:
     uint32_t getNextFetchTime() override { return nextFetchTimeMillis; }
     PriorityTier getPriorityTier() override;
     void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
+    const char* getAttributionString() const override { return "Powered by bustimes.org"; }
+
 
     /**
      * @brief Performs a lightweight connection and authentication test.

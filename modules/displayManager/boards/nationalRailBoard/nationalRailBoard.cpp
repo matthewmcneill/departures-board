@@ -9,21 +9,22 @@
  * this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp
- * Description: Implementation of National Rail controller logic and widget binding.
+ * Description: Implementation of National Rail controller logic and polymorphic data binding.
  *
  * Exported Functions/Classes:
- * - NationalRailBoard: [Class implementation]
+ * - NationalRailBoard: Concrete implementation of a departures board for National Rail data.
  *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
  *   - tick() / render(): Logic and drawing entry points.
- *   - updateData(): Triggers asynchronous SOAP fetch from OpenLDBWS.
- *   - configure(): Applies BoardConfig settings.
+ *   - updateData(): Triggers asynchronous fetch from the polymorphic activeDataProvider.
+ *   - configure(): Loads BoardConfig structure and configures RDM/DARWIN dynamic instances.
  */
 
 #include "nationalRailBoard.hpp"
+#include "nrDARWINDataProvider.hpp"
+#include "nrRDMDataProvider.hpp"
 #include <appContext.hpp>
 #include <logger.hpp>
 
-const char nrAttribution[] = "Powered by National Rail Enquiries"; // Attribution for National Rail
 extern const uint8_t NatRailTall12[];
 extern const uint8_t NatRailSmall9[];
 
@@ -32,7 +33,7 @@ extern const uint8_t NatRailSmall9[];
  * @param contextPtr Pointer to the global application context.
  */
 NationalRailBoard::NationalRailBoard(appContext *contextPtr)
-    : context(contextPtr), activeLayout(nullptr), lastUpdate(0),
+    : context(contextPtr), activeDataSource(nullptr), activeLayout(nullptr), lastUpdate(0),
       viaToggle(false), nextViaToggle(0), lastRenderedHash(0) {
 
   // Ensure activeLayout is explicitly null until configure() is called
@@ -46,19 +47,17 @@ NationalRailBoard::NationalRailBoard(appContext *contextPtr)
   nrTimeOffset = 0;
   stationLat = 0;
   stationLon = 0;
-
-  // Register this board's source with the predictive DataManager
-  if (context) {
-    context->getDataManager().registerSource(&dataSource);
-  }
 }
 
 /**
  * @brief Cleanup layout allocations.
  */
 NationalRailBoard::~NationalRailBoard() {
-  if (context) {
-    context->getDataManager().unregisterSource(&dataSource);
+  if (context && activeDataSource) {
+    context->getDataManager().unregisterSource(activeDataSource);
+  }
+  if (activeDataSource) {
+    delete activeDataSource;
   }
   if (activeLayout)
     delete activeLayout;
@@ -75,7 +74,7 @@ void NationalRailBoard::onActivate() {
   // (WSDL Initialization is delegated to DataManager on safe background thread)
 
   // --- Step 2: Configuration Injection ---
-  dataSource.configure(nrToken, crsCode, platformFilter, callingCrsCode,
+  activeDataSource->configure(nrToken, crsCode, platformFilter, callingCrsCode,
                        nrTimeOffset);
 
   // --- Step 3: Widget Binding ---
@@ -84,14 +83,17 @@ void NationalRailBoard::onActivate() {
     activeLayout->msgWidget.clearPools();
     if (context->getConfigManager().getConfig().prioritiseRss) {
       activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
-      activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+      activeLayout->msgWidget.addMessagePool(activeDataSource->getMessagesData());
     } else {
-      activeLayout->msgWidget.addMessagePool(dataSource.getMessagesData());
+      activeLayout->msgWidget.addMessagePool(activeDataSource->getMessagesData());
       activeLayout->msgWidget.addMessagePool(&context->getGlobalMessagePool());
     }
 
     // Initial attribution text
-    activeLayout->msgWidget.setText(nrAttribution);
+    const char* attr = activeDataSource->getAttributionString();
+    if (attr) {
+        activeLayout->msgWidget.setText(attr);
+    }
   }
   lastUpdate = 0;
 }
@@ -122,8 +124,9 @@ void NationalRailBoard::configure(const BoardConfig &config) {
     activeLayout = new layoutNrDefault(context);
   }
 
+  ApiKey *key = nullptr;
   if (context) {
-    ApiKey *key = context->getConfigManager().getKeyById(config.apiKeyId);
+    key = context->getConfigManager().getKeyById(config.apiKeyId);
     if (key)
       setNrToken(key->token);
     else
@@ -137,12 +140,30 @@ void NationalRailBoard::configure(const BoardConfig &config) {
   setStationLat(config.lat);
   setStationLon(config.lon);
 
-  // Inject the credentials and instantly init the static endpoints so
-  // background sweeps work successfully
-  dataSource.init("lite.realtime.nationalrail.co.uk",
-                  "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
-  dataSource.configure(nrToken, crsCode, platformFilter, callingCrsCode,
-                       nrTimeOffset);
+  // Unregister existing data source
+  if (context && activeDataSource) {
+      context->getDataManager().unregisterSource(activeDataSource);
+  }
+  if (activeDataSource) {
+      delete activeDataSource;
+      activeDataSource = nullptr;
+  }
+
+  // Instantiate proper provider based on Key Type
+  if (key && strcmp(key->type, "rdm") == 0) {
+      activeDataSource = new nrRDMDataProvider();
+  } else {
+      nrDARWINDataProvider* darwin = new nrDARWINDataProvider();
+      // Initialize Darwin SOAP WSDL Endpoints
+      darwin->init("lite.realtime.nationalrail.co.uk", "/OpenLDBWS/wsdl.aspx?ver=2021-11-01");
+      activeDataSource = darwin;
+  }
+
+  if (context) {
+      context->getDataManager().registerSource(activeDataSource);
+  }
+
+  activeDataSource->configure(nrToken, crsCode, platformFilter, callingCrsCode, nrTimeOffset);
 }
 
 /**
@@ -153,9 +174,9 @@ void NationalRailBoard::tick(uint32_t ms) {
   if (ms > nextViaToggle) {
     viaToggle = !viaToggle;
     nextViaToggle = ms + 4000;
-    dataSource.lockData();
+    activeDataSource->lockData();
     populateServices(true); // Repopulate only row 0 to flip via points
-    dataSource.unlockData();
+    activeDataSource->unlockData();
   }
 
   if (activeLayout)
@@ -170,7 +191,7 @@ void NationalRailBoard::tick(uint32_t ms) {
 UpdateStatus NationalRailBoard::updateData() {
   // --- Step 1: Pending Result Status ---
   if (lastUpdateStatus == UpdateStatus::PENDING) {
-    lastUpdateStatus = dataSource.getLastUpdateStatus();
+    lastUpdateStatus = activeDataSource->getLastUpdateStatus();
     if (lastUpdateStatus == UpdateStatus::PENDING) {
       return UpdateStatus::PENDING;
     }
@@ -186,7 +207,7 @@ UpdateStatus NationalRailBoard::updateData() {
 
     // --- Step 3: Initiation ---
     LOG_VERBOSE("DISPLAY", "NR Board: Starting data update...");
-    lastUpdateStatus = dataSource.updateData();
+    lastUpdateStatus = activeDataSource->updateData();
     if (lastUpdateStatus == UpdateStatus::PENDING) {
       return UpdateStatus::PENDING;
     }
@@ -205,9 +226,9 @@ UpdateStatus NationalRailBoard::updateData() {
   }
 
   if (lastUpdateStatus == UpdateStatus::SUCCESS) { // UpdateStatus::SUCCESS
-    dataSource.lockData();
+    activeDataSource->lockData();
     // Update header once we have the station name
-    NationalRailStation *data = dataSource.getStationData();
+    NationalRailStation *data = activeDataSource->getStationData();
     if (activeLayout) {
       activeLayout->locationAndFilters.setLocation(data->location);
 
@@ -237,7 +258,10 @@ UpdateStatus NationalRailBoard::updateData() {
         if (msg.length() > 0) {
           activeLayout->msgWidget.setText(msg.c_str());
         } else {
-          activeLayout->msgWidget.setText(nrAttribution);
+          const char* attr = activeDataSource->getAttributionString();
+          if (attr) {
+            activeLayout->msgWidget.setText(attr);
+          }
         }
       }
 
@@ -245,7 +269,7 @@ UpdateStatus NationalRailBoard::updateData() {
       populateServices(false);
       lastRenderedHash = data->contentHash;
     }
-    dataSource.unlockData();
+    activeDataSource->unlockData();
   }
   return lastUpdateStatus;
 }
@@ -288,8 +312,8 @@ void NationalRailBoard::render(U8G2 &display) {
   }
 
   if (activeLayout) {
-    dataSource.lockData();
-    NationalRailStation *data = dataSource.getStationData();
+    activeDataSource->lockData();
+    NationalRailStation *data = activeDataSource->getStationData();
     if (data->numServices > 0) {
       activeLayout->row0Widget.setVisible(true);
       activeLayout->servicesWidget.setVisible(true);
@@ -305,7 +329,7 @@ void NationalRailBoard::render(U8G2 &display) {
       activeLayout->noDataLabel.setVisible(true);
     }
     activeLayout->render(display);
-    dataSource.unlockData();
+    activeDataSource->unlockData();
   }
 }
 
@@ -316,7 +340,7 @@ void NationalRailBoard::populateServices(bool row0Only) {
   if (!activeLayout)
     return;
 
-  NationalRailStation *data = dataSource.getStationData();
+  NationalRailStation *data = activeDataSource->getStationData();
   activeLayout->row0Widget.clearRows();
   if (!row0Only) {
       activeLayout->servicesWidget.clearRows();

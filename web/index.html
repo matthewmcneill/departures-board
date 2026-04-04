@@ -2213,7 +2213,14 @@
               <use href="#rail-logo" />
             </svg></span>
           <h5>National Rail</h5>
-          <p>Darwin LDBWS API</p>
+          <p>Darwin LDBWS</p>
+        </div>
+        <div class="type-card" onclick="app.addKey('rdm')">
+          <span class="icon"><svg viewBox="0 0 90.7 90.7">
+              <use href="#rail-logo" />
+            </svg></span>
+          <h5>Rail Data Marketplace</h5>
+          <p>JSON RDM</p>
         </div>
         <div class="type-card" onclick="app.addKey('tfl')">
           <span class="icon"><svg viewBox="0 0 100 100">
@@ -2285,6 +2292,11 @@
           Enter your openweathermap.org api key for station weather information. You can register for a free api key <a
             href="https://home.openweathermap.org/users/sign_up" target="_blank">here</a>.
         </div>
+        <div id="key-help-rdm" class="instruction-box key-help-section" style="display: none; margin-top: 1rem;">
+          You will need a <a href="https://raildata.org.uk/dataProduct/P-d81d6eaf-8060-4467-a339-1c833e50cbbe/overview" target="_blank"><strong>Live Departure Board - Version 1.1</strong></a> subscription from the Rail Data Marketplace.
+          Copy the <strong style="color:var(--form-accent);">Consumer Key</strong> found on the 'Specification' tab of
+          your subscription.
+        </div>
         <div id="key-test-feedback" class="test-feedback"></div>
         <div class="modal-button-row">
           <button type="button" class="outline" onclick="app.testKey()" id="key-test-btn">Test</button>
@@ -2326,6 +2338,7 @@
 
     const PROVIDER_LOGOS = {
       rail: '<svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg>',
+      rdm: '<svg viewBox="0 0 90.7 90.7"><use href="#rail-logo" /></svg>',
       tfl: '<svg viewBox="0 0 100 100"><use href="#tube-logo" /></svg>',
       owm: '<svg viewBox="0 0 24 24"><use href="#weather-logo" /></svg>',
       other: '<svg viewBox="0 0 24 24"><use href="#key-logo" /></svg>'
@@ -3177,6 +3190,7 @@
         // Validation Patterns (Mirroring keys.htm)
         const patterns = {
           rail: /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
+          rdm: /^[a-zA-Z0-9_\-\.]+$/,
           tfl: /^[a-f0-9]{32}$/i,
           owm: /^[a-f0-9]{32}$/i
         };
@@ -3301,11 +3315,11 @@
 
         // 1. Filter Keys
         const keySelect = form.apiKeyId;
-        const targetType = (t === 0) ? 'rail' : (t === 1 || t === 2) ? 'tfl' : null;
+        const targetTypeGroup = (t === 0) ? ['rail', 'rdm'] : (t === 1 || t === 2) ? ['tfl'] : null;
 
         keySelect.innerHTML = '<option value="">No key selected</option>';
-        if (targetType) {
-          const filtered = this.state.keys.filter(k => k.type === targetType);
+        if (targetTypeGroup) {
+          const filtered = this.state.keys.filter(k => targetTypeGroup.includes(k.type));
           filtered.forEach(k => {
             const opt = document.createElement('option');
             opt.value = k.id;
@@ -3316,7 +3330,7 @@
           else if (filtered.length === 1) keySelect.value = filtered[0].id; // Auto-select single key
         }
 
-        keySection.style.display = (targetType && t !== 2) ? 'block' : 'none'; // Hide for Bus (t=2)
+        keySection.style.display = (targetTypeGroup && t !== 2) ? 'block' : 'none'; // Hide for Bus (t=2)
 
         // 2. Layout Updates
         if (weatherLabel) weatherLabel.style.display = (t !== 3 && t !== 1) ? 'flex' : 'none';

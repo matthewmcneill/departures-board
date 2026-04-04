@@ -26,22 +26,16 @@ enum wl_status_t {
     WL_DISCONNECTED
 };
 
+#include "SystemState.hpp"
+
 class MockWiFi {
 public:
     wl_status_t status() { 
-        // 5 states total, 5 seconds each. State 0 is disconnected.
-        int state = (millis() / 5000) % 5;
-        if (state == 0) return WL_DISCONNECTED;
-        return WL_CONNECTED; 
+        return SystemState::getInstance().isWifiConnected() ? WL_CONNECTED : WL_DISCONNECTED; 
     }
     const char* SSID() { return "Simulator-WiFi"; }
     int8_t RSSI() { 
-        int state = (millis() / 5000) % 5;
-        // States 1..4 map to distinct RSSI bands: -86, -76, -66, -50
-        if (state == 1) return -86;
-        if (state == 2) return -76;
-        if (state == 3) return -66;
-        return -50; 
+        return SystemState::getInstance().getWifiRssi(); 
     }
 };
 

@@ -83,7 +83,7 @@ struct ApiKey {
   char id[13] = "";    // Unique ID for referencing (e.g. k-12345678)
   char label[32] = ""; // Human-readable label
   char type[12] = "";  // rail, tfl, owm
-  char token[64] = ""; // The actual key/token
+  char token[128] = ""; // The actual key/token
 };
 
 /**

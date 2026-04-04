@@ -25,8 +25,6 @@
 #include <appContext.hpp>
 #include <logger.hpp>
 
-const char btAttribution[] =
-    "Powered by bustimes.org";        ///< Board attribution text
 extern const uint8_t Underground10[]; ///< Built-in font
 extern const uint8_t NatRailSmall9[]; ///< Small font for scrolling messages
 
@@ -89,7 +87,10 @@ void BusBoard::onActivate() {
     }
 
     // Set initial text (fallback)
-    activeLayout->msgWidget.setText(btAttribution);
+    const char* attr = dataSource.getAttributionString();
+    if (attr) {
+        activeLayout->msgWidget.setText(attr);
+    }
   }
   lastUpdate = 0; // Trigger immediate update
 }

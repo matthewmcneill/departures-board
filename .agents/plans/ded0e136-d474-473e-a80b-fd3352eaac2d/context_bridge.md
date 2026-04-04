@@ -1,28 +1,28 @@
-# Context Bridge: RDM API Integration
+# Context Bridge
 
 ## 📍 Current State & Focus
-We are currently in the planning stage to integrate the National Rail Data Marketplace (RDM) API into the ESP32 Departures Board project. We have researched the memory architecture limitations and drafted an `implementation_plan.md` for a new data provider (`rdmDataSource`) to handle JSON responses natively. We just agreed with the user to proceed by differentiating RDM keys via their stubbed type (`raildata` or `rdm`) in the config framework and using `ArduinoJson`'s filter capability to discard JSON branches efficiently on network streams.
+We have completed the core implementation of the Rail Data Marketplace (RDM) transition for the National Rail departures board. A polymorphic data architecture has been implemented (`iNationalRailDataProvider`), dividing the implementation into `nrDARWINDataProvider` (legacy XML) and `nrRDMDataProvider` (new JSON parser using safe streaming and ArduinoJson `Filter`). The `NationalRailBoard` has been decoupled to dynamically instantiate the appropriate provider depending on the selected user configuration. The `index.html` frontend components for adding RDM API keys have been completed. The firmware code was compiling successfully but threw an exit code 1 linked to `TimeLib.h` which was removed as it was unnecessary. Further compilation needs validation. Hardware and UI tests are pending.
 
 ## 🎯 Next Immediate Actions
-1. Request the plan queue (`/plan-start`) if the user wants to execute.
-2. Begin Execution mapping the JSON payload in `rdmDataSource.cpp`.
-3. Construct `rdmDataSource.hpp` deriving from `iDataSource` using ESPAsyncTCP/WiFiClientSecure practices already established in the project.
-4. Modify `NationalRailBoard::configure()` to check `ApiKey::type` correctly and instantiate the right derived class.
+1. Re-run `pio run -e esp32dev` to verify the codebase compiles successfully after removing the invalid `TimeLib.h` include from `nrRDMDataProvider.cpp` and finalizing the DataManager pointer fixes.
+2. The user will invoke `/flash-test` using an active RDM API key to verify behavior on physical hardware.
+3. Validate memory efficiency using the serial read tools to ensure peak memory doesn't cross the 34KB free heap limit during an RDM JSON parsing cycle.
+4. Verify web portal RDM configuration layout visually.
 
 ## 🧠 Decisions & Designs
-- **Memory Strategy:** Rather than a whole new streaming parsing library, use `ArduinoJson` passing a `JsonDocument::setFilter()` into `deserializeJson` to effectively ignore all XML-like large payloads outside the exact path arrays we need (`std`, `etd`, `platform`, `trainLength`, `loading`, `isCancelled`).
-- **Data Provider Factory:** `NationalRailBoard` will lazily bind either `rdmDataSource` or `nationalRailDataSource` directly onto the heap, caching the pointer (`iDataSource* activeDataSource;`) across the runtime to avoid fragmentation, strictly un-registering the object from `DataManager` on deep reconfiguration. 
-- **Configuration Parsing:** We will use the explicit key type, like `raildata` (which is stubbed implicitly upstream via JSON registry) to branch rather than attempting to guess key format string sizes. 
+- **Polymorphic Interfaces**: Created `iNationalRailDataProvider` sharing functionality for the board display loop while separating API fetching mechanics into `nrDARWINDataProvider` and `nrRDMDataProvider`. 
+- **Memory Bound Parsing**: To handle the very large RDM JSON responses, `ArduinoJson::DeserializationOption::Filter` was used in a streaming context directly off `WiFiClientSecure` rather than buffering `String` objects, avoiding memory exhaustion.
+- **Provider Registration**: Fixed lifecycle bugs in `nationalRailBoard.cpp` that previously assumed static `dataSource` addresses, ensuring cleanup handles the dynamic `activeDataSource` pointer gracefully.
 
 ## 🐛 Active Quirks, Bugs & Discoveries
-- Single-core ESP32 variants require frequent yielding (e.g., `vTaskDelay(1)`) while parsing huge network chunks. While `deserializeJson` blocks on stream reads, the underlying WiFi stack should ideally be serviced. Ensure `WiFiClientSecure` timeout loops still allow context switches via `esp_task_wdt_reset()` and `vTaskDelay` if parsing takes a while.
-- Keep to max ArduinoJson block size of 34KB, meaning filters MUST be strict.
-- Double-buffering is used in `iDataSource` implementations (e.g. `NationalRailStation stationData;` vs `renderData;`). The new `rdmDataSource` must retain the background lock logic correctly during parsing to prevent UI tearing.
+- Need to ensure `JsonArray` parsing iterates fully through RDM `trainServices` and extracts coach formation correctly if added later. Current JSON filtering is highly tuned to match the legacy XML data density exactly.
+- PlatformIO occasionally errors out if `ESPAsyncWebServer` warnings trip up CI but warnings shouldn't fail compilation; the previous failure was verified as a `No such file` for `TimeLib.h`.
 
 ## 💻 Commands Reference
-- IDE command base: PlatformIO `pio run -e esp32dev`
-- Testing board: use the portal `/api/keys/test` API if needed. 
+- To build the firmware: `pio run -e esp32dev`
+- To flash and monitor logs (requires lock/device): `/flash-test`
+- Monitor continuous serial: `/monitor`
 
 ## 🌿 Execution Environment
-Branch: default or active checked-out feature branch.
-Platform: ESP32 using the Arduino Core framework.
+- Building on ESP32 environment via PlatformIO.
+- Physical testing pending connection with active RDM key.

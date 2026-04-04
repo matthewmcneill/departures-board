@@ -22,6 +22,7 @@ When queried to perform any queue management task, map the intent to one of the 
 
 ### 2. `/plan-queue` -> [view `.agents/workflows/plan-queue.md`]
 - **Use when**: You have just drafted a robust `implementation_plan.md` for a brand new task, safely persisted it via `/plan-save`, and now need to flag it as `READY` for scheduling.
+- **CRITICAL**: This is a queuing action ONLY. You are explicitly forbidden from executing or starting the plan after queuing it. You must await further instructions.
 
 ### 3. `/plan-load [ID]` -> [view `.agents/workflows/plan-load.md`]
 - **Use when**: The user asks you to "pick up", "load", or "do" a specific session ID from the pending queue. This safely pulls the rich context into your brain natively.

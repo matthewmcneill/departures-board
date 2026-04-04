@@ -40,6 +40,22 @@ void rssClient::reapplyConfig(const Config& config) {
     setRssName(config.rssName);
     setRssEnabled(config.rssEnabled);
     LOG_INFOf("CONFIG", "RSS Config: Enabled=%s, URL=%s", config.rssEnabled ? "true" : "false", config.rssUrl);
+
+    if (config.rssEnabled && strlen(config.rssName) > 0) {
+        bool found = false;
+        MessagePool& pool = appContext.getGlobalMessagePool();
+        const char* attr = config.rssName;
+        for (size_t i = 0; i < pool.getCount(); i++) {
+            const char* msg = pool.getMessage(i);
+            if (msg && strcmp(msg, attr) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            pool.addMessage(attr);
+        }
+    }
 }
 
 rssClient::rssClient() {

@@ -7,19 +7,20 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp
- * Description: Implementation of National Rail data source.
+ * Module: modules/displayManager/boards/nationalRailBoard/nrDARWINDataProvider.cpp
+ * Description: Implementation of National Rail data source for the legacy DARWIN API.
  *
  * Exported Functions/Classes:
- * - nationalRailDataSource: [Class implementation]
- *   - init() / refreshWsdl(): Discovery and endpoint management.
- *   - updateData(): Initiates asynchronous SOAP fetch.
- *   - executeFetch(): Internal synchronous SOAP pipeline (XML streaming).
- *   - testConnection(): Validates station IDs and tokens.
- *   - configure(): Sets API token and station parameters.
+ * - nrDARWINDataProvider: Concrete legacy DARWIN backend provider implementing iNationalRailDataProvider.
+ *   - init(): Attempts discovery initialization for SOAP endpoints via cached parameters.
+ *   - refreshWsdl(): SOAP discovery and WSDL parsing over HTTPS.
+ *   - updateData(): Intercept and request a priority update from the data manager.
+ *   - configure(): Bootstrapping routine to sink configuration parameters into instance.
+ *   - executeFetch(): Internal blocking HTTP REST/SOAP engine for retrieving and parsing XML payload.
+ *   - testConnection(): Validates station codes and tokens using lightweight query.
  */
 
-#include "nationalRailDataSource.hpp"
+#include "nrDARWINDataProvider.hpp"
 #include <WiFiClientSecure.h>
 #define ENABLE_DEBUG_LOG
 #define ENABLE_RAW_XML_LOG
@@ -34,7 +35,7 @@
 
 extern class appContext appContext;
 
-nationalRailDataSource::nationalRailDataSource() 
+nrDARWINDataProvider::nrDARWINDataProvider() 
     : loadingWDSL(false), tagLevel(0), isTestMode(false), id(-1), coaches(0), addedStopLocation(false), 
       filterPlatforms(false), keepRoute(false), nrTimeOffset(0),
       messagesData(4), renderMessages(4), nextFetchTimeMillis(0) {
@@ -64,7 +65,7 @@ nationalRailDataSource::nationalRailDataSource()
  * @param callingCrs Destination station filter (optional).
  * @param offset Minutes to offset results.
  */
-void nationalRailDataSource::configure(const char* token, const char* crs, const char* filter, const char* callingCrs, int offset) {
+void nrDARWINDataProvider::configure(const char* token, const char* crs, const char* filter, const char* callingCrs, int offset) {
     if (token) strlcpy(nrToken, token, sizeof(nrToken));
     if (crs) strlcpy(crsCode, crs, sizeof(crsCode));
     if (filter) strlcpy(platformFilter, filter, sizeof(platformFilter));
@@ -77,7 +78,7 @@ void nationalRailDataSource::configure(const char* token, const char* crs, const
  * @brief Utility to sort services by scheduled time.
  * Handles midnight rollover (e.g. 23:59 vs 00:05).
  */
-bool nationalRailDataSource::compareTimes(const NationalRailService& a, const NationalRailService& b) {
+bool nrDARWINDataProvider::compareTimes(const NationalRailService& a, const NationalRailService& b) {
     int h1, m1, h2, m2;
     sscanf(a.sTime, "%d:%d", &h1, &m1);
     sscanf(b.sTime, "%d:%d", &h2, &m2);
@@ -94,7 +95,7 @@ bool nationalRailDataSource::compareTimes(const NationalRailService& a, const Na
  * Attempts to load cached endpoints from LittleFS; falls back to WSDL discovery.
  * @return Success if endpoints are valid.
  */
-UpdateStatus nationalRailDataSource::init(const char *wsdlHost, const char *wsdlAPI) {
+UpdateStatus nrDARWINDataProvider::init(const char *wsdlHost, const char *wsdlAPI) {
     
     // Attempt to load discovered SOAP endpoints from dedicated cache file
     if (LittleFS.exists(F("/darwin_wsdl_cache.json"))) {
@@ -116,7 +117,7 @@ UpdateStatus nationalRailDataSource::init(const char *wsdlHost, const char *wsdl
     return refreshWsdl();
 }
 
-void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
+void nrDARWINDataProvider::setSoapAddress(const char* host, const char* api) {
     if (host) strlcpy(soapHost, host, sizeof(soapHost));
     if (api) strlcpy(soapAPI, api, sizeof(soapAPI));
     isTestMode = true;
@@ -127,7 +128,7 @@ void nationalRailDataSource::setSoapAddress(const char* host, const char* api) {
  * @brief Request an asynchronous data refresh from the DataManager.
  * @return UpdateStatus::PENDING.
  */
-UpdateStatus nationalRailDataSource::updateData() {
+UpdateStatus nrDARWINDataProvider::updateData() {
     if (taskStatus == UpdateStatus::PENDING) {
         return UpdateStatus::PENDING;
     }
@@ -147,7 +148,7 @@ UpdateStatus nationalRailDataSource::updateData() {
     return UpdateStatus::PENDING;
 }
 
-PriorityTier nationalRailDataSource::getPriorityTier() {
+PriorityTier nrDARWINDataProvider::getPriorityTier() {
     // If we've never successfully loaded data, it's critically empty -> High Priority
     if (renderData && renderData->numServices == 0) {
         return PriorityTier::PRIO_HIGH;
@@ -158,7 +159,7 @@ PriorityTier nationalRailDataSource::getPriorityTier() {
 /**
  * @brief Internal blocking method that executes the SOAP protocol and coordinates XML streaming parse.
  */
-void nationalRailDataSource::executeFetch() {
+void nrDARWINDataProvider::executeFetch() {
     LOG_INFO("DATA", "NR Source: executeFetch() entry. Free heap: " + String(ESP.getFreeHeap()));
     
     // --- Self-Initialization ---
@@ -463,7 +464,7 @@ void nationalRailDataSource::executeFetch() {
  * @param token Optional token to test (overrides stored configuration).
  * @return UpdateStatus code.
  */
-UpdateStatus nationalRailDataSource::testConnection(const char* token, const char* stationId) {
+UpdateStatus nrDARWINDataProvider::testConnection(const char* token, const char* stationId) {
     LOG_INFO("DATA", "NR Source: Performing lightweight Auth-only check via testConnection");
     
     // Save current state to avoid clobbering an active board's settings
@@ -512,7 +513,7 @@ UpdateStatus nationalRailDataSource::testConnection(const char* token, const cha
     return result;
 }
 
-void nationalRailDataSource::sanitiseData() {
+void nrDARWINDataProvider::sanitiseData() {
     if (!stationData) return;
     // Basic sanitization from raildataXmlClient
     removeHtmlTags(stationData->location);
@@ -532,7 +533,7 @@ void nationalRailDataSource::sanitiseData() {
     // Current Darwin logic adds them. We'll leave them as is for now or add a sanitize method to Pool.
 }
 
-void nationalRailDataSource::removeHtmlTags(char* input) {
+void nrDARWINDataProvider::removeHtmlTags(char* input) {
     bool inTag = false; char* out = input;
     for (char* p = input; *p; p++) {
         if (*p == '<') inTag = true;
@@ -542,7 +543,7 @@ void nationalRailDataSource::removeHtmlTags(char* input) {
     *out = '\0';
 }
 
-void nationalRailDataSource::replaceWord(char* input, const char* target, const char* replacement) {
+void nrDARWINDataProvider::replaceWord(char* input, const char* target, const char* replacement) {
     char* pos = strstr(input, target);
     while (pos) {
         size_t tLen = strlen(target);
@@ -553,12 +554,12 @@ void nationalRailDataSource::replaceWord(char* input, const char* target, const 
     }
 }
 
-void nationalRailDataSource::pruneFromPhrase(char* input, const char* target) {
+void nrDARWINDataProvider::pruneFromPhrase(char* input, const char* target) {
     char* pos = strstr(input, target);
     if (pos) *pos = '\0';
 }
 
-void nationalRailDataSource::fixFullStop(char* input) {
+void nrDARWINDataProvider::fixFullStop(char* input) {
     if (input[0]) {
         size_t len = strlen(input);
         while (len > 0 && (input[len-1] == '.' || input[len-1] == ' ')) input[--len] = '\0';
@@ -566,17 +567,17 @@ void nationalRailDataSource::fixFullStop(char* input) {
     }
 }
 
-void nationalRailDataSource::trim(char* &start, char* &end) {
+void nrDARWINDataProvider::trim(char* &start, char* &end) {
     while (start <= end && isspace(*start)) start++;
     while (end >= start && isspace(*end)) end--;
 }
 
-bool nationalRailDataSource::equalsIgnoreCase(const char* a, int a_len, const char* b) {
+bool nrDARWINDataProvider::equalsIgnoreCase(const char* a, int a_len, const char* b) {
     for (int i = 0; i < a_len; i++) if (tolower(a[i]) != tolower(b[i])) return false;
     return b[a_len] == '\0';
 }
 
-bool nationalRailDataSource::serviceMatchesFilter(const char* filter, const char* serviceId) {
+bool nrDARWINDataProvider::serviceMatchesFilter(const char* filter, const char* serviceId) {
     if (!filter || !filter[0]) return true;
     const char* start = filter; const char* ptr = filter;
     while (true) {
@@ -593,24 +594,24 @@ bool nationalRailDataSource::serviceMatchesFilter(const char* filter, const char
     return false;
 }
 
-void nationalRailDataSource::deleteService(int x) {
+void nrDARWINDataProvider::deleteService(int x) {
     if (!stationData || x < 0 || x >= stationData->numServices) return;
     for (int i=x; i<stationData->numServices-1; i++) stationData->service[i] = stationData->service[i+1];
     stationData->numServices--;
 }
 
-void nationalRailDataSource::startTag(const char *tag) {
+void nrDARWINDataProvider::startTag(const char *tag) {
     tagLevel++; grandParentTagName = parentTagName; parentTagName = tagName; tagName = tag;
     tagPath = grandParentTagName + "/" + parentTagName + "/" + tagName;
 }
 
-void nationalRailDataSource::endTag(const char *tag) {
+void nrDARWINDataProvider::endTag(const char *tag) {
     tagLevel--; tagName = parentTagName; parentTagName = grandParentTagName; grandParentTagName = "??";
 }
 
-void nationalRailDataSource::parameter(const char *param) {}
+void nrDARWINDataProvider::parameter(const char *param) {}
 
-void nationalRailDataSource::value(const char *val) {
+void nrDARWINDataProvider::value(const char *val) {
     if (loadingWDSL) return;
     if (tagLevel < 6) return;
 
@@ -655,11 +656,17 @@ void nationalRailDataSource::value(const char *val) {
     } else if (tagPath.indexOf("lt12:lastReportedStationName") != -1) {
         if (id == 0 && stationData) strncpy(stationData->firstServiceLastSeen, val, NR_MAX_LOCATION-1);
     } else if (tagPath.indexOf("nrccMessages/lt:message") != -1) {
-        messagesData.addMessage(val);
+        char tempMsg[1024];
+        strlcpy(tempMsg, val, sizeof(tempMsg));
+        replaceWord(tempMsg, "&lt;", "<");
+        replaceWord(tempMsg, "&gt;", ">");
+        removeHtmlTags(tempMsg);
+        replaceWord(tempMsg, "&amp;", "&");
+        messagesData.addMessage(tempMsg);
     }
 }
 
-void nationalRailDataSource::attribute(const char *attr) {
+void nrDARWINDataProvider::attribute(const char *attr) {
     if (loadingWDSL && tagName == "soap:address") {
         String s = attr;
         int start = s.indexOf("location=\"");
@@ -670,7 +677,7 @@ void nationalRailDataSource::attribute(const char *attr) {
     }
 }
 
-UpdateStatus nationalRailDataSource::refreshWsdl() {
+UpdateStatus nrDARWINDataProvider::refreshWsdl() {
     LOG_INFO("DATA", "NR Source: Refreshing WSDL to discover latest SOAP endpoints...");
     
     Config& cfg = appContext.getConfigManager().getConfig();

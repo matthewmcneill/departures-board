@@ -23,7 +23,6 @@
 #include <appContext.hpp>
 #include <logger.hpp>
 
-const char tflAttribution[] = "Powered by TfL Open Data"; // Attribution for Transport for London
 extern const uint8_t Underground10[];
 
 /**
@@ -84,7 +83,10 @@ void TfLBoard::onActivate() {
     }
 
     // Set initial text (fallback)
-    activeLayout->msgWidget.setText(tflAttribution);
+    const char* attr = dataSource.getAttributionString();
+    if (attr) {
+        activeLayout->msgWidget.setText(attr);
+    }
   }
   lastUpdate = 0;
 }

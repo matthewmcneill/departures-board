@@ -56,25 +56,33 @@ volatile int g_crashIdx = -1;
 // ... (other excludes)
 
 extern "C" {
+void syncData();
+
 
 /**
  * @brief Injects WiFi status into the simulation
  * @param connected True to simulate a connected state
+ * @param rssi Simulated RSSI level
  */
 EMSCRIPTEN_KEEPALIVE
-void setWifiStatus(bool connected) {
+void setWifiStatus(bool connected, int rssi) {
     SystemState::getInstance().setWifiConnected(connected);
+    SystemState::getInstance().setWifiRssi(rssi);
     syncData();
 }
 
 /**
  * @brief Injects Weather status into the simulation
  * @param available True to simulate a reachable weather API
+ * @param conditionId The OpenWeather ID code
+ * @param isNight True if it is nighttime
  * @param temp Simulated temperature in degrees Celsius
  */
 EMSCRIPTEN_KEEPALIVE
-void setWeatherStatus(bool available, int temp) {
+void setWeatherStatus(bool available, int conditionId, bool isNight, int temp) {
     SystemState::getInstance().setWeatherAvailable(available);
+    SystemState::getInstance().setWeatherConditionId(conditionId);
+    SystemState::getInstance().setWeatherNight(isNight);
     SystemState::getInstance().setTemperature(temp);
     syncData();
 }

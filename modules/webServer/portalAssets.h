@@ -15,7 +15,7 @@
 
 #include <Arduino.h>
 
-// Original: index.html (166041 bytes), Minified: 118607 bytes, Gzipped: (27348 bytes)
+// Original: index.html (166968 bytes), Minified: 119400 bytes, Gzipped: (27618 bytes)
 extern const uint8_t index_html_gz[] __attribute__((section(".rodata")));
 extern const uint32_t index_html_gz_len __attribute__((section(".rodata")));
 

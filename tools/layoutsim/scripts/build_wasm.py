@@ -76,7 +76,6 @@ def build():
     common_flags = [
         "-O3",
         f"-I{SRC_DIR}",
-        f"-I{os.path.join(PROJECT_ROOT, 'test', 'mocks')}",
         f"-I{U8G2_LIB_DIR}",
         f"-I{os.path.join(U8G2_LIB_DIR, 'clib')}",
         f"-I{os.path.join(PROJECT_ROOT, '.pio/libdeps/esp32dev/ArduinoJson/src')}",
@@ -88,7 +87,7 @@ def build():
         "-DARDUINOJSON_ENABLE_ARDUINO_STRING=0",
         "-DARDUINOJSON_ENABLE_ARDUINO_STREAM=0",
         "-DARDUINOJSON_ENABLE_ARDUINO_PRINT=0",
-    ] + module_includes
+    ] + module_includes + [f"-I{os.path.join(PROJECT_ROOT, 'test', 'mocks')}"]
 
     cpp_flags = ["-std=c++17"] + common_flags
     c_flags = ["-std=gnu99"] + common_flags
@@ -131,7 +130,7 @@ def build():
 
     # Collect max modification time of all headers to invalidate cache robustly 
     max_header_mtime = 0
-    header_search_dirs = [modules_root, SRC_DIR]
+    header_search_dirs = [modules_root, SRC_DIR, os.path.join(PROJECT_ROOT, "test", "mocks")]
     for search_dir in header_search_dirs:
         for root, dirs, files in os.walk(search_dir):
             for f in files:

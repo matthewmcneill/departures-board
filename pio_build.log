@@ -1,0 +1,83 @@
+Processing esp32dev (platform: https://github.com/pioarduino/platform-espressif32/releases/download/stable/platform-espressif32.zip; board: esp32dev; framework: arduino)
+--------------------------------------------------------------------------------
+Installed esptool from tl-install path: /Users/mcneillm/.platformio/packages/tool-esptoolpy
+Installed esptool from tl-install path: /Users/mcneillm/.platformio/packages/tool-esptoolpy
+Verbose mode can be enabled via `-v, --verbose` option
+Installed esptool from tl-install path: /Users/mcneillm/.platformio/packages/tool-esptoolpy
+--- Build Serial: B20260404005609-02d82ab+mod ---
+Portal assets are up to date. Skipping rebuild.
+Auto-generating Layout C++ from JSON...
+  Processing modules/displayManager/boards/nationalRailBoard/layouts/layoutReplica.json...
+Generated layoutNrReplica (.hpp/.cpp) in modules/displayManager/boards/nationalRailBoard/layouts
+  Processing modules/displayManager/boards/nationalRailBoard/layouts/layoutDefault.json...
+Generated layoutNrDefault (.hpp/.cpp) in modules/displayManager/boards/nationalRailBoard/layouts
+  Processing modules/displayManager/boards/tflBoard/layouts/layoutDefault.json...
+Generated layoutTflDefault (.hpp/.cpp) in modules/displayManager/boards/tflBoard/layouts
+  Processing modules/displayManager/boards/busBoard/layouts/layoutDefault.json...
+Generated layoutBusDefault (.hpp/.cpp) in modules/displayManager/boards/busBoard/layouts
+  Processing modules/displayManager/boards/systemBoard/layouts/layoutDiagnostic.json...
+Generated layoutTestDiagnostic (.hpp/.cpp) in modules/displayManager/boards/systemBoard/layouts
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 (55.3.37) > Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - contrib-piohome @ 3.4.4 
+ - framework-arduinoespressif32 @ 3.3.7 
+ - framework-arduinoespressif32-libs @ 5.5.0+sha.87912cd291 
+ - tool-esptoolpy @ 5.1.2 
+ - toolchain-xtensa-esp-elf @ 14.2.0+20251107
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ deep+, Compatibility ~ soft
+Found 67 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- U8g2 @ 2.36.5
+|-- ArduinoJson @ 7.2.0
+|-- JsonStreamingParser @ 1.0.5
+|-- ESPAsyncWebServer @ 3.6.0
+|-- HTTPClient @ 3.3.7
+|-- appContext
+|-- configManager
+|-- displayManager
+|-- dataManager
+|-- weatherClient
+|-- otaUpdater
+|-- NetworkClientSecure @ 3.3.7
+|-- Networking @ 3.3.7
+|-- githubClient
+|-- md5Utils
+|-- LittleFS @ 3.3.7
+|-- webServer
+|-- rssClient @ 1.0.0
+|-- xmlListener
+|-- xmlStreamingParser
+|-- wifiManager
+|-- timeManager
+|-- schedulerManager
+|-- deviceCrypto
+|-- logger
+Building in release mode
+Compiling .pio/build/esp32dev/lib6a8/displayManager/boards/nationalRailBoard/nrRDMDataProvider.cpp.o
+Compiling .pio/build/esp32dev/lib6a8/displayManager/displayManager.cpp.o
+modules/displayManager/boards/nationalRailBoard/nrRDMDataProvider.cpp:6:10: fatal error: TimeLib.h: No such file or directory
+
+*****************************************************************
+* Looking for TimeLib.h dependency? Check our library registry!
+*
+* CLI  > platformio lib search "header:TimeLib.h"
+* Web  > https://registry.platformio.org/search?q=header:TimeLib.h
+*
+*****************************************************************
+
+    6 | #include <TimeLib.h>
+      |          ^~~~~~~~~~~
+compilation terminated.
+Compiling .pio/build/esp32dev/lib121/appContext/appContext.cpp.o
+*** [.pio/build/esp32dev/lib6a8/displayManager/boards/nationalRailBoard/nrRDMDataProvider.cpp.o] Error 1
+========================= [FAILED] Took 66.99 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+esp32dev       FAILED    00:01:06.995
+==================== 1 failed, 0 succeeded in 00:01:06.995 ====================

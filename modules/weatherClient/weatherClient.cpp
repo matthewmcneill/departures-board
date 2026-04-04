@@ -55,6 +55,22 @@ void weatherClient::reapplyConfig(const Config& config) {
     }
 
     setWeatherEnabled(hasOwmKey);
+    
+    if (hasOwmKey) {
+        bool found = false;
+        MessagePool& pool = appContext.getGlobalMessagePool();
+        const char* attr = getAttributionString();
+        for (size_t i = 0; i < pool.getCount(); i++) {
+            const char* msg = pool.getMessage(i);
+            if (msg && strcmp(msg, attr) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            pool.addMessage(attr);
+        }
+    }
 }
 
 /**

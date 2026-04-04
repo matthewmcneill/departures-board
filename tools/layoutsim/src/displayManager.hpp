@@ -22,6 +22,7 @@
 #include "mockDataManager.hpp"
 #include <boards/interfaces/iDisplayBoard.hpp>
 #include "weatherClient.hpp"
+#include "SystemState.hpp"
 
 class MockDisplayBoard : public iDisplayBoard {
 public:
@@ -30,24 +31,14 @@ public:
     void onDeactivate() override {}
     void tick(uint32_t ms) override {}
     void render(U8G2& display) override {}
-    int updateData() override { return 0; }
+    UpdateStatus updateData() override { return UpdateStatus::SUCCESS; }
     const char* getLastErrorMsg() override { return ""; }
     void configure(const struct BoardConfig& config) override {}
     WeatherStatus& getWeatherStatus() override {
         static WeatherStatus ws;
-        ws.status = WeatherUpdateStatus::READY;
-        
-        int weatherIds[] = {800, 801, 802, 803, 804, 300, 500, 200, 600, 700};
-        int numStates = sizeof(weatherIds) / sizeof(weatherIds[0]);
-        
-        // Cycle every 3 seconds (3000ms)
-        uint32_t currentMillis = millis();
-        int cyclePhase = (currentMillis / 3000) % (numStates * 2);
-        
-        ws.conditionId = weatherIds[cyclePhase % numStates];
-        // The second half of the sequence sets isNight to true
-        ws.isNight = (cyclePhase >= numStates); 
-
+        ws.status = SystemState::getInstance().isWeatherAvailable() ? WeatherUpdateStatus::READY : WeatherUpdateStatus::NO_DATA;
+        ws.conditionId = SystemState::getInstance().getWeatherConditionId();
+        ws.isNight = SystemState::getInstance().isWeatherNight();
         return ws;
     }
 

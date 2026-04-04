@@ -63,6 +63,8 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
         uint32_t getNextFetchTime() override { return nextWeatherUpdate; }
         PriorityTier getPriorityTier() override { return activeApiKey.length() == 0 ? static_cast<PriorityTier>(255) : PriorityTier::PRIO_LOW; } // Weather is low priority
         void setNextFetchTime(uint32_t forceTimeMillis) override { nextWeatherUpdate = forceTimeMillis; }
+        const char* getAttributionString() const override { return "Weather by OpenWeatherMap"; }
+
 
         bool getWeatherEnabled() const { return weatherEnabled; }
         void setWeatherEnabled(bool val) { weatherEnabled = val; }

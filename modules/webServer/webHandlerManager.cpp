@@ -27,7 +27,8 @@
 #include <WiFi.h>
 #include <esp_task_wdt.h>
 #include <appContext.hpp>
-#include "../displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp"
+#include "../displayManager/boards/nationalRailBoard/nrDARWINDataProvider.hpp"
+#include "../displayManager/boards/nationalRailBoard/nrRDMDataProvider.hpp"
 #include "../displayManager/boards/tflBoard/tflDataSource.hpp"
 #include "../displayManager/boards/busBoard/busDataSource.hpp"
 #include "../../lib/rssClient/rssClient.hpp"
@@ -535,7 +536,11 @@ public:
             success = appContext.getWeather().updateWeather(tempStatus, nullptr, params->token.c_str());
             if (!success) errorMsg = appContext.getWeather().lastErrorMsg;
         } else if (params->type == "rail") {
-            nationalRailDataSource ds;
+            nrDARWINDataProvider ds;
+            success = (ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : "PAD") == UpdateStatus::SUCCESS);
+            if (!success) errorMsg = ds.getLastErrorMsg();
+        } else if (params->type == "rdm") {
+            nrRDMDataProvider ds;
             success = (ds.testConnection(params->token.c_str(), params->station.length() > 0 ? params->station.c_str() : "PAD") == UpdateStatus::SUCCESS);
             if (!success) errorMsg = ds.getLastErrorMsg();
         } else if (params->type == "tfl") {

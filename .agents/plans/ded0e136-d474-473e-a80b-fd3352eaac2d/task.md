@@ -2,14 +2,23 @@
 
 - [x] Plan implementation architecture
   - [x] Review `iDataSource` interface and how boards instantiate data sources
-  - [x] Review configuration manager for how 'RailData' key is passed
-  - [x] Write implementation plan with new `rdmDataSource` class
-- [/] Implement `rdmDataSource` class
-  - [ ] Create header `rdmDataSource.hpp` implementing `iDataSource`
-  - [ ] Create implementation `rdmDataSource.cpp` using HTTP GET, `x-apikey`, and JSON parsing
-- [ ] Update display boards to support RDM
-  - [ ] Modify `nationalRailBoard` to dynamically instantiate `rdmDataSource` vs `nationalRailDataSource` on the heap inside `configure()` based on the selected API key's configured type.
-- [ ] Update Configuration or UI if necessary to select the RDM provider
-- [ ] Verification
-  - [ ] Ensure it compiles
-  - [ ] Validate implementation matches the V1.1 JSON format expectations
+  - [x] Integrate feedback from `oo-expert`, `house-style`, and `embedded-systems`
+  - [x] Plan UI integration for RDM key and lat/lon lookup
+- [x] Abstract Data Interface Layer
+  - [x] Implement `iNationalRailDataProvider.hpp` with updated domain structs (including `NrCoachFormation`)
+- [x] Rename and Update DARWIN Provider
+  - [x] Rename `nationalRailDataSource` files to `nrDARWINDataProvider`
+  - [x] Refactor `nrDARWINDataProvider` to implement `iNationalRailDataProvider`
+- [x] Implement RDM Provider
+  - [x] Create `nrRDMDataProvider.hpp` and `.cpp`
+  - [x] Implement JSON fetching and parsing with `ArduinoJson` memory optimizations
+- [x] Update Display Board Logic
+  - [x] Refactor `nationalRailBoard.hpp` and `.cpp` to use `iNationalRailDataProvider* activeDataSource`
+  - [x] Update `configure()` to instantiate `nrRDMDataProvider` or `nrDARWINDataProvider` based on key type
+- [x] Update Configuration and Web UI Flow
+  - [x] Modify `web/index.html` to support `rdm` keys, filter logic, and fallback lat/lon
+  - [x] Update `webHandlerManager.cpp` test endpoint for `rdm` key testConnection mapping
+- [/] Build and Verify
+  - [/] Run `pio run -e esp32dev` to ensure it compiles
+  - [ ] Run hardware flash `/flash-test` workflow
+  - [ ] Read serial logs to ensure RDM payload parse stability

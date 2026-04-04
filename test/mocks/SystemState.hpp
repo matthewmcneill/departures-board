@@ -30,12 +30,18 @@ public:
     // --- WiFi Status ---
     bool isWifiConnected() const { return wifiConnected; }
     void setWifiConnected(bool connected) { wifiConnected = connected; }
+    int getWifiRssi() const { return wifiRssi; }
+    void setWifiRssi(int rssi) { wifiRssi = rssi; }
 
     // --- Weather Status ---
     bool isWeatherAvailable() const { return weatherAvailable; }
     void setWeatherAvailable(bool available) { weatherAvailable = available; }
     int getTemperature() const { return temperature; }
     void setTemperature(int temp) { temperature = temp; }
+    int getWeatherConditionId() const { return weatherConditionId; }
+    void setWeatherConditionId(int id) { weatherConditionId = id; }
+    bool isWeatherNight() const { return weatherIsNight; }
+    void setWeatherNight(bool isNight) { weatherIsNight = isNight; }
 
     // --- OTA Status ---
     bool isOtaInProgress() const { return otaInProgress; }
@@ -50,7 +56,10 @@ public:
     /** @brief Reset all states to physical "Happy Path" defaults. */
     void reset() {
         wifiConnected = true;
+        wifiRssi = -50;
         weatherAvailable = true;
+        weatherConditionId = 800;
+        weatherIsNight = false;
         temperature = 22;
         otaInProgress = false;
         otaProgress = 0;
@@ -61,7 +70,10 @@ private:
     SystemState() { reset(); }
     
     bool wifiConnected;
+    int wifiRssi;
     bool weatherAvailable;
+    int weatherConditionId;
+    bool weatherIsNight;
     int temperature;
     bool otaInProgress;
     int otaProgress;

@@ -11,18 +11,15 @@
  * Description: Controller for the National Rail departure board.
  *
  * Exported Functions/Classes:
- * - NationalRailBoard: [Class] Core controller for NR displays.
+ * - NationalRailBoard: Concrete implementation of a departures board for National Rail data.
  *   - getBoardName(): Semantic identity for telemetry.
  *   - onActivate() / onDeactivate(): Lifecycle hooks for display transitions.
  *   - tick() / render(): Logic and drawing entry points.
- *   - updateData(): Triggers asynchronous SOAP fetch from OpenLDBWS.
- *   - configure(): Applies BoardConfig settings.
+ *   - updateData(): Triggers asynchronous fetch from the polymorphic activeDataProvider.
+ *   - configure(): Loads BoardConfig structure and evaluates RDM vs DARWIN selection.
  *   - getLastErrorMsg(): Accessor for data source error strings.
  *   - getWeatherStatus(): Accessor for shared weather state.
  *   - isScrollFinished(): Scrolling completion check.
- *   - setNrToken / getNrToken: SOAP security token management.
- *   - setCrsCode / getCrsCode: Primary station CRS management.
- *   - setCallingCrsCode / getCallingCrsCode: Destination filtering management.
  *   - populateServices(): Internal widget synchronization.
  */
 
@@ -32,7 +29,7 @@
 class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
-#include "nationalRailDataSource.hpp"
+#include "iNationalRailDataProvider.hpp"
 #include <configManager.hpp>
 #include "iNationalRailLayout.hpp"
 #include "layouts/layoutDefault.hpp"
@@ -41,13 +38,13 @@ class appContext;
 class NationalRailBoard : public iDisplayBoard {
 private:
     appContext* context;
-    nationalRailDataSource dataSource;
+    iNationalRailDataProvider* activeDataSource;
     
     // UI Layout
     iNationalRailLayout* activeLayout;
 
     // Configuration
-    char nrToken[37];
+    char nrToken[128];
     char crsCode[4];
     float stationLat, stationLon;
     int nrTimeOffset;
@@ -164,7 +161,7 @@ public:
      * @brief Get the last error string from the data source.
      * @return Error message pointer.
      */
-    const char* getLastErrorMsg() override { return dataSource.getLastErrorMsg(); }
+    const char* getLastErrorMsg() override { return activeDataSource ? activeDataSource->getLastErrorMsg() : "No Provider"; }
 
     /**
      * @brief Access the shared weather state for this board.
