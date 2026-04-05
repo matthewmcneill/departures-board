@@ -40,6 +40,15 @@
 bool ConfigManager::saveFile(String fName, String fData) {
   LOG_INFO("CONFIG", String("Attempting to save ") + fData.length() +
                          " bytes to file: " + fName);
+
+  if (fName == "/config.json" && LittleFS.exists("/config.json")) {
+    if (LittleFS.exists("/config.json.lastknowngood")) {
+      LittleFS.remove("/config.json.lastknowngood");
+    }
+    LittleFS.rename("/config.json", "/config.json.lastknowngood");
+    LOG_INFO("CONFIG", "Safely renamed existing configuration to .lastknowngood");
+  }
+
   File f = LittleFS.open(fName, "w");
   if (f) {
     f.print(fData);
@@ -744,6 +753,15 @@ void ConfigManager::loadConfig() {
     } else {
       LOG_ERROR("CONFIG",
                 String("Failed to parse /config.json: ") + error.c_str());
+      
+      if (LittleFS.exists("/config.json.lastknowngood")) {
+        LOG_WARN("CONFIG", "Configuration corrupted. Restoring from lastknowngood backup...");
+        LittleFS.remove("/config.json");
+        LittleFS.rename("/config.json.lastknowngood", "/config.json");
+        LOG_INFO("CONFIG", "Restore successful. Reloading configuration...");
+        loadConfig(); // Recursive reload to acquire safe dataset natively
+        return;       // Terminate the tainted stack execution instantly
+      }
     }
 
     // Always validate after loading to establish 'complete' flags

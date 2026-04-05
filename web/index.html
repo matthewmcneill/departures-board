@@ -4146,12 +4146,16 @@
             reader.onload = async (e) => {
               const content = e.target.result;
               try {
-                // Validate JSON
-                JSON.parse(content);
+                // Validate and Minify JSON to drastically reduce transmission and hardware parsing overhead
+                const parsedContent = JSON.parse(content);
+                const minifiedContent = JSON.stringify(parsedContent);
 
                 const res = await fetch('/api/config/restore', {
                   method: 'POST',
-                  body: content
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: minifiedContent
                 });
                 const result = await res.json();
 

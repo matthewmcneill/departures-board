@@ -1,5 +1,10 @@
 # Project Log
 
+## [55c3e06] 2026-04-05 11:37 - Config Backup Pipeline & Versioning Hardening
+- **Summary**: Hardened `handleRestoreConfig` to strictly reject arbitrary API state dumps, protecting the native C++ schema-migration pipeline from unrecoverable out-of-memory cascading faults. Injected root version tracking and compilation `BUILD_TIME` metadata directly into the exported Web API backup response structure for absolute deployment traceability.
+- **Commit**: 55c3e06
+- **Metadata**: [.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/](.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/)
+
 ## [a4b56fe] 2026-04-05 10:18 - Hardware Status Restoration & Build Metadata
 - **Summary**: Restored and enhanced the hardware diagnostics within the System Maintenance UI. Implemented color-coded RAG (Red/Amber/Green) status bars for Heap, Min Heap, Fragmentation (Largest Block), Storage, and Temperature. Updated the backend and mock server to dynamically serve the `BUILD_TIME` constant from `src/buildTime.hpp`. Resolved a major regression in document-level scrolling across the web portal, fixed the System tab visibility bleed issue, and stabilized configuration JSON file downloading.
 - **Commit**: a4b56fe (and previous 49646b3)

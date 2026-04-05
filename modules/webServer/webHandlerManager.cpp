@@ -1043,20 +1043,8 @@ void WebHandlerManager::handleRestoreConfig(AsyncWebServerRequest *request, cons
         return;
     }
 
-    JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, body);
-    if (error || !doc.is<JsonObject>()) {
-        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid JSON format\"}");
-        return;
-    }
-    
-    // Guard against users uploading the live `/api/config` state dump instead of a valid backup.
-    // The live dump contains nested "system", "wifi", and "feeds" objects which are too large
-    // for standard deserialization during boot and will permanently corrupt the file system pipeline.
-    if (doc.containsKey("system") || doc.containsKey("wifi")) {
-        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid format. Cannot restore from a live state dump. Please upload a valid Backup configuration file.\"}");
-        return;
-    }
+    // The payload is no longer validated HTTP-side. It is instantly committed to disk
+    // relying on ConfigManager::loadConfig()'s transactional rollback matrix to reject invalid states.
 
     // Save the raw string to /config.json
     if (_context.getConfigManager().saveFile("/config.json", body)) {
