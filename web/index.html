@@ -1805,8 +1805,9 @@
       <!-- firmware update controls, and device factory reset.       -->
       <!-- Contains the live hardware diagnostics bars.              -->
       <!-- ========================================================= -->
-      <article>
-        <header>Global Settings</header>
+      <section id="tab-system" class="tab-content">
+        <article>
+          <header>Global Settings</header>
         <!-- System Settings Form: Handles timezone, layout toggles, software updates, etc. -->
         <form id="system-form">
           <div class="instruction-box" style="margin-bottom: 0.5rem;">
@@ -1920,8 +1921,8 @@
             <header>Firmware</header>
             <div class="list-item">
               <div>
-                <h4 id="fw-version-text" style="margin:0">Version: v3.0.x</h4>
-                <p id="fw-build-text" style="font-size: 0.7rem;">Build: 2026-03-17</p>
+                <h4 id="fw-version-text" style="margin:0">Version: unknown</h4>
+                <p id="fw-build-text" style="font-size: 0.7rem;">Build: unknown</p>
               </div>
               <button type="button" class="outline" onclick="app.checkUpdates()">Update</button>
             </div>
@@ -4085,19 +4086,33 @@
           }
         },
 
-        backupConfig: function (e) {
+        backupConfig: async function (e) {
           const btn = e.currentTarget;
           const oldHtml = btn.innerHTML;
           btn.disabled = true;
           btn.innerHTML = '<div class="loading-spinner"></div> Backing up...';
 
-          // Trigger download
-          window.location.href = '/api/config/backup';
-
-          setTimeout(() => {
+          try {
+            const response = await fetch('/api/config/backup');
+            if (!response.ok) throw new Error('Download failed');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'config.json';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+              window.URL.revokeObjectURL(url);
+              a.remove();
+            }, 1000);
+          } catch (err) {
+            console.error(err);
+            alert('Failed to download backup');
+          } finally {
             btn.disabled = false;
             btn.innerHTML = oldHtml;
-          }, 2000);
+          }
         },
 
         restoreConfig: async function () {
