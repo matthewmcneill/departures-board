@@ -20,6 +20,22 @@
 - **Summary**: Rectified a synchronization flaw in `handleRestoreConfig` ensuring uploaded backup files natively pass through the rigorous `ConfigManager::loadConfig` validation and migration pipeline seamlessly out of the web API thread. Implemented automatic datetime string stamping during UI config file downloads to help operators chronologically distinguish system configurations natively from the hardware UI.
 - **Commit**: ab655eb
 - **Metadata**: [.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/](.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/)
+## 2026-04-05 - Layout Simulator Consolidation (Session bd724f3e)
+
+### Session Summary
+Consolidated the WebAssembly-based Layout Simulator by relocating the `dataHarvester.py` from the root `scripts/` directory to the tool's internal source tree. Implemented a new POSIX-compliant [layoutsim.sh](tools/layoutsim/layoutsim.sh) entry point that handles absolute-path safety and includes an interactive check for mock data. Fixed several `NoneType` iteration bugs in the harvester script to improve data ingestion reliability from the Huxley-2 API proxy.
+
+### Key Decisions
+- **Tool Encapsulation**: Relocated `dataHarvester.py` to `tools/layoutsim/scripts/` to create a self-sufficient tool bundle, reducing repository root clutter.
+- **Interactive Harvesting**: Added a bash-driven detection loop to `layoutsim.sh` that prompts users to fetch real-time data if `mock_data/` is empty, lowering the barrier to entry for new developers.
+- **House Style Compliance**: Enforced standard project license headers and `camelCase` consistency across the simulator's shell and python utilities.
+
+### Git Commit
+Generated commit: 9c7f575
+
+### Plan Reference
+[.agents/plans/done/bd724f3e-fd34-42ff-9f48-c7f4b1bbcf64/](.agents/plans/done/bd724f3e-fd34-42ff-9f48-c7f4b1bbcf64/)
+
 ## [8b8b496] 2026-04-05 00:19 - SWR Visual Refinements & Test Mock Recovery
 
 ### Session Summary

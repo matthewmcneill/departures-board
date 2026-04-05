@@ -271,8 +271,6 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
     system["fastRefresh"] = (config.apiRefreshRate == FASTDATAUPDATEINTERVAL);
     system["overrideTimeout"] = config.manualOverrideTimeoutSecs;
     system["carouselInterval"] = config.carouselIntervalSecs;
-    system["rssUrl"] = config.rssUrl;
-    system["rssName"] = config.rssName;
 
     // --- Feeds (Modern UI) ---
     JsonObject feeds = doc["feeds"].to<JsonObject>();

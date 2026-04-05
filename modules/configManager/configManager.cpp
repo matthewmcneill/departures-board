@@ -394,9 +394,12 @@ bool ConfigManager::save() {
   doc[F("rssFirst")] = config.prioritiseRss;
   doc[F("update")] = config.firmwareUpdatesEnabled;
   doc[F("updateDaily")] = config.dailyUpdateCheckEnabled;
-  doc[F("rssUrl")] = config.rssUrl;
-  doc[F("rssName")] = config.rssName;
-  doc[F("weatherKeyId")] = config.weatherKeyId;
+
+  JsonObject feeds = doc[F("feeds")].to<JsonObject>();
+  feeds[F("rss")] = config.rssUrl;
+  feeds[F("rssName")] = config.rssName;
+  feeds[F("weatherKeyId")] = config.weatherKeyId;
+
   doc[F("overrideTimeout")] = config.manualOverrideTimeoutSecs;
   doc[F("carouselInterval")] = config.carouselIntervalSecs;
 
@@ -527,7 +530,7 @@ void ConfigManager::loadConfig() {
         legacyOledOff = settings[F("turnOffOledInSleep")];
       }
 
-      // RSS
+      // RSS (Legacy Fallback)
       if (settings[F("rssUrl")].is<const char *>())
         strlcpy(config.rssUrl, settings[F("rssUrl")], sizeof(config.rssUrl));
       if (settings[F("rssName")].is<const char *>())
@@ -535,6 +538,18 @@ void ConfigManager::loadConfig() {
       if (settings[F("weatherKeyId")].is<const char *>())
         strlcpy(config.weatherKeyId, settings[F("weatherKeyId")],
                 sizeof(config.weatherKeyId));
+
+      // Feeds (Modern Nested Schema)
+      if (settings[F("feeds")].is<JsonObject>()) {
+        JsonObject f = settings[F("feeds")];
+        if (f[F("rss")].is<const char *>())
+          strlcpy(config.rssUrl, f[F("rss")], sizeof(config.rssUrl));
+        if (f[F("rssName")].is<const char *>())
+          strlcpy(config.rssName, f[F("rssName")], sizeof(config.rssName));
+        if (f[F("weatherKeyId")].is<const char *>())
+          strlcpy(config.weatherKeyId, f[F("weatherKeyId")], sizeof(config.weatherKeyId));
+      }
+
       config.rssEnabled = (config.rssUrl[0] != '\0');
 
       // --- Step 2: Provision Boards ---
@@ -595,7 +610,7 @@ void ConfigManager::loadConfig() {
 
       // --- Step 3: Migration Paths ---
       if (loadedVersion < 2.2f) {
-        LOG_INFO("CONFIG", "Performing v2.2 multi-board migration...");
+        LOG_WARN("CONFIG", "[MIGRATION] Triggering v2.2 multi-board array struct conversion...");
 
         // Legacy Migration (Flat to Array) if boards array was missing
         if (!settings[F("boards")].is<JsonArray>()) {
@@ -649,9 +664,9 @@ void ConfigManager::loadConfig() {
             }
           }
           if (!alreadyIn) {
-            LOG_INFO(
+            LOG_WARN(
                 "CONFIG",
-                "Migrating legacy Alt Station to dedicated Carousel board.");
+                "[MIGRATION] Elevating legacy Primary/Alt properties into structurally discrete Carousel boards.");
             BoardConfig &ba = config.boards[config.boardCount++];
             ba.type = MODE_RAIL;
             strlcpy(ba.id, altCrs, sizeof(ba.id));
@@ -666,21 +681,21 @@ void ConfigManager::loadConfig() {
           }
         }
 
-        LOG_INFO("CONFIG", "Auto-saving upgraded configuration (v2.2)...");
+        LOG_WARN("CONFIG", "[MIGRATION] Flash commitment initiated for v2.2 structural upgrade...");
         config.configVersion = 2.3f;
         save();
       }
 
       if (loadedVersion < 2.3f) {
-        LOG_INFO(
+        LOG_WARN(
             "CONFIG",
-            "Upgrading configuration to v2.3 (Upstream Merge Features)...");
+            "[MIGRATION] Transparent intermediate upgrade to v2.3 framework requirements...");
         config.configVersion = 2.4f; // Temporary intermediate state
         save();
       }
 
       if (loadedVersion < 2.5f) {
-        LOG_INFO("CONFIG", "Performing v2.5 sleep/mode migration...");
+        LOG_WARN("CONFIG", "[MIGRATION] Traversing v2.5 sleep clock/carousel migration path...");
 
         // 1. Sleep Migration: Convert legacy sleep timer to a real Schedule Rule + Clock Board
         bool legacySleep = settings[F("sleep")] | false;
@@ -707,7 +722,7 @@ void ConfigManager::loadConfig() {
           }
 
           // Install the schedule rule
-          LOG_INFO("CONFIG", "Migrating legacy sleep timer to Scheduler rule.");
+          LOG_WARN("CONFIG", "[MIGRATION] Abstracting archaic static sleep timer natively into dynamic Scheduler rule paradigm.");
           int ruleIdx = -1;
           for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
             if (config.schedules[i].boardIndex == -1) {
@@ -729,7 +744,7 @@ void ConfigManager::loadConfig() {
         // 2. Mode Migration: If default mode was not 0, swap it to the top so it stays primary
         int legacyMode = settings[F("mode")] | 0;
         if (legacyMode > 0 && legacyMode < config.boardCount) {
-          LOG_INFO("CONFIG", "Migrating legacy default mode index to board slot 0.");
+          LOG_WARN("CONFIG", "[MIGRATION] Reordering array. Transmuting legacy index baseline explicitly onto slot 0.");
           BoardConfig tmp = config.boards[0];
           config.boards[0] = config.boards[legacyMode];
           config.boards[legacyMode] = tmp;
@@ -747,18 +762,26 @@ void ConfigManager::loadConfig() {
         save();
       }
 
+      if (loadedVersion < 2.6f) {
+        LOG_WARN("CONFIG", "[MIGRATION] Synthesizing v2.6 structure. Decoupling distinct JSON hierarchies into unified native 'feeds' root object...");
+        config.configVersion = 2.6f;
+        save();
+      }
+
       LOG_INFO("CONFIG", "Configuration loaded. Board count: " +
                              String(config.boardCount));
       validate(); // Recalculate board readiness
     } else {
       LOG_ERROR("CONFIG",
-                String("Failed to parse /config.json: ") + error.c_str());
+                String("CRITICAL CONFIGURATION FAULT: Failed to parse /config.json entirely. Error mode: [") + error.c_str() + "]. "
+                "This typically indicates memory exhaustion (NoMemory), structurally flawed JSON syntax, or a file that could only be partially mapped/deserialized.");
       
       if (LittleFS.exists("/config.json.lastknowngood")) {
-        LOG_WARN("CONFIG", "Configuration corrupted. Restoring from lastknowngood backup...");
+        LOG_WARN("CONFIG", "MITIGATION INITIATED: Configuration payload is corrupted or partially mapped. "
+                           "Triggering transactional fallback. System will forcefully evacuate the tainted /config.json and restore from the trusted .lastknowngood baseline.");
         LittleFS.remove("/config.json");
         LittleFS.rename("/config.json.lastknowngood", "/config.json");
-        LOG_INFO("CONFIG", "Restore successful. Reloading configuration...");
+        LOG_WARN("CONFIG", "RESTORE IS SUCCESSFUL. Instigating recursive configuration boot sequence natively...");
         _rollbackFlag = true;
         loadConfig(); // Recursive reload to acquire safe dataset natively
         return;       // Terminate the tainted stack execution instantly
@@ -768,7 +791,7 @@ void ConfigManager::loadConfig() {
     // Always validate after loading to establish 'complete' flags
     validate();
   } else {
-    LOG_WARN("CONFIG", "/config.json not found. Creating default config.");
+    LOG_WARN("CONFIG", "VITAL: Native /config.json not found on disk. Orchestrating a clean factory default installation...");
     writeDefaultConfig();
   }
 }

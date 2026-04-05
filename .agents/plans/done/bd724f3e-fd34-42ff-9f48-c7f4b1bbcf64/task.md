@@ -1,0 +1,6 @@
+- [x] Move scripts/dataHarvester.py to tools/layoutsim/scripts/
+- [x] Update DEFAULT_OUT_DIR in tools/layoutsim/scripts/dataHarvester.py
+- [x] Add interactive mock data check to tools/layoutsim/layoutsim.sh
+- [x] Update docs/DeveloperGuide.md with the new simulator entry point
+- [x] Verify relocation and interactive check
+- [x] Create walkthrough.md
