@@ -1,0 +1,13 @@
+
+- [x] Memory-optimized status telemetry in C++
+- [x] Integrated hardware diagnostics & version badge in portal
+- [x] Consolidate Technical Tools in System Maintenance drawer
+- [x] Verify health dot color logic
+- [x] Restore tab-content-container (Regression Fix)
+- [x] Fix SPA-style scroll (Revert to Document Scroll)
+- [x] Add Min Free Heap bar to Hardware Status
+- [x] Add Largest Allocatable Block (Fragmentation) bar to Hardware Status
+- [x] Implement RAG coloring for all diagnostic bars
+- [x] Dynamically update Firmware Build Date from src/buildTime.hpp
+- [x] Update Mock Server with new telemetry fields
+- [x] Final UI Verification

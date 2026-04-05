@@ -243,8 +243,8 @@ void appContext::updateBootProgress(int percentage, const char *msg) {
 void appContext::tick() {
   // 0. Process Deferred Configuration Reloads
   if (configManager.checkAndClearReload()) {
-    LOG_INFO("SYSTEM",
-             "Executing deferred configuration reload safely on Core 1...");
+    LOG_INFO("SYSTEM", "Executing deferred configuration reload safely on system thread...");
+    configManager.loadConfig();
     configManager.notifyConsumersToReapplyConfig();
   }
 
