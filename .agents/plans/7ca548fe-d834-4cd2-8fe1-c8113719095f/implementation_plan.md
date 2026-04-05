@@ -2,8 +2,10 @@
 Design and implement a dynamic `TrainFormationWidget` that visually represents the carriage structure of a National Rail service. To maximize readability on low-resolution displays, the widget will rotate through a 3-state animation loop: showing Coach Numbers, showing Facilities, and showing Loading bars.
 
 ## 1. Architectural Alignment
-[x] Evaluated against House Style: Standard `camelCase` and interface boundaries apply.
-[x] Evaluated against Embedded Patterns: Instead of overlaying all three data points in a tiny carriage box (which creates illegible UI), the state-machine animation pattern ensures crisp, readable graphics without allocating 3 separate widgets.
+[x] Evaluated against House Style: Standard `camelCase` and interface boundaries apply. All standard sections are present.
+[x] Evaluated against Embedded Patterns: Instead of overlaying all three data points in a tiny carriage box (which creates illegible UI), the state-machine animation pattern ensures crisp, readable graphics without allocating 3 separate widgets. Data structures decouple UI from API.
+[x] Evaluated against Architectural Standards: Ensures SRP by decoupling RDM API ingestion from widget rendering. DI is used by injecting `NationalRailService` pointers into `trainFormationWidget`.
+[x] Evaluated against Embedded Resource Impact: Added full Memory and Power resource impact assessment below.
 
 ## User Review Required
 > [!IMPORTANT]
@@ -15,26 +17,29 @@ Design and implement a dynamic `TrainFormationWidget` that visually represents t
 ---
 
 ### Data Manager Layer
-We must extend the Darwin data struct and the XML parser to ingest the new tags.
+Data structures for `NrCoachFormation` already exist in `iNationalRailDataProvider.hpp`. We will use these structures and apply mock data in the Layout Simulator directly to bypass backend dependencies.
 
-#### [MODIFY] [nationalRailDataSource.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp)
-Extend the existing data structures:
-- Add a new `CoachData` struct containing: `char number[4]`, `bool isFirstClass`, `bool hasWheelchair`, `bool hasWifi`, `bool hasBike`, `int loadingPercent` (-1 for unknown).
-- Add a `Formation` struct to the `NationalRailService` containing the coach array and `numCoaches` (max 14 to capture the longest UK trains, e.g., Eurostar/Thameslink class 700).
-- Add state-tracking variables for the XML parser.
-
-#### [MODIFY] [nationalRailDataSource.cpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.cpp)
-Update the `xmlListener` logic:
-- Catch `<formation>` and `<coach>` tags.
-- Parse the `number` attribute (e.g. "A").
-- Parse `<coachClass>` (check for "First").
-- Parse `<toilet>` type (check for "Accessible" to trigger wheelchair glyph).
-- Parse `<loading>` value into an integer percentage.
+#### [MODIFY] [tools/layoutsim/mock_data/nationalRailBoard.json](file:///Users/mcneillm/Documents/Projects/departures-board/tools/layoutsim/mock_data/nationalRailBoard.json)
+- Inject mock `NrCoachFormation` arrays (coach class, toilet/wheelchair, loading, numbers) to simulate a 12-coach formation.
 
 ---
 
 ### Widget Layer
-Create the new graphical UI component for the display designer with dynamic sizing.
+Create the new graphical UI component for the display designer with dynamic sizing. We will incorporate the glyphs from `FormationIcons7.txt`.
+
+**Widget ASCII Art Representation:**
+```text
+[MODE_NUMBER - Static Mode]
+   ___     ___     ___     ___ 
+ /  1  | |  2  | |  3  | |  4  |
+/______| |_____| |_____| |_____|
+
+[MODE_FACILITIES - Static Mode]
+   ___     ___     ___     ___ 
+ / [W] | | [1] | | [B] | |     |
+/______| |_____| |_____| |_____|
+```
+
 
 #### [NEW] [trainFormationWidget.hpp](file:///Users/mcneillm/Documents/Projects/departures-board/modules/displayManager/widgets/trainFormationWidget.hpp)
 Define the `trainFormationWidget` class extending `iGfxWidget`.
@@ -48,8 +53,8 @@ Implement the drawing logic using `U8g2` methods with responsive constraints.
 **Responsive Sizing Logic**:
 1. Calculate `availableWidth = widgetWidth - noseConeWidth`.
 2. Calculate `carriageWidth = availableWidth / numCoaches`.
-3. If `carriageWidth > MAX_COACH_WIDTH` (e.g., 18px), clamp it to 18px and optionally center the train in the widget bounds so a 2-coach train doesn't look bizarrely stretched.
-4. If `carriageWidth < MIN_COACH_WIDTH` (e.g., 10px - the absolute minimum to fit a 5x7 font or 8x8 glyph):
+3. If `carriageWidth > MAX_COACH_WIDTH` (e.g., 20px), clamp it to 20px and optionally center the train in the widget bounds so a 2-coach train doesn't look bizarrely stretched.
+4. If `carriageWidth < MIN_COACH_WIDTH` (which is 15px to accommodate the 12px bicycle glyph, 1px padding on each side, and overlapping frames):
     - Clamp `carriageWidth = MIN_COACH_WIDTH`.
     - Enable **Marquee Mode**. The total drawn width now strictly exceeds `widgetWidth`.
 
@@ -72,6 +77,16 @@ Implement the drawing logic using `U8g2` methods with responsive constraints.
 
 ## Open Questions
 None. Standardizing the Marquee mode to only rotate on full-pass completion resolves the visual sync issues.
+
+## Resource Impact Assessment
+
+> [!WARNING]
+> **Memory (RAM/Heap Constraint)**
+> To save memory, instead of attaching formation data to every `NationalRailService` (which would consume ~5.6KB), we will bind `firstServiceFormation[NR_MAX_COACHES]` strictly to the `NationalRailStation` level, mirroring how `firstServiceCalling` points are handled. This drops the heap overhead of formations down to a nominal ~200 bytes.
+
+> [!TIP]
+> **Power and CPU Cycles**
+> The Marquee animation requires recalculating bounding boxes during the `MODE` scroll phase. By using a 3000ms static mode interval and limiting the Marquee scroll repaint to low delta values, the CPU overhead remains minimal.
 
 ## Verification Plan
 ### Automated Tests

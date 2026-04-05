@@ -1,6 +1,32 @@
 # Project Log
 
+## [a4b56fe] 2026-04-05 10:18 - Hardware Status Restoration & Build Metadata
+- **Summary**: Restored and enhanced the hardware diagnostics within the System Maintenance UI. Implemented color-coded RAG (Red/Amber/Green) status bars for Heap, Min Heap, Fragmentation (Largest Block), Storage, and Temperature. Updated the backend and mock server to dynamically serve the `BUILD_TIME` constant from `src/buildTime.hpp`. Resolved a major regression in document-level scrolling across the web portal, fixed the System tab visibility bleed issue, and stabilized configuration JSON file downloading.
+- **Commit**: a4b56fe (and previous 49646b3)
+- **Metadata**: [.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/](.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/)
+
 ## Execution History
+
+## [ab655eb] 2026-04-05 10:55 - Config Migration Restore & Filename Timestamp
+- **Summary**: Rectified a synchronization flaw in `handleRestoreConfig` ensuring uploaded backup files natively pass through the rigorous `ConfigManager::loadConfig` validation and migration pipeline seamlessly out of the web API thread. Implemented automatic datetime string stamping during UI config file downloads to help operators chronologically distinguish system configurations natively from the hardware UI.
+- **Commit**: ab655eb
+- **Metadata**: [.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/](.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/)
+## [8b8b496] 2026-04-05 00:19 - SWR Visual Refinements & Test Mock Recovery
+
+### Session Summary
+Finalized the visual refinements for the South Western Railway (SWR) display mode, including custom font recompilation and platform widget alignment. Conducted a major refactoring of the native test harness mocks (U8G2, appContext, dataManager) to align with the v3.0 `schedulerManager` architecture. Successfully verified the firmware build on `esp32dev` hardware, while deferring the full native test suite execution to a dedicated restoration session.
+
+### Key Decisions
+- **Font Baseline Alignment**: Re-compiled `SWRPlatformNumberMega` and `SWRClockHuge` to use `getAscent()` arithmetic, ensuring pixel-perfect vertical alignment of platform numbers and clock seconds without manual offsets.
+- **Mock Synchronisation**: Replaced the legacy `systemManager` dependency in all native tests with the new `schedulerManager` pattern. Consolidated `appContext` stubs to eliminate redundant implementation conflicts in the linker.
+- **Test Execution Deferral**: Decided to bypass `unit_testing_host` during the final wrap protocol after identifying deep conflicts in the `LittleFS` and `Logger` stubs that require a dedicated, non-visual session to resolve sustainably.
+- **WASM Simulator Sync**: Updated `gen_layout_cpp.py` and the registry to bridge the new National Rail 'Platform' widget into the simulation environment.
+
+### Git Commit
+Generated commit: 8b8b496
+
+### Plan Reference
+[.agents/plans/done/2532d8e4-e5b4-45e5-bf59-9bd6f0fab2b7/](.agents/plans/done/2532d8e4-e5b4-45e5-bf59-9bd6f0fab2b7/)
 
 ## 2026-03-29 - Broken Build Fix & Architecture Monolithic Strategy
 

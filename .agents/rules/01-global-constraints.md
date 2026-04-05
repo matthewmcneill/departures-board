@@ -7,7 +7,7 @@ trigger: always_on
 This rule applies to all agent activities in the project.
 
 ## Explicit Execution Permission
-You are permitted to skip the formal `PLANNING` mode, `task.md`, and `implementation_plan.md` artifacts for purely trivial tasks (e.g., quick investigations, simple bug fixes, single-line edits). However, you are **STRICTLY PROHIBITED** from executing any code modifications autonomously without explicit permission.
+You are ONLY permitted to skip the formal `PLANNING` mode, `task.md`, and `implementation_plan.md` artifacts for purely trivial tasks (e.g., quick investigations, simple bug fixes, single-line edits) where a session has already previously approved of execution. However, you are **STRICTLY PROHIBITED** from executing any code modifications autonomously without explicit permission.
 
 ### Workflow:
 1. **Investigate & Propose**: Once you find the issue and determine the trivial fix, briefly explain what you found and what you plan to change.

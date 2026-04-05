@@ -56,6 +56,8 @@ private:
     void handleWiFiScan(AsyncWebServerRequest *request);
     void handleWiFiTest(AsyncWebServerRequest *request, const String& body);
     void handleWiFiReset(AsyncWebServerRequest *request);
+    void handleBackupConfig(AsyncWebServerRequest *request);
+    void handleRestoreConfig(AsyncWebServerRequest *request, const String& body);
     void handleGetBoards(AsyncWebServerRequest *request);
     void handleSaveBoard(AsyncWebServerRequest *request);
     void handleDeepDeleteBoard(AsyncWebServerRequest *request);

@@ -1,21 +1,20 @@
 # Context Bridge: Train Formations Widget
 
 ## 📍 Current State & Focus
-We are establishing a new, separate architectural plan to focus exclusively on creating the **Train Formations Widget**. After evaluating the memory impact of upgrading the legacy XML SOAP parser to pull formation data, we confirmed that utilizing a JSON-based Rail Data Marketplace (RDM) API is the safest route for the ESP32 (tracked under plan `ded0e136-d474-473e-a80b-fd3352eaac2d`). 
-
-To prevent UI development from blocking on backend API migration, this new plan isolates the widget creation. We will mock the required formation data (`length`, `coachClass`, `toilet`, `loading`) internally in `NationalRailStation` to fully build out the front-end C++ graphic layout and layout simulator.
+We have completed the architectural planning and memory optimizations for the Train Formations Widget. The `implementation_plan.md` has been updated with ASCII designs and memory-saving constraints. We successfully moved the formation array to the `NationalRailStation` struct (as `firstServiceFormation`) to save significant heap overhead. We used `tools/bdfconv` to compile the user-provided `FormationIcons7.bdf` into a C-array, which is temporarily staged in `.agents/tmp/FormationIcons7.c`.
 
 ## 🎯 Next Immediate Actions
-1. **Mock Data Definitions**: Expand the `NationalRailService` struct in `modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp` to safely hold mock coach array data without overflowing memory bounds.
-2. **Layout Simulator Mock**: Update `tools/layoutsim/mock_data/nationalRailBoard.json` to inject mock formation objects.
-3. **Widget Construction**: Design and write a `trainFormationWidget` class (or update existing ones) in `modules/displayManager/widgets/` to handle graphically drawing coaches.
+1. **Font Integration**: Append the array in `.agents/tmp/FormationIcons7.c` into `modules/displayManager/fonts/fonts.cpp` (the `extern` was already added to `fonts.hpp`).
+2. **Widget Development**: Create `modules/displayManager/widgets/trainFormationWidget.hpp` and `trainFormationWidget.cpp`. Implement the static and marquee animation state-machine modes as detailed in the implementation plan.
+3. **Data Binding**: Wire up the mock arrays in `tools/layoutsim/mock_data/nationalRailBoard.json` to safely test the rendering engine in WASM.
 
 ## 🧠 Decisions & Designs
-- **Separation of Concerns**: We have formally split the RDM API ingestion (Backend) from the Widget rendering (Frontend).
-- **Embedded Restraints**: Confirmed that extending the rigid `xmlStreamingParser` for deeply nested SOAP coach lists is extremely dangerous due to string allocations leading to heap fragmentation. The UI will proceed relying on simple arrays that the eventual RDM JSON pipeline will trivially populate.
+- **Memory Footprint**: `NrCoachFormation[NR_MAX_COACHES]` is stored *only* for the first service in the station struct, saving roughly 5KB of static allocation.
+- **Sizing Constraints**: Minimum coach carriage width is strictly set to **15px** to accommodate the broad 12px bicycle glyph plus 1px frame padding on each side.
+- **Animation Strategy**: A 3-state rotating loop (Number -> Facilities -> Loading) cycling every 3 seconds. A Marquee sweep activates instead if the total train length exceeds the widget layout bounds.
 
 ## 🐛 Active Quirks, Bugs & Discoveries
-- OpenLDBWS *does* contain `<length>` and `<formation>` data via XML SOAP, but dynamically extracting it with our current flat-state string concatenation logic would fracture the device runtime. It remains deliberately ignored by the `xmlStreamingParser`.
+- The user is currently running background compilations (`pio run`) frequently, and there may be other concurrent sessions managing other tasks (e.g. Settings Backup). ALWAYS verify lock viability before triggering builds.
 
 ## 💻 Commands Reference
 - Run layout simulation: `python3 tools/layoutsim/scripts/dev_server.py`

@@ -69,9 +69,8 @@ struct NationalRailService {
     char opco[50];
     NrServiceType serviceType; // TRAIN or BUS
     
-    // Train Formation Data (RDM API mapping)
-    NrCoachFormation coaches[NR_MAX_COACHES];
-    uint8_t numCoaches;
+    // Note: To save RAM, formation data is only retained for the first due service and 
+    // is stored at the NationalRailStation level instead of within individual services.
 };
 
 /**
@@ -90,6 +89,10 @@ struct NationalRailStation {
     char firstServiceOrigin[NR_MAX_LOCATION]; // Origin station name for the first due service
     char firstServiceLastSeen[NR_MAX_LOCATION]; // Real-time actual location snippet
     char firstServiceMessage[NR_MAX_MSG_LEN]; // Specific operator disruption messages for the service
+    
+    // Features for the first train in the sequence
+    NrCoachFormation firstServiceFormation[NR_MAX_COACHES];
+    uint8_t firstServiceNumCoaches;
 
     int numServices;
     NationalRailService service[NR_MAX_SERVICES];

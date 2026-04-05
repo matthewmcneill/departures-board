@@ -371,6 +371,9 @@ bool ConfigManager::save() {
   JsonDocument doc;
 
   doc[F("version")] = 2.5;
+#ifdef BUILD_TIME
+  doc[F("build")] = BUILD_TIME;
+#endif
   doc[F("hostname")] = config.hostname;
   doc[F("noScroll")] = config.noScrolling;
   doc[F("flip")] = config.flipScreen;

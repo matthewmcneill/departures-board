@@ -254,6 +254,8 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
     const Config& config = _context.getConfigManager().getConfig();
     JsonDocument doc;
 
+    doc["version"] = config.configVersion; // Expose schema version directly at the root for UI tracking
+
     // --- System Settings ---
     JsonObject system = doc["system"].to<JsonObject>();
     system["hostname"] = config.hostname;
@@ -1045,6 +1047,14 @@ void WebHandlerManager::handleRestoreConfig(AsyncWebServerRequest *request, cons
     DeserializationError error = deserializeJson(doc, body);
     if (error || !doc.is<JsonObject>()) {
         request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid JSON format\"}");
+        return;
+    }
+    
+    // Guard against users uploading the live `/api/config` state dump instead of a valid backup.
+    // The live dump contains nested "system", "wifi", and "feeds" objects which are too large
+    // for standard deserialization during boot and will permanently corrupt the file system pipeline.
+    if (doc.containsKey("system") || doc.containsKey("wifi")) {
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid format. Cannot restore from a live state dump. Please upload a valid Backup configuration file.\"}");
         return;
     }
 

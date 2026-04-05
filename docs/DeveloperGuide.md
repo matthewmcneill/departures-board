@@ -107,10 +107,11 @@ The application communicates over the serial port at a baud rate of **115200**.
  
  ### Running the Simulator
  1.  Ensure you have Python 3 installed.
- 2.  Start the development server from the repo root:
+ 2.  Start the simulator using the convenience script:
      ```bash
-     python3 tools/layoutsim/scripts/dev_server.py
+     ./tools/layoutsim/layoutsim.sh
      ```
+     *Note: The script will automatically check for mock data and offer to harvest real-time data if none is found.*
  3.  Access the simulator at: [http://localhost:8000/tools/layoutsim/web/index.html](http://localhost:8000/tools/layoutsim/web/index.html)
  
  ---

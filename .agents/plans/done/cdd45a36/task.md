@@ -1,0 +1,9 @@
+- [ ] C++ Backend: Implement `/api/config/backup` in `WebHandlerManager`
+- [ ] C++ Backend: Implement `/api/config/restore` in `WebHandlerManager`
+- [ ] Web UI: Add "Maintenance" tab/section to `index.html`
+- [ ] Web UI: Implement "Download Backup" logic
+- [ ] Web UI: Implement "Restore Configuration" logic
+- [ ] Testing: Update `test/web/server.js` with mock endpoints
+- [ ] Testing: Local verification in `test/web` (Phase 1)
+- [ ] Testing: Target compilation build (Phase 2)
+- [ ] Testing: Final hardware validation (Phase 3)

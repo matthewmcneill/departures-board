@@ -15,7 +15,7 @@ import argparse
 import requests
 
 # Default Output Directory
-DEFAULT_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "tools", "layoutsim", "mock_data")
+DEFAULT_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "mock_data")
 
 def harvest_national_rail(crs, api_url, out_path):
     """
@@ -39,19 +39,19 @@ def harvest_national_rail(crs, api_url, out_path):
             "weather": { "id": 800, "isNight": False }
         }
 
-        for i, s in enumerate(data.get("trainServices", [])):
+        for i, s in enumerate(data.get("trainServices") or []):
             ordinal = f"{i+1}{'st' if i==0 else 'nd' if i==1 else 'rd' if i==2 else 'th'}"
             time = s.get("std", "")
-            dest = s.get("destination", [{}])[0].get("locationName", "Unknown")
+            dest = (s.get("destination") or [{}])[0].get("locationName", "Unknown")
             plat = s.get("platform", "-")
             status = s.get("etd", "On Time")
             
             if i == 0:
                 sub_cps = s.get("subsequentCallingPoints") or []
-                if len(sub_cps) > 0 and (sub_cps[0].get("callingPoint") or []):
+                if len(sub_cps) > 0 and sub_cps[0] and (sub_cps[0].get("callingPoint") or []):
                     cps = []
                     for cp in sub_cps[0].get("callingPoint", []):
-                        if cp.get("locationName"):
+                        if cp and cp.get("locationName"):
                             name = cp.get("locationName")
                             st = cp.get("st") or cp.get("etd")
                             if st:
