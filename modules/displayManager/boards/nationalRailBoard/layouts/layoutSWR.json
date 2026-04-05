@@ -127,14 +127,25 @@
       "id": "noDataLabel",
       "type": "labelWidget",
       "geometry": {
-        "x": 44,
-        "y": 26,
-        "w": 202,
-        "h": 15
+        "x": 32,
+        "y": 17,
+        "w": 224,
+        "h": 14
       },
       "visible": false,
       "font": "NatRailTall12",
       "text": "No services found."
+    },
+    {
+      "id": "formationWidget",
+      "type": "trainFormationWidget",
+      "geometry": {
+        "x": 32,
+        "y": 32,
+        "w": 224,
+        "h": 17
+      },
+      "visible": true
     }
   ],
   "primitives": [
@@ -160,17 +171,6 @@
         "y": 6,
         "w": 18,
         "h": 13
-      }
-    },
-    {
-      "id": "boxFormation",
-      "isFilled": false,
-      "type": "box",
-      "geometry": {
-        "x": 36,
-        "y": 33,
-        "w": 120,
-        "h": 12
       }
     },
     {

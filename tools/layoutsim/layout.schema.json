@@ -40,7 +40,8 @@
               "scrollingTextWidget",
               "clockWidget",
               "labelWidget",
-              "scrollingMessagePoolWidget"
+              "scrollingMessagePoolWidget",
+              "trainFormationWidget"
             ]
           },
           "geometry": {
@@ -80,7 +81,7 @@
             }
           },
           {
-            "if": { "properties": { "type": { "enum": ["labelWidget", "scrollingTextWidget", "clockWidget", "scrollingMessagePoolWidget"] } } },
+            "if": { "properties": { "type": { "enum": ["labelWidget", "scrollingTextWidget", "clockWidget", "scrollingMessagePoolWidget", "trainFormationWidget"] } } },
             "then": {
               "properties": {
                 "font": {

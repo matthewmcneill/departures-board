@@ -1,5 +1,10 @@
 # Project Log
 
+## [TBD] 2026-04-05 - Train Formation Widget & Layout Integration
+- **Summary**: Implemented the dynamic `trainFormationWidget`, incorporating state-machine rendering for Number, Facilities, and Loading properties with marquee overflow support. Mapped the widget via `gen_layout_cpp.py` and activated it in `layoutSWR.json`. Validated functionality by building the WASM simulation pipeline natively.
+- **Commit**: [Captured in session git history]
+- **Metadata**: [.agents/plans/done/7ca548fe-d834-4cd2-8fe1-c8113719095f/](.agents/plans/done/7ca548fe-d834-4cd2-8fe1-c8113719095f/)
+
 ## [12d210b] 2026-04-05 16:00 - Config Validation Verbosity
 - **Summary**: Augmented `LOG_ERROR` and `LOG_WARN` trace coverage inside `modules/configManager/configManager.cpp`. Structurally enriched migration pathway traces and strictly classified parsing fault origins (NoMemory vs Partial Mapping) natively to assist in debugging payload boundary overruns.
 - **Commit**: 12d210b

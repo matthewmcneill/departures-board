@@ -89,3 +89,4 @@
 - [x] fix the 'Testing' button height in the keys detailed form to ensure it remains constant when text changes. (Resolved: Buttons now have consistent vertical rhythm in modern modal layout).
 - [x] remove the bus key button from the add keys dialog. No key is needed for bus times. (Resolved: Bustimes.org uses scrapers/unauthenticated APIs).
 - [x] move the host-name back to wifi config. It will help the user to find the device on the network once the wifi is configured. It doesn't need to be in system settings.
+- Fix native host test suite compilation.  is failing due to incomplete type for . It needs  or similar to resolve.

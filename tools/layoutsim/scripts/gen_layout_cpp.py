@@ -61,7 +61,8 @@ def gen_layout(json_path):
         "sysClock": "sysClock",
         "noDataLabel": "noDataLabel",
         "row0Widget": "row0Widget",
-        "label": "label"
+        "label": "label",
+        "trainFormationWidget": "formationWidget"
     }
 
     # Clean up base_name for class naming (remove 'layout' prefix if it exists)
@@ -173,7 +174,7 @@ public:
 
     # Pass 1.5: Disable visibility for natively mapped widgets not specified in the JSON
     if board_type == "NR":
-        nr_superset = {"locationAndFilters", "weather", "wifiWarning", "sysClock", "row0Widget", "servicesWidget", "msgWidget", "noDataLabel"}
+        nr_superset = {"locationAndFilters", "weather", "wifiWarning", "sysClock", "row0Widget", "servicesWidget", "msgWidget", "noDataLabel", "formationWidget"}
         for wid in nr_superset:
             if wid not in present_widgets:
                 constructor_body.append(f"    {wid}.setVisible(false);")

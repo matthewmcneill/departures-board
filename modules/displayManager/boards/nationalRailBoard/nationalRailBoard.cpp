@@ -276,6 +276,10 @@ UpdateStatus NationalRailBoard::updateData() {
 
       // Populate services lists (row 0 and subsequent)
       populateServices(false);
+      
+      // Inject formation data to the allocated widget
+      activeLayout->formationWidget.setFormationData(data->firstServiceFormation, data->firstServiceNumCoaches);
+      
       lastRenderedHash = data->contentHash;
     }
     activeDataSource->unlockData();

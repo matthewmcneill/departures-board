@@ -23,7 +23,7 @@ extern const uint32_t index_html_gz_len __attribute__((section(".rodata")));
 extern const uint8_t rss_json_gz[] __attribute__((section(".rodata")));
 extern const uint32_t rss_json_gz_len __attribute__((section(".rodata")));
 
-// Original: screenshot.html (6681 bytes), Minified: 4667 bytes, Gzipped: (2047 bytes)
+// Original: screenshot.html (7841 bytes), Minified: 5785 bytes, Gzipped: (2433 bytes)
 extern const uint8_t screenshot_html_gz[] __attribute__((section(".rodata")));
 extern const uint32_t screenshot_html_gz_len __attribute__((section(".rodata")));
 

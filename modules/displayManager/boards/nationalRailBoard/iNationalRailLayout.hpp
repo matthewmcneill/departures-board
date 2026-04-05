@@ -27,6 +27,7 @@
 #include <widgets/serviceListWidget.hpp>
 #include <widgets/scrollingMessagePoolWidget.hpp>
 #include <widgets/labelWidget.hpp>
+#include <widgets/trainFormationWidget.hpp>
 
 class appContext;
 
@@ -46,6 +47,7 @@ public:
     scrollingMessagePoolWidget msgWidget; // Ticker tape messages
     labelWidget noDataLabel;        // Fallback info label
     labelWidget platformWidget;     // Dynamic platform number / letter
+    trainFormationWidget formationWidget; // Train formations
 
     /**
      * @brief Constructor for the National Rail view.
@@ -69,6 +71,7 @@ public:
         msgWidget.tick(currentMillis);
         noDataLabel.tick(currentMillis);
         platformWidget.tick(currentMillis);
+        formationWidget.tick(currentMillis);
     }
 
     /**
@@ -85,6 +88,7 @@ public:
         msgWidget.render(display);
         noDataLabel.render(display);
         platformWidget.render(display);
+        formationWidget.render(display);
     }
 
     /**
@@ -101,6 +105,7 @@ public:
         servicesWidget.renderAnimationUpdate(display, currentMillis);
         msgWidget.renderAnimationUpdate(display, currentMillis);
         platformWidget.renderAnimationUpdate(display, currentMillis);
+        formationWidget.renderAnimationUpdate(display, currentMillis);
     }
 };
 

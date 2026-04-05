@@ -102,6 +102,7 @@ def build():
         os.path.join(WIDGETS_DIR, "scrollingTextWidget.cpp"),
         os.path.join(WIDGETS_DIR, "scrollingMessagePoolWidget.cpp"),
         os.path.join(WIDGETS_DIR, "labelWidget.cpp"),
+        os.path.join(WIDGETS_DIR, "trainFormationWidget.cpp"),
         os.path.join(WIDGETS_DIR, "locationAndFiltersWidget.cpp"),
         os.path.join(WIDGETS_DIR, "weatherWidget.cpp"),
         os.path.join(WIDGETS_DIR, "wifiStatusWidget.cpp"),

@@ -63,6 +63,16 @@
       display: flex;
       gap: 12px;
       justify-content: center;
+      align-items: center;
+    }
+    input[type="color"] {
+      border: 1px solid #555;
+      background: var(--card);
+      border-radius: 6px;
+      height: 38px;
+      width: 50px;
+      cursor: pointer;
+      padding: 2px;
     }
     button {
       background: var(--card);
@@ -114,6 +124,7 @@
     </div>
 
     <div class="controls">
+      <input type="color" id="color-picker" value="#f57c00" title="Choose display color">
       <button onclick="refreshScreenshot()" class="primary">Refresh Frame</button>
       <button onclick="downloadPNG()">Download PNG</button>
     </div>
@@ -129,13 +140,80 @@
     const canvas = document.getElementById('screenshot-canvas');
     const ctx = canvas.getContext('2d');
     const statusText = document.getElementById('status-text');
+    const colorPicker = document.getElementById('color-picker');
+    
+    let lastBuffer = null;
+
+    // Load from localStorage if present
+    const savedColor = localStorage.getItem('screenshot-color');
+    if (savedColor) {
+        colorPicker.value = savedColor;
+    }
+
+    colorPicker.addEventListener('change', (e) => {
+        localStorage.setItem('screenshot-color', e.target.value);
+        updatePlaceholderColor();
+        if (lastBuffer) {
+            renderBuffer(lastBuffer);
+        }
+    });
+
+    function hexToRgb(hex) {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : {r: 255, g: 153, b: 0};
+    }
+
+    function updatePlaceholderColor() {
+        if (lastBuffer) return; // Only apply if no capture yet
+        ctx.fillStyle = "#0c0c0c";
+        ctx.fillRect(0, 0, 256, 64);
+        ctx.fillStyle = colorPicker.value;
+        ctx.font = "10px monospace";
+        ctx.fillText("Waiting for capture...", 65, 36);
+    }
 
     // Draw an initial placeholder
-    ctx.fillStyle = "#0c0c0c";
-    ctx.fillRect(0, 0, 256, 64);
-    ctx.fillStyle = "#f57c00";
-    ctx.font = "10px monospace";
-    ctx.fillText("Waiting for capture...", 65, 36);
+    updatePlaceholderColor();
+
+    function renderBuffer(bytes) {
+        const selectedColor = hexToRgb(colorPicker.value);
+        const imgData = ctx.createImageData(256, 64);
+        
+        // Fill background (very dark grey to simulate OFF pixels on OLED)
+        for (let i = 0; i < imgData.data.length; i += 4) {
+            imgData.data[i] = 12;     // R
+            imgData.data[i+1] = 12;   // G
+            imgData.data[i+2] = 12;   // B
+            imgData.data[i+3] = 255;  // Alpha
+        }
+
+        // Decouple U8G2_R0 1-bit per pixel memory layout.
+        for (let page = 0; page < 8; page++) {
+            for (let x = 0; x < 256; x++) {
+                const byteIndex = page * 256 + x;
+                if (byteIndex >= bytes.length) break;
+                
+                const byte = bytes[byteIndex];
+                
+                for (let bit = 0; bit < 8; bit++) {
+                    if ((byte & (1 << bit)) !== 0) {
+                        const y = page * 8 + bit;
+                        const pixelIndex = (y * 256 + x) * 4;
+                        
+                        imgData.data[pixelIndex] = selectedColor.r;
+                        imgData.data[pixelIndex+1] = selectedColor.g;
+                        imgData.data[pixelIndex+2] = selectedColor.b;
+                    }
+                }
+            }
+        }
+        
+        ctx.putImageData(imgData, 0, 0);
+    }
 
     async function refreshScreenshot() {
       try {
@@ -153,43 +231,9 @@
             console.warn(`Unexpected buffer footprint: ${bytes.length} bytes`);
         }
 
-        // Initialize ImageData block
-        const imgData = ctx.createImageData(256, 64);
-        
-        // Fill background (very dark grey to simulate OFF pixels on OLED)
-        for (let i = 0; i < imgData.data.length; i += 4) {
-            imgData.data[i] = 12;     // R
-            imgData.data[i+1] = 12;   // G
-            imgData.data[i+2] = 12;   // B
-            imgData.data[i+3] = 255;  // Alpha
-        }
+        lastBuffer = bytes;
+        renderBuffer(bytes);
 
-        // Decouple U8G2_R0 1-bit per pixel memory layout.
-        // It is logically organized into 8 horizontal strips (pages).
-        // Each page is 8 pixels high and 256 pixels long.
-        for (let page = 0; page < 8; page++) {
-            for (let x = 0; x < 256; x++) {
-                const byteIndex = page * 256 + x;
-                if (byteIndex >= bytes.length) break;
-                
-                const byte = bytes[byteIndex];
-                
-                for (let bit = 0; bit < 8; bit++) {
-                    // Test if bit is high to determine illuminated pixel
-                    if ((byte & (1 << bit)) !== 0) {
-                        const y = page * 8 + bit;
-                        const pixelIndex = (y * 256 + x) * 4;
-                        
-                        // Hardware amber OLED emulation
-                        imgData.data[pixelIndex] = 255;     // R
-                        imgData.data[pixelIndex+1] = 153;   // G
-                        imgData.data[pixelIndex+2] = 0;     // B
-                    }
-                }
-            }
-        }
-        
-        ctx.putImageData(imgData, 0, 0);
         const elapsed = Date.now() - startTime;
         statusText.style.color = "#4caf50";
         statusText.innerText = `Rendered successfully in ${elapsed}ms (${bytes.length} bytes)`;

@@ -31,6 +31,7 @@ iNationalRailLayout::iNationalRailLayout(appContext* context)
       servicesWidget(0, 0, 0, 0),
       msgWidget(0, 0, 0, 0),
       noDataLabel(0, 0, 0, 0),
-      platformWidget(0, 0, 0, 0) {
+      platformWidget(0, 0, 0, 0),
+      formationWidget(0, 0, 0, 0) {
     noDataLabel.setVisible(false);
 }

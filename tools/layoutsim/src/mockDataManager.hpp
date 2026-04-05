@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include "../../../modules/displayManager/boards/nationalRailBoard/iNationalRailDataProvider.hpp"
 
 #define MOCK_MAX_SERVICES 16 // Max number of departure rows parsed from mock payloads
 #define MOCK_MAX_STR 128 // Max string length buffer for a single data field
@@ -59,6 +60,9 @@ private:
     
     char messages[MOCK_MAX_MSGS][MOCK_MAX_STR];
     int messageCount = 0;
+    
+    NrCoachFormation firstServiceFormation[NR_MAX_COACHES];
+    uint8_t firstServiceNumCoaches = 0;
 
 public:
     MockDataManager() {
@@ -94,6 +98,28 @@ public:
             if (!header["callingPoint"].isNull()) strlcpy(stationCalling, header["callingPoint"], sizeof(stationCalling));
             if (!header["platform"].isNull()) strlcpy(stationPlatform, header["platform"], sizeof(stationPlatform));
             if (!header["firstServiceCalling"].isNull()) strlcpy(firstServiceCalling, header["firstServiceCalling"], sizeof(firstServiceCalling));
+            
+            JsonArray formations = header["firstServiceFormation"];
+            if (!formations.isNull()) {
+                firstServiceNumCoaches = 0;
+                for (JsonObject form : formations) {
+                    if (firstServiceNumCoaches >= NR_MAX_COACHES) break;
+                    
+                    firstServiceFormation[firstServiceNumCoaches].coachNumber = form["number"] | 0;
+                    
+                    const char* classType = form["classType"] | "standard";
+                    firstServiceFormation[firstServiceNumCoaches].coachClass = (classType[0] == 'f' || classType[0] == 'F') ? 'F' : 'S';
+                    
+                    const char* loadingStr = form["loading"] | "0";
+                    strlcpy(firstServiceFormation[firstServiceNumCoaches].loading, loadingStr, sizeof(firstServiceFormation[firstServiceNumCoaches].loading));
+                    
+                    firstServiceFormation[firstServiceNumCoaches].hasWheelchair = form["hasWheelchair"] | false;
+                    firstServiceFormation[firstServiceNumCoaches].hasBikes = form["hasBike"] | false;
+                    firstServiceFormation[firstServiceNumCoaches].hasToilet = true;
+                    
+                    firstServiceNumCoaches++;
+                }
+            }
         }
 
         JsonArray svcs = doc["services"];
@@ -217,6 +243,9 @@ public:
 
     int getWeatherConditionId() const { return weatherConditionId; }
     bool getWeatherIsNight() const { return weatherIsNight; }
+    
+    NrCoachFormation* getFirstServiceFormation() { return firstServiceFormation; }
+    uint8_t getFirstServiceNumCoaches() const { return firstServiceNumCoaches; }
 };
 
 #endif // MOCK_DATA_MANAGER_HPP

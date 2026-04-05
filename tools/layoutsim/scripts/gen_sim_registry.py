@@ -31,7 +31,8 @@ WIDGET_TYPES = {
     "labelWidget": "labelWidget(0, 0, 10, 10)",
     "clockWidget": "clockWidget(tm, 0, 0, 10, 10)",
     "scrollingTextWidget": "scrollingTextWidget(0, 0, 10, 10)",
-    "locationAndFiltersWidget": "locationAndFiltersWidget(0, 0, 10, 10)"
+    "locationAndFiltersWidget": "locationAndFiltersWidget(0, 0, 10, 10)",
+    "trainFormationWidget": "trainFormationWidget(0, 0, 10, 10)"
 }
 
 def main():
@@ -69,6 +70,13 @@ def main():
                 w_name = m.group(2)
                 if w_type in WIDGET_TYPES:
                     layouts[clean_name].append((w_type, w_name))
+                else:
+                    import sys
+                    print(f"\n[!] FATAL SIMULATOR BUILD ERROR [!]")
+                    print(f"Widget type '{w_type}' (found in {clean_name}) is NOT mapped in WASM registry!")
+                    print(f"To fix: Add it to WIDGET_TYPES in tools/layoutsim/scripts/gen_sim_registry.py")
+                    print(f"        AND to the enum list in tools/layoutsim/layout.schema.json")
+                    sys.exit(1)
         
         # Add content to hashes (simple version for now)
         hashes.append(content)
@@ -105,6 +113,7 @@ def generate_cpp(layouts, registry_hash):
 #include "clockWidget.hpp"
 #include "weatherWidget.hpp"
 #include "wifiStatusWidget.hpp"
+#include "trainFormationWidget.hpp"
 #include "timeManager.hpp"
 #include "messagePool.hpp"
 #include "appContext.hpp"

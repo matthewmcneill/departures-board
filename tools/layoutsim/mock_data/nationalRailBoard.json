@@ -3,7 +3,21 @@
     "title": "Manchester Piccadilly",
     "callingPoint": "via Crewe",
     "platform": "9",
-    "firstServiceCalling": "Calling at Stockport (20:00), Macclesfield (20:15), Stoke-on-Trent (20:30), Stafford (20:45), Wolverhampton (21:05), Birmingham New Street (21:25), Birmingham International (21:35), Coventry (21:45), Leamington Spa (22:00), Banbury (22:15), Oxford (22:40), Reading (23:10), and London Paddington (23:45)."
+    "firstServiceCalling": "Calling at Stockport (20:00), Macclesfield (20:15), Stoke-on-Trent (20:30), Stafford (20:45), Wolverhampton (21:05), Birmingham New Street (21:25), Birmingham International (21:35), Coventry (21:45), Leamington Spa (22:00), Banbury (22:15), Oxford (22:40), Reading (23:10), and London Paddington (23:45).",
+    "firstServiceFormation": [
+      { "number": 1, "classType": "standard", "hasWheelchair": true, "hasBike": false, "loading": "30%" },
+      { "number": 2, "classType": "standard", "hasWheelchair": false, "hasBike": true, "loading": "50%" },
+      { "number": 3, "classType": "first", "hasWheelchair": true, "hasBike": true, "loading": "80%" },
+      { "number": 4, "classType": "standard", "hasWheelchair": false, "hasBike": false, "loading": "100%" },
+      { "number": 5, "classType": "standard", "hasWheelchair": false, "hasBike": false, "loading": "40%" },
+      { "number": 6, "classType": "standard", "hasWheelchair": true, "hasBike": false, "loading": "20%" },
+      { "number": 7, "classType": "standard", "hasWheelchair": false, "hasBike": false, "loading": "10%" },
+      { "number": 8, "classType": "standard", "hasWheelchair": false, "hasBike": true, "loading": "60%" },
+      { "number": 9, "classType": "standard", "hasWheelchair": false, "hasBike": false, "loading": "90%" },
+      { "number": 10, "classType": "standard", "hasWheelchair": false, "hasBike": false, "loading": "70%" },
+      { "number": 11, "classType": "first", "hasWheelchair": true, "hasBike": false, "loading": "5%" },
+      { "number": 12, "classType": "standard", "hasWheelchair": false, "hasBike": false, "loading": "55%" }
+    ]
   },
   "services": [
     [

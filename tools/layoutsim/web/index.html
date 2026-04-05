@@ -750,6 +750,8 @@
                     ];
                 } else if (finalType === 'scrollingMessagePoolWidget') {
                     fullConfig.font = config?.font || "NatRailSmall9";
+                } else if (finalType === 'trainFormationWidget') {
+                    fullConfig.font = config?.font || "NatRailSmall9";
                 }
 
                 let codeContent = JSON.stringify(fullConfig, null, 2);

@@ -51,6 +51,9 @@ struct NrCoachFormation {
     char coachClass;
     char loading[16];
     uint8_t coachNumber;
+    bool hasWheelchair;
+    bool hasBikes;
+    bool hasToilet;
 };
 
 /**

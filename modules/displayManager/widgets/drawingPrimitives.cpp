@@ -106,7 +106,7 @@ void drawText(U8G2& display, const char *message, int x, int y, int w, int h, Te
   // --- FAST-PATH: Standard left-aligned, non-truncated text with no bounding box ---
   // This bypasses all measurement and clipping logic (O(1) overhead).
   if (align == TextAlign::LEFT && !truncate && w == -1 && h == -1) {
-    display.drawStr(x, y, message);
+    display.drawUTF8(x, y, message);
     return; // State safely restored by RAII destructor
   }
 
@@ -121,7 +121,7 @@ void drawText(U8G2& display, const char *message, int x, int y, int w, int h, Te
 
   // 2. Defer measurement until absolutely needed
   if (align != TextAlign::LEFT || truncate) {
-    textW = display.getStrWidth(message);
+    textW = display.getUTF8Width(message);
     if (align == TextAlign::CENTER) {
       drawX += (w - textW) / 2;
     } else if (align == TextAlign::RIGHT) {
@@ -149,23 +149,16 @@ void drawText(U8G2& display, const char *message, int x, int y, int w, int h, Te
     // Truncation requires a stack buffer
     char buf[256];
     strlcpy(buf, message, sizeof(buf));
-    int ellipsisW = display.getStrWidth("...");
+    int ellipsisW = display.getUTF8Width("...");
     
-    // Optimization: Rough-cut based on average character width to avoid O(N) getStrWidth calls
-    int len = strlen(buf);
-    if (len > 0) {
-      int roughLen = (w - ellipsisW) / (textW / len);
-      if (roughLen < len) buf[roughLen] = '\0';
-    }
-
     // Fine-tune for pixel perfection
-    while (strlen(buf) > 0 && display.getStrWidth(buf) > (w - ellipsisW)) {
+    while (strlen(buf) > 0 && display.getUTF8Width(buf) > (w - ellipsisW)) {
         buf[strlen(buf)-1] = '\0';
     }
     strcat(buf, "...");
-    display.drawStr(drawX, y + textOffsetY, buf);
+    display.drawUTF8(drawX, y + textOffsetY, buf);
   } else {
-    display.drawStr(drawX, y + textOffsetY, message);
+    display.drawUTF8(drawX, y + textOffsetY, message);
   }
 }
 

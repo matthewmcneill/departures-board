@@ -29,6 +29,7 @@
 #include "scrollingMessagePoolWidget.hpp"
 #include "labelWidget.hpp"
 #include "scrollingTextWidget.hpp"
+#include "trainFormationWidget.hpp"
 #include "mockDataManager.hpp"
 #include "timeManager.hpp"
 #include "layoutParser.hpp"
@@ -183,6 +184,11 @@ void syncData() {
     iGfxWidget* platformW = DesignerRegistry::getInstance().getWidget("platformWidget");
     if (platformW) {
         ((labelWidget*)platformW)->setText(mdm.getStationPlatform());
+    }
+
+    iGfxWidget* tFormationW = DesignerRegistry::getInstance().getWidget("formationWidget");
+    if (tFormationW) {
+        ((trainFormationWidget*)tFormationW)->setFormationData(mdm.getFirstServiceFormation(), mdm.getFirstServiceNumCoaches());
     }
 }
 

@@ -1,4 +1,4 @@
-- [ ] Update layout simulator mock JSON `nationalRailBoard.json` with `NrCoachFormation` test data.
-- [ ] Create `trainFormationWidget.hpp` and `trainFormationWidget.cpp`.
-- [ ] Implement marquee and static modes using `FormationIcons7.txt` glyphs.
-- [ ] Map the widget in the layout system.
+- [x] Update layout simulator mock JSON `nationalRailBoard.json` with `NrCoachFormation` test data.
+- [x] Create `trainFormationWidget.hpp` and `trainFormationWidget.cpp`.
+- [x] Implement marquee and static modes using `FormationIcons7.txt` glyphs.
+- [x] Map the widget in the layout system.
