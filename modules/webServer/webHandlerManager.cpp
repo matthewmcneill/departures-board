@@ -21,6 +21,8 @@
 #include "webHandlerManager.hpp"
 // Web UI Assets Embed
 #include "portalAssets.h"
+#include "../../src/departuresBoard.hpp"
+#include "../../src/buildTime.hpp"
 #include <ArduinoJson.h>
 #include <logger.hpp>
 #include <wifiManager.hpp>
@@ -105,6 +107,8 @@ void WebHandlerManager::begin() {
     _server.on("/api/ota/check", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleOTACheck(request); });
     _server.on("/api/system/diag", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleSetDiagMode(request); });
     _server.on("/api/screenshot", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleScreenshot(request); });
+    _server.on("/api/config/backup", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleBackupConfig(request); });
+    bindPostDynamic("/api/config/restore", &WebHandlerManager::handleRestoreConfig);
 
     // API: Feeds & Weather Diagnostics (More specific routes MUST come first in ESPAsyncWebServer)
     _server.on("/api/feeds/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestFeed(request); });
@@ -187,11 +191,16 @@ void WebHandlerManager::handleGetStatus(AsyncWebServerRequest *request) {
     doc["min_heap"] = ESP.getMinFreeHeap();
     doc["temp"] = temperatureRead();
     doc["uptime"] = millis() / 1000;
+    doc["build"] = BUILD_TIME;
     doc["rssi"] = WiFi.RSSI();
     doc["ssid"] = WiFi.SSID();
     doc["ip"] = WiFi.localIP().toString();
     doc["ap_mode"] = appContext.getWifiManager().getAPMode();
     doc["connected"] = (WiFi.status() == WL_CONNECTED);
+    
+    char vBuf[16];
+    snprintf(vBuf, sizeof(vBuf), "v%d.%d", VERSION_MAJOR, VERSION_MINOR);
+    doc["version"] = vBuf;
     
     // Add Time Details
     char timeBuf[32];
@@ -1004,4 +1013,47 @@ void WebHandlerManager::handleScreenshot(AsyncWebServerRequest *request) {
     response->addHeader("Pragma", "no-cache");
     response->addHeader("Expires", "0");
     request->send(response);
+}
+
+/**
+ * @brief Serves the current config.json as a downloadable attachment.
+ */
+void WebHandlerManager::handleBackupConfig(AsyncWebServerRequest *request) {
+    LOG_INFO("WEB_API", "GET /api/config/backup called");
+    String configData = _context.getConfigManager().loadFile("/config.json");
+    if (configData.length() == 0) {
+        request->send(404, "text/plain", "Config not found");
+        return;
+    }
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/json", configData);
+    response->addHeader("Content-Disposition", "attachment; filename=config.json");
+    request->send(response);
+}
+
+/**
+ * @brief Receives a JSON configuration file and overwrites the local /config.json.
+ * Validates that the payload is valid JSON before persisting.
+ */
+void WebHandlerManager::handleRestoreConfig(AsyncWebServerRequest *request, const String& body) {
+    LOG_INFO("WEB_API", "POST /api/config/restore called");
+    if (body.length() == 0) {
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Empty body\"}");
+        return;
+    }
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, body);
+    if (error || !doc.is<JsonObject>()) {
+        request->send(400, "application/json", "{\"status\":\"error\",\"msg\":\"Invalid JSON format\"}");
+        return;
+    }
+
+    // Save the raw string to /config.json
+    if (_context.getConfigManager().saveFile("/config.json", body)) {
+        LOG_INFO("WEB_API", "Restored config.json successfully. Requesting reload.");
+        _context.getConfigManager().requestReload();
+        request->send(200, "application/json", "{\"status\":\"ok\"}");
+    } else {
+        request->send(500, "application/json", "{\"status\":\"error\",\"msg\":\"Failed to save file\"}");
+    }
 }
