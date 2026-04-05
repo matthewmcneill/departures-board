@@ -759,6 +759,7 @@ void ConfigManager::loadConfig() {
         LittleFS.remove("/config.json");
         LittleFS.rename("/config.json.lastknowngood", "/config.json");
         LOG_INFO("CONFIG", "Restore successful. Reloading configuration...");
+        _rollbackFlag = true;
         loadConfig(); // Recursive reload to acquire safe dataset natively
         return;       // Terminate the tainted stack execution instantly
       }

@@ -2610,6 +2610,10 @@
             this.state.config = await res.json();
             this.state.keys = this.state.config.keys || [];
 
+            if (this.state.config.rollbackEvent) {
+              this.alert("The configuration file you uploaded exceeded memory limits or was corrupted. The board safely rejected it and automatically rolled back to your last known good configuration.", "Hardware Fallback Activated");
+            }
+
             // Apply dynamic limits from firmware if present
             if (this.state.config.limits) {
               const lim = this.state.config.limits;

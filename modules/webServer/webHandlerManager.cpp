@@ -255,7 +255,11 @@ void WebHandlerManager::handleGetConfig(AsyncWebServerRequest *request) {
     JsonDocument doc;
 
     doc["version"] = config.configVersion; // Expose schema version directly at the root for UI tracking
-
+    
+    if (_context.getConfigManager().hasRollback()) {
+        doc["rollbackEvent"] = true;
+        _context.getConfigManager().clearRollback();
+    }
     // --- System Settings ---
     JsonObject system = doc["system"].to<JsonObject>();
     system["hostname"] = config.hostname;

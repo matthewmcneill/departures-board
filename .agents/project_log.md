@@ -1,5 +1,9 @@
 # Project Log
 
+## [951f0d2] 2026-04-05 12:00 - Transactional Config Fallback & UI Minification
+- **Summary**: Implemented robust automated recovery pipeline. The JS Web Portal now strictly minifies all payload submissions to dramatically curb API transmission footprint. `ConfigManager::saveFile` safely preserves historical active settings in `/config.json.lastknowngood` and dynamically restores and recursively reloads this baseline natively if `loadConfig` registers an OOM deserialization exception dynamically protecting stability.
+- **Commit**: 951f0d2
+- **Metadata**: [.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/](.agents/plans/done/cdd45a36-edd8-43da-afb3-e37d8d1555fd/)
 ## [55c3e06] 2026-04-05 11:37 - Config Backup Pipeline & Versioning Hardening
 - **Summary**: Hardened `handleRestoreConfig` to strictly reject arbitrary API state dumps, protecting the native C++ schema-migration pipeline from unrecoverable out-of-memory cascading faults. Injected root version tracking and compilation `BUILD_TIME` metadata directly into the exported Web API backup response structure for absolute deployment traceability.
 - **Commit**: 55c3e06

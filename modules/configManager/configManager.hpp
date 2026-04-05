@@ -158,6 +158,7 @@ class ConfigManager {
 private:
   Config config; // Master configuration state container
   DeviceCrypto* cryptoEngine = nullptr; ///< Reference to hardware encryption provider
+  bool _rollbackFlag = false; // Indicates if the configuration was forcibly rolled back during boot
 
 public:
   ConfigManager() = default;
@@ -166,6 +167,9 @@ public:
    * @brief Inject the crypto engine before initial loading
    */
   void bindCrypto(DeviceCrypto* crypto) { cryptoEngine = crypto; }
+
+  bool hasRollback() const { return _rollbackFlag; }
+  void clearRollback() { _rollbackFlag = false; }
 
   /**
    * @brief Load all user preferences and module settings from `/config.json`.
