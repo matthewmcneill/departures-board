@@ -807,7 +807,12 @@ void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const St
     String tokenStr = "";
     if (keyId.length() > 0) {
         ApiKey* key = _context.getConfigManager().getKeyById(keyId.c_str());
-        if (key) tokenStr = key->token;
+        if (key) {
+            tokenStr = key->token;
+            if (typeStr == "rail" && String(key->type) == "rdm") {
+                typeStr = "rdm";
+            }
+        }
     }
 
     auto params = std::make_unique<ApiTestParams>();

@@ -197,7 +197,11 @@ public:
                 if ptype == "line":
                     render_calls.append(f"    display.drawLine({geom['x1']}, {geom['y1']}, {geom['x2']}, {geom['y2']});")
                 elif ptype == "box":
-                    render_calls.append(f"    display.drawBox({geom['x']}, {geom['y']}, {geom['w']}, {geom['h']});")
+                    is_filled = p.get("isFilled", True)
+                    if is_filled:
+                        render_calls.append(f"    display.drawBox({geom['x']}, {geom['y']}, {geom['w']}, {geom['h']});")
+                    else:
+                        render_calls.append(f"    display.drawFrame({geom['x']}, {geom['y']}, {geom['w']}, {geom['h']});")
                 elif ptype == "text":
                     text = p.get("text", "")
                     font = p.get("font", "nullptr")

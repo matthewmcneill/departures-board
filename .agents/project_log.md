@@ -1,5 +1,9 @@
 # Project Log
 
+## [12d210b] 2026-04-05 16:00 - Config Validation Verbosity
+- **Summary**: Augmented `LOG_ERROR` and `LOG_WARN` trace coverage inside `modules/configManager/configManager.cpp`. Structurally enriched migration pathway traces and strictly classified parsing fault origins (NoMemory vs Partial Mapping) natively to assist in debugging payload boundary overruns.
+- **Commit**: 12d210b
+
 ## [951f0d2] 2026-04-05 12:00 - Transactional Config Fallback & UI Minification
 - **Summary**: Implemented robust automated recovery pipeline. The JS Web Portal now strictly minifies all payload submissions to dramatically curb API transmission footprint. `ConfigManager::saveFile` safely preserves historical active settings in `/config.json.lastknowngood` and dynamically restores and recursively reloads this baseline natively if `loadConfig` registers an OOM deserialization exception dynamically protecting stability.
 - **Commit**: 951f0d2

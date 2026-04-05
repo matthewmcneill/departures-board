@@ -56,6 +56,40 @@ public:
 #define ENABLE_DEBUG_LOG
 #include <logger.hpp>
 
+static void trimPlatformWhitespace(char* &start, char* &end) {
+    while (start <= end && isspace(*start)) start++;
+    while (end >= start && isspace(*end)) end--;
+}
+
+static bool nrRDMPlatformMatches(const char* filter, const char* platform) {
+    if (!filter || !filter[0]) return true;
+    if (!platform || !platform[0]) return false;
+
+    const char* start = filter;
+    const char* ptr = filter;
+    while (true) {
+        if (*ptr == ',' || *ptr == '\0') {
+            const char* end = ptr - 1;
+            char* tS = const_cast<char*>(start);
+            char* tE = const_cast<char*>(end);
+            trimPlatformWhitespace(tS, tE);
+            int len = tE - tS + 1;
+            if (len > 0) {
+                bool match = true;
+                for (int i = 0; i < len; i++) {
+                    if (tolower(tS[i]) != tolower(platform[i])) { match = false; break; }
+                }
+                if (match && platform[len] == '\0') return true;
+            }
+            if (*ptr == '\0') break;
+            start = ++ptr;
+        } else {
+            ptr++;
+        }
+    }
+    return false;
+}
+
 /**
  * @brief Construct a new nrRDMDataProvider object, allocating buffers on heap.
  */
@@ -204,6 +238,13 @@ void nrRDMDataProvider::executeFetch() {
                 JsonArray services = doc["trainServices"].as<JsonArray>();
                 int sIdx = 0;
                 for (JsonVariant svc : services) {
+                    if (platformFilter[0] != '\0') {
+                        const char* plat = svc["platform"].is<const char*>() ? svc["platform"].as<const char*>() : "";
+                        if (!nrRDMPlatformMatches(platformFilter, plat)) {
+                            continue;
+                        }
+                    }
+
                     if (sIdx >= NR_MAX_SERVICES) break;
                     NationalRailService& s = stationData->service[sIdx];
                     s.isCancelled = svc["isCancelled"] | false;
