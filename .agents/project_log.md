@@ -786,3 +786,9 @@ Generated commit: 7f35aa3
 - **Summary:** Unified native Pass 1.5 logic into WASM Engine to enforce accurate widget disabling dynamically via HTML JSON IDE metadata injection mapping. Includes proxy mock generation for Huxley endpoints.
 - **Commit:** 2812530
 - **Metadata:** [.agents/plans/done/c1dd6ccd-e49f-45a4-8a4f-aa06a64ad59d/](.agents/plans/done/c1dd6ccd-e49f-45a4-8a4f-aa06a64ad59d/)
+
+
+## [4179fbe] 2026-04-04 22:05 - Intelligent Polling RDM
+- **Summary:** Intelligent dynamic polling for National Rail RDM with 15s post-departure calculations and 60-second boundaries. Fixed build time macro injection.
+- **Commit:** 4179fbe
+- **Metadata:** [.agents/plans/done/c7016f46-7a07-4187-98a7-863bdb3ef365/](.agents/plans/done/c7016f46-7a07-4187-98a7-863bdb3ef365/)

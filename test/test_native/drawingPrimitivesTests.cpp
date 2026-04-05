@@ -1,6 +1,5 @@
 #include <unity.h>
-#include "U8g2lib.h"
-#include "drawingPrimitives.hpp"
+#include <drawingPrimitives.hpp>
 
 void test_drawText_fast_path() {
     U8G2 display;

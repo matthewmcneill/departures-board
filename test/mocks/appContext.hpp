@@ -10,7 +10,7 @@
 // Forward declarations
 class ConfigManager;
 class TimeManager;
-class systemManager;
+class schedulerManager;
 class dataManager;
 class displayManager;
 class wifiManager;
@@ -26,7 +26,7 @@ public:
 
     ConfigManager& getConfigManager();
     TimeManager& getTimeManager();
-    systemManager& getSystemManager();
+    schedulerManager& getSchedulerManager();
     dataManager& getDataManager();
     displayManager& getDisplayManager();
     wifiManager& getWifiManager();

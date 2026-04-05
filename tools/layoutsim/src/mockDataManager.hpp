@@ -131,9 +131,18 @@ public:
         JsonObject mods = doc["configModifiers"];
         if (!mods.isNull()) {
             if (mods["filter"].is<const char*>() && strlen(mods["filter"].as<const char*>()) > 0) {
+                const char* filterStr = mods["filter"].as<const char*>();
                 char temp[MOCK_MAX_STR];
-                snprintf(temp, sizeof(temp), "%s [%s]", stationCalling, mods["filter"].as<const char*>());
+                snprintf(temp, sizeof(temp), "%s [%s]", stationCalling, filterStr);
                 strlcpy(stationCalling, temp, sizeof(stationCalling));
+                
+                if (strchr(filterStr, ',') != nullptr || strlen(filterStr) > 2) {
+                    strlcpy(stationPlatform, "A", sizeof(stationPlatform));
+                } else {
+                    strlcpy(stationPlatform, filterStr, sizeof(stationPlatform));
+                }
+            } else {
+                strlcpy(stationPlatform, "1", sizeof(stationPlatform));
             }
             if (mods["callingPoint"].as<bool>()) {
                 strlcpy(stationCalling, "Calling at...", sizeof(stationCalling));

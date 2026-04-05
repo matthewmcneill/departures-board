@@ -39,3 +39,6 @@ extern const uint8_t UndergroundClock8[];
 extern const uint8_t WeatherIcons16[]; // 16x16 weather condition symbols
 extern const uint8_t WeatherIcons11[]; // 11x11 weather condition symbols
 extern const uint8_t WifiIcons11[];    // 11x11 WiFi signal strength and status icons
+extern const uint8_t SWRClockHuge11[]; // 11px high SWR Clock font
+extern const uint8_t SWRClockMega13[]; // 13px high SWR Platform font
+extern const uint8_t FormationIcons7[]; // 7px high Train Formation icons

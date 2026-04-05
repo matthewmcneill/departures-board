@@ -28,6 +28,7 @@
     {
       "id": "sysClock",
       "type": "clockWidget",
+      "align": 0,
       "geometry": {
         "x": 98,
         "y": 52,

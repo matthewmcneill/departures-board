@@ -91,9 +91,10 @@ int getStringWidth(U8G2& display, const __FlashStringHelper *message);
  * @param align Alignment within the width (LEFT, CENTER, RIGHT).
  * @param truncate If true, appends '...' if text exceeds width.
  * @param font Optional font override. If nullptr, current font is used.
+ * @param textOffsetY Optional vertical push offset down from the clipping box top bounds.
  */
-void drawText(U8G2& display, const char *message, int x, int y, int w = -1, int h = -1, TextAlign align = TextAlign::LEFT, bool truncate = false, const uint8_t* font = nullptr);
-void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, int w = -1, int h = -1, TextAlign align = TextAlign::LEFT, bool truncate = false, const uint8_t* font = nullptr);
+void drawText(U8G2& display, const char *message, int x, int y, int w = -1, int h = -1, TextAlign align = TextAlign::LEFT, bool truncate = false, const uint8_t* font = nullptr, int textOffsetY = 0);
+void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, int w = -1, int h = -1, TextAlign align = TextAlign::LEFT, bool truncate = false, const uint8_t* font = nullptr, int textOffsetY = 0);
 
 
 

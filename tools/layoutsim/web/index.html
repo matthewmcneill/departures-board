@@ -626,10 +626,19 @@
                     hasPrimitives = true;
                     layout.primitives.forEach((p, idx) => {
                         const id = p.id || `${p.type}_${idx}`;
-                        let x = (p.x !== undefined) ? p.x : (p.x1 !== undefined ? Math.min(p.x1, p.x2) : 0);
-                        let y = (p.y !== undefined) ? p.y : (p.y1 !== undefined ? Math.min(p.y1, p.y2) : 0);
-                        let w = (p.w !== undefined) ? p.w : (p.x1 !== undefined ? Math.abs(p.x2 - p.x1) : 1);
-                        let h = (p.h !== undefined) ? p.h : (p.y1 !== undefined ? Math.abs(p.y2 - p.y1) : 1);
+                        let gx = p.geometry ? p.geometry.x : p.x;
+                        let gy = p.geometry ? p.geometry.y : p.y;
+                        let gw = p.geometry ? p.geometry.w : p.w;
+                        let gh = p.geometry ? p.geometry.h : p.h;
+                        let gx1 = p.geometry ? p.geometry.x1 : p.x1;
+                        let gy1 = p.geometry ? p.geometry.y1 : p.y1;
+                        let gx2 = p.geometry ? p.geometry.x2 : p.x2;
+                        let gy2 = p.geometry ? p.geometry.y2 : p.y2;
+                        
+                        let x = (gx !== undefined) ? gx : (gx1 !== undefined ? Math.min(gx1, gx2) : 0);
+                        let y = (gy !== undefined) ? gy : (gy1 !== undefined ? Math.min(gy1, gy2) : 0);
+                        let w = (gw !== undefined) ? gw : (gx1 !== undefined ? Math.abs(gx2 - gx1) : 1);
+                        let h = (gh !== undefined) ? gh : (gy1 !== undefined ? Math.abs(gy2 - gy1) : 1);
                         if (w === 0) w = 1; if (h === 0) h = 1;
                         addElementToUI(groupPrimitives, grid, id, 'primitive', x, y, w, h, p, 'primitive', undefined, p.visible !== undefined ? p.visible : true);
                     });

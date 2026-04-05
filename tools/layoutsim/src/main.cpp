@@ -179,6 +179,11 @@ void syncData() {
             ((scrollingMessagePoolWidget*)msgW)->setInterleavedMessage("");
         }
     }
+
+    iGfxWidget* platformW = DesignerRegistry::getInstance().getWidget("platformWidget");
+    if (platformW) {
+        ((labelWidget*)platformW)->setText(mdm.getStationPlatform());
+    }
 }
 
 /**

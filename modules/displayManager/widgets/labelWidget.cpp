@@ -72,7 +72,13 @@ void labelWidget::render(U8G2& display) {
     U8g2StateSaver stateSaver(display);
     display.setFont(font);
     
+    int yOffset = 0;
+    if (height > 0) {
+        int fontHeight = display.getAscent() - display.getDescent();
+        yOffset = (height - fontHeight) / 2;
+    }
+
     // drawText natively handles mathematical alignment, width boundary truncation, 
     // and layout offsets transparently against the active U8G2 context.
-    drawText(display, textBuffer, x, y, width, height, static_cast<TextAlign>(alignment), isTruncated);
+    drawText(display, textBuffer, x, y, width, height, static_cast<TextAlign>(alignment), isTruncated, nullptr, yOffset);
 }

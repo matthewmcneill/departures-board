@@ -1,10 +1,19 @@
 #include <unity.h>
 #include <Arduino.h>
 
+// --- Mocks & Stubs ---
+#include "../mocks/Stubs.cpp"
+
+// --- Module Implementations ---
+#include "../../modules/configManager/configManager.cpp"
+#include "../../modules/dataManager/dataManager.cpp"
+#include "../../modules/schedulerManager/schedulerManager.cpp"
+#include "../../modules/displayManager/widgets/drawingPrimitives.cpp"
+
 // Forward declarations of test runners
 void runConfigManagerTests();
 void runDataManagerTests();
-void runSystemManagerTests();
+void runSchedulerManagerTests();
 void runDrawingPrimitivesTests();
 
 void setUp(void) {
@@ -20,7 +29,7 @@ int main(int argc, char **argv) {
     
     runConfigManagerTests();
     runDataManagerTests();
-    runSystemManagerTests();
+    runSchedulerManagerTests();
     runDrawingPrimitivesTests();
     
     return UNITY_END();

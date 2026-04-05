@@ -98,7 +98,7 @@ int getStringWidth(U8G2& display, const __FlashStringHelper *message) {
  * @param truncate Append '...' if too wide.
  * @param font Optional font override.
  */
-void drawText(U8G2& display, const char *message, int x, int y, int w, int h, TextAlign align, bool truncate, const uint8_t* font) {
+void drawText(U8G2& display, const char *message, int x, int y, int w, int h, TextAlign align, bool truncate, const uint8_t* font, int textOffsetY) {
   U8g2StateSaver saver(display);
 
   if (font) display.setFont(font);
@@ -163,19 +163,19 @@ void drawText(U8G2& display, const char *message, int x, int y, int w, int h, Te
         buf[strlen(buf)-1] = '\0';
     }
     strcat(buf, "...");
-    display.drawStr(drawX, y, buf);
+    display.drawStr(drawX, y + textOffsetY, buf);
   } else {
-    display.drawStr(drawX, y, message);
+    display.drawStr(drawX, y + textOffsetY, message);
   }
 }
 
 /**
  * @brief Draw PROGMEM text with alignment and optional truncation within a bounding box.
  */
-void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, int w, int h, TextAlign align, bool truncate, const uint8_t* font) {
+void drawText(U8G2& display, const __FlashStringHelper *message, int x, int y, int w, int h, TextAlign align, bool truncate, const uint8_t* font, int textOffsetY) {
   char buf[256];
   strcpy_P(buf, (const char*)message);
-  drawText(display, buf, x, y, w, h, align, truncate, font);
+  drawText(display, buf, x, y, w, h, align, truncate, font, textOffsetY);
 }
 
 

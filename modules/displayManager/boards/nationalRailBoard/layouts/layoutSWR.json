@@ -1,0 +1,185 @@
+{
+  "layout": "iNationalRailLayout",
+  "widgets": [
+    {
+      "id": "platformWidget",
+      "type": "labelWidget",
+      "geometry": {
+        "x": 4,
+        "y": 20,
+        "w": 20,
+        "h": 24
+      },
+      "align": 1,
+      "visible": true,
+      "font": "SWRClockMega13"
+    },
+    {
+      "id": "row0Widget",
+      "type": "serviceListWidget",
+      "geometry": {
+        "x": 32,
+        "y": 0,
+        "w": 224,
+        "h": 16
+      },
+      "visible": true,
+      "skipRows": 0,
+      "maxRows": 1,
+      "font": "NatRailTall12",
+      "columns": [
+        {
+          "width": 0,
+          "align": 0,
+          "label": "No"
+        },
+        {
+          "width": 34,
+          "align": 0,
+          "label": "Time"
+        },
+        {
+          "width": 126,
+          "align": 0,
+          "label": "Dest"
+        },
+        {
+          "width": 0,
+          "align": 2,
+          "label": "Platform"
+        },
+        {
+          "width": 60,
+          "align": 2,
+          "label": "Expected"
+        }
+      ]
+    },
+    {
+      "id": "msgWidget",
+      "type": "scrollingMessagePoolWidget",
+      "geometry": {
+        "x": 32,
+        "y": 17,
+        "w": 224,
+        "h": 14
+      },
+      "visible": true,
+      "font": "NatRailTall12"
+    },
+    {
+      "id": "servicesWidget",
+      "type": "serviceListWidget",
+      "geometry": {
+        "x": 0,
+        "y": 54,
+        "w": 190,
+        "h": 13
+      },
+      "visible": true,
+      "skipRows": 1,
+      "font": "NatRailSmall9",
+      "columns": [
+        {
+          "width": 32,
+          "align": 1,
+          "label": "No"
+        },
+        {
+          "width": 30,
+          "align": 0,
+          "label": "Time"
+        },
+        {
+          "width": 70,
+          "align": 0,
+          "label": "Dest"
+        },
+        {
+          "width": 0,
+          "align": 2,
+          "label": "Platform"
+        },
+        {
+          "width": 50,
+          "align": 2,
+          "label": "Expected"
+        }
+      ]
+    },
+    {
+      "id": "sysClock",
+      "type": "clockWidget",
+      "align": 2,
+      "geometry": {
+        "x": 190,
+        "y": 51,
+        "w": 66,
+        "h": 16
+      },
+      "visible": true,
+      "blink": false,
+      "format": "HH_MM_SS",
+      "font": "SWRClockHuge11",
+      "secondaryFont": "NatRailSmall9"
+    },
+    {
+      "id": "noDataLabel",
+      "type": "labelWidget",
+      "geometry": {
+        "x": 44,
+        "y": 26,
+        "w": 202,
+        "h": 15
+      },
+      "visible": false,
+      "font": "NatRailTall12",
+      "text": "No services found."
+    }
+  ],
+  "primitives": [
+    {
+      "id": "boxPlat",
+      "type": "box",
+      "isFilled": false,
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "w": 28,
+        "h": 51
+      }
+    },
+    {
+      "id": "labelPlat",
+      "type": "text",
+      "text": "Plat",
+      "font": "NatRailTall12",
+      "align": 1,
+      "geometry": {
+        "x": 5,
+        "y": 6
+      }
+    },
+    {
+      "id": "boxFormation",
+      "isFilled": false,
+      "type": "box",
+      "geometry": {
+        "x": 36,
+        "y": 33,
+        "w": 120,
+        "h": 12
+      }
+    },
+    {
+      "id": "lineFooter",
+      "type": "line",
+      "geometry": {
+        "x1": 30,
+        "y1": 50,
+        "x2": 256,
+        "y2": 50
+      }
+    }
+  ]
+}

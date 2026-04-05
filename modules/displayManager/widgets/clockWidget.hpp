@@ -44,6 +44,7 @@ private:
     ClockFormat format;
     const uint8_t* font;
     const uint8_t* secondaryFont;
+    int alignment; ///< 0=Left, 1=Center, 2=Right
     TimeManager* timeMgr; ///< Pointer to the injected TimeManager instance
 
 public:
@@ -85,6 +86,13 @@ public:
      * @designer_prop bool blinkEnabled = true - Toggle colon blinking animation.
      */
     void setBlink(bool enable) { blinkEnabled = enable; showColon = true; }
+    
+    /**
+     * @brief Set the horizontal alignment strategy inside the widget width.
+     * @param align 0=Left, 1=Center, 2=Right.
+     * @designer_prop int align = 1 - Horizontal text alignment.
+     */
+    void setAlignment(int align) { alignment = align; }
     
     /**
      * @brief Update the clock's internal time and animation state.

@@ -1,4 +1,3 @@
-#include <fonts/fonts.hpp>
 /*
  * Departures Board (c) 2025-2026 Gadec Software
  * Refactored for v3.0 by Matt McNeill 2026 CB Labs
@@ -19,6 +18,7 @@
  *   - render: Primary drawing method.
  */
 
+#include <fonts/fonts.hpp>
 #include "clockWidget.hpp"
 #include "drawingPrimitives.hpp"
 #include <timeManager.hpp>
@@ -129,24 +129,37 @@ void clockWidget::render(U8G2& display) {
     int minW = display.getStrWidth(minStr);
     int colonW = display.getStrWidth(":");
 
+    int maxHourW = display.getStrWidth("00");
+    int maxMinW = display.getStrWidth("00");
+
     int secW = 0;
     int secColonW = 0;
+    int maxSecW = 0;
+    int maxSecColonW = 0;
     
     if (format == ClockFormat::HH_MM_SS) {
         if (secondaryFont) {
             display.setFont(secondaryFont);
         }
         secW = display.getStrWidth(secStr);
+        maxSecW = display.getStrWidth("00");
         secColonW = display.getStrWidth(":");
+        maxSecColonW = display.getStrWidth(":");
         display.setFont(font); // restore main font
     }
 
-    // Calculate total width using the colon's width as the fixed gap, plus 1px padding on each side
-    int totalW = hourW + colonW + minW + 2;
+    // Calculate actual total footprint of the components
+    int actualW = maxHourW + colonW + maxMinW + 2;
     if (format == ClockFormat::HH_MM_SS) {
-        totalW += secColonW + secW + 2;
+        actualW += maxSecColonW + maxSecW + 2;
     }
-    int startX = x + (renderW - totalW) / 2;
+    
+    int startX = x;
+    if (alignment == 1) { // CENTER
+        startX = x + (renderW - actualW) / 2;
+    } else if (alignment == 2) { // RIGHT
+        startX = x + renderW - actualW - 1; // subtract 1 to prevent generic U8G2 string right-edge overhang clipping
+    }
 
     // We use setFontPosTop globally in v3.0, so to vertically center text in renderH:
     // We calculate the remaining physical height after the font pixel height is subtracted, 
@@ -154,41 +167,47 @@ void clockWidget::render(U8G2& display) {
     int fontHeight = display.getAscent() - display.getDescent();
     int drawY = y + (renderH - fontHeight) / 2;
 
-    int mainBaselineY = drawY + display.getAscent();
     int secDrawY = drawY;
     if (format == ClockFormat::HH_MM_SS && secondaryFont) {
         display.setFont(secondaryFont);
-        secDrawY = mainBaselineY - display.getAscent();
+        int secFontHeight = display.getAscent() - display.getDescent();
+        // Align the bottoms of the two text boundaries (which natively flushes the numerical baselines)
+        secDrawY = drawY + fontHeight - secFontHeight;
         display.setFont(font);
     }
 
     // Clearing the area prevents trailing artifacts
     blankArea(display, x, y, renderW, renderH);
     
-    // Abstract the vertical geometries directly using U8g2 raw calls to avoid clipping pipeline overhead
-    display.drawStr(startX, drawY, hourStr);
+    // Draw hours right-aligned within its max bounding box
+    int hOff = maxHourW - hourW;
+    display.drawStr(startX + hOff, drawY, hourStr);
+    
+    int currentX = startX + maxHourW + 1;
     
     // Draw colon if enabled
     if (showColon) {
-        display.drawStr(startX + hourW + 1, drawY, ":");
+        display.drawStr(currentX, drawY, ":");
     }
+    currentX += colonW + 1;
     
-    // Draw minutes
-    display.drawStr(startX + hourW + colonW + 2, drawY, minStr);
+    // Draw minutes right-aligned
+    int mOff = maxMinW - minW;
+    display.drawStr(currentX + mOff, drawY, minStr);
+    currentX += maxMinW + 1;
 
     // Draw seconds
     if (format == ClockFormat::HH_MM_SS) {
-        int currentX = startX + hourW + colonW + 2 + minW + 1;
-        
         // The second colon separating minutes and seconds is standard continuous (non-blinking)
         if (secondaryFont) display.setFont(secondaryFont);
-        display.drawStr(currentX, secDrawY, ":");
-        if (secondaryFont) display.setFont(font);
         
-        currentX += secColonW + 1;
+        int sColOff = (maxSecColonW - secColonW) / 2;
+        display.drawStr(currentX + sColOff, secDrawY, ":");
         
-        if (secondaryFont) display.setFont(secondaryFont);
-        display.drawStr(currentX, secDrawY, secStr);
+        currentX += maxSecColonW + 1;
+        
+        int sOff = maxSecW - secW;
+        display.drawStr(currentX + sOff, secDrawY, secStr);
         if (secondaryFont) display.setFont(font);
     }
 }

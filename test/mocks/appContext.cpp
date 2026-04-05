@@ -3,7 +3,7 @@
 // Mock Manager Includes
 #include "configManager.hpp"
 #include "timeManager.hpp"
-#include "systemManager.hpp"
+#include "schedulerManager.hpp"
 #include "dataManager.hpp"
 #include "displayManager.hpp"
 #include "wifiManager.hpp"
@@ -17,7 +17,7 @@ appContext::~appContext() {}
 
 ConfigManager& appContext::getConfigManager() { static ConfigManager cm; return cm; }
 TimeManager& appContext::getTimeManager() { static TimeManager tm; return tm; }
-systemManager& appContext::getSystemManager() { static systemManager sm; return sm; }
+schedulerManager& appContext::getSchedulerManager() { static schedulerManager sm(this); return sm; }
 dataManager& appContext::getDataManager() { static dataManager dm; return dm; }
 displayManager& appContext::getDisplayManager() { static displayManager dsm(*this); return dsm; }
 wifiManager& appContext::getWifiManager() { static wifiManager wm; return wm; }

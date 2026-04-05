@@ -55,6 +55,8 @@ private:
         if (name == "UndergroundClock8") return UndergroundClock8;
         if (name == "WeatherIcons16") return WeatherIcons16;
         if (name == "WeatherIcons11") return WeatherIcons11;
+        if (name == "SWRClockHuge11") return SWRClockHuge11;
+        if (name == "SWRClockMega13") return SWRClockMega13;
         return nullptr;
     }
 
@@ -135,6 +137,16 @@ public:
                         ((labelWidget*)widget)->setText(w["text"].as<const char*>());
                     } else if (typeStr == "scrollingTextWidget") {
                         ((scrollingTextWidget*)widget)->setText(w["text"].as<const char*>());
+                    }
+                }
+
+                if (w["align"].is<int>()) {
+                    const char* typeStrPtr = w["type"];
+                    std::string typeStr = typeStrPtr ? typeStrPtr : "";
+                    if (typeStr == "labelWidget") {
+                        ((labelWidget*)widget)->setAlignment(w["align"].as<int>());
+                    } else if (typeStr == "clockWidget") {
+                        ((clockWidget*)widget)->setAlignment(w["align"].as<int>());
                     }
                 }
 
@@ -221,7 +233,8 @@ public:
                 prim.x2 = geom["x2"] | 0;
                 prim.y2 = geom["y2"] | 0;
             } else if (strcmp(typeStr, "box") == 0) {
-                prim.type = PrimitiveType::BOX;
+                bool isFilled = p["isFilled"].is<bool>() ? p["isFilled"].as<bool>() : false;
+                prim.type = isFilled ? PrimitiveType::BOX : PrimitiveType::FRAME;
                 prim.x1 = geom["x"] | 0;
                 prim.y1 = geom["y"] | 0;
                 prim.x2 = geom["w"] | 0;
@@ -246,6 +259,9 @@ public:
                     break;
                 case PrimitiveType::BOX:
                     display.drawBox(prim.x1, prim.y1, prim.x2, prim.y2);
+                    break;
+                case PrimitiveType::FRAME:
+                    display.drawFrame(prim.x1, prim.y1, prim.x2, prim.y2);
                     break;
                 case PrimitiveType::TEXT:
                     if (prim.font) display.setFont(prim.font);

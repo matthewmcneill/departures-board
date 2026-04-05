@@ -24,6 +24,8 @@
 #include "nrRDMDataProvider.hpp"
 #include <appContext.hpp>
 #include <logger.hpp>
+#include "layouts/layoutSWR.hpp"
+#include "layouts/layoutGadec.hpp"
 
 extern const uint8_t NatRailTall12[];
 extern const uint8_t NatRailSmall9[];
@@ -119,6 +121,10 @@ void NationalRailBoard::configure(const BoardConfig &config) {
   // Evaluate requested layout against available subclasses
   if (strcmp(config.layout, "replica") == 0) {
     activeLayout = new layoutNrReplica(context);
+  } else if (strcmp(config.layout, "swr") == 0) {
+    activeLayout = new layoutNrSWR(context);
+  } else if (strcmp(config.layout, "gadec") == 0) {
+    activeLayout = new layoutNrGadec(context);
   } else {
     // Fallback or "default"
     activeLayout = new layoutNrDefault(context);

@@ -162,6 +162,11 @@ public:
 
         if "scrollDurationMs" in w:
             constructor_body.append(f"    {wid}.setScrollDuration({w['scrollDurationMs']});")
+            
+        if "align" in w:
+            wtype = w.get("type", "")
+            if wtype == "labelWidget" or wtype == "clockWidget":
+                constructor_body.append(f"    {wid}.setAlignment({w['align']});")
         
         if "scrollDwellMs" in w:
             constructor_body.append(f"    {wid}.setScrollDwell({w['scrollDwellMs']});")
@@ -196,7 +201,11 @@ public:
                 elif ptype == "text":
                     text = p.get("text", "")
                     font = p.get("font", "nullptr")
-                    align_str = p.get("align", "LEFT").upper()
+                    align_val = p.get("align", 0)
+                    if align_val == 0 or align_val == "LEFT": align_str = "LEFT"
+                    elif align_val == 1 or align_val == "CENTER": align_str = "CENTER"
+                    elif align_val == 2 or align_val == "RIGHT": align_str = "RIGHT"
+                    else: align_str = "LEFT"
                     truncate = "true" if p.get("truncate", False) else "false"
                     x, y = geom.get("x", 0), geom.get("y", 0)
                     w, h = geom.get("w", -1), geom.get("h", -1)

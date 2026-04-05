@@ -1,4 +1,4 @@
-Font: NatRailClockHuge11
+Font: SWRClockHuge11
 Glyph count: 11
 b0: 3, b1: 2
 
@@ -146,12 +146,13 @@ Character U+003A (Char: ':')
 Width: 2, Height: 11, X-Offset: 1, Y-Offset: 2, dX: 4
 ..
 ..
+##
+##
+..
+..
 ..
 ##
 ##
 ..
 ..
-##
-##
-..
-..
+

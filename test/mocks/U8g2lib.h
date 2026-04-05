@@ -59,6 +59,10 @@ public:
     void clearBuffer() {}
     void updateDisplayArea(int x, int y, int w, int h) {}
 
+    const uint8_t* getBufferPtr() { return nullptr; }
+    size_t getBufferTileHeight() { return 8; }
+    size_t getBufferTileWidth() { return 32; }
+
     u8g2_t u8g2;
 };
 

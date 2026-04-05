@@ -66,7 +66,7 @@ void test_save_load_roundtrip() {
     c.boards[0].oledOff = true;
     
     // Save
-    TEST_ASSERT_TRUE(cm.saveConfig());
+    TEST_ASSERT_TRUE(cm.save());
     
     // Clear and reload
     cm.loadConfig();
