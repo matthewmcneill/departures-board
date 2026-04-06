@@ -160,7 +160,11 @@
       display: block;
     }
 
-    body.ap-mode .tab-link:not([data-target="tab-wifi"]) {
+    body.ap-mode .tab-link:not([data-target="tab-wifi"]):not([data-target="tab-system"]) {
+      display: none;
+    }
+
+    body.ap-mode #tab-system > article:first-child {
       display: none;
     }
 
@@ -2649,10 +2653,14 @@
           if (!s) return;
           if (s.ap_mode) {
             document.body.classList.add('ap-mode');
+            
+            // Force diagnostics drawer open in AP mode
+            const drawer = document.getElementById('maintenance-drawer');
+            if (drawer) drawer.classList.add('active');
+
             // Only force switch if we literally just entered AP mode after the initial tab was already established
             if (this.state.initialTabSet && !this.prev_ap_mode) {
               this.switchTab('tab-wifi');
-              document.getElementById('diag-drawer').classList.add('active');
             }
           } else {
             document.body.classList.remove('ap-mode');

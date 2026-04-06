@@ -333,41 +333,15 @@ void ConfigManager::writeDefaultConfig() {
 
   JsonArray boards = doc[F("boards")].to<JsonArray>();
 
-  // 1. National Rail (Main)
-  JsonObject br1 = boards.add<JsonObject>();
-  br1[F("type")] = (int)MODE_RAIL;
-  br1[F("id")] = "";
-  br1[F("name")] = "";
-
-  // 2. TfL Tube
-  if (MAX_BOARDS > 1) {
-    JsonObject br2 = boards.add<JsonObject>();
-    br2[F("type")] = (int)MODE_TUBE;
-    br2[F("id")] = "";
-    br2[F("name")] = "";
-  }
-
-  // 3. Bus
-  if (MAX_BOARDS > 2) {
-    JsonObject br3 = boards.add<JsonObject>();
-    br3[F("type")] = (int)MODE_BUS;
-    br3[F("id")] = "";
-    br3[F("name")] = "";
-  }
-
-  // Additional slots as Rail boards if MAX_BOARDS > 3
-  for (int i = 3; i < MAX_BOARDS; i++) {
-    JsonObject br = boards.add<JsonObject>();
-    br[F("type")] = (int)MODE_RAIL;
-    br[F("id")] = "";
-    br[F("name")] = "";
-  }
+  // No active display boards are provisioned automatically.
+  // The system will natively pause in BOARD_SETUP and display the Help Overlay screen 
+  // until the user adds their first board via the Web Portal.
 
   String output;
   serializeJson(doc, output);
   saveFile(F("/config.json"), output);
 
-  config.boardCount = (MAX_BOARDS < 6) ? MAX_BOARDS : 6;
+  config.boardCount = 0;
 }
 
 /**
@@ -406,12 +380,14 @@ bool ConfigManager::save() {
   JsonArray schedules = doc[F("schedules")].to<JsonArray>();
   for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
     const ScheduleRule &r = config.schedules[i];
-    JsonObject s = schedules.add<JsonObject>();
-    s[F("startH")] = r.startHour;
-    s[F("startM")] = r.startMinute;
-    s[F("endH")] = r.endHour;
-    s[F("endM")] = r.endMinute;
-    s[F("board")] = r.boardIndex;
+    if (r.boardIndex != -1) {
+      JsonObject s = schedules.add<JsonObject>();
+      s[F("startH")] = r.startHour;
+      s[F("startM")] = r.startMinute;
+      s[F("endH")] = r.endHour;
+      s[F("endM")] = r.endMinute;
+      s[F("board")] = r.boardIndex;
+    }
   }
 
   JsonArray boards = doc[F("boards")].to<JsonArray>();
