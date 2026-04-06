@@ -1,0 +1,4 @@
+- [x] Update `platformio.ini` to align Nano environment `extra_scripts` with pre-build operations
+- [x] Revert `web/index.html` CSS logic to restore legacy compatibility hack
+- [x] Refactor `ConfigManager::writeDefaultConfig()` to remove default dummy boards
+- [/] Pause hardware monitor, erase flash memory natively, and compile & flash updated binaries

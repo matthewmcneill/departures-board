@@ -20,6 +20,9 @@
 
 #include "dataManager.hpp"
 #include <logger.hpp>
+#include <appContext.hpp>
+
+extern class appContext appContext;
 
 /**
  * @brief Constructor for the Centralized Data Manager.
@@ -219,6 +222,27 @@ void dataManager::workerTaskLoop(void* pvParameters) {
         }
 
         if (targetToExecute != nullptr) {
+            
+            AppState state = appContext.getAppState();
+            
+            if (state == AppState::WIFI_SETUP) {
+                // Absolute network blockade in AP Mode: No internet exists, DNS requests will lock LwIP.
+                targetToExecute->setNextFetchTime(millis() + 15000);
+                if (manager->registryMutex && xSemaphoreTake(manager->registryMutex, portMAX_DELAY) == pdPASS) {
+                    manager->currentlyExecuting = nullptr;
+                    xSemaphoreGive(manager->registryMutex);
+                }
+                continue; // Skip execute
+            } else if (state != AppState::RUNNING && targetToExecute->getPriorityTier() != PriorityTier::PRIO_CRITICAL) {
+                // Board setup mode has internet, but block routine fetches until UI finishes adding displays.
+                targetToExecute->setNextFetchTime(millis() + 15000);
+                if (manager->registryMutex && xSemaphoreTake(manager->registryMutex, portMAX_DELAY) == pdPASS) {
+                    manager->currentlyExecuting = nullptr;
+                    xSemaphoreGive(manager->registryMutex);
+                }
+                continue; // Skip execute
+            }
+            
             LOG_INFOf("DATA", "DataManager: Executing fetch for tier %d", (int)targetToExecute->getPriorityTier());
             
             targetToExecute->executeFetch();

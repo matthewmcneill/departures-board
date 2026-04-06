@@ -852,3 +852,9 @@ Generated commit: 7f35aa3
 - **Summary:** Intelligent dynamic polling for National Rail RDM with 15s post-departure calculations and 60-second boundaries. Fixed build time macro injection.
 - **Commit:** 4179fbe
 - **Metadata:** [.agents/plans/done/c7016f46-7a07-4187-98a7-863bdb3ef365/](.agents/plans/done/c7016f46-7a07-4187-98a7-863bdb3ef365/)
+
+### Plan Wrap - Train Formations Widget Implementation
+* **Commit:** `9290802`
+* **Plan Context:** [.agents/plans/done/7ca548fe-d834-4cd2-8fe1-c8113719095f/](.agents/plans/done/7ca548fe-d834-4cd2-8fe1-c8113719095f/)
+* **Summary:** Finalised the train formation widget logic and drawing geometry, refined font baseline vertical centering offsets via pixel injection mock loops, mapped the ArduinoJson payload correctly for RDM fetching, successfully intercepted payload sizes directly via the ESP32 UART pipeline, and verified that the API itself natively strips `coaches` data for specific stations locally, triggering the native crash-safe UI suppression.
+- [2026-04-06] Fix System Tab Visibility and UI pipeline for Nano - Commit: 1f90a77bfb65946ba662fddac6d89dad8bbaff7b - [Plan Context](.agents/plans/done/42af9ff9-fbf3-4a47-abe4-c4414d1de136/)

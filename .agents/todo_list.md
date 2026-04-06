@@ -25,6 +25,7 @@
 - [ ] Migrate Sleep Schedule from v1 config to a unified 'Schedule' tab/module (currently handled in legacy System screens).
 - [ ] Investigate moving the "Refresh Rate" configuration from a global system setting to a per-key property.
 - [ ] **Schedule Migration**: Review the original v1/v2 `config.json` format. Critically assess how existing `sleepEnabled`, `sleepStarts`, and `sleepEnds` fields should be automatically migrated into the new Schedule/Screensaver paradigm when we update the settings json parsing logic.
+- [ ] Have modules/configManager/configManager.cpp not save empty slots (e.g. schedules). Infer this by omission.
 
 ### Data Providers & Scheduling
 - [ ] header widgets - I have a feeling this is not generalised, and is spacific to NatRail. (Still largely NR specific)
@@ -90,3 +91,4 @@
 - [x] remove the bus key button from the add keys dialog. No key is needed for bus times. (Resolved: Bustimes.org uses scrapers/unauthenticated APIs).
 - [x] move the host-name back to wifi config. It will help the user to find the device on the network once the wifi is configured. It doesn't need to be in system settings.
 - Fix native host test suite compilation.  is failing due to incomplete type for . It needs  or similar to resolve.
+- Fix native C++ tests in unit_testing_host environment. Currently broken due to outdated Stubs.cpp

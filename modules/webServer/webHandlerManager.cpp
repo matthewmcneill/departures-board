@@ -98,6 +98,9 @@ void WebHandlerManager::begin() {
     _server.on("/screenshot.html", HTTP_GET, [this](AsyncWebServerRequest *request) { 
         this->sendGzipFlash(request, screenshot_html_gz, screenshot_html_gz_len, "text/html"); 
     });
+    _server.on("/screenshot", HTTP_GET, [this](AsyncWebServerRequest *request) { 
+        this->sendGzipFlash(request, screenshot_html_gz, screenshot_html_gz_len, "text/html"); 
+    });
 
     // API: System & Config (Unified)
     _server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetStatus(request); });

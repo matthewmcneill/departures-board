@@ -18,7 +18,7 @@ fi
 pgrep -f "pio device monitor" | xargs kill -9 2>/dev/null || true
 pgrep -f "miniterm" | xargs kill -9 2>/dev/null || true
 
-if pio device list | grep -q "Arduino Nano ESP32\|2341:0070"; then
+if pio device list | grep -q "Arduino Nano ESP32\|2341:0070\|303A:1001"; then
     echo "Detected Arduino Nano ESP32 (esp32s3nano)"
     ENV="esp32s3nano"
 else
