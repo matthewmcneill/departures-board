@@ -1,0 +1,62 @@
+# OTA Configuration & Polling Implementation Plan
+
+This plan outlines the architectural adjustments to fulfilling your requests: configuring a quiet hour for daily updates, decoupling the update availability check (returning true/false), and exposing a method to force an update. We will bypass adding Root CAs or payload signing (assuming the tokenless, public repository approach).
+
+## Proposed Changes
+
+---
+
+### ConfigManager (Quiet Hour Configuration)
+
+#### [MODIFY] `modules/configManager/configManager.hpp`
+- Add `int otaQuietHour = 3;` to the `Config` struct. This will default to checking for updates at 3 AM.
+
+#### [MODIFY] `modules/configManager/configManager.cpp`
+- **`writeDefaultConfig()`**: Serialize `doc["updateHour"] = 3;`.
+- **`save()`**: Serialize `doc["updateHour"] = config.otaQuietHour;`.
+- **`loadConfig()`**: Deserialize `config.otaQuietHour = settings["updateHour"] | 3;`.
+
+#### [MODIFY] `modules/webServer/webHandlerManager.cpp`
+- **`handleGetConfig()`**: Add `system["updateHour"] = config.otaQuietHour;` to the outbound JSON payload.
+- **`handleSaveAll()`**: Add `if (sys["updateHour"].is<int>()) config.otaQuietHour = sys["updateHour"];` to the inbound parsing struct.
+
+---
+
+### OTA Updater (Lifecycle and Manual Triggers)
+
+#### [MODIFY] `lib/otaUpdater/otaUpdater.hpp`
+- Add a cached variable `int quietHour;` to cache the setting inside `otaUpdater`.
+- Declare a new public method `bool checkUpdateAvailable(String& outVersion);` for passive checks.
+- Declare a new public method `bool forceUpdateNow();` to bypass version gates entirely (if requested).
+
+#### [MODIFY] `lib/otaUpdater/otaUpdater.cpp`
+- **`reapplyConfig()`**: Cache `quietHour = cfg.otaQuietHour;`.
+- **`tick()`**: Modify the daily trigger constraint. Instead of triggering immediately when `timeinfo.tm_mday != prevUpdateCheckDay`, trigger only when `timeinfo.tm_hour == quietHour`.
+- **`checkUpdateAvailable(String& outVersion)`**: Implement logic that queries `ghUpdate.getLatestRelease()`. If `isFirmwareUpdateAvailable()` is true, populate `outVersion = ghUpdate.releaseId;` and return `true`. Otherwise return `false`.
+- **`forceUpdateNow()`**: Implement a bypass of `isFirmwareUpdateAvailable()`, explicitly finding the `firmware.bin` asset on the latest release regardless of tag, and piping it to `httpUpdate.handleUpdate()`.
+
+---
+
+### Web Server API (Exposing the Tools)
+
+#### [MODIFY] `modules/webServer/webHandlerManager.cpp`
+- Register a new route `_server.on("/api/ota/available", HTTP_GET...)`.
+- Implement `handleGetUpdateAvailable(AsyncWebServerRequest *request)` which calls `appContext.getOtaUpdater().checkUpdateAvailable(version)` and returns JSON: `{"available": true, "version": "v3.1.2"}`.
+- Register `_server.on("/api/ota/force", HTTP_POST...)` to trigger `appContext.getOtaUpdater().forceUpdateNow()`.
+
+## User Review Required
+
+> [!IMPORTANT]
+> - By executing this plan, we will keep `httpsClient.setInsecure()` and omit cryptographic signing checks. This is perfectly operational for a public repo without tokens, but prevents you from adding a private GitHub token in the future without risking interception.
+> - The web portal user interface (HTML/JS) will not automatically magically display these new tools yet (e.g. the "Check for Updates" button or "Quiet Hour" input box). This plan strictly wires up the C++ backend endpoints so the layout system can interact with them later. Do you want the Web UI modified as well, or just the backend API for now?
+
+## Verification Plan
+
+### Automated Tests
+- N/A
+
+### Manual Verification
+- Compile and flash the new firmware.
+- Access the display board via `curl` to `/api/config` and verify `updateHour` is returned.
+- Issue a `GET` request to `/api/ota/available` to verify it correctly probes GitHub and returns the payload without disrupting the running display.
+- Ensure the backend scheduler correctly delays the `tick()` update sequence until 3 AM.

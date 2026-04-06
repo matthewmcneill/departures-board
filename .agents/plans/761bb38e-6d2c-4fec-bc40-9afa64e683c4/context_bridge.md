@@ -1,22 +1,24 @@
 # Context Bridge
 
 **📍 Current State & Focus**: 
-Research finished regarding upstream `gadec-uk` configuration updates structure. I have amended "The Epoch Translation Matrix" architecture inside `implementation_plan.md` based on user feedback. The translation algorithm will now map untagged legacy configs directly into our `LATEST` (e.g. `v3.0`/`v2.6+`) internal structures directly, rather than into a `v2.0` baseline, to prevent losing parallel upstream functionality additions. Currently in Planning mode, saved to disk ready for execution.
+We are finalizing the Upstream Configuration Migration architecture prior to code implementation. I have fully authored and consolidated both Strategy A (Epoch Translation) and Strategy B (Non-Destructive Version-Locked Suffixing) into the `implementation_plan.md`. The plan now explicitly relies on dynamic evaluation driven by `CONFIG_VERSION_MAJOR` and `CONFIG_VERSION_MINOR` constants in `configManager` instead of hardcoded strings. Execution is prepared but paused.
 
 **🎯 Next Immediate Actions**: 
-- Extract the legacy fallback mapping fields out of `modules/configManager/configManager.cpp`'s main parsing body (`ConfigManager::loadConfig()`).
-- Implement the `detectConfigEpoch()` heuristic and the single-pass translation pipeline targeting the latest schema.
+- Boot up via `/plan-start` to claim the hardware build locks.
+- Create `modules/configManager/gadecMigration.hpp` and `.cpp` according to the exact interfaces laid out in `implementation_plan.md`.
+- Refactor `ConfigManager::loadConfig()` to iterate gracefully back through available `config_X_Y.json` files via `LittleFS.openDir("/")` before translating them.
 
 **🧠 Decisions & Designs**: 
-- We decided on an Epoch isolation approach. We detect the structure of the incoming JSON (e.g., look for `"tube": true` vs `"mode": 1`) BEFORE attempting to parse it into our internal structs.
-- If it is recognized as legacy upstream without a format `version`, we bypass our internal array of migrations and normalize it directly into our state-of-the-art memory mapping so that parallel upstream features aren't funneled out by older migration phases.
+- We aggressively embraced the **Non-Destructive Version-Locked Suffixing** architecture. 
+- Original upstream configurations (`config.json`) will be strictly read-only within our firmware. Any mutations originated within v3.0 logic will be structurally re-mapped and saved explicitly as new version-locked files (e.g., `config_2_6.json`), ensuring `Gadec-uk` baseline state is unbreakable if the user downgrades/reverts their firmware.
+- Hardcoded `"/config_2_6.json"` file strings were explicitly vetoed in favor of dynamically constructed C++ macro pairs (`CONFIG_VERSION_MAJOR`).
 
 **🐛 Active Quirks, Bugs & Discoveries**: 
-- Upstream `departures-board` does not include a `version` string in `config.json`. To handle OTA updates directly from upstream firmware to ours, we must sniff their JSON structure instead. Treating all non-versioned config objects blindly as `1.0f` risks crashing the `ConfigManager` JSON document limits over time.
+- Active Design Conflict: What do we do about `apikeys.json` destruction? When rewriting `apikeys.bin`, we explicitly delete `apikeys.json`. Reverting firmware to upstream will render API connectivity broken. We must patch this in implementation.
 
 **💻 Commands Reference**: 
-- Using standard `pio run -e esp32s3nano -t erase` testing combinations for future application testing (no builds performed during this research session).
+- Standard PlatformIO building paths apply: e.g. `pio run -e esp32s3nano -t erase` or `/flash-test`.
 
 **🌿 Execution Environment**: 
-- Branch environment intact. `modules/configManager/configManager.cpp` is clean. The primary artifacts (`implementation_plan.md`) exist locally.
-- ⚠️ PORTABILITY RULE Acknowledged - No absolute paths used for repository files.
+- Planning block purely text-based.
+- PORTABILITY RULE adhered to heavily (all internal `implementation_plan.md` paths reference relative module directories).

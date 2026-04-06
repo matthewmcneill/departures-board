@@ -1,58 +1,60 @@
-# Upstream Configuration Migration Strategy
+# Implementation Plan: Epoch Translation & Version-Locked Suffixing
 
-This document outlines a long-term strategy for cleanly handling configuration schemas from the monolithic upstream `gadec-uk/departures-board` repository without polluting our own v3.0 `ConfigManager` logic with mounting legacy debt.
+This document outlines the concrete strategy for establishing the dual-architecture configuration pipeline:
+1. **Strategy A (Translation):** A standalone translation layer to convert unversioned Gadec schemas into modern nested structures in RAM.
+2. **Strategy B (Storage):** A non-destructive disk strategy to save upgraded permutations as distinct suffix versions (e.g., `config_2_6.json`), insulating the user's base `config.json` against destructive overwriting so they can safely revert firmware.
 
-## Background constraints
-Our fork relies on explicitly versioned configurations (e.g., `"version": 2.6`) to manage migrations sequentially. The upstream repository doesn't write a version number to `config.json`. Instead, the upstream parsing logic infers state linearly based on the presence or absence of keys (e.g., treating `"tube": true` as legacy vs `"mode": 1`). 
+## Proposed Changes
 
-Currently, our `ConfigManager::loadConfig()` merges the parsing of our modern config, our legacy config, *and* upstream's config into a single massive control flow by assuming missing versions are `1.0f`. As upstream evolves, this will become unmaintainable.
+---
 
-## Proposed Architectural Approach: The Epoch Translation Matrix
+### configManager Module
 
-To maintain compatibility going forward, we should decouple **Upstream Translation** from **Internal Migration**. 
-
-### 1. The Epoch Sniffer (Detection)
-We introduce a pre-flight heuristic analyzer, `detectConfigEpoch(JsonDocument& doc)`. Since upstream lacks a version key, we fingerprint the JSON structure to determine exactly which "epoch" (point in time) the upstream configuration comes from.
+#### [NEW] [gadecMigration.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/configManager/gadecMigration.hpp)
+A new standalone utility namespace dedicated strictly to sniffing and translating unversioned or legacy configurations into the latest state before `configManager` processes them. 
 
 ```cpp
-float detectConfigEpoch(JsonObject doc) {
-    // 1. Is it our fork?
-    if (doc.containsKey("version")) {
-        return doc["version"].as<float>();
-    }
+#pragma once
+#include <ArduinoJson.h>
 
-    // 2. Unversioned. Determine the Upstream Epoch via fingerprinting
-    // Heuristic A: Gadec's original v1.x (Boolean tube mode)
-    if (doc.containsKey("tube") && !doc.containsKey("mode")) {
-        return EPOCH_GADEC_V1; // e.g., 1.0f
-    }
-    
-    // Heuristic B: Gadec's modern flat schema (Integer modes, flat CRS)
-    if (doc.containsKey("mode") && doc.containsKey("crs")) {
-        return EPOCH_GADEC_V2; // e.g., 1.1f
-    }
+namespace GadecMigration {
+    enum UpstreamEpoch {
+        EPOCH_LATEST_NATIVE = 0,
+        EPOCH_GADEC_V1 = 1,
+        EPOCH_GADEC_V2 = 2,
+        EPOCH_UNKNOWN = 99
+    };
 
-    // Fallback
-    return EPOCH_UNKNOWN; 
+    UpstreamEpoch detectConfigEpoch(JsonObject root);
+    bool translateToModern(JsonDocument& doc, UpstreamEpoch epoch);
 }
 ```
 
-### 2. The Translation Layer (Upstream -> Latest Format)
-Once an upstream epoch is identified, we pass it through an isolated translation function rather than mixing the parsing logic. This function reads the upstream `JsonObject` and explicitly maps it into our "Latest" state-of-the-art internal format (e.g., `v2.6f+`), directly populating the current structures like the `boards[]` array and nested `feeds` objects. By targeting the latest schema, we ensure that new functionality added by upstream in parallel does not get dropped by trying to force it into our older `v2.0` schema.
+#### [NEW] [gadecMigration.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/configManager/gadecMigration.cpp)
+Extracts the legacy conversions originally bloating `configManager.cpp`. It forcefully projects flat variables (`tubeLat`, `busFilter`, `sleepStarts`) into the modern `boards` array, `feeds` object, and `schedules` array. It implicitly forces `"version": 2.6` onto the document state.
 
-*By doing this, we can remove dozens of legacy fallback keys (like `altCrs`, `tubeLat`, `busFilter`) from the core `loadConfig()` parser.* The main parser only needs to know about our modern schema.
+#### [MODIFY] [configManager.hpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/configManager/configManager.hpp)
+- Introduce constants for the active configuration format natively to prevent arbitrary hardcoding:
+  ```cpp
+  #define CONFIG_VERSION_MAJOR 2
+  #define CONFIG_VERSION_MINOR 6
+  ```
+- Declare a static or member utility (e.g., `String getActiveConfigFilename()`) that uses these macros to dynamically construct and return the required file path (`"/config_2_6.json"`), replacing raw string dependency.
 
-### 3. Internal Migrations Bypass
-By translating directly from the Upstream Epoch into our *latest* internal version (`v2.6f+`), we cleanly bypass our internal sequential pipelines (`v2.0 -> v2.2 -> v2.5` etc). The `configVersion` will be implicitly set to the latest version immediately. This means our internal migration steps remain strictly dedicated for upgrading *our* older forks, and are never risked or polluted by upstream payloads.
+#### [MODIFY] [configManager.cpp](file:///Users/mattmcneill/Personal/Projects/departures-board/modules/configManager/configManager.cpp)
+**1. `loadConfig()` Refactoring:**
+- Introduce Version Hunting backwards:
+  1. Check for `getActiveConfigFilename()` (e.g., `/config_2_6.json`).
+  2. If missing, enumerate `LittleFS.openDir("/")` looking for the most recent `config_X.json` fallback.
+  3. If missing, fallback to parsing the standard upstream `/config.json`.
+- After reading the payload, invoke `GadecMigration::detectConfigEpoch()`.
+- If the epoch is not `EPOCH_LATEST_NATIVE`, invoke `translateToModern()`.
+- Strip out the massive inline migration code block (lines `~588` to `~745`).
 
-## Developer Guide: How to Handle Future Upstream Updates
+**2. `save()` & `writeDefaultConfig()`:**
+- Redirect both write operations to strictly target `getActiveConfigFilename()`. `config.json` is never updated or written to, ensuring safe downstream reversals.
 
-When the original author inevitably adds new features and changes his configuration:
-1. **Analyze the diff:** Inspect upstream's `writeDefaultConfig()` to see the new keys.
-2. **Define a new Epoch:** Add a new heuristic to `detectConfigEpoch()` (e.g., `if (doc.containsKey("new_feature")) return EPOCH_GADEC_V3;`).
-3. **Write the mapping:** Add an isolated mapping block in the translator function to pipe `new_feature` into our modern schema.
-4. **Deploy:** The next user who performs an OTA update from the original developer's firmware to ours will automatically have their config fingerprinted, mapped directly to the latest v2.6+ schema without breaking a sweat, and our core parser remains perfectly clean.
+## Open Questions
 
-## User Review Required
-
-Does this decoupled *Sniff -> Translate to Latest* pipeline align with the level of resilience you are looking for? Should we begin separating the legacy fallback fields (`altCrs`, `tubeId` etc.) out of `configManager.cpp`'s main parser and into an explicit `.agents/workflows/` or separate class implementation for architectural cleanliness?
+- **Pruning Strategy:** To prevent LittleFS disk exhaustion across multiple future OTA updates, should we append a garbage-collection hook in `save()` that deletes any configuration file that is *older* than `getActiveConfigFilename()` **except** for `config.json`?
+- **The API Key Desync:** Currently, when we detect `apikeys.json`, we migrate it securely to `apikeys.bin` and then explicitly delete `apikeys.json`. If a user reverts to Gadec firmness, it will technically be broken until they re-input their API keys because we destroyed the plaintext file. Is this acceptable in the name of security, or should we intentionally preserve `apikeys.json` to allow 100% flawless reversing?

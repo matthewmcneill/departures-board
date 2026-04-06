@@ -97,6 +97,7 @@ The application communicates over the serial port at a baud rate of **115200**.
  * **[System Specification Document](SystemSpecificationDocument.md)**: Details the complete firmware architecture, data models, memory strategies, component diagrams, and the embedded web design system. It bridges into our internal `reference/` guides for specific subsystems.
  * **[Designer Specification Document](DesignerSpecificationDocument.md)**: Details the UI layout simulator, the WebAssembly engine pipeline, and how layouts are converted from JSON to C++.
  * **[Display Layouts Reference](DisplayLayoutsReference.md)**: Comprehensive guide on creating layouts, widget APIs.
+ * **[Embedded Memory Management](reference/EmbeddedMemoryManagement.md)**: Authoritative C++ rules on preventing heap fragmentation, RAII pointer policies, and Safe FreeRTOS storage APIs.
  * **[Upstream Merges](UpstreamMerges.md)**: Tracks changes published by the original `gadec-uk` upstream repository and documents how those modifications have been integrated, adapted, or rejected in this v3.0 object-oriented architecture.
  
  ---

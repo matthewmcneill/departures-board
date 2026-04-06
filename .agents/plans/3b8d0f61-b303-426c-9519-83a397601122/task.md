@@ -1,0 +1,16 @@
+- `[ ]` Phase 1: Cryptographic Tooling & Scripts
+  - `[ ]` Write `scripts/generate_keys.sh`
+  - `[ ]` Write `scripts/deploy_release.py`
+- `[ ]` Phase 2: C++ Firmware Security (mbedtls)
+  - `[ ]` Modify `lib/HTTPUpdateGitHub/HTTPUpdateGitHub.cpp` signature download block
+  - `[ ]` Integrate `mbedtls_sha256_update` into flash stream loop
+  - `[ ]` Protect `esp_ota_set_boot_partition()` with `mbedtls_pk_verify()` check
+- `[ ]` Phase 3: Configuration & Polling Rules
+  - `[ ]` Modify `modules/configManager` struct, parsing, and defaults for `otaQuietHour`
+  - `[ ]` Rewrite `otaUpdater::tick()` logic for quiet hour restriction
+  - `[ ]` Expose `checkUpdateAvailable` and `forceUpdateNow` in `otaUpdater`
+  - `[ ]` Implement `rollbackFirmware` querying inactive partition and flipping bit
+- `[ ]` Phase 4: Web API Exposure
+  - `[ ]` Bind `/api/ota/available` HTTP_GET in `webHandlerManager`
+  - `[ ]` Bind `/api/ota/force` HTTP_POST in `webHandlerManager`
+  - `[ ]` Bind `/api/ota/rollback` HTTP_POST in `webHandlerManager`

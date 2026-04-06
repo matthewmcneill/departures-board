@@ -33,7 +33,7 @@
     - **Memory Strategy**: **Static Allocation for Core Logic**; `std::variant` for board pooling; `std::unique_ptr` for transient network clients.
 
 ## 4. Data Design
-*(For detailed memory strategies, see [Memory Architecture](reference/MemoryArchitecture.md) and [Memory Management](reference/MemoryManagement.md).)*
+*(For detailed memory strategies, see [Memory Architecture](reference/MemoryArchitecture.md), [Memory Management](reference/MemoryManagement.md), and [Embedded Memory Management](reference/EmbeddedMemoryManagement.md).)*
 - **Data Models/Schema**:
     - **`BoardConfig`**: A JSON-serialized structure defining a display board's type (Rail, Bus, Tube, Clock), its unique identifier (CRS/Naptan), geographical coordinates (`lat`/`lon`), and localized feature toggles (e.g., `showWeather`, `oledOff`).
     - **`rdService`**: A fixed-size C++ struct used for internal service representation, containing destination, timing, status, and mode-specific metadata (e.g., train length or tube line name).
@@ -265,7 +265,9 @@ To add a new transport mode (e.g., "Ferry Board"), a developer would:
     - [Embedded Web Design Agent Skill](reference/EmbeddedWebDesignAgentSkill.md)
     - [Memory Architecture](reference/MemoryArchitecture.md)
     - [Memory Management](reference/MemoryManagement.md)
+    - [Embedded Memory Management](reference/EmbeddedMemoryManagement.md)
     - [New Multi-Board Architecture](reference/NewMultiBoardArchitecture.md)
+    - [OTA Architecture & Deployment Strategy](reference/OtaArchitecture.md)
     - [Password Field Implementation Guide](reference/PasswordFieldImplementationGuide.md)
     - [Testing Approach](reference/TestingApproach.md)
     - [Visual Designer Code Generation Options](reference/VisualDesignerCodeGenerationOptions.md)
