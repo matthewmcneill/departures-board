@@ -38,7 +38,7 @@ When queried to perform any queue management task, map the intent to one of the 
 If work is abruptly stopped or the user requests to "pause" or "switch contexts" before task completion:
 - **Do not** run `/plan-wrap`. 
 - **DO run `/plan-save`** -> [view `.agents/workflows/plan-save.md`]
-- This preserves the exact point you left off by generating a strict `context_bridge.md` file so the next agent can seamlessly resume your WIP code branch.
+- This preserves your exact point by running the `/plan-save` workflow and implicitly invoking the `distillery` skill. This generates a `context_bridge.md` and a token-efficient paging structure so the next agent can seamlessly resume your WIP code branch.
 
 > [!IMPORTANT]
 > If a user prompts you with a slash command (e.g. `/plan-start`), do not invent the logic! Use the `view_file` tool to explicitly read the corresponding `.agents/workflows/plan-<name>.md` file and execute its exact literal steps.

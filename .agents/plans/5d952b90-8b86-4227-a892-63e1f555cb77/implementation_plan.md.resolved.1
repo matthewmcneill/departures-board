@@ -1,0 +1,94 @@
+# Implement Device-Side MCP Server
+
+## Goal
+
+Phased deployment of a lightweight, device-side Model Context Protocol (MCP) server over HTTP on the ESP32 firmware. The server will allow local AI agents (e.g., Antigravity) to interrogate and actuate the hardware. As per your request, Phase 1 introduces pure telemetry and read-only ("get") capabilities. Future phases layer on mutating actions and developer edge operations.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Memory Limitations**: A standard JSON-RPC HTTP POST body can be memory intensive if tools expect huge matrices (like a raw base64 string of a large display). Please verify during Phase 1 testing whether `get_display_buffer` causes heap warnings, and we can investigate RLE or compression.
+> **Authorization Security**: Are we placing an authorization token constraint on the `/mcp` route, or assuming the local network is isolated and secure enough for dev endpoints?
+> `get_recent_logs` has been explicitly dropped from this scope in favor of local PCP tools.
+
+## Resource Impact Assessment
+
+- **Flash (ROM)**: Anticipated +15KB to +30KB increase. The usage of PROGMEM schema spooling keeps this strictly in Flash and safely within the remaining ~250KB budget prior to the 1.2MB OTA limit.
+- **RAM (Heap/Stack)**: Highly constrained risk. Single monolithic `DynamicJsonDocument` allocation is banned. Execution must utilize `ArduinoJson` stream serialization directly to `AsyncResponseStream`. The HTTP handler executes in the `async_tcp` stack (which is small), so we must rely on chunked output.
+- **PSRAM**: N/A, assuming no external RAM dependency.
+- **Power**: Occasional WiFi spikes during HTTP requests due to baseband transmission. Insignificant on a mains-powered display.
+- **Security**: The current proposal operates with unauthenticated HTTP JSON-RPC payloads. Suitable for a secure local subnet, but could expose the board to malicious `reboot_device` or `trigger_ota_check` requests if placed on a public LAN.
+
+## Proposed Changes
+
+---
+
+### Foundations: Core MCP Router
+*Architectural Note: We will treat `mcpServer` as a discrete peer module within `modules/`. Because the MCP server must orchestrate actions across the entire system (Config, Display, Data), creating it as a separate module prevents the `webServer` class from becoming massively bloated with tool registries and cross-module couplings. `mcpServer` will simply be passed the existing `AsyncWebServer` pointer during boot so it can attach its `/mcp` route.*
+
+#### [NEW] [mcpServer.hpp](modules/mcpServer/mcpServer.hpp)
+Creates the basic classes for the MCP route structure.
+- Define `McpTool` struct holding PROGMEM pointers to schemas.
+- Declare `mcpServer::init(AsyncWebServer* server)`
+
+#### [NEW] [mcpServer.cpp](modules/mcpServer/mcpServer.cpp)
+Implements the HTTP POST `/mcp` route and the JSON-RPC parsing.
+- Implement logic to handle the `"method": "tools/list"` JSON-RPC command *(Note: `tools/list` and `tools/call` refer to the official string keys in the MCP Protocol payload, not the `tools/` folder in the GitHub repository)*. This logic spools schemas from Flash to network byte streams.
+- Implement the `"method": "tools/call"` parameter parsing structure.
+
+#### [MODIFY] [departuresBoard.cpp](src/departuresBoard.cpp)
+- Add `#include "mcpServer.hpp"`
+- Add `mcpServer::init(&server)` immediately following `webServer::setupRoutes()`.
+
+---
+
+### Phase 1: Observability and Telemetry (Getters)
+The initial wave of services. Completely safe, read-only interrogations.
+
+#### [MODIFY] [mcpServer.cpp](modules/mcpServer/mcpServer.cpp)
+Register the following PROGMEM schemas and callback mappings into the tool registry:
+
+1. `get_system_telemetry`: Ask `appContext` for uptime, free heap, lowest free heap.
+2. `get_configuration`: Hook to `configManager` to serialize the current `config.json` state out.
+3. `get_display_buffer`: Read the underlying raw buffer bytearray from the `displayManager`.
+4. `get_active_data`: Aggregate the currently loaded transit and weather data objects from `dataManager`.
+5. `get_network_status`: Read `WiFi.localIP()`, MAC, and current Wi-Fi RSSI signal strength from `wifiManager`.
+
+---
+
+### Phase 2: Configuration & Actuation (Mutators)
+Once Phase 1 stabilizes the network buffering architecture, we introduce capabilities to alter live data.
+
+#### [MODIFY] [mcpServer.cpp](modules/mcpServer/mcpServer.cpp)
+Register non-destructive actuation capabilities:
+
+1. `patch_configuration`: Accepts a JSON subset and updates `configManager` fields directly, triggering an internal save.
+2. `set_display_brightness`: Calls the `displayManager` dimming handler using a provided `[0-255]` integer argument.
+3. `render_debug_message`: Instruct the `displayManager` to temporarily overlay a specific text string from the payload parameter over whatever is currently drawn.
+4. `set_calibration_display`: Instruct the `displayManager` to render a known calibration pattern (e.g., solid white, alternating pixels, bounding box) to test hardware LEDs visually.
+
+---
+
+### Phase 3: Developer Edge & Emulation Operations
+The final phase introduces potentially destructive operations or simulation shims specifically geared for AI/Developer testing and edge cases.
+
+#### [MODIFY] [mcpServer.cpp](modules/mcpServer/mcpServer.cpp)
+Register simulation and system lifecycle tools:
+
+1. `inject_mock_data`: Force the `dataManager` class to accept an injected JSON payload of departure data, ignoring the scheduler. Brilliant for UI testing rare edge cases.
+2. `force_data_refresh`: Force `schedulerManager` to strike API servers globally.
+3. `reboot_device`: Call `esp_restart()`.
+4. `trigger_ota_check`: Call `otaUpdater` to hit GitHub manually.
+5. `simulate_button_event`: Inject button state events directly towards `buttonHandler`.
+
+## Verification Plan
+
+### Automated Tests
+- Run `pio test` (if unit tests exist for `modules/`) or use the `HTTPClient` from a python script to iterate over every `mcp` tool. 
+- A tool testing script `.agents/scripts/mcp-test.py` should be implemented to validate that `/mcp` returns correct `JSON-RPC` wrappers.
+
+### Manual Verification
+1. Boot the ESP32 and check the local Network IP.
+2. Perform a `POST` request to `http://<IP>/mcp` using `curl` with a `"method": "tools/list"` payload.
+3. Verify that `ArduinoJson` parses all active tools successfully without causing watchdog (WDT) triggers.
+4. Execute `get_system_telemetry` to physically verify that heap levels don't permanently drop with each MCP query (validating RAII on memory bounds inside the network callbacks).

@@ -1,0 +1,7 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary":  "Updated phased implementation plan with the decoupled Print& architecture for the MCP router and clarified that the calibration tool hooks into existing diagnostic functionality.",
+  "updatedAt":  "2026-04-07T09:56:47.228459Z",
+  "version":  "2",
+  "requestFeedback":  true
+}
