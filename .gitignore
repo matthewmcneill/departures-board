@@ -52,3 +52,5 @@ test-results/
 *build_log*.log
 logs/
 .env
+
+tools/platformio-mcp/

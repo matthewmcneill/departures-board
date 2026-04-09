@@ -27,7 +27,7 @@ This rule defines the mandatory 3-phase testing workflow for all web portal deve
     1. `scripts/portalBuilder.py`: Minifies and gzips `portal/index.html` into `include/webServer/portalAssets.h`.
     2. `scripts/run_web_tests.py`: Automatically runs Playwright tests against the build directory to ensure no regressions were introduced by minification.
 - **Commands**:
-    - Build: `pio run`
+    - Build: Consult `.agents/skills/pio-manager/SKILL.md` (Explicitly map the target from `platformio.ini` instead of default multi-builds)
 - **Action**: Ensure the build completes without errors. If `run_web_tests.py` fails, you must return to Phase 1 or fix the builder scripts.
 
 ## Phase 3: Hardware Validation (Flash)
@@ -36,10 +36,7 @@ This rule defines the mandatory 3-phase testing workflow for all web portal deve
 
 ### Requirements
 - You MUST flash the device only AFTER Phase 2 is successful.
-- **Pre-requisite**: Check `.agents/plans/lock.md` for hardware availability (refer to `queue-enforcement.md`).
-- **Commands**:
-    - Flash & Monitor safely: Execute the `/flash-test` workflow natively.
-    - Check the system stability: Execute the `/read-flash-logs` workflow.
+- **Pre-requisite**: Hardware validation paths, commands, and locks are strictly orchestrated through the `@[.agents/skills/pio-manager]` skill. Do not bypass it.
 - **Action**: Perform a final smoke test of the portal in a real browser directed at the device's IP address.
 
 ## Rationale

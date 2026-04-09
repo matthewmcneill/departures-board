@@ -9,7 +9,7 @@ description: Manage the queue, persist execution state, and safely claim hardwar
 
 This skill teaches you how to manage the lifecycle of a complex ticket, from surveying the queue to pulling context, taking hardware locks, and persisting artifacts. 
 
-**CRITICAL RULE**: The system uses a strict set of encapsulated `/plan-*` markdown workflows and `.agents/plans/lock.md` to guarantee ACID-compliant state transitions. Do not invent processes; rely purely on the scripts inside `scripts/` or the workflows.
+**CRITICAL RULE**: The system uses a strict set of encapsulated `/plan-*` markdown workflows and `platformio-mcp` lock primitives to guarantee ACID-compliant state transitions. Do not invent processes; rely purely on the scripts inside `scripts/` or the workflows.
 
 If the user asks you to interact with the queue, switch context, or finalize a session, you MUST execute the appropriate workflow by strictly following its markdown file instructions.
 

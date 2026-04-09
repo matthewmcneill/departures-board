@@ -9,35 +9,9 @@ def list_plans():
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(script_dir, "../../../plans"))
-    lockfile = os.path.join(base_dir, "lock.md")
     output_file = os.path.join(base_dir, "plan_list_view.md")
     
     output_lines = []
-    
-    # Print the Lock Status first
-    output_lines.append("### 🔒 Global Hardware Lock")
-    if os.path.exists(lockfile):
-        with open(lockfile, "r") as f:
-            lines = f.readlines()
-            in_lock = False
-            for line in lines:
-                if line.startswith("## Lock Status"):
-                    in_lock = True
-                    continue
-                if in_lock:
-                    if line.startswith("##"):
-                        break
-                    if line.strip():
-                        output_lines.append(line.strip())
-            
-            has_lock = any("NONE" not in l and "Locked By" in l for l in lines)
-            if not has_lock:
-                output_lines.append("\n> **Note**: The hardware and build systems are currently **FREE** and available for `pio run`.")
-            else:
-                output_lines.append("\n> **WARNING**: The hardware is currently in use. Please respect the mutex.")
-    else:
-        output_lines.append("- **Locked By**: NONE (lockfile missing)")
-    output_lines.append("\n---")
     
     # We find all PLAN.md files.
     if show_all:
