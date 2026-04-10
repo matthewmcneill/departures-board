@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "platformio": {
+      "command": "node",
+      "args": ["/Users/mcneillm/Documents/Projects/platformio-mcp/build/index.js"],
+      "env": {
+        "PORTAL_PORT": "8081"
+      },
+      "trust": true
+    }
+  }
+}

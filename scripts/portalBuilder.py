@@ -123,11 +123,11 @@ def generate_assets():
             
             if asset == "index.html":
                 serial = datetime.datetime.now().strftime("%Y-%m-%d")
-                header_path = os.path.join(ROOT_DIR, "src/buildTime.hpp")
+                header_path = os.path.join(ROOT_DIR, "src/buildTime.cpp")
                 if os.path.exists(header_path):
                     with open(header_path, "r") as hf:
                         hcontent = hf.read()
-                        match = re.search(r'#define BUILD_TIME "(.*?)"', hcontent)
+                        match = re.search(r'const char\* BUILD_TIME = "(.*?)"', hcontent)
                         if match:
                             serial = match.group(1)
                 

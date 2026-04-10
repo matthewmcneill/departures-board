@@ -572,3 +572,17 @@ UpdateStatus busDataSource::getStopLongName(const char *locationId, char *locati
     strlcpy(locationName, longName.c_str(), 80); // locationName is size 80 usually
     return UpdateStatus::SUCCESS;
 }
+
+void busDataSource::serializeData(JsonObject& doc) {
+    lockData();
+    doc["atco"] = busAtco;
+    
+    JsonArray services = doc["departures"].to<JsonArray>();
+    for (int i = 0; i < renderData->numServices; i++) {
+        JsonObject s = services.add<JsonObject>();
+        s["route"] = renderData->service[i].routeNumber;
+        s["destination"] = renderData->service[i].destination;
+        s["expected"] = (renderData->service[i].expectedTime[0] != '\0') ? renderData->service[i].expectedTime : renderData->service[i].sTime;
+    }
+    unlockData();
+}

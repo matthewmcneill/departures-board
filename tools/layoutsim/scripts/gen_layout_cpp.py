@@ -16,6 +16,14 @@ import json
 import os
 import sys
 import argparse
+def update_file_if_changed(filepath, content):
+    if os.path.exists(filepath):
+        with open(filepath, 'r') as f:
+            if f.read() == content:
+                return False # Skip write if content is identical
+    with open(filepath, 'w') as f:
+        f.write(content)
+    return True
 
 def gen_layout(json_path):
     """
@@ -99,8 +107,7 @@ public:
 """
 
     hpp_output_path = os.path.join(dir_name, base_name + ".hpp")
-    with open(hpp_output_path, 'w') as f:
-        f.write(hpp_content)
+    updated_hpp = update_file_if_changed(hpp_output_path, hpp_content)
 
     # --- Generate CPP ---
     constructor_body = []
@@ -175,7 +182,7 @@ public:
     # Pass 1.5: Disable visibility for natively mapped widgets not specified in the JSON
     if board_type == "NR":
         nr_superset = {"locationAndFilters", "weather", "wifiWarning", "sysClock", "row0Widget", "servicesWidget", "msgWidget", "noDataLabel", "formationWidget"}
-        for wid in nr_superset:
+        for wid in sorted(nr_superset):
             if wid not in present_widgets:
                 constructor_body.append(f"    {wid}.setVisible(false);")
 
@@ -251,10 +258,12 @@ void {class_name}::renderAnimationUpdate(U8G2& display, uint32_t currentMillis) 
     cpp_lines.append(render_method)
     
     cpp_output_path = os.path.join(dir_name, base_name + ".cpp")
-    with open(cpp_output_path, 'w') as f:
-        f.write("\n".join(cpp_lines))
+    updated_cpp = update_file_if_changed(cpp_output_path, "\n".join(cpp_lines))
 
-    print(f"Generated {class_name} (.hpp/.cpp) in {dir_name}")
+    if updated_hpp or updated_cpp:
+        print(f"Generated {class_name} (.hpp/.cpp) in {dir_name}")
+    else:
+        print(f"Layout {class_name} is up to date.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate C++ layout from JSON.')

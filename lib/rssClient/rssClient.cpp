@@ -345,3 +345,13 @@ void rssClient::removeRssMessage(MessagePool& pool) {
         rssAddedtoMsgs = false;
     }
 }
+
+void rssClient::serializeData(JsonObject& doc) {
+    if (rssMutex && xSemaphoreTake(rssMutex, pdMS_TO_TICKS(50)) == pdPASS) {
+        JsonArray titles = doc["headlines"].to<JsonArray>();
+        for (int i = 0; i < numRssTitles; i++) {
+            titles.add(rssTitle[i]);
+        }
+        xSemaphoreGive(rssMutex);
+    }
+}

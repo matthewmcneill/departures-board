@@ -37,6 +37,7 @@
 #include "../weatherClient/weatherClient.hpp"
 #include <memory>
 #include <atomic>
+#include "../mcpServer/mcpServer.hpp"
 
 extern class appContext appContext;
 
@@ -112,6 +113,7 @@ void WebHandlerManager::begin() {
     _server.on("/api/screenshot", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleScreenshot(request); });
     _server.on("/api/config/backup", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleBackupConfig(request); });
     bindPostDynamic("/api/config/restore", &WebHandlerManager::handleRestoreConfig);
+    bindPostDynamic("/mcp", &WebHandlerManager::handleMcpRequest);
 
     // API: Feeds & Weather Diagnostics (More specific routes MUST come first in ESPAsyncWebServer)
     _server.on("/api/feeds/test", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleTestFeed(request); });
@@ -589,6 +591,7 @@ public:
     uint32_t getNextFetchTime() override { return nextFetch; }
     PriorityTier getPriorityTier() override { return PriorityTier::PRIO_CRITICAL; } // Test connections must run immediately
     void setNextFetchTime(uint32_t t) override { nextFetch = t; }
+    void serializeData(JsonObject& doc) override { doc["test"] = "active"; }
 };
 
 void WebHandlerManager::handleTestKey(AsyncWebServerRequest *request, const String& body) {
@@ -798,6 +801,21 @@ void WebHandlerManager::handleTestWeather(AsyncWebServerRequest *request) {
     serializeJson(doc, output);
     LOG_INFO("WEB_API", "Weather test complete. Success=" + String(success ? "YES" : "NO") + " Result=" + output);
     request->send(200, "application/json", output);
+}
+
+void WebHandlerManager::handleMcpRequest(AsyncWebServerRequest *request, const String& body) {
+    LOG_DEBUG("WEB_API", String("POST /mcp | Size: ") + body.length());
+    
+    JsonDocument dict;
+    DeserializationError error = deserializeJson(dict, body);
+    if (error) {
+        request->send(400, "application/json", "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error\"}}");
+        return;
+    }
+
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    mcpServer::processPayload(dict, *response);
+    request->send(response);
 }
 
 void WebHandlerManager::handleTestBoard(AsyncWebServerRequest *request, const String& body) {

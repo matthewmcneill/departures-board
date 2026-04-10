@@ -316,7 +316,11 @@ void appContext::tick() {
               firstLoad = false;
            } else {
               // Determine progress to 100 based on some heuristic or just stay at 80
-              updateBootProgress(80, "Fetching station data...");
+              static uint32_t lastLoadingStatusUpdate = 0;
+              if (millis() - lastLoadingStatusUpdate > 1000) {
+                 lastLoadingStatusUpdate = millis();
+                 updateBootProgress(80, "Fetching station data...");
+              }
            }
         }
       }

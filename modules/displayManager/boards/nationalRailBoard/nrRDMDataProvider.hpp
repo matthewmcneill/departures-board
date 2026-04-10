@@ -97,6 +97,7 @@ public:
      * @brief Heavy background polling loop retrieving REST/JSON. Should trace within thread.
      */
     void executeFetch() override;
+    void serializeData(JsonObject& doc) override;
 
     // --- iNationalRailDataProvider overrides ---
 

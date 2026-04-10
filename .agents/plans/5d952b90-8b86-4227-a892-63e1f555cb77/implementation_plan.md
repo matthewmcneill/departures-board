@@ -60,7 +60,23 @@ Register the following PROGMEM schemas and callback mappings into the tool regis
 
 ---
 
-### Phase 2: Configuration & Actuation (Mutators)
+### Phase 2: Agent Skill Development (`device-mcp-client`)
+To fully leverage the new onboard MCP server, we will use the `skill-creator` methodology to author a new skill that allows AI agents to interact with the device natively. We will build this skill first and test it against Phase 1, then iteratively update it alongside Phase 3 and Phase 4.
+
+#### [NEW] [.agents/skills/device-mcp-client/SKILL.md](.agents/skills/device-mcp-client/SKILL.md)
+- Prompts AI agents on how to interact with the device's JSON-RPC over HTTP endpoints.
+- Instructs the AI on standard operational flows (e.g., discovering the IP, modifying configs, simulating data).
+
+#### [NEW] [.agents/skills/device-mcp-client/scripts/discovery.py](.agents/skills/device-mcp-client/scripts/discovery.py)
+- A helper script for the agent to automatically extract the device's active IP address. It will query the `pio-manager` MCP server's active log cache using the `searchPattern` tool (e.g., matching typical lines like `[SYSTEM] WiFi connected. IP:` or `[WIFI] Connected successfully. IP:`) or prompt the user if logs are unavailable.
+
+#### [NEW] [.agents/skills/device-mcp-client/scripts/capture_display.py](.agents/skills/device-mcp-client/scripts/capture_display.py)
+- A specialized Python script that invokes the ESP32's `get_display_buffer` endpoint, parses the returned underlying screen buffer (e.g., RGB565 representation), and renders a reconstructed `.png` file.
+- It will automatically save this generated image directly into the active session's `artifacts/` folder, allowing the AI agent to visually inspect hardware matrix drawings without physical access.
+
+---
+
+### Phase 3: Configuration & Actuation (Mutators)
 Introduce capabilities to alter live data.
 
 #### [MODIFY] [mcpServer.cpp](modules/mcpServer/mcpServer.cpp)
@@ -73,7 +89,7 @@ Register non-destructive actuation capabilities:
 
 ---
 
-### Phase 3: Developer Edge & Emulation Operations
+### Phase 4: Developer Edge & Emulation Operations
 The final phase introduces potentially destructive operations or simulation shims specifically geared for AI/Developer testing and edge cases.
 
 #### [MODIFY] [mcpServer.cpp](modules/mcpServer/mcpServer.cpp)

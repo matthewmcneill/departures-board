@@ -97,6 +97,23 @@ void dataManager::registerSource(iDataSource* source) {
     }
 }
 
+void dataManager::serializeAllSources(JsonObject& out) {
+    if (registryMutex && xSemaphoreTake(registryMutex, pdMS_TO_TICKS(100)) == pdPASS) {
+        JsonArray sources = out["sources"].to<JsonArray>();
+        for (auto* source : registry) {
+            JsonObject sourceObj = sources.add<JsonObject>();
+            sourceObj["name"] = source->getAttributionString();
+            sourceObj["status"] = static_cast<int>(getLastUpdateResult());
+            
+            JsonObject data = sourceObj["data"].to<JsonObject>();
+            source->serializeData(data);
+        }
+        xSemaphoreGive(registryMutex);
+    } else {
+        out["error"] = "Registry locked";
+    }
+}
+
 /**
  * @brief Submits a priority wake event to the background worker.
  * Guarantees the source will be evaluated for immediate fetch in the next cycle.
@@ -233,7 +250,7 @@ void dataManager::workerTaskLoop(void* pvParameters) {
                     xSemaphoreGive(manager->registryMutex);
                 }
                 continue; // Skip execute
-            } else if (state != AppState::RUNNING && targetToExecute->getPriorityTier() != PriorityTier::PRIO_CRITICAL) {
+            } else if (state != AppState::RUNNING && !(state == AppState::BOOTING && appContext.getFirstLoad()) && targetToExecute->getPriorityTier() != PriorityTier::PRIO_CRITICAL) {
                 // Board setup mode has internet, but block routine fetches until UI finishes adding displays.
                 targetToExecute->setNextFetchTime(millis() + 15000);
                 if (manager->registryMutex && xSemaphoreTake(manager->registryMutex, portMAX_DELAY) == pdPASS) {

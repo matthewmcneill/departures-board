@@ -919,3 +919,21 @@ UpdateStatus nrDARWINDataProvider::refreshWsdl() {
             "NR Source: Failed to extract soap:address from WSDL response.");
   return UpdateStatus::DATA_ERROR;
 }
+
+void nrDARWINDataProvider::serializeData(JsonObject& doc) {
+    if (dataMutex && xSemaphoreTake(dataMutex, pdMS_TO_TICKS(50)) == pdPASS) {
+        doc["location"] = renderData->location;
+        doc["crs"] = crsCode;
+        
+        JsonArray services = doc["departures"].to<JsonArray>();
+        for (int i = 0; i < renderData->numServices; i++) {
+            JsonObject s = services.add<JsonObject>();
+            s["time"] = renderData->service[i].sTime;
+            s["destination"] = renderData->service[i].destination;
+            s["etd"] = renderData->service[i].etd;
+            s["platform"] = renderData->service[i].platform;
+            s["is_cancelled"] = renderData->service[i].isCancelled;
+        }
+        xSemaphoreGive(dataMutex);
+    }
+}

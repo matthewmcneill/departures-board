@@ -75,6 +75,7 @@ private:
     void handleStationPicker(AsyncWebServerRequest *request);
     void handleSetDiagMode(AsyncWebServerRequest *request);
     void handleScreenshot(AsyncWebServerRequest *request);
+    void handleMcpRequest(AsyncWebServerRequest *request, const String& body);
 
     // --- Helpers ---
     void sendGzipFlash(AsyncWebServerRequest *request, const uint8_t* data, size_t len, const char* contentType);

@@ -80,6 +80,12 @@ public:
     void incrementSuccess() { dataLoadSuccess++; }
     void incrementFailure() { dataLoadFailure++; lastLoadFailure = millis(); }
 
+    /**
+     * @brief Serializes all registered data sources into a results object.
+     * @param out Reference to the target JsonObject.
+     */
+    void serializeAllSources(JsonObject& out);
+
 private:
     std::vector<iDataSource*> registry;
     SemaphoreHandle_t registryMutex;  // Protects the registry vector across cores

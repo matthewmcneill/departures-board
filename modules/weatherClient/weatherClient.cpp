@@ -395,3 +395,13 @@ void weatherClient::startArray() {}
 void weatherClient::startObject() {
     currentObject = currentKey;
 }
+
+void weatherClient::serializeData(JsonObject& doc) {
+    if (weatherMutex && xSemaphoreTake(weatherMutex, pdMS_TO_TICKS(50)) == pdPASS) {
+        doc["temp"] = bgStatus.temp;
+        doc["condition"] = bgStatus.description;
+        doc["wind_knots"] = bgStatus.windSpeed;
+        doc["is_night"] = bgStatus.isNight;
+        xSemaphoreGive(weatherMutex);
+    }
+}

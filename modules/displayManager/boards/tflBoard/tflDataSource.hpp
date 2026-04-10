@@ -170,6 +170,7 @@ public:
      * @brief Internal blocking method that executes the API protocol and coordinates JSON parse.
      */
     void executeFetch() override;
+    void serializeData(JsonObject& doc) override;
 };
 
 #endif // TFL_DATA_SOURCE_HPP

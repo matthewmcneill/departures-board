@@ -235,6 +235,7 @@ public:
      * @brief Internal blocking method that executes the HTTPS protocol and coordinates HTML scraping.
      */
     void executeFetch() override;
+    void serializeData(JsonObject& doc) override;
 };
 
 #endif // BUS_DATA_SOURCE_HPP

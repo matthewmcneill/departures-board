@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <ArduinoJson.h>
 
 /**
  * @brief Priority tiers for data sources.
@@ -124,6 +125,12 @@ public:
      * @return Attribution string, or nullptr if none.
      */
     virtual const char* getAttributionString() const { return nullptr; }
+
+    /**
+     * @brief Serializes the current data payload into a JSON object.
+     * @param doc Reference to the target JsonObject.
+     */
+    virtual void serializeData(JsonObject& doc) = 0;
 
 protected:
     uint32_t hashString(const char* str, uint32_t hash = 2166136261u) {

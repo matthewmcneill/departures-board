@@ -141,4 +141,5 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
 
     public:
         void executeFetch() override;
+        void serializeData(JsonObject& doc) override;
 };

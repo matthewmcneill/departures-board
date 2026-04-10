@@ -430,3 +430,18 @@ void tflDataSource::endObject() {}
 void tflDataSource::endDocument() {}
 void tflDataSource::startArray() {}
 void tflDataSource::startObject() {}
+
+void tflDataSource::serializeData(JsonObject& doc) {
+    lockData();
+    doc["location"] = tubeId; // Naptan ID
+    
+    JsonArray services = doc["arrivals"].to<JsonArray>();
+    for (int i = 0; i < renderData->numServices; i++) {
+        JsonObject s = services.add<JsonObject>();
+        s["line"] = renderData->service[i].lineName;
+        s["destination"] = renderData->service[i].destination;
+        s["expected"] = renderData->service[i].expectedTime;
+        s["seconds"] = renderData->service[i].timeToStation;
+    }
+    unlockData();
+}

@@ -159,6 +159,7 @@ class rssClient: public xmlListener, public iConfigurable, public iDataSource {
         void setNextFetchTime(uint32_t forceTimeMillis) override { nextFetchTimeMillis = forceTimeMillis; }
         const char* getLastErrorMsg() const override { return getLastError(); }
         void executeFetch() override;
+        void serializeData(JsonObject& doc) override;
 
     private:
 };

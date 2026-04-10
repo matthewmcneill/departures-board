@@ -1,7 +1,7 @@
 ---
-name: ESP32 Device-Side MCP Server
-description: Implementation plan for embedding an unauthenticated, zero-RAM buffered Model Context Protocol server over HTTP onto the ESP32.
-created: 2026-04-07T10:00:00Z
+name: PlatformIO MCP Server Parsing Fixes
+description: Corrected Zod typings mapping for listInstalledLibraries and discovered underlying esptool param bug when uploading to esp32s3nano.
+created: 2026-04-10T08:55:00Z
 status: SAVED
 ---
 

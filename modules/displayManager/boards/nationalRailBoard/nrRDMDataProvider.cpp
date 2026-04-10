@@ -479,3 +479,20 @@ void nrRDMDataProvider::executeFetch() {
 
   setNextFetchTime(millis() + interval);
 }
+
+void nrRDMDataProvider::serializeData(JsonObject& doc) {
+    lockData();
+    doc["location"] = renderData->location;
+    doc["crs"] = crsCode;    
+    
+    JsonArray services = doc["departures"].to<JsonArray>();
+    for (int i = 0; i < renderData->numServices; i++) {
+        JsonObject s = services.add<JsonObject>();
+        s["time"] = renderData->service[i].sTime;
+        s["destination"] = renderData->service[i].destination;
+        s["etd"] = renderData->service[i].etd;
+        s["platform"] = renderData->service[i].platform;
+        s["is_cancelled"] = renderData->service[i].isCancelled;
+    }
+    unlockData();
+}

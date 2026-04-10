@@ -8,14 +8,11 @@
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: src/buildTime.hpp
- * Description: Automated Build Timestamp Header generated during PlatformIO pre-build.
- *
- * Exported Functions/Classes:
- * - BUILD_TIME: String literal containing the B+YYYYMMDDHHMMSS+Hash format.
- * - BUILD_DATE_PRETTY: String literal with human-readable date block.
+ * Description: Header for build-time information. 
+ *              The implementation is in buildTime.cpp, which is generated during build.
  */
 
 #pragma once
 
-#define BUILD_TIME "B20260409180848-8bab89c+mod"
-#define BUILD_DATE_PRETTY "2026-04-09"
+extern const char* BUILD_TIME;
+extern const char* BUILD_DATE_PRETTY;

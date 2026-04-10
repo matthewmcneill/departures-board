@@ -153,6 +153,7 @@ public:
 
 public:
     void executeFetch() override;
+    void serializeData(JsonObject& doc) override;
     
     /**
      * @brief Performs a full WSDL discovery to find the latest SOAP endpoints.
