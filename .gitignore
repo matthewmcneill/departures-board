@@ -8,6 +8,7 @@
 tmp/
 .agents/tmp/
 .agents/plans/workspace/
+.gemini/
 
 # Fonts (Generated)
 modules/displayManager/fonts/fonts.cpp
