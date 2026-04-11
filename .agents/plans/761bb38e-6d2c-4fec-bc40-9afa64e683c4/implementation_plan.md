@@ -54,7 +54,20 @@ Extracts the legacy conversions originally bloating `configManager.cpp`. It forc
 **2. `save()` & `writeDefaultConfig()`:**
 - Redirect both write operations to strictly target `getActiveConfigFilename()`. `config.json` is never updated or written to, ensuring safe downstream reversals.
 
-## Open Questions
+## Open Questions & Resolved Decisions
 
-- **Pruning Strategy:** To prevent LittleFS disk exhaustion across multiple future OTA updates, should we append a garbage-collection hook in `save()` that deletes any configuration file that is *older* than `getActiveConfigFilename()` **except** for `config.json`?
-- **The API Key Desync:** Currently, when we detect `apikeys.json`, we migrate it securely to `apikeys.bin` and then explicitly delete `apikeys.json`. If a user reverts to Gadec firmness, it will technically be broken until they re-input their API keys because we destroyed the plaintext file. Is this acceptable in the name of security, or should we intentionally preserve `apikeys.json` to allow 100% flawless reversing?
+- **Resolved: API Key Desync**: When `apikeys.bin` is successfully written, `apikeys.json` will be deleted for security. Reverting to older firmware will require re-entering keys.
+- **Resolved: Pruning Strategy**: To prevent LittleFS exhaustion, `configManager::save()` will implement a "Keep 3" rule:
+    1. **Always Keep**: `config.json` (Gadec baseline).
+    2. **Rotate**: Keep the 3 most recent versioned files (e.g., `config_2_6.json`, `config_2_5.json`, `config_2_4.json`) and delete older versions during the save operation.
+
+## Verification Plan
+
+### Automated Tests
+- Mock LittleFS with multiple versioned files and verify `huntForLatestConfig()` logic.
+- Verify `GadecMigration` translations via unit tests with legacy JSON payloads.
+
+### Manual Verification
+1. Flash firmware, verify successful migration of `config.json` to `config_2_6.json`.
+2. Verify `config.json` remains intact on disk.
+3. Verify `apikeys.json` is removed after `apikeys.bin` creation.

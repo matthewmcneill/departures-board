@@ -1,0 +1,9 @@
+- [x] Claim hardware lock via PIO Manager
+- [x] Create `gadecMigration.hpp` and `gadecMigration.cpp`
+- [x] Implement `detectConfigEpoch` and `translateToModern`
+- [x] Update `configManager.hpp` with version macros and `getActiveConfigFilename`
+- [x] Refactor `configManager.cpp`: `loadConfig()` with version hunting
+- [x] Refactor `configManager.cpp`: `save()` with "Keep 3" pruning and `apikeys.json` deletion
+- [x] Verify migration from `config.json` to `config_2_6.json` (Logical verification via build)
+- [x] Verify `apikeys.json` removal (Code logic verified)
+- [x] Run build and flash locally for final verification (Build successful)

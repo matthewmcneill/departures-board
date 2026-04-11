@@ -23,6 +23,7 @@
  */
 
 #include "configManager.hpp"
+#include "gadecMigration.hpp"
 #include <LittleFS.h>
 #include <logger.hpp>
 #include <timeManager.hpp>
@@ -147,7 +148,7 @@ void ConfigManager::loadApiKeys() {
       // Explicitly persist back to LittleFS as encrypted blob and drop old variant
       saveApiKeys();
       LittleFS.remove("/apikeys.json");
-      LOG_INFO("CONFIG", "Legacy API credentials safely migrated and eradicated.");
+      LOG_INFO("CONFIG", "Legacy API credentials safely migrated and eradicated for security.");
 
       // Register secrets for redaction
       for (int i = 0; i < config.keyCount; i++) {
@@ -312,7 +313,7 @@ void ConfigManager::writeDefaultConfig() {
   JsonDocument doc;
 
   doc[F("hostname")] = "DeparturesBoard";
-  doc[F("version")] = 2.5; // Current config format version
+  doc[F("version")] = (float)CONFIG_VERSION_MAJOR + ((float)CONFIG_VERSION_MINOR / 10.0f); 
   doc[F("brightness")] = 20;
   doc[F("showDate")] = false;
   doc[F("flip")] = false;
@@ -339,7 +340,7 @@ void ConfigManager::writeDefaultConfig() {
 
   String output;
   serializeJson(doc, output);
-  saveFile(F("/config.json"), output);
+  saveFile(getActiveConfigFilename(), output);
 
   config.boardCount = 0;
 }
@@ -350,10 +351,11 @@ void ConfigManager::writeDefaultConfig() {
  * @return True if save succeeded.
  */
 bool ConfigManager::save() {
-  LOG_INFO("CONFIG", "Saving configuration to /config.json...");
+  String fName = getActiveConfigFilename();
+  LOG_INFO("CONFIG", "Saving configuration to " + fName + "...");
   JsonDocument doc;
 
-  doc[F("version")] = 2.5;
+  doc[F("version")] = (float)CONFIG_VERSION_MAJOR + ((float)CONFIG_VERSION_MINOR / 10.0f);
 #ifdef BUILD_TIME
   doc[F("build")] = BUILD_TIME;
 #endif
@@ -416,7 +418,55 @@ bool ConfigManager::save() {
 
   String output;
   serializeJson(doc, output);
-  return saveFile(F("/config.json"), output);
+  bool success = saveFile(fName, output);
+
+  if (success) {
+    // --- Step 4: Pruning Strategy (Keep 3 + config.json) ---
+    // Enumerate existing config_X_Y.json files and keep only the 3 most recent
+    struct ConfigFile {
+        String name;
+        int major;
+        int minor;
+    };
+    std::vector<ConfigFile> files;
+
+    File root = LittleFS.open("/", "r");
+    if (root && root.isDirectory()) {
+        File f = root.openNextFile();
+        while (f) {
+            String name = f.name();
+            if (name.startsWith("/config_") && name.endsWith(".json")) {
+                // Remove leading slash if present
+                String baseName = name.startsWith("/") ? name.substring(1) : name;
+                int firstUnderscore = baseName.indexOf('_');
+                int lastUnderscore = baseName.lastIndexOf('_');
+                int dot = baseName.indexOf('.');
+                if (firstUnderscore != -1 && lastUnderscore != -1 && dot != -1) {
+                    int maj = baseName.substring(firstUnderscore + 1, lastUnderscore).toInt();
+                    int min = baseName.substring(lastUnderscore + 1, dot).toInt();
+                    files.push_back({baseName, maj, min});
+                }
+            }
+            f = root.openNextFile();
+        }
+    }
+
+    // Sort by version descending
+    std::sort(files.begin(), files.end(), [](const ConfigFile& a, const ConfigFile& b) {
+        if (a.major != b.major) return a.major > b.major;
+        return a.minor > b.minor;
+    });
+
+    // Delete beyond the top 3
+    if (files.size() > 3) {
+        for (size_t i = 3; i < files.size(); i++) {
+            LOG_INFO("CONFIG", "Pruning old configuration: " + files[i].name);
+            LittleFS.remove("/" + files[i].name);
+        }
+    }
+  }
+
+  return success;
 }
 
 /**
@@ -424,32 +474,78 @@ bool ConfigManager::save() {
  *        Supports migration from legacy flat format.
  */
 void ConfigManager::loadConfig() {
-  LOG_INFO("CONFIG", "Loading configuration from /config.json...");
+  LOG_INFO("CONFIG", "Initiating multi-tier configuration hunt...");
   JsonDocument doc;
 
   // --- Step 1: Set Core Defaults ---
   strlcpy(config.hostname, "DeparturesBoard", sizeof(config.hostname));
   strlcpy(config.timezone, TimeManager::ukTimezone, sizeof(config.timezone));
-  float loadedVersion =
-      1.0f; // Default for legacy detection if no version field
   config.boardCount = 0;
+  config.configVersion = (float)CONFIG_VERSION_MAJOR + ((float)CONFIG_VERSION_MINOR / 10.0f);
 
-  if (LittleFS.exists(F("/config.json"))) {
-    String contents = loadFile(F("/config.json"));
-    LOG_DEBUG("CONFIG", String("Dumping /config.json:\n") + contents);
+  // --- Step 2: Version Hunting ---
+  String targetFile = "";
+  if (LittleFS.exists(getActiveConfigFilename())) {
+      targetFile = getActiveConfigFilename();
+  } else {
+      // Find most recent fallback
+      File root = LittleFS.open("/", "r");
+      float maxVer = 0.0f;
+      if (root && root.isDirectory()) {
+          File f = root.openNextFile();
+          while (f) {
+              String name = f.name();
+              // Remove leading slash if present for parsing
+              String baseName = name.startsWith("/") ? name.substring(1) : name;
+              if (baseName.startsWith("config_") && baseName.endsWith(".json")) {
+                  int firstUnderscore = baseName.indexOf('_');
+                  int lastUnderscore = baseName.lastIndexOf('_');
+                  int dot = baseName.indexOf('.');
+                  if (firstUnderscore != -1 && lastUnderscore != -1 && dot != -1) {
+                      float v = baseName.substring(firstUnderscore + 1, lastUnderscore).toFloat() + 
+                                (baseName.substring(lastUnderscore + 1, dot).toFloat() / 10.0f);
+                      if (v > maxVer) {
+                          maxVer = v;
+                          targetFile = (name.startsWith("/") ? name : "/" + name);
+                      }
+                  }
+              }
+              f = root.openNextFile();
+          }
+      }
+      
+      if (targetFile == "" && LittleFS.exists("/config.json")) {
+          targetFile = "/config.json";
+      }
+  }
+
+  if (targetFile != "") {
+    LOG_INFO("CONFIG", "Acquiring configuration from: " + targetFile);
+    String contents = loadFile(targetFile);
 
     DeserializationError error = deserializeJson(doc, contents);
     if (!error) {
       JsonObject settings = doc.as<JsonObject>();
+      float loadedVersion = settings[F("version")] | 1.0f;
 
-      // System settings
+      // --- Step 4: Epoch Detection & Translation ---
+      GadecMigration::UpstreamEpoch epoch = GadecMigration::detectConfigEpoch(settings);
+      if (epoch != GadecMigration::EPOCH_LATEST_NATIVE) {
+          LOG_WARN("CONFIG", "[MIGRATION] Legacy epoch detected. Shifting to Translation Matrix...");
+          if (GadecMigration::translateToModern(doc, epoch)) {
+              // Re-acquire settings object pointer after potential doc growth
+              settings = doc.as<JsonObject>();
+              loadedVersion = settings[F("version")] | 2.6f;
+              
+              // Force a save to the modern versioned file to solidify state
+              LOG_INFO("CONFIG", "[MIGRATION] Migration successful. Persisting versioned state...");
+              save(); 
+          }
+      }
 
-      // System settings
-      if (settings[F("version")].is<float>())
-        loadedVersion = settings[F("version")];
-      config.configVersion =
-          loadedVersion; // Store what we found (or the default)
+      config.configVersion = loadedVersion;
 
+      // Extract system settings
       if (settings[F("hostname")].is<const char *>())
         strlcpy(config.hostname, settings[F("hostname")],
                 sizeof(config.hostname));
@@ -582,166 +678,6 @@ void ConfigManager::loadConfig() {
                                  String(config.boardCount - 1) + " Type=" +
                                  String((int)bc.type) + " ID=" + String(bc.id));
         }
-      }
-
-      // --- Step 3: Migration Paths ---
-      if (loadedVersion < 2.2f) {
-        LOG_WARN("CONFIG", "[MIGRATION] Triggering v2.2 multi-board array struct conversion...");
-
-        // Legacy Migration (Flat to Array) if boards array was missing
-        if (!settings[F("boards")].is<JsonArray>()) {
-          // Slot 0: Main Rail
-          if (config.boardCount < MAX_BOARDS) {
-            BoardConfig &br = config.boards[config.boardCount++];
-            br.type = MODE_RAIL;
-            strlcpy(br.id, settings[F("crs")] | "", sizeof(br.id));
-            br.lat = settings[F("lat")] | settings[F("stationLat")] | 0.0f;
-            br.lon = settings[F("lon")] | settings[F("stationLon")] | 0.0f;
-            strlcpy(br.secondaryId, settings[F("callingCrs")] | "",
-                    sizeof(br.secondaryId));
-            strlcpy(br.secondaryName, settings[F("callingStation")] | "",
-                    sizeof(br.secondaryName));
-            strlcpy(br.filter, settings[F("platformFilter")] | "",
-                    sizeof(br.filter));
-            br.timeOffset = settings[F("nrTimeOffset")] | 0;
-          }
-          // Slot 1: Tube
-          if (config.boardCount < MAX_BOARDS) {
-            BoardConfig &bt = config.boards[config.boardCount++];
-            bt.type = MODE_TUBE;
-            strlcpy(bt.id, settings[F("tubeId")] | "", sizeof(bt.id));
-            strlcpy(bt.name, settings[F("tubeName")] | "", sizeof(bt.name));
-          }
-          // Slot 2: Bus
-          if (config.boardCount < MAX_BOARDS) {
-            BoardConfig &bb = config.boards[config.boardCount++];
-            bb.type = MODE_BUS;
-            strlcpy(bb.id, settings[F("busId")] | "", sizeof(bb.id));
-            strlcpy(bb.name, settings[F("busName")] | "", sizeof(bb.name));
-            bb.lat = settings[F("busLat")] | 0.0f;
-            bb.lon = settings[F("busLon")] | 0.0f;
-            strlcpy(bb.filter, settings[F("busFilter")] | "",
-                    sizeof(bb.filter));
-          }
-        }
-
-        // High-priority: Alt Rail Migration (v2.2)
-        // If altCrs exists and is not already in the boards array as a Rail
-        // board, add it.
-        if (settings[F("altCrs")].is<const char *>() &&
-            config.boardCount < MAX_BOARDS) {
-          const char *altCrs = settings[F("altCrs")];
-          bool alreadyIn = false;
-          for (int i = 0; i < config.boardCount; i++) {
-            if (config.boards[i].type == MODE_RAIL &&
-                strcmp(config.boards[i].id, altCrs) == 0) {
-              alreadyIn = true;
-              break;
-            }
-          }
-          if (!alreadyIn) {
-            LOG_WARN(
-                "CONFIG",
-                "[MIGRATION] Elevating legacy Primary/Alt properties into structurally discrete Carousel boards.");
-            BoardConfig &ba = config.boards[config.boardCount++];
-            ba.type = MODE_RAIL;
-            strlcpy(ba.id, altCrs, sizeof(ba.id));
-            ba.lat = settings[F("altLat")] | 0.0f;
-            ba.lon = settings[F("altLon")] | 0.0f;
-            strlcpy(ba.secondaryId, settings[F("altCallingCrs")] | "",
-                    sizeof(ba.secondaryId));
-            strlcpy(ba.secondaryName, settings[F("altCallingStation")] | "",
-                    sizeof(ba.secondaryName));
-            strlcpy(ba.filter, settings[F("altPlatformFilter")] | "",
-                    sizeof(ba.filter));
-          }
-        }
-
-        LOG_WARN("CONFIG", "[MIGRATION] Flash commitment initiated for v2.2 structural upgrade...");
-        config.configVersion = 2.3f;
-        save();
-      }
-
-      if (loadedVersion < 2.3f) {
-        LOG_WARN(
-            "CONFIG",
-            "[MIGRATION] Transparent intermediate upgrade to v2.3 framework requirements...");
-        config.configVersion = 2.4f; // Temporary intermediate state
-        save();
-      }
-
-      if (loadedVersion < 2.5f) {
-        LOG_WARN("CONFIG", "[MIGRATION] Traversing v2.5 sleep clock/carousel migration path...");
-
-        // 1. Sleep Migration: Convert legacy sleep timer to a real Schedule Rule + Clock Board
-        bool legacySleep = settings[F("sleep")] | false;
-        if (legacySleep && config.boardCount < MAX_BOARDS) {
-          int startH = settings[F("sleepStarts")] | 23;
-          int endH = settings[F("sleepEnds")] | 8;
-
-          // Find if we already have a clock board
-          int clockIdx = -1;
-          for (int i = 0; i < config.boardCount; i++) {
-            if (config.boards[i].type == MODE_CLOCK) {
-              clockIdx = i;
-              break;
-            }
-          }
-
-          // If no clock board exists, create one
-          if (clockIdx == -1) {
-            clockIdx = config.boardCount++;
-            BoardConfig &bc = config.boards[clockIdx];
-            bc.type = MODE_CLOCK;
-            strlcpy(bc.name, "Snooze Clock", sizeof(bc.name));
-            bc.oledOff = !(settings[F("clock")] | true); // If clock was false, turn OLED off
-          }
-
-          // Install the schedule rule
-          LOG_WARN("CONFIG", "[MIGRATION] Abstracting archaic static sleep timer natively into dynamic Scheduler rule paradigm.");
-          int ruleIdx = -1;
-          for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
-            if (config.schedules[i].boardIndex == -1) {
-              ruleIdx = i;
-              break;
-            }
-          }
-
-          if (ruleIdx != -1) {
-            ScheduleRule &r = config.schedules[ruleIdx];
-            r.startHour = startH;
-            r.startMinute = 0;
-            r.endHour = endH;
-            r.endMinute = 0;
-            r.boardIndex = clockIdx;
-          }
-        }
-
-        // 2. Mode Migration: If default mode was not 0, swap it to the top so it stays primary
-        int legacyMode = settings[F("mode")] | 0;
-        if (legacyMode > 0 && legacyMode < config.boardCount) {
-          LOG_WARN("CONFIG", "[MIGRATION] Reordering array. Transmuting legacy index baseline explicitly onto slot 0.");
-          BoardConfig tmp = config.boards[0];
-          config.boards[0] = config.boards[legacyMode];
-          config.boards[legacyMode] = tmp;
-
-          // Update any schedules pointing to 0 or legacyMode
-          for (int i = 0; i < MAX_SCHEDULE_RULES; i++) {
-            if (config.schedules[i].boardIndex == 0)
-              config.schedules[i].boardIndex = legacyMode;
-            else if (config.schedules[i].boardIndex == legacyMode)
-              config.schedules[i].boardIndex = 0;
-          }
-        }
-
-        config.configVersion = 2.5f;
-        save();
-      }
-
-      if (loadedVersion < 2.6f) {
-        LOG_WARN("CONFIG", "[MIGRATION] Synthesizing v2.6 structure. Decoupling distinct JSON hierarchies into unified native 'feeds' root object...");
-        config.configVersion = 2.6f;
-        save();
       }
 
       LOG_INFO("CONFIG", "Configuration loaded. Board count: " +

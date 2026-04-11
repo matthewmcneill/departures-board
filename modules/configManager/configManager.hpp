@@ -25,6 +25,9 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+#define CONFIG_VERSION_MAJOR 2 // Primary structural epoch
+#define CONFIG_VERSION_MINOR 6 // Nested feeds schema
+
 #include "departuresBoard.hpp"
 
 /**
@@ -114,7 +117,7 @@ struct Config {
   char wsdlAPI[48] = "/OpenLDBWS/wsdl.aspx?ver=2021-11-01"; // WSDL path
   char timezone[64] = "Europe/London"; // POSIX timezone string
   float configVersion =
-      2.5f; // Configuration format version number (v2.5 native scheduler)
+      2.6f; // Configuration format version number (v2.6 nested feeds)
 
   // --- Display Preferences ---
   bool dateEnabled = false;     // Show date in header
@@ -170,6 +173,14 @@ public:
 
   bool hasRollback() const { return _rollbackFlag; }
   void clearRollback() { _rollbackFlag = false; }
+
+  /**
+   * @brief Construct the versioned configuration filename based on current macros.
+   * @return String like "/config_2_6.json"
+   */
+  static String getActiveConfigFilename() {
+    return String("/config_") + String(CONFIG_VERSION_MAJOR) + "_" + String(CONFIG_VERSION_MINOR) + ".json";
+  }
 
   /**
    * @brief Load all user preferences and module settings from `/config.json`.
