@@ -10,19 +10,22 @@ description: Persist the current session's artifacts, generating context_bridge.
 3. **Context Distillation**: Invoke the `distillery` skill, passing it the target directory `.agents/plans/[TargetPlanId]/`. The distillery skill will extract deep granular context into `context_artifacts/` payloads and generate the `context_bridge.md` index file.
 4. **Persistence**: Rewrite the `implementation_plan.md`, `task.md`, the generated `context_bridge.md`, `sessions.md`, and the entire `context_artifacts/` directory into the `.agents/plans/[TargetPlanId]/` directory. (Be sure to copy all current brain artifacts and embedded image resources).
 5. Extract the Plan's succinct title and description.
-6. Create or update the `.agents/plans/[TargetPlanId]/PLAN.md` file to structurally match the YAML frontmatter found in `.agents/skills`, and include explicit links to the context files in the body:
+6. Create or update the `.agents/plans/[TargetPlanId]/PLAN.md` file to structurally match the local metadata standards:
    ```markdown
    ---
    name: [Plan Title]
    description: [Short Summary]
    created: [Timestamp]
-   status: SAVED
+   status: SAVED [or WIP/READY]
+   commits: []
    ---
    
-   ## Context Links
+   # Summary
+   [Succinct high-level summary of the plan's goal]
    
-   To gain full context of this plan's history and relevant technical details, you MUST read the following files:
-   - [Context Bridge](context_bridge.md): The distilled technical state and findings.
-   - [Sessions](sessions.md): The history of execution sessions.
+   ## Technical Context
+   - [Context Bridge](context_bridge.md): Distilled technical findings.
+   - [Sessions](sessions.md): Complete session history.
+   - [Task List](task.md): Progress checklist.
    ```
 7. Report back to the user that the context has been securely persisted locally to disk, and instruct them to use `/plan-queue` when they are ready to schedule it for work.

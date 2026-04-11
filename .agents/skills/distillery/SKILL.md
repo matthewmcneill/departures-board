@@ -17,7 +17,8 @@ You must operate in a specific context directory structure.
 - **Target Directory:** If the user or invoking workflow specifies a target directory (e.g., `.agents/plans/123/`), use it. If no directory is specified, default to `.agents/context_archives/distillation-[YYYYMMDD]-[ShortTopic]/`.
 - Inside the Target Directory, you must generate two items:
   1. A `context_bridge.md` index file.
-  2. A `context_artifacts/` subdirectory containing payloads.
+  2. A `sessions.md` file (EXCLUSIVE registry for session IDs; do not put session IDs in `PLAN.md` YAML).
+  3. A `context_artifacts/` subdirectory containing payloads.
 
 ## 2. Generating Payloads (`context_artifacts/`)
 

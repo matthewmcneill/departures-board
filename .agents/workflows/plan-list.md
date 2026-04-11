@@ -1,11 +1,8 @@
 ---
-description: Survey all persisted plans on disk by parsing PLAN.md YAML frontmatter natively.
+description: Survey all active plans and queued tasks by viewing the project dashboard.
 ---
 
-1. Execute `python3 .agents/skills/plan-manager/scripts/plan_list.py --stdout` (append `--all` if requested).
-2. Capture the markdown output from the terminal.
-3. Use the `write_to_file` tool to create a new artifact named `plan_list_view.md`.
-   - Set `IsArtifact` to `true`.
-   - Provide an appropriate `ArtifactMetadata`.
-   - Ensure the `TargetFile` is an absolute path to the `artifacts/` directory for the active session.
-4. This will automatically open the rendered plan list in the user's view pane.
+1. **Optional Refresh**: If the user asks to "refresh", "fix links", or "rebuild" the list, execute `python3 .agents/skills/plan-manager/scripts/update_indices.py`.
+2. Open the [ACTIVE_PLANS.md](file://.agents/plans/ACTIVE_PLANS.md) file using the `view_file` tool.
+3. The file is automatically grouped by **WIP**, **READY**, and **SAVED** status.
+4. If the user requested to see "all" plans or "archives", also open [ARCHIVED_PLANS.md](file://.agents/plans/ARCHIVED_PLANS.md).
