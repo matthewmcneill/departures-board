@@ -19,6 +19,7 @@
 #include <appContext.hpp>
 #include <base64.h>
 #include <WiFi.h>
+#include <LittleFS.h>
 
 extern class appContext appContext;
 
@@ -29,7 +30,9 @@ const char tools_list_response[] PROGMEM =
     "{\"name\":\"get_configuration\",\"description\":\"Get the active configuration settings of the board\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
     "{\"name\":\"get_display_buffer\",\"description\":\"Get the raw RGB565 display buffer as an array of pixels\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
     "{\"name\":\"get_active_data\",\"description\":\"Get the cached board transit and weather data\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
-    "{\"name\":\"get_network_status\",\"description\":\"Get current WiFi and connectivity status\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}}"
+    "{\"name\":\"get_network_status\",\"description\":\"Get current WiFi and connectivity status\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
+    "{\"name\":\"list_files\",\"description\":\"List all files and sizes on the internal storage\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
+    "{\"name\":\"get_file_raw\",\"description\":\"Retrieve the raw content of a configuration file\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path to file\"}},\"required\":[\"path\"]}}"
     "]}}";
 
 namespace mcpServer {
@@ -101,6 +104,7 @@ namespace mcpServer {
                 res["boardCount"] = config.boardCount;
                 res["hostname"] = config.hostname;
                 res["brightness"] = config.brightness;
+                res["version"] = config.configVersion;
                 serializeJson(res, innerStr);
             }
             else if (toolName == "get_network_status") {
@@ -110,6 +114,28 @@ namespace mcpServer {
                 res["ip"] = WiFi.localIP().toString();
                 res["connected"] = (WiFi.status() == WL_CONNECTED);
                 serializeJson(res, innerStr);
+            }
+            else if (toolName == "list_files") {
+                JsonDocument res;
+                JsonArray files = res.to<JsonArray>();
+                File root = LittleFS.open("/", "r");
+                File file = root.openNextFile();
+                while(file) {
+                    JsonObject fObj = files.add<JsonObject>();
+                    fObj["name"] = String(file.name());
+                    fObj["size"] = file.size();
+                    file = root.openNextFile();
+                }
+                serializeJson(res, innerStr);
+            }
+            else if (toolName == "get_file_raw") {
+                String path = requestDoc["params"]["arguments"]["path"] | "";
+                if (path != "" && LittleFS.exists(path)) {
+                    innerStr = appContext.getConfigManager().loadFile(path);
+                } else {
+                    innerStr = "File not found: " + path;
+                    result["isError"] = true;
+                }
             }
             else if (toolName == "get_active_data") {
                 JsonDocument res;

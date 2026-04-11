@@ -42,14 +42,6 @@ bool ConfigManager::saveFile(String fName, String fData) {
   LOG_INFO("CONFIG", String("Attempting to save ") + fData.length() +
                          " bytes to file: " + fName);
 
-  if (fName == "/config.json" && LittleFS.exists("/config.json")) {
-    if (LittleFS.exists("/config.json.lastknowngood")) {
-      LittleFS.remove("/config.json.lastknowngood");
-    }
-    LittleFS.rename("/config.json", "/config.json.lastknowngood");
-    LOG_INFO("CONFIG", "Safely renamed existing configuration to .lastknowngood");
-  }
-
   File f = LittleFS.open(fName, "w");
   if (f) {
     f.print(fData);
@@ -485,9 +477,14 @@ void ConfigManager::loadConfig() {
 
   // --- Step 2: Version Hunting ---
   String targetFile = "";
-  if (LittleFS.exists(getActiveConfigFilename())) {
-      targetFile = getActiveConfigFilename();
+  String activeFile = getActiveConfigFilename();
+  LOG_INFO("CONFIG", "Primary target: " + activeFile);
+
+  if (LittleFS.exists(activeFile)) {
+      targetFile = activeFile;
+      LOG_INFO("CONFIG", "Native versioned config found. Skipping migration hunt.");
   } else {
+      LOG_INFO("CONFIG", "Native config missing. Scanning filesystem for legacy fallbacks...");
       // Find most recent fallback
       File root = LittleFS.open("/", "r");
       float maxVer = 0.0f;
@@ -528,8 +525,22 @@ void ConfigManager::loadConfig() {
       JsonObject settings = doc.as<JsonObject>();
       float loadedVersion = settings[F("version")] | 1.0f;
 
-      // --- Step 4: Epoch Detection & Translation ---
       GadecMigration::UpstreamEpoch epoch = GadecMigration::detectConfigEpoch(settings);
+
+      // --- Suffix-Renaming Policy for Unversioned Fork Configs ---
+      // If we loaded from the base '/config.json' but the file contains a version field,
+      // it means this is a project-native file that hasn't been renamed yet.
+      if (targetFile == "/config.json" && settings.containsKey("version")) {
+          int major = (int)loadedVersion;
+          int minor = (int)((loadedVersion - major) * 10.0f + 0.5f);
+          String newName = "/config_" + String(major) + "_" + String(minor) + ".json";
+          
+          if (!LittleFS.exists(newName)) {
+              LOG_INFO("CONFIG", "[MIGRATION] Normalizing unversioned fork config to: " + newName);
+              LittleFS.rename("/config.json", newName);
+          }
+      }
+
       if (epoch != GadecMigration::EPOCH_LATEST_NATIVE) {
           LOG_WARN("CONFIG", "[MIGRATION] Legacy epoch detected. Shifting to Translation Matrix...");
           if (GadecMigration::translateToModern(doc, epoch)) {
