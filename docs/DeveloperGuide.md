@@ -98,6 +98,7 @@ The application communicates over the serial port at a baud rate of **115200**.
  * **[Designer Specification Document](DesignerSpecificationDocument.md)**: Details the UI layout simulator, the WebAssembly engine pipeline, and how layouts are converted from JSON to C++.
  * **[Display Layouts Reference](DisplayLayoutsReference.md)**: Comprehensive guide on creating layouts, widget APIs.
  * **[Embedded Memory Management](reference/EmbeddedMemoryManagement.md)**: Authoritative C++ rules on preventing heap fragmentation, RAII pointer policies, and Safe FreeRTOS storage APIs.
+ * **[On-Device MCP Server](OnDeviceMCPServer.md)**: Comprehensive guide to the JSON-RPC interface, agentic debugging capabilities, and the "Lean Memory" architectural approach used for long-term stability.
  * **[Upstream Merges](UpstreamMerges.md)**: Tracks changes published by the original `gadec-uk` upstream repository and documents how those modifications have been integrated, adapted, or rejected in this v3.0 object-oriented architecture.
  
   ---

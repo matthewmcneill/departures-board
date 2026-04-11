@@ -170,7 +170,7 @@ void WebHandlerManager::handlePortalRoot(AsyncWebServerRequest *request) {
     activeHighMemRequests++;
     
     // Create the response and decrement the counter when it is finished/closed
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/html", index_html_gz, index_html_gz_len);
     response->addHeader("Content-Encoding", "gzip");
     
     // Decoupled decrement: The response object is destroyed when the request is finalized.

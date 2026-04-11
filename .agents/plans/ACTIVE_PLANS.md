@@ -10,7 +10,6 @@ Current status of active sessions, queued tasks, and saved drafts.
 ## ⏳ Pending Queue
 | Date | Title | Summary | Plan Link |
 | :--- | :--- | :--- | :--- |
-| 2026-04-06 | Epoch Translation Matrix & Version-Locked Suffixing | ... | [761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md](761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md) |
 | 2026-04-06 | Secure OTA Deployment Architecture | ... | [3b8d0f61-b303-426c-9519-83a397601122/PLAN.md](3b8d0f61-b303-426c-9519-83a397601122/PLAN.md) |
 | 2026-04-05 | Native Test Suite Restoration (v3.0) | ... | [14624361-e06b-4d0c-aef2-9c7189446df9/PLAN.md](14624361-e06b-4d0c-aef2-9c7189446df9/PLAN.md) |
 | 2026-04-05 | RDM Formation Data Investigation | ... | [72b7ca6c-65ed-46cf-a3b3-5b81320b888a/PLAN.md](72b7ca6c-65ed-46cf-a3b3-5b81320b888a/PLAN.md) |

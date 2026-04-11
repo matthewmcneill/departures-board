@@ -83,6 +83,8 @@ Comprehensive history of completed plans, grouped by completion date.
 
 | Date | Title | Key Impact | Plan Link |
 | :--- | :--- | :--- | :--- |
+| 2026-04-11 | Library Modernization & Config Migration Debug | Upgraded core libraries, resolved warnings, and diagnosed config migration failure using on-device MCP tooling. | [done/0b755dbd-e15b-455b-b6fe-19849b4ded04/PLAN.md](done/0b755dbd-e15b-455b-b6fe-19849b4ded04/PLAN.md) |
+| 2026-04-11 | Epoch Translation Matrix & Version-Locked Suffixing | Implemented non-destructive v2.6 migration and \"Keep 3\" versioned config storage. | [done/761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md](done/761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md) |
 | 2026-04-11 | Memory Stability Refactoring (RAII) | Successfully migrated Darwin data provider to RAII ScrubGuard model. | [done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md](done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md) |
 | 2026-04-11 | Migrate Feeds Configuration into Nested Schema | Migrated RSS and Weather Key configurations into a nested feeds schema in configManager. | [done/fedee7b7-9580-427a-9265-bed26a6f12a7/PLAN.md](done/fedee7b7-9580-427a-9265-bed26a6f12a7/PLAN.md) |
 | 2026-04-11 | Rigorous Active Plan Audit & Consolidation | This task involved a rigorous, plan-by-plan audit of the `departures-board` project's active development state. | [done/plan-audit-2026-04-11/](done/plan-audit-2026-04-11/PLAN.md) |

@@ -27,8 +27,8 @@ namespace GadecMigration {
      */
     enum UpstreamEpoch {
         EPOCH_LATEST_NATIVE = 0, // Already compliant with v2.6+
-        EPOCH_GADEC_V1 = 1,      // Flat schema with older tube variables
-        EPOCH_GADEC_V2 = 2,      // Standard flat Gadec-uk schema
+        EPOCH_GADEC_LEGACY = 1,   // No version field (Original Gadec-uk)
+        EPOCH_FORK_LEGACY = 2,    // Has version field < 2.6 (Earlier fork version)
         EPOCH_UNKNOWN = 99       // Unrecognized schema
     };
 

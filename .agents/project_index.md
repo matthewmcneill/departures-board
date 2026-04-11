@@ -75,6 +75,7 @@ This project focuses on providing real-time transit information on embedded hard
   - [.agents/plans/8bba6ca4-d438-4e12-918e-9c97f30c67aa/](8bba6ca4-d438-4e12-918e-9c97f30c67aa/PLAN.md) (Migration Testing Strategy Assessment)
   - [.agents/plans/8b9a0895-417b-4da1-b320-2a2b5a7579d7/](8b9a0895-417b-4da1-b320-2a2b5a7579d7/PLAN.md) (National Rail Message Prioritization)
 - **Archive**:
+  - [.agents/plans/done/0b755dbd-e15b-455b-b6fe-19849b4ded04/](done/0b755dbd-e15b-455b-b6fe-19849b4ded04/PLAN.md) (Library Modernization & Config Migration Debug)
   - [.agents/plans/done/legacy-agent-session-mega-crash-51925a/](done/legacy-agent-session-mega-crash-51925a/PLAN.md) (Agent Session "Mega Crash")
   - [.agents/plans/done/legacy-openweathermap-api-connectivit-3a86cd/](done/legacy-openweathermap-api-connectivit-3a86cd/PLAN.md) (OpenWeatherMap API Connectivity)
   - [.agents/plans/done/legacy-4bea43e5276d-323bee/](done/legacy-4bea43e5276d-323bee/PLAN.md) (4bea43e5276d)
@@ -192,7 +193,7 @@ This project focuses on providing real-time transit information on embedded hard
 - **Active Plans**:
   - [.agents/plans/6ba3991e-ee76-491b-8fa9-ba7516639ff9/](6ba3991e-ee76-491b-8fa9-ba7516639ff9/PLAN.md) (6ba3991e-ee76-491b-8fa9-ba7516639ff9)
   - [.agents/plans/5d952b90-8b86-4227-a892-63e1f555cb77/](5d952b90-8b86-4227-a892-63e1f555cb77/PLAN.md) (ESP32 Device-Side MCP Server)
-  - [.agents/plans/761bb38e-6d2c-4fec-bc40-9afa64e683c4/](761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md) (Epoch Translation Matrix & Version-Locked Suffixing)
+  - [.agents/plans/3b8d0f61-b303-426c-9519-83a397601122/](3b8d0f61-b303-426c-9519-83a397601122/PLAN.md) (Secure OTA Deployment Architecture)
   - [.agents/plans/3b8d0f61-b303-426c-9519-83a397601122/](3b8d0f61-b303-426c-9519-83a397601122/PLAN.md) (Secure OTA Deployment Architecture)
   - [done/fedee7b7-9580-427a-9265-bed26a6f12a7/](done/fedee7b7-9580-427a-9265-bed26a6f12a7/PLAN.md) (Migrate Feeds Configuration into Nested Schema)
   - [.agents/plans/14624361-e06b-4d0c-aef2-9c7189446df9/](14624361-e06b-4d0c-aef2-9c7189446df9/PLAN.md) (Native Test Suite Restoration (v3.0))
@@ -205,6 +206,7 @@ This project focuses on providing real-time transit information on embedded hard
   - [.agents/plans/8bba6ca4-d438-4e12-918e-9c97f30c67aa/](8bba6ca4-d438-4e12-918e-9c97f30c67aa/PLAN.md) (Migration Testing Strategy Assessment)
   - [.agents/plans/8b9a0895-417b-4da1-b320-2a2b5a7579d7/](8b9a0895-417b-4da1-b320-2a2b5a7579d7/PLAN.md) (National Rail Message Prioritization)
 - **Archive**:
+  - [.agents/plans/done/761bb38e-6d2c-4fec-bc40-9afa64e683c4/](done/761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md) (Epoch Translation Matrix & Version-Locked Suffixing)
   - [.agents/plans/done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/](done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md) (Memory Stability Refactoring (RAII))
   - [.agents/plans/done/legacy-agent-session-mega-crash-51925a/](done/legacy-agent-session-mega-crash-51925a/PLAN.md) (Agent Session "Mega Crash")
   - [.agents/plans/done/legacy-openweathermap-api-connectivit-3a86cd/](done/legacy-openweathermap-api-connectivit-3a86cd/PLAN.md) (OpenWeatherMap API Connectivity)

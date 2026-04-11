@@ -10,6 +10,11 @@
  * Module: modules/configManager/gadecMigration.cpp
  * Description: Implementation of the epoch detection matrix and translation 
  * logic for legacy Gadec-uk configurations.
+ *
+ * Exported Functions/Classes:
+ * - GadecMigration: Namespace containing migration utilities
+ *   - detectConfigEpoch(): Sniffs a JsonObject to determine its schema version
+ *   - translateToModern(): In-place translation of legacy JSON into v2.6 schema
  */
 
 #include "gadecMigration.hpp"
@@ -21,23 +26,21 @@ namespace GadecMigration {
  * @brief Analyzes a JSON object to determine its configuration epoch.
  */
 UpstreamEpoch detectConfigEpoch(JsonObject root) {
-    // If it has a version field, we can use it to pinpoint the epoch
-    if (root.containsKey("version")) {
+    // If it has a version field, it's a version of this fork (Modern Epoch)
+    if (root["version"].is<float>()) {
         float version = root["version"] | 1.0f;
         if (version >= 2.6f) return EPOCH_LATEST_NATIVE;
-        if (version >= 2.0f) return EPOCH_GADEC_V2;
-        return EPOCH_GADEC_V1;
+        return EPOCH_FORK_LEGACY;
     }
 
-    // No version field: check for characteristic legacy keys
-    // Gadec v1.x often had flat crs/tubeId/busId keys without a version
-    if (root.containsKey("crs") || root.containsKey("tubeId") || root.containsKey("busId")) {
-        return EPOCH_GADEC_V1;
+    // No version field: check for characteristic Gadec legacy keys
+    if (!root["crs"].isNull() || !root["tubeId"].isNull() || !root["busId"].isNull()) {
+        return EPOCH_GADEC_LEGACY;
     }
 
-    // If it has a boards array but no version >= 2.6, it's Gadec v2.x
-    if (root.containsKey("boards")) {
-        return EPOCH_GADEC_V2;
+    // Boards array without version is likely Gadec v2.x variant
+    if (root["boards"].is<JsonArray>()) {
+        return EPOCH_GADEC_LEGACY;
     }
 
     return EPOCH_UNKNOWN;
@@ -53,12 +56,12 @@ bool translateToModern(JsonDocument& doc, UpstreamEpoch epoch) {
     float loadedVersion = root["version"] | 1.0f;
 
     // --- Step 1: Structural Elevation (Flat to Array) ---
-    // Handle very old flat schemas (v1.x / < 2.2f)
-    if (loadedVersion < 2.2f && !root.containsKey("boards")) {
+    // Handle very old flat Gadec schemas (v1.x)
+    if (epoch == EPOCH_GADEC_LEGACY && root["boards"].isNull()) {
         JsonArray boards = root["boards"].to<JsonArray>();
 
         // Migrate NR Rail Station
-        if (root.containsKey("crs")) {
+        if (!root["crs"].isNull()) {
             JsonObject b = boards.add<JsonObject>();
             b["type"] = 0; // MODE_RAIL
             b["id"] = root["crs"] | "";
@@ -71,7 +74,7 @@ bool translateToModern(JsonDocument& doc, UpstreamEpoch epoch) {
         }
 
         // Migrate Tube Station
-        if (root.containsKey("tubeId")) {
+        if (!root["tubeId"].isNull()) {
             JsonObject b = boards.add<JsonObject>();
             b["type"] = 1; // MODE_TUBE
             b["id"] = root["tubeId"] | "";
@@ -79,7 +82,7 @@ bool translateToModern(JsonDocument& doc, UpstreamEpoch epoch) {
         }
 
         // Migrate Bus Stop
-        if (root.containsKey("busId")) {
+        if (!root["busId"].isNull()) {
             JsonObject b = boards.add<JsonObject>();
             b["type"] = 2; // MODE_BUS
             b["id"] = root["busId"] | "";
@@ -91,7 +94,7 @@ bool translateToModern(JsonDocument& doc, UpstreamEpoch epoch) {
     }
 
     // --- Step 2: Elevate Secondary Rail Boards (v2.2 logic) ---
-    if (loadedVersion < 2.3f && root.containsKey("altCrs")) {
+    if (loadedVersion < 2.3f && !root["altCrs"].isNull()) {
         JsonArray boards = root["boards"].as<JsonArray>();
         const char* altCrs = root["altCrs"];
         
@@ -144,7 +147,7 @@ bool translateToModern(JsonDocument& doc, UpstreamEpoch epoch) {
             }
 
             // Provision Scheduler Rule
-            if (!root.containsKey("schedules")) {
+            if (root["schedules"].isNull()) {
                 root["schedules"].to<JsonArray>();
             }
             JsonArray schedules = root["schedules"].as<JsonArray>();
@@ -166,15 +169,15 @@ bool translateToModern(JsonDocument& doc, UpstreamEpoch epoch) {
 
     // --- Step 4: Feeds Root Unification (v2.6 logic) ---
     if (loadedVersion < 2.6f) {
-        if (!root.containsKey("feeds")) {
+        if (root["feeds"].isNull()) {
             JsonObject feeds = root["feeds"].to<JsonObject>();
             
             // Move RSS fields
-            if (root.containsKey("rssUrl")) feeds["rss"] = root["rssUrl"];
-            if (root.containsKey("rssName")) feeds["rssName"] = root["rssName"];
+            if (!root["rssUrl"].isNull()) feeds["rss"] = root["rssUrl"];
+            if (!root["rssName"].isNull()) feeds["rssName"] = root["rssName"];
             
             // Move Weather Key
-            if (root.containsKey("weatherKeyId")) feeds["weatherKeyId"] = root["weatherKeyId"];
+            if (!root["weatherKeyId"].isNull()) feeds["weatherKeyId"] = root["weatherKeyId"];
             
             // Delete old root keys (optional, but cleaner)
             root.remove("rssUrl");

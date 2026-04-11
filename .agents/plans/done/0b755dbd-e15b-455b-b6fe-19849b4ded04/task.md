@@ -1,0 +1,11 @@
+- `[x]` Update `platformio.ini` with new library versions and org names
+- `[x]` Refactor `modules/webServer/webHandlerManager.cpp`: `beginResponse_P` -> `beginResponse`
+- `[x]` Refactor `modules/configManager/gadecMigration.cpp`: Replace `containsKey` with `is<T>()` or `isNull()`
+    - `[x]` Line 25: `version`
+    - `[x]` Line 34: `crs`, `tubeId`, `busId`
+    - `[x]` Line 39 & 57: `boards`
+    - `[x]` Line 147: `schedules`
+    - `[x]` Line 169: `feeds`
+    - `[x]` Line 173, 174, 177: `rssUrl`, `rssName`, `weatherKeyId`
+- `[x]` Verify compilation via `pio run -e esp32s3nano`
+- `[ ]` Manual verification of Web Portal and Migration (Pending hardware interaction)
