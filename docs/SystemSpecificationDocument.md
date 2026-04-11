@@ -42,9 +42,28 @@
     - **Flash (SPIFFS/LittleFS)**: Stores `config.json` (system settings), `apikeys.json` (registry), and `rss.json` (feed list).
     - **Memory (RAM)**:
         - **Static DRAM**: Holds core managers (`appContext`, `DisplayManager`) and the `BoardVariant` pool to ensure zero fragmentation.
-        - **Hybrid Memory Model**: The system employs a **dual-tier string strategy** to optimize for both stability and flexibility:
-            - **Transient Tier (Dynamic)**: Utilizes the `String` class strictly for volatile, fetch-time parser logic (e.g., JSON key matching, XML path tracking). These objects are explicitly scrubbed via `.clear()` at the end of every fetch cycle.
-            - **Persistent Tier (Static)**: Enforces fixed-size **C-style character arrays** for all long-term data structures (records, status models, and configuration fields).
+        - **Hybrid Memory Model**: The system employs a **dual-tier string strategy** to balance the safety and flexibility of the `String` class with the deterministic stability of fixed buffers. This achieves months of uptime without heap fragmentation.
+            - **Tier 1: Transient Logical State (String)**
+                - **Use Case**: Temporary variables during API parsing (e.g., current JSON keys, raw XML tags, or scraped HTML lines).
+                - **Constraint**: These must be class members only if they are used as cross-method state during a single fetch. They **MUST** be cleared via `.clear()` as the very last step of the `executeFetch()` routine.
+            - **Tier 2: Persistent Storage (char arrays)**
+                - **Use Case**: Long-term storage of data (e.g., station names, departure times, weather conditions, and configuration settings).
+                - **Implementation**: Strictly use fixed `char[]` buffers (e.g., `char destination[48]`) or `const char*` pointers.
+            - **Coding Example**:
+              ```cpp
+              // [PERSISTENT] Long-term storage uses fixed arrays
+              char destination[NR_MAX_LOCATION];
+              
+              // [TRANSIENT] Parser state uses String for flexibility during fetch
+              String currentKey; 
+              
+              void executeFetch() {
+                  // ... fetch logic ...
+                  currentKey = parser.getKey(); // Safe: flexibility during parse
+                  // ...
+                  currentKey.clear(); // MANDATORY: Scrub the heap after use
+              }
+              ```
         - **System Heap**: Reserved for transient **Network Clients** (`WiFiClientSecure`), **SSL Buffers**, and ephemeral parser state.
         - **Task Stack**: Limited to ~8KB; large local variables are strictly avoided to prevent kernel corruption.
 - **Data Flow**:

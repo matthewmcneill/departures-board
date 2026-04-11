@@ -2,7 +2,7 @@
 name: "Secure OTA Deployment Architecture"
 description: ""
 created: "2026-04-06"
-status: "READY"
+status: "WIP"
 commits: []
 ---
 
