@@ -66,7 +66,7 @@ This project focuses on providing real-time transit information on embedded hard
 ### ⚙️ configManager
 - **Active Plans**:
   - [.agents/plans/6ba3991e-ee76-491b-8fa9-ba7516639ff9/](6ba3991e-ee76-491b-8fa9-ba7516639ff9/PLAN.md) (6ba3991e-ee76-491b-8fa9-ba7516639ff9)
-  - [.agents/plans/fedee7b7-9580-427a-9265-bed26a6f12a7/](fedee7b7-9580-427a-9265-bed26a6f12a7/PLAN.md) (Migrate Feeds Configuration into Nested Schema)
+  - [done/fedee7b7-9580-427a-9265-bed26a6f12a7/](done/fedee7b7-9580-427a-9265-bed26a6f12a7/PLAN.md) (Migrate Feeds Configuration into Nested Schema)
   - [.agents/plans/71f92177-6aa4-4687-8177-e6e329169979/](71f92177-6aa4-4687-8177-e6e329169979/PLAN.md) (Unify Mocking Architecture)
   - [.agents/plans/80fff86e-f44d-41df-a516-62087dbe5298/](80fff86e-f44d-41df-a516-62087dbe5298/PLAN.md) (Documentation Wizard Auto-Capture)
   - [.agents/plans/3b32bb43-d444-4041-a1c0-9a2082cd37bb/](3b32bb43-d444-4041-a1c0-9a2082cd37bb/PLAN.md) (Restore Layout Simulator (WASM) Engine Build Pipeline)
@@ -194,7 +194,7 @@ This project focuses on providing real-time transit information on embedded hard
   - [.agents/plans/5d952b90-8b86-4227-a892-63e1f555cb77/](5d952b90-8b86-4227-a892-63e1f555cb77/PLAN.md) (ESP32 Device-Side MCP Server)
   - [.agents/plans/761bb38e-6d2c-4fec-bc40-9afa64e683c4/](761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md) (Epoch Translation Matrix & Version-Locked Suffixing)
   - [.agents/plans/3b8d0f61-b303-426c-9519-83a397601122/](3b8d0f61-b303-426c-9519-83a397601122/PLAN.md) (Secure OTA Deployment Architecture)
-  - [.agents/plans/fedee7b7-9580-427a-9265-bed26a6f12a7/](fedee7b7-9580-427a-9265-bed26a6f12a7/PLAN.md) (Migrate Feeds Configuration into Nested Schema)
+  - [done/fedee7b7-9580-427a-9265-bed26a6f12a7/](done/fedee7b7-9580-427a-9265-bed26a6f12a7/PLAN.md) (Migrate Feeds Configuration into Nested Schema)
   - [.agents/plans/14624361-e06b-4d0c-aef2-9c7189446df9/](14624361-e06b-4d0c-aef2-9c7189446df9/PLAN.md) (Native Test Suite Restoration (v3.0))
   - [.agents/plans/72b7ca6c-65ed-46cf-a3b3-5b81320b888a/](72b7ca6c-65ed-46cf-a3b3-5b81320b888a/PLAN.md) (RDM Formation Data Investigation)
   - [.agents/plans/71f92177-6aa4-4687-8177-e6e329169979/](71f92177-6aa4-4687-8177-e6e329169979/PLAN.md) (Unify Mocking Architecture)
