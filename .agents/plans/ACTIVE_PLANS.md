@@ -6,7 +6,6 @@ Current status of active sessions, queued tasks, and saved drafts.
 | Date | Title | Summary | Plan Link |
 | :--- | :--- | :--- | :--- |
 | 2026-04-07 | ESP32 Device-Side MCP Server | ## Context Links... | [5d952b90-8b86-4227-a892-63e1f555cb77/PLAN.md](5d952b90-8b86-4227-a892-63e1f555cb77/PLAN.md) |
-| 2026-04-02 | Memory Stability Refactoring (String Removal) | ... | [a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md](a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md) |
 
 ## ⏳ Pending Queue
 | Date | Title | Summary | Plan Link |

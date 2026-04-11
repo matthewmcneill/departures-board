@@ -200,12 +200,12 @@ This project focuses on providing real-time transit information on embedded hard
   - [.agents/plans/71f92177-6aa4-4687-8177-e6e329169979/](71f92177-6aa4-4687-8177-e6e329169979/PLAN.md) (Unify Mocking Architecture)
   - [.agents/plans/80fff86e-f44d-41df-a516-62087dbe5298/](80fff86e-f44d-41df-a516-62087dbe5298/PLAN.md) (Documentation Wizard Auto-Capture)
   - [.agents/plans/3b32bb43-d444-4041-a1c0-9a2082cd37bb/](3b32bb43-d444-4041-a1c0-9a2082cd37bb/PLAN.md) (Restore Layout Simulator (WASM) Engine Build Pipeline)
-  - [.agents/plans/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/](a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md) (Memory Stability Refactoring (String Removal))
   - [.agents/plans/f9bc04fd-7d27-4002-9465-3925f1da0177/](f9bc04fd-7d27-4002-9465-3925f1da0177/PLAN.md) (Batch 4: Testing & Stability)
   - [.agents/plans/9898f7fb-9008-4613-a514-cb7eb3ed2d59/](9898f7fb-9008-4613-a514-cb7eb3ed2d59/PLAN.md) (Task Analysis & Handoff Preparation)
   - [.agents/plans/8bba6ca4-d438-4e12-918e-9c97f30c67aa/](8bba6ca4-d438-4e12-918e-9c97f30c67aa/PLAN.md) (Migration Testing Strategy Assessment)
   - [.agents/plans/8b9a0895-417b-4da1-b320-2a2b5a7579d7/](8b9a0895-417b-4da1-b320-2a2b5a7579d7/PLAN.md) (National Rail Message Prioritization)
 - **Archive**:
+  - [.agents/plans/done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/](done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md) (Memory Stability Refactoring (RAII))
   - [.agents/plans/done/legacy-agent-session-mega-crash-51925a/](done/legacy-agent-session-mega-crash-51925a/PLAN.md) (Agent Session "Mega Crash")
   - [.agents/plans/done/legacy-openweathermap-api-connectivit-3a86cd/](done/legacy-openweathermap-api-connectivit-3a86cd/PLAN.md) (OpenWeatherMap API Connectivity)
   - [.agents/plans/done/legacy-hoc-session-logging-enum-refac-8aa9ca/](done/legacy-hoc-session-logging-enum-refac-8aa9ca/PLAN.md) (Hoc Session: Logging Enum Refactor)
@@ -271,9 +271,9 @@ This project focuses on providing real-time transit information on embedded hard
 
 ### ⚡ performanceOptimisation
 - **Active Plans**:
-  - [.agents/plans/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/](a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md) (Memory Stability Refactoring (String Removal))
   - [.agents/plans/f9bc04fd-7d27-4002-9465-3925f1da0177/](f9bc04fd-7d27-4002-9465-3925f1da0177/PLAN.md) (Batch 4: Testing & Stability)
 - **Archive**:
+  - [.agents/plans/done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/](done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md) (Memory Stability Refactoring (RAII))
   - [.agents/plans/done/legacy-agent-session-mega-crash-51925a/](done/legacy-agent-session-mega-crash-51925a/PLAN.md) (Agent Session "Mega Crash")
   - [.agents/plans/done/58927b2a-4c78-4d94-a2f7-046154fa4487/](done/58927b2a-4c78-4d94-a2f7-046154fa4487/PLAN.md) (046154fa4487: Autonomous Build & Validation Plan)
   - [.agents/plans/done/legacy-hoc-session-logging-enum-refac-8aa9ca/](done/legacy-hoc-session-logging-enum-refac-8aa9ca/PLAN.md) (Hoc Session: Logging Enum Refactor)

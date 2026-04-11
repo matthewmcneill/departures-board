@@ -83,6 +83,7 @@ Comprehensive history of completed plans, grouped by completion date.
 
 | Date | Title | Key Impact | Plan Link |
 | :--- | :--- | :--- | :--- |
+| 2026-04-11 | Memory Stability Refactoring (RAII) | Successfully migrated Darwin data provider to RAII ScrubGuard model. | [done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md](done/a7ab7125-f13b-44c7-a6b6-d4fc02aeb64d/PLAN.md) |
 | 2026-04-11 | Rigorous Active Plan Audit & Consolidation | This task involved a rigorous, plan-by-plan audit of the `departures-board` project's active development state. | [done/plan-audit-2026-04-11/](done/plan-audit-2026-04-11/PLAN.md) |
 | 2026-04-10 | PlatformIO MCP Server Parsing Fixes | ## Context Links. | [done/6561ef93-8e1f-452b-85ca-4deb7fdf2e2d/](done/6561ef93-8e1f-452b-85ca-4deb7fdf2e2d/PLAN.md) |
 | 2026-04-06 | ESP32 System Tab Visibility Fix | . | [done/42af9ff9-fbf3-4a47-abe4-c4414d1de136/](done/42af9ff9-fbf3-4a47-abe4-c4414d1de136/PLAN.md) |
