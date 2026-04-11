@@ -108,7 +108,9 @@ void WebHandlerManager::begin() {
     _server.on("/api/config", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleGetConfig(request); });
     bindPostDynamic("/api/saveall", &WebHandlerManager::handleSaveAll);
     _server.on("/api/reboot", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleReboot(request); });
-    _server.on("/api/ota/check", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleOTACheck(request); });
+    _server.on("/api/ota/available", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleOtaAvailable(request); });
+    _server.on("/api/ota/force", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleOtaForce(request); });
+    _server.on("/api/ota/rollback", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleOtaRollback(request); });
     _server.on("/api/system/diag", HTTP_POST, [this](AsyncWebServerRequest *request) { this->handleSetDiagMode(request); });
     _server.on("/api/screenshot", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleScreenshot(request); });
     _server.on("/api/config/backup", HTTP_GET, [this](AsyncWebServerRequest *request) { this->handleBackupConfig(request); });
@@ -896,15 +898,34 @@ void WebHandlerManager::handleReboot(AsyncWebServerRequest *request) {
 }
 
 /**
- * @brief API Handler for POST /api/ota/check. Triggers a background firmware update check.
+ * @brief API Handler for GET /api/ota/available. Passively checks for remote updates.
  */
-void WebHandlerManager::handleOTACheck(AsyncWebServerRequest *request) {
-    LOG_INFO("WEB_API", "Manual OTA update check requested.");
+void WebHandlerManager::handleOtaAvailable(AsyncWebServerRequest *request) {
+    LOG_INFO("WEB_API", "Checking for OTA availability passively.");
+    String version = "";
+    if (appContext.getOtaUpdater().checkUpdateAvailable(version)) {
+        request->send(200, "application/json", "{\"available\":true,\"version\":\"" + version + "\"}");
+    } else {
+        request->send(200, "application/json", "{\"available\":false}");
+    }
+}
+
+/**
+ * @brief API Handler for POST /api/ota/force. Explicitly instigates the secure update.
+ */
+void WebHandlerManager::handleOtaForce(AsyncWebServerRequest *request) {
+    LOG_INFO("WEB_API", "Manual explicit OTA force update requested.");
     request->send(200, "application/json", "{\"status\":\"ok\"}");
-    
-    // Trigger the update check in the background
-    // We don't wait for it to finish before responding to the web UI
-    appContext.getOtaUpdater().checkForFirmwareUpdate();
+    appContext.getOtaUpdater().forceUpdateNow();
+}
+
+/**
+ * @brief API Handler for POST /api/ota/rollback. Flips boot partition block.
+ */
+void WebHandlerManager::handleOtaRollback(AsyncWebServerRequest *request) {
+    LOG_INFO("WEB_API", "OTA Rollback invoked.");
+    request->send(200, "application/json", "{\"status\":\"ok\"}");
+    appContext.getOtaUpdater().rollbackFirmware();
 }
 
 /**

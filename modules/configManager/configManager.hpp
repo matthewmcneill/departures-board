@@ -134,6 +134,7 @@ struct Config {
   bool firmwareUpdatesEnabled = false;      // Enable background OTA checks
   bool dailyUpdateCheckEnabled =
       false; // Check for firmware updates at midnight
+  int otaQuietHour = 3; // Quiet hour for passive update checks (default 3 AM)
 
   // --- Dynamic Board List ---
   BoardConfig boards[MAX_BOARDS]; // Array of configured display boards

@@ -59,6 +59,7 @@ private:
     unsigned long fwUpdateCheckTimer;  // Millis timer for debouncing interval checks
     bool updatesEnabled;               // Cached flag from config
     bool dailyCheckEnabled;            // Cached flag from config
+    int quietHour;                     // Cached quiet hour from config
 
 public:
     std::function<void(int percent)> onProgress;
@@ -100,6 +101,24 @@ public:
      * @return True if update sequence was successfully initiated.
      */
     bool checkForFirmwareUpdate();
+
+    /**
+     * @brief Checks if a firmware update is available on GitHub passively.
+     * @param outVersion Populated with the remote semantic version string.
+     * @return True if a newer release exists.
+     */
+    bool checkUpdateAvailable(String& outVersion);
+
+    /**
+     * @brief Instigates the immediate secure download loop explicitly.
+     * @return True if the pipeline initiated.
+     */
+    bool forceUpdateNow();
+
+    /**
+     * @brief Instructs the bootloader to flip the active partition to the backup slot.
+     */
+    void rollbackFirmware();
 
     /**
      * @brief Checks for a version mismatch between the running firmware's expected

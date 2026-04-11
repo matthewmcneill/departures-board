@@ -362,6 +362,7 @@ bool ConfigManager::save() {
   doc[F("rssFirst")] = config.prioritiseRss;
   doc[F("update")] = config.firmwareUpdatesEnabled;
   doc[F("updateDaily")] = config.dailyUpdateCheckEnabled;
+  doc[F("otaQuietHour")] = config.otaQuietHour;
 
   JsonObject feeds = doc[F("feeds")].to<JsonObject>();
   feeds[F("rss")] = config.rssUrl;
@@ -579,6 +580,8 @@ void ConfigManager::loadConfig() {
         config.firmwareUpdatesEnabled = settings[F("update")];
       if (settings[F("updateDaily")].is<bool>())
         config.dailyUpdateCheckEnabled = settings[F("updateDaily")];
+      if (settings[F("otaQuietHour")].is<int>())
+        config.otaQuietHour = settings[F("otaQuietHour")];
       if (settings[F("waitForScroll")].is<bool>())
         config.waitForScrollComplete = settings[F("waitForScroll")];
       if (settings[F("rssFirst")].is<bool>())

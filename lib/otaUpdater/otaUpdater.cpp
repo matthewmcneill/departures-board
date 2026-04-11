@@ -32,7 +32,7 @@
 otaUpdater ota;                       // Global OTA maintenance instance singleton
 github ghUpdate("gadec-uk/departures-board", ""); // Global GitHub client for updates
 
-otaUpdater::otaUpdater() : context(nullptr), prevUpdateCheckDay(-1), fwUpdateCheckTimer(0), updatesEnabled(false), dailyCheckEnabled(false) {
+otaUpdater::otaUpdater() : context(nullptr), prevUpdateCheckDay(-1), fwUpdateCheckTimer(0), updatesEnabled(false), dailyCheckEnabled(false), quietHour(3) {
 }
 
 void otaUpdater::tick() {
@@ -42,7 +42,7 @@ void otaUpdater::tick() {
         context->getTimeManager().updateCurrentTime();
         const struct tm& timeinfo = context->getTimeManager().getCurrentTime();
         
-        if (timeinfo.tm_mday != prevUpdateCheckDay) {
+        if (timeinfo.tm_hour == quietHour && timeinfo.tm_mday != prevUpdateCheckDay) {
             if (ghUpdate.getLatestRelease()) {
                 checkForFirmwareUpdate();
                 prevUpdateCheckDay = timeinfo.tm_mday;
@@ -80,13 +80,18 @@ bool otaUpdater::checkForFirmwareUpdate() {
   if (!isFirmwareUpdateAvailable()) return result;
 
   String updatePath="";
+  String sigPath="";
   for (int i=0;i<ghUpdate.releaseAssets;i++){
     if (ghUpdate.releaseAssetName[i] == "firmware.bin") {
       updatePath = ghUpdate.releaseAssetURL[i];
-      break;
+    } else if (ghUpdate.releaseAssetName[i] == "firmware.sig") {
+      sigPath = ghUpdate.releaseAssetURL[i];
     }
   }
-  if (updatePath.length()==0) return result;
+  if (updatePath.length()==0 || sigPath.length()==0) {
+      LOG_ERROR("OTA", "Could not find both firmware.bin and firmware.sig in release assets!");
+      return result;
+  }
 
   unsigned long tmr=millis()+1000;
   for (int i=30;i>=0;i--) {
@@ -109,7 +114,7 @@ bool otaUpdater::checkForFirmwareUpdate() {
   httpUpdate.onProgress(update_progress);
   httpUpdate.rebootOnUpdate(false); 
 
-  HTTPUpdateResult ret = httpUpdate.handleUpdate(*client, updatePath, ghUpdate.accessToken);
+  HTTPUpdateResult ret = httpUpdate.handleUpdate(*client, updatePath, sigPath, ghUpdate.accessToken);
   
   switch (ret) {
     case HTTP_UPDATE_FAILED:
@@ -137,6 +142,35 @@ bool otaUpdater::checkForFirmwareUpdate() {
   }
   
   return result;
+}
+
+bool otaUpdater::checkUpdateAvailable(String& outVersion) {
+    if (ghUpdate.getLatestRelease()) {
+        if (isFirmwareUpdateAvailable()) {
+            outVersion = ghUpdate.releaseId;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool otaUpdater::forceUpdateNow() {
+    if (ghUpdate.getLatestRelease()) {
+        return checkForFirmwareUpdate();
+    }
+    return false;
+}
+
+#include <esp_ota_ops.h>
+void otaUpdater::rollbackFirmware() {
+    LOG_WARN("OTA", "Rollback endpoint invoked. Executing active partition flip...");
+    const esp_partition_t* update_partition = esp_ota_get_next_update_partition(NULL);
+    if (update_partition) {
+        esp_ota_set_boot_partition(update_partition);
+        ESP.restart();
+    } else {
+        LOG_ERROR("OTA", "Partition flip failed. Backup sector invalid/missing.");
+    }
 }
 
 void otaUpdater::checkPostWebUpgrade() {
@@ -178,4 +212,5 @@ void otaUpdater::checkPostWebUpgrade() {
 void otaUpdater::reapplyConfig(const Config& cfg) {
     updatesEnabled = cfg.firmwareUpdatesEnabled;
     dailyCheckEnabled = cfg.dailyUpdateCheckEnabled;
+    quietHour = cfg.otaQuietHour;
 }

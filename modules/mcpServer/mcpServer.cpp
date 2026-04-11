@@ -32,7 +32,10 @@ const char tools_list_response[] PROGMEM =
     "{\"name\":\"get_active_data\",\"description\":\"Get the cached board transit and weather data\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
     "{\"name\":\"get_network_status\",\"description\":\"Get current WiFi and connectivity status\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
     "{\"name\":\"list_files\",\"description\":\"List all files and sizes on the internal storage\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
-    "{\"name\":\"get_file_raw\",\"description\":\"Retrieve the raw content of a configuration file\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path to file\"}},\"required\":[\"path\"]}}"
+    "{\"name\":\"get_file_raw\",\"description\":\"Retrieve the raw content of a configuration file\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path to file\"}},\"required\":[\"path\"]}},"
+    "{\"name\":\"ota_check_update\",\"description\":\"Check if a newer firmware is available on GitHub\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
+    "{\"name\":\"ota_force_update\",\"description\":\"Force the immediate download and installation of the latest firmware\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
+    "{\"name\":\"ota_rollback\",\"description\":\"Reboot into the alternative backup firmware partition\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}}"
     "]}}";
 
 namespace mcpServer {
@@ -142,6 +145,25 @@ namespace mcpServer {
                 JsonObject data = res.to<JsonObject>();
                 appContext.getDataManager().serializeAllSources(data);
                 serializeJson(res, innerStr);
+            }
+            else if (toolName == "ota_check_update") {
+                JsonDocument res;
+                String version = "";
+                if (appContext.getOtaUpdater().checkUpdateAvailable(version)) {
+                    res["available"] = true;
+                    res["version"] = version;
+                } else {
+                    res["available"] = false;
+                }
+                serializeJson(res, innerStr);
+            }
+            else if (toolName == "ota_force_update") {
+                appContext.getOtaUpdater().forceUpdateNow();
+                innerStr = "OTA update successfully initiated in background.";
+            }
+            else if (toolName == "ota_rollback") {
+                appContext.getOtaUpdater().rollbackFirmware();
+                innerStr = "OTA rollback invoked. System rebooting gracefully...";
             }
             else {
                 innerStr = "Not Implemented";

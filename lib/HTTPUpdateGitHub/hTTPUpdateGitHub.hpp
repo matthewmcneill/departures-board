@@ -83,10 +83,11 @@
  * @brief Handles the full OTA update process from a custom URL, such as a GitHub Release asset.
  * @param client The active WiFiClient (or WiFiClientSecure).
  * @param uri The URL path of the binary asset.
+ * @param sigUri The URL path of the signature asset.
  * @param token An optional GitHub Personal Access Token for private repositories.
  * @return The result status of the update process (HTTP_UPDATE_OK, HTTP_UPDATE_FAILED, etc.).
  */
-     HTTPUpdateResult handleUpdate(WiFiClient& client, const String& uri, const String& token);
+     HTTPUpdateResult handleUpdate(WiFiClient& client, const String& uri, const String& sigUri, const String& token);
 
      // Notification callbacks
      void onStart(HTTPUpdateStartCB cbOnStart)          { _cbStart = cbOnStart; }
@@ -113,14 +114,19 @@
  protected:
 
 /**
- * @brief Executes the flash write process using the ESP32 Update framework.
+ * @brief Executes the flash write process using the ESP32 Update framework and performs cryptographic verification.
  * @param in The HTTP data stream.
  * @param size The total size of the binary in bytes.
  * @param md5 The expected MD5 hash for the binary.
  * @param command The update command (U_FLASH or U_SPIFFS).
- * @return True if the update flashed successfully.
+ * @param sigBuf Pointer to downloaded signature buffer
+ * @param sigLen Length of the signature
+ * @return True if the update flashed and verified successfully.
  */
-     bool runUpdate(Stream& in, uint32_t size, String md5, int command = U_FLASH);
+     bool runUpdate(Stream& in, uint32_t size, String md5, int command, uint8_t* sigBuf, size_t sigLen);
+     
+     // Helper for fetching signature
+     bool fetchSignature(WiFiClient& client, const String& url, const String& token, uint8_t* sigBuf, size_t expectedLen);
 
      // Set the error and potentially use a CB to notify the application
      void _setLastError(int err) {

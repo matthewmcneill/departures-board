@@ -71,7 +71,9 @@ private:
     void handleTestBoard(AsyncWebServerRequest *request, const String& body);
     void handleCaptivePortalRedirect(AsyncWebServerRequest *request);
     void handleReboot(AsyncWebServerRequest *request);
-    void handleOTACheck(AsyncWebServerRequest *request);
+    void handleOtaAvailable(AsyncWebServerRequest *request);
+    void handleOtaForce(AsyncWebServerRequest *request);
+    void handleOtaRollback(AsyncWebServerRequest *request);
     void handleStationPicker(AsyncWebServerRequest *request);
     void handleSetDiagMode(AsyncWebServerRequest *request);
     void handleScreenshot(AsyncWebServerRequest *request);
