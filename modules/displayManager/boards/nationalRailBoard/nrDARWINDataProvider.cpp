@@ -8,10 +8,8 @@
  * Attribution-NonCommercial-ShareAlike 4.0 International. To view a copy of
  * this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module:
- * modules/displayManager/boards/nationalRailBoard/nrDARWINDataProvider.cpp
- * Description: Implementation of National Rail data source for the legacy
- * DARWIN API.
+ * Module: modules/displayManager/boards/nationalRailBoard/nrDARWINDataProvider.cpp
+ * Description: Implementation of National Rail data source for the legacy DARWIN API.
  *
  * Exported Functions/Classes:
  * - nrDARWINDataProvider: Concrete legacy DARWIN backend provider implementing
@@ -193,6 +191,23 @@ PriorityTier nrDARWINDataProvider::getPriorityTier() {
  * coordinates XML streaming parse.
  */
 void nrDARWINDataProvider::executeFetch() {
+  // [HYBRID-MEM] RAII ScrubGuard ensures that transient parser strings are
+  // cleared from the heap whenever the function exits (success or error).
+  /**
+   * @brief RAII Scope Guard to ensure transient parsing strings are cleared.
+   * Clears tagName, tagPath, and parent/grandparent tags from the heap automatically 
+   * when the block scope is exited (e.g. via early return or completion).
+   */
+  struct ScrubGuard {
+    nrDARWINDataProvider *p;
+    ~ScrubGuard() {
+      p->tagName.clear();
+      p->tagPath.clear();
+      p->grandParentTagName.clear();
+      p->parentTagName.clear();
+    }
+  } guard{this};
+
   LOG_INFO("DATA", "NR Source: executeFetch() entry. Free heap: " +
                        String(ESP.getFreeHeap()));
 
@@ -550,6 +565,7 @@ void nrDARWINDataProvider::executeFetch() {
     }
 #endif
   }
+
   return;
 }
 
@@ -727,6 +743,7 @@ void nrDARWINDataProvider::deleteService(int x) {
 
 void nrDARWINDataProvider::startTag(const char *tag) {
   tagLevel++;
+  // [HYBRID-MEM] Use String for flexible tag matching across deep SOAP trees.
   grandParentTagName = parentTagName;
   parentTagName = tagName;
   tagName = tag;
@@ -910,6 +927,13 @@ UpdateStatus nrDARWINDataProvider::refreshWsdl() {
         appContext.getConfigManager().saveFile(F("/darwin_wsdl_cache.json"),
                                                output);
 
+        // [HYBRID-MEM] Scrub discovery strings
+        soapURL.clear();
+        grandParentTagName.clear();
+        parentTagName.clear();
+        tagName.clear();
+        tagPath.clear();
+
         return UpdateStatus::SUCCESS;
       }
     }
@@ -917,6 +941,14 @@ UpdateStatus nrDARWINDataProvider::refreshWsdl() {
 
   LOG_ERROR("DATA",
             "NR Source: Failed to extract soap:address from WSDL response.");
+  
+  // [HYBRID-MEM] Scrub
+  soapURL.clear();
+  grandParentTagName.clear();
+  parentTagName.clear();
+  tagName.clear();
+  tagPath.clear();
+
   return UpdateStatus::DATA_ERROR;
 }
 

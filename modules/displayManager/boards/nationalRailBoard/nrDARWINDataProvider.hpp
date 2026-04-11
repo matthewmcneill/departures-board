@@ -7,7 +7,7 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: modules/displayManager/boards/nationalRailBoard/nationalRailDataSource.hpp
+ * Module: modules/displayManager/boards/nationalRailBoard/nrDARWINDataProvider.hpp
  * Description: National Rail data source implementing iDataSource.
  *
  * Exported Functions/Classes:
@@ -55,10 +55,15 @@ private:
     // Darwin API / SOAP endpoints tracking
     char soapHost[48];
     char soapAPI[48];
+    // [HYBRID-VOLATILE] SOAP URLs are discovered dynamically via WSDL.
+    // Cleared post-discovery or during refresh sequences.
     String soapURL;
     bool loadingWDSL;
 
     // XML Parsing State
+    // [HYBRID-VOLATILE] XML parsing state strings
+    // Using String allows for arbitrary tag lengths during deep SOAP traversing.
+    // These MUST be cleared via .clear() at the end of every executeFetch cycle.
     String grandParentTagName;
     String parentTagName;
     String tagName;
