@@ -25,7 +25,8 @@
 - [ ] Migrate Sleep Schedule from v1 config to a unified 'Schedule' tab/module (currently handled in legacy System screens).
 - [ ] Investigate moving the "Refresh Rate" configuration from a global system setting to a per-key property.
 - [ ] **Schedule Migration**: Review the original v1/v2 `config.json` format. Critically assess how existing `sleepEnabled`, `sleepStarts`, and `sleepEnds` fields should be automatically migrated into the new Schedule/Screensaver paradigm when we update the settings json parsing logic.
-- [ ] Have modules/configManager/configManager.cpp not save empty slots (e.g. schedules). Infer this by omission.
+- [ ] have modules/configManager/configManager.cpp not save empty slots (e.g. schedules). Infer this by omission.
+- [ ] **Documentation**: Complete the missing step-by-step walkthrough content in `docs/ConfiguringDevice.md` (re-open / completion of `80fff86e`).
 
 ### Data Providers & Scheduling
 - [ ] header widgets - I have a feeling this is not generalised, and is spacific to NatRail. (Still largely NR specific)
@@ -45,7 +46,10 @@
 - [ ] Add unit test or manual verification suite for `determineInitialTab` across all state transitions to ensure long-term stability as more tabs are added.
 - [ ] **Unit Testing**: Implement `unit_testing_host` scenarios for `drawText` to verify fast-path logic and rough-cut truncation accuracy under extreme string lengths.
 - [ ] **Unit Testing**: Implement `ConfigManager` migration scenarios to verify v2.3 -> v2.4 legacy `turnOffOledInSleep` to per-board `oledOff` mapping.
-- [ ] Fix `configManagerTests.cpp` compilation failure during `pio test` due to out-of-date API usage.
+- [ ] fix `configManagerTests.cpp` compilation failure during `pio test` due to out-of-date API usage.
+- [ ] **Memory Stability**: Replace `Arduino String` with fixed `char[]` buffers in `busDataSource.hpp` and `weatherClient.hpp` to mitigate heap fragmentation (`a7ab7125`).
+- [ ] **Weather Icons**: Debug and fix the `weatherWidget` rendering pipeline; icons are currently failing to display despite successful data fetch.
+- [ ] **Native Tests**: Update `test/mocks/appContext.hpp` with v3.0 accessors (`getDeviceCrypto`, `getAppState`) to restore test suite compilation (`14624361`).
 
 ### Simulator Parity
 - [ ] **Simulator Parity**: Update the WebAssembly `layoutsim` mock data injection (`syncData()` in `main.cpp`) to accurately populate the `location` memory array rather than defaulting to `stationName`, preventing false-blank simulator displays for National Rail layouts.

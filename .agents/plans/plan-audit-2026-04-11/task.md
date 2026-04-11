@@ -1,0 +1,16 @@
+- [ ] Audit **🔨 Work In Progress** section
+    - [ ] a7ab7125 (Memory Stability Refactoring)
+    - [ ] d5dc2df5 (Enforce House Style Documentation)
+    - [ ] fb1df270 (Dynamic Layout Selection)
+    - [ ] 8b9a0895 (NR Message Prioritization)
+    - [ ] c7f2e37a (Scheduling System)
+- [ ] Audit **⏳ Pending Queue** section
+    - [ ] 761bb38e (Epoch Translation Matrix)
+    - [ ] 3b8d0f61 (Secure OTA Deployment)
+    - [ ] fedee7b7 (Migrate Feeds Configuration)
+    - [ ] 14624361 (Native Test Suite Restoration)
+    - [ ] 72b7ca6c (RDM Formation Data)
+- [ ] Audit **💾 Saved (Unqueued)** section
+    - [ ] Review all 10+ saved drafts
+- [ ] Compile final `active_plan_review.md` report
+- [ ] Propose index cleanup (DONE moves)
