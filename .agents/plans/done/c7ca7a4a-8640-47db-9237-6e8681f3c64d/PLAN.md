@@ -1,9 +1,13 @@
 ---
-name: Implementing iButton and TouchSensor
-description: Legacy migrated plan.
-created: 2026-03-22T18:15:00Z
-status: DONE
+name: "Implementing iButton and TouchSensor"
+description: "# Migrated Plan"
+created: "2026-03-22"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

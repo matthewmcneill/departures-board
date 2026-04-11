@@ -1,9 +1,13 @@
 ---
-name: Audit and Fix: TimeManager NTP sync initialization and strict DI refactoring for clockWidget
-description: Legacy migrated plan.
-created: 2026-03-17T23:23:45Z
-status: DONE
+name: "Audit and Fix: TimeManager NTP sync initialization and strict DI refactoring for clockWidget"
+description: "# Migrated Plan"
+created: "2026-03-17"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

@@ -1,9 +1,13 @@
 ---
-name: Universal Context Header Design (Pending Concept Selection)
-description: "[SUPERSEDED] Fixed with the new locationAndFiltersWidget."
-created: 2026-03-20T07:11:00Z
-status: DONE
+name: "Universal Context Header Design (Pending Concept Selection)"
+description: "# Migrated Plan"
+created: "2026-03-20"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

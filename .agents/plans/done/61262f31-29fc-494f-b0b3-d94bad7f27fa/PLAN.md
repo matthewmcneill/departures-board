@@ -1,9 +1,13 @@
 ---
-name: Adding Expected Time Column
-description: "[SUPERSEDED] Expected column already exists in NR widgets/layouts."
-created: 2026-03-23T22:46:42Z
-status: DONE
+name: "Adding Expected Time Column"
+description: "# Migrated Plan"
+created: "2026-03-23"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

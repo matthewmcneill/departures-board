@@ -1,9 +1,13 @@
 ---
-name: UI Proposal for Up/Down Buttons
-description: Legacy migrated plan.
-created: 2026-03-18T21:00:00Z
-status: DONE
+name: "UI Proposal for Up/Down Buttons"
+description: "# Migrated Plan"
+created: "2026-03-18"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

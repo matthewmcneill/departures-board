@@ -1,9 +1,13 @@
 ---
-name: Fix OLED Distortion & Font Corruption (NHD + Hex Fonts)
-description: "[SUPERSEDED] Resolved via U8g2StateSaver and clipping safeguards."
-created: 2026-03-24T10:05:00Z
-status: DONE
+name: "Fix OLED Distortion & Font Corruption (NHD + Hex Fonts)"
+description: "# Migrated Plan"
+created: "2026-03-24"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

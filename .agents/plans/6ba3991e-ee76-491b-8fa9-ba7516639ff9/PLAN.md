@@ -1,10 +1,14 @@
-1: ---
-2: name: Designing Wifi Signal Icons
-3: description: Legacy migrated plan.
-4: created: 2026-03-27T22:25:08Z
-5: status: COMPLETED
-6: ---
+---
+name: "6ba3991e-ee76-491b-8fa9-ba7516639ff9"
+description: "# Migrated Plan"
+created: "unknown"
+status: "SAVED"
+commits: []
+---
 
-
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [sessions.md](sessions.md)
+- [task.md](task.md)

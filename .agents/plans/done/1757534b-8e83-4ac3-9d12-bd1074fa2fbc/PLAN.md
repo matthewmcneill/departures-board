@@ -1,9 +1,13 @@
 ---
-name: Implement unified iDataSourceTest interface
-description: Legacy migrated plan.
-created: 2026-03-17T11:31:00Z
-status: DONE
+name: "Implement unified iDataSourceTest interface"
+description: "# Migrated Plan"
+created: "2026-03-17"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

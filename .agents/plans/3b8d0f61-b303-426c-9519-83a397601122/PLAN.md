@@ -1,6 +1,15 @@
 ---
-name: Secure OTA Deployment Architecture
-description: Implementing cryptographic software-signing, partition rollback, and automated OTA quiet-hour polling.
-created: 2026-04-06T22:06:01Z
-status: READY
+name: "Secure OTA Deployment Architecture"
+description: ""
+created: "2026-04-06"
+status: "READY"
+commits: []
 ---
+
+# Summary
+
+
+## Technical Context
+- [sessions.md](sessions.md)
+- [context_bridge.md](context_bridge.md)
+- [task.md](task.md)

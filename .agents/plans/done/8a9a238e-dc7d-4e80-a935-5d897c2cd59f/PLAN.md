@@ -1,6 +1,15 @@
 ---
-name: Include Graph Optimization Execution
-description: Full execution of pruning global .hpp directives to shift LittleFS and WiFi dependencies strictly to target implementation scopes.
-created: 2026-04-02T00:31:58+01:00
-status: DONE
+name: "Include Graph Optimization Execution"
+description: "Optimized C++ include graph by removing heavyweight ESP32 libraries (`WiFi.h`, `LittleFS.h`) from global `.hpp` interfaces. Fixed ensuing compilation errors by restoring transitive dependencies for `A..."
+created: "2026-04-02"
+status: "DONE"
+commits: ['9638158']
 ---
+
+# Summary
+Optimized C++ include graph by removing heavyweight ESP32 libraries (`WiFi.h`, `LittleFS.h`) from global `.hpp` interfaces. Fixed ensuing compilation errors by restoring transitive dependencies for `Arduino.h` core types in (`systemManager.hpp`, `busDataSource.hpp`, `progressBarWidget.hpp`, `weatherClient.hpp`). Validated via `pio run -e esp32dev`.
+
+## Technical Context
+- [sessions.md](sessions.md)
+- [context_bridge.md](context_bridge.md)
+- [task.md](task.md)

@@ -1,9 +1,13 @@
 ---
-name: Debug Web GUI API Timeouts & Re-entrancy Drops
-description: Legacy migrated plan.
-created: 2026-03-17T22:58:00Z
-status: DONE
+name: "Debug Web GUI API Timeouts & Re-entrancy Drops"
+description: "# Migrated Plan"
+created: "2026-03-17"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

@@ -1,9 +1,13 @@
 ---
-name: Refactor Text Primitives and Integrate into Layout JSON
-description: Legacy migrated plan.
-created: 2026-03-24T12:13:00Z
-status: DONE
+name: "Refactor Text Primitives and Integrate into Layout JSON"
+description: "# Migrated Plan"
+created: "2026-03-24"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

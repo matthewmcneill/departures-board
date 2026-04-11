@@ -1,9 +1,13 @@
 ---
-name: System Tab Enhancements & Diagnostics
-description: Legacy migrated plan.
-created: 2026-03-18T07:10:00Z
-status: DONE
+name: "System Tab Enhancements & Diagnostics"
+description: "# Migrated Plan"
+created: "2026-03-18"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

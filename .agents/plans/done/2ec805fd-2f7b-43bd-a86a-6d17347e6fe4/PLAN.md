@@ -1,9 +1,13 @@
 ---
-name: Archiving Legacy Web Infrastructure & Renaming Portal
-description: Legacy migrated plan.
-created: 2026-03-17T23:10:35Z
-status: DONE
+name: "Archiving Legacy Web Infrastructure & Renaming Portal"
+description: "# Migrated Plan"
+created: "2026-03-17"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

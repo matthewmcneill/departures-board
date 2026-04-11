@@ -1,6 +1,14 @@
 ---
-name: Web Portal Credits and Attribution
-description: Adding a dedicated Credits tab to the web portal to formally acknowledge data providers and authors, building on the localized attribution constants.
-created: 2026-04-02T00:50:47+01:00
-status: DONE
+name: "Relocating Attribution Constants"
+description: "Refactored `nrAttribution`, `tflAttribution`, and `btAttribution` out of the global scope in `src/departuresBoard.cpp` into their respective board implementations (`nationalRailBoard.cpp`, `tflBoard.c..."
+created: "2026-04-02"
+status: "DONE"
+commits: ['a89c7e3']
 ---
+
+# Summary
+Refactored `nrAttribution`, `tflAttribution`, and `btAttribution` out of the global scope in `src/departuresBoard.cpp` into their respective board implementations (`nationalRailBoard.cpp`, `tflBoard.cpp`, `busBoard.cpp`). This removes minor architectural debt and strictly encapsulates display-only text within the correct domain controllers.
+
+## Technical Context
+- [sessions.md](sessions.md)
+- [context_bridge.md](context_bridge.md)

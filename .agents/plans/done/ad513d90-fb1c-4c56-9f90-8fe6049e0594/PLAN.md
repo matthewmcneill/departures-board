@@ -1,9 +1,13 @@
 ---
-name: Refining API Key UI and Build System
-description: Legacy migrated plan.
-created: 2026-03-16T22:06:44Z
-status: DONE
+name: "Refining API Key UI and Build System"
+description: "# Migrated Plan"
+created: "2026-03-16"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

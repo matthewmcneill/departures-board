@@ -1,12 +1,14 @@
 ---
-name: ESP32 Device-Side MCP Server
-description: Implementation plan for embedding an unauthenticated, zero-RAM buffered Model Context Protocol server over HTTP onto the ESP32.
-created: 2026-04-07T10:00:00Z
-status: SAVED
+name: "ESP32 Device-Side MCP Server"
+description: "## Context Links"
+created: "2026-04-07"
+status: "WIP"
+commits: []
 ---
 
+# Summary
 ## Context Links
 
-To gain full context of this plan's history and relevant technical details, you MUST read the following files:
-- [Context Bridge](context_bridge.md): The distilled technical state and findings.
-- [Sessions](sessions.md): The history of execution sessions.
+## Technical Context
+- [sessions.md](sessions.md)
+- [context_bridge.md](context_bridge.md)

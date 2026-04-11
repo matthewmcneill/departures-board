@@ -1,9 +1,13 @@
 ---
-name: Unified Test Queue & Display UI Unification
-description: Legacy migrated plan.
-created: 2026-03-17T21:52:03Z
-status: DONE
+name: "Unified Test Queue & Display UI Unification"
+description: "# Migrated Plan"
+created: "2026-03-17"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)

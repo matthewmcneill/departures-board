@@ -1,6 +1,14 @@
 ---
-name: National Rail Message Prioritization
-description: Implement generalized priority message interleaving for the scrolling ticker, ensuring calling points appear 50% of the time.
-created: 2026-03-28T17:03:00Z
-status: WIP
+name: "National Rail Message Prioritization"
+description: ""
+created: "2026-03-28"
+status: "SAVED"
+commits: []
 ---
+
+# Summary
+
+
+## Technical Context
+- [sessions.md](sessions.md)
+- [context_bridge.md](context_bridge.md)

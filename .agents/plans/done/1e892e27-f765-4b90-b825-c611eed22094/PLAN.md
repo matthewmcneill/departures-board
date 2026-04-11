@@ -1,9 +1,13 @@
 ---
-name: UI: Reorder portal navigation and add Schedule tab placeholder
-description: Legacy migrated plan.
-created: 2026-03-17T11:59:00Z
-status: DONE
+name: "UI: Reorder portal navigation and add Schedule tab placeholder"
+description: "# Migrated Plan"
+created: "2026-03-17"
+status: "DONE"
+commits: []
 ---
 
+# Summary
 # Migrated Plan
-Automatically migrated from .agents/queue.md.
+
+## Technical Context
+- [task.md](task.md)
