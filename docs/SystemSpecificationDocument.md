@@ -42,7 +42,10 @@
     - **Flash (SPIFFS/LittleFS)**: Stores `config.json` (system settings), `apikeys.json` (registry), and `rss.json` (feed list).
     - **Memory (RAM)**:
         - **Static DRAM**: Holds core managers (`appContext`, `DisplayManager`) and the `BoardVariant` pool to ensure zero fragmentation.
-        - **System Heap**: Reserved for transient **Network Clients** (`WiFiClientSecure`), **JSON Documents**, and **SSL Buffers**.
+        - **Hybrid Memory Model**: The system employs a **dual-tier string strategy** to optimize for both stability and flexibility:
+            - **Transient Tier (Dynamic)**: Utilizes the `String` class strictly for volatile, fetch-time parser logic (e.g., JSON key matching, XML path tracking). These objects are explicitly scrubbed via `.clear()` at the end of every fetch cycle.
+            - **Persistent Tier (Static)**: Enforces fixed-size **C-style character arrays** for all long-term data structures (records, status models, and configuration fields).
+        - **System Heap**: Reserved for transient **Network Clients** (`WiFiClientSecure`), **SSL Buffers**, and ephemeral parser state.
         - **Task Stack**: Limited to ~8KB; large local variables are strictly avoided to prevent kernel corruption.
 - **Data Flow**:
     1. **Trigger**: `SystemManager` or `Carousel` triggers `updateData()` on the active board's data source, instantly returning a `UpdateStatus::PENDING` state while a FreeRTOS background task is spawned.
@@ -196,7 +199,7 @@
     - **UI Fluidity**: Achieved via a 60Hz loop with localized `animationTick()` updates for smooth scrolling and clock blinking.
     - **Task Concurrency**: All heavy networking and XML/JSON parsing execute entirely within decoupled **FreeRTOS Background Tasks** (`xTaskCreatePinnedToCore`) pinned to Core 0. This guarantees zero blocking on the UI rendering context (Core 1). Native RTOS `vTaskDelay` chunking permits single-core MCUs (ESP32-C3) to seamlessly interweave Wi-Fi interrupts and display updates without processor starvation or Watchdog Timer (WDT) panics.
 - **Reliability & Availability**:
-    - **Fragmentation Prevention**: The system strictly avoids the `String` class in the "hot path" (API parsing), preferring fixed-size **C-style character arrays**. This ensures the **Max Free Block** size remains sufficient for TLS/SSL handshakes (requiring up to 32KB contiguous RAM).
+    - **Fragmentation Prevention (Hybrid Model)**: The system strictly manages the `String` class. While allowed for transient API parsing (for flexibility), it is **explicitly prohibited** for core data storage. This ensures the **Max Free Block** size remains sufficient for TLS/SSL handshakes (requiring up to 32KB contiguous RAM). All class-member strings must be cleared (`.clear()`) after network activity.
     - **Stack Protection**: To prevent overflows on the limited 8KB task stack, all heavy network dependencies (Clients, Parsers) are isolated on the heap using **Smart Pointers** (`std::unique_ptr`).
     - **Watchdog Safety**: The Hierarchical State Machine ensures boot-time blocking is kept under the ESP32's 5-second watchdog timer threshold.
 - **Observability**:

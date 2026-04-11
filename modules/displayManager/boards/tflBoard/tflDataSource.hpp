@@ -93,6 +93,8 @@ private:
 
     // API Details
     const char* apiHost = "api.tfl.gov.uk";
+    // [HYBRID-VOLATILE] Transient parser state strings
+    // These are cleared via .clear() after every fetch to minimize heap fragmentation.
     String currentKey;
     String currentObject;
     int id; // Current index for parsing

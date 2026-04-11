@@ -22,3 +22,6 @@ You are **STRICTLY PROHIBITED** from using absolute paths to the project reposit
 All authoring MUST use repository-relative paths to ensure portability across developer machines. 
 
 *(Exception: The internal session workspace `<appDataDir>/brain/<conversation-id>/...` must use absolute paths)*
+
+## Project Memory & Context Retrieval
+Before you research, plan, or execute complex changes, you MUST read `.agents/project_index.md`. This file serves as the central project memory directory. It dictates the current state of the architecture, ongoing plans, module dependencies, and unresolved technical debt. Always interrogate it to acquire required context before drafting an `implementation_plan.md` or proposing system changes.

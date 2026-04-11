@@ -94,10 +94,13 @@ private:
     
     // Internal parser state (migrated from busDataClient)
     const char* apiHost = "bustimes.org";   // API host address
-    String currentKey = "";                 // Current JSON key being parsed
-    String currentObject = "";              // Current JSON object being parsed
-    int id = 0;                             // Internal service ID
-    String longName;                        // Stop long name
+    // [HYBRID-VOLATILE] Transient parser state strings
+    // These are used for dynamic key matching and HTML scraping.
+    // Cleared via .clear() after fetch to prevent heap fragmentation.
+    String currentKey = "";                 
+    String currentObject = "";              
+    int id = 0;                             
+    String longName;                        
     bool maxServicesRead = false;           // Flag if max services limit reached
     
     // HTML Scraper logic...

@@ -103,6 +103,10 @@ void tflDataSource::executeFetch() {
     bool bChunked = false;
     lastErrorMsg[0] = '\0';
 
+    // [HYBRID-MEM] Scrub transient strings before starting a new fetch
+    currentKey.clear();
+    currentObject.clear();
+
     // Offload TflStation and Clients to heap to save stack
     std::unique_ptr<TflStation> xStation(new (std::nothrow) TflStation());
     std::unique_ptr<JsonStreamingParser> parser(new (std::nothrow) JsonStreamingParser());
@@ -200,6 +204,10 @@ void tflDataSource::executeFetch() {
         snprintf(lastErrorMsg, sizeof(lastErrorMsg), "AUTH SUCCESS %lums", (unsigned long)(millis()-perfTimer));
         taskStatus = UpdateStatus::SUCCESS;
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
+        
+        // [HYBRID-MEM] Scrub strings
+        currentKey.clear();
+        currentObject.clear();
         return;
     }
 
@@ -307,6 +315,12 @@ void tflDataSource::executeFetch() {
     if (renderData && renderData->numServices > 0) interval = 45000;
     setNextFetchTime(millis() + interval);
     LOG_INFO("DATA", "TfL Source: executeFetch() finished. Next fetch in " + String(interval) + "ms.");
+
+    // [HYBRID-MEM] Scrub the heap before exiting the fetch cycle.
+    // This allows us to use String for parser flexibility without long-term fragmentation.
+    currentKey.clear();
+    currentObject.clear();
+
     return;
 }
 
@@ -375,6 +389,7 @@ bool tflDataSource::compareTimes(const TflService& a, const TflService& b) {
 void tflDataSource::whitespace(char c) {}
 void tflDataSource::startDocument() {}
 void tflDataSource::key(String key) {
+    // [HYBRID-MEM] String used for flexibility in key matching across different API versions.
     currentKey = key;
     if (currentKey == "id" && stationData) {
         if (stationData->numServices < TFL_MAX_FETCH) id = stationData->numServices++;

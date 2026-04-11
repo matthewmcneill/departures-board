@@ -100,8 +100,9 @@ The application communicates over the serial port at a baud rate of **115200**.
  * **[Embedded Memory Management](reference/EmbeddedMemoryManagement.md)**: Authoritative C++ rules on preventing heap fragmentation, RAII pointer policies, and Safe FreeRTOS storage APIs.
  * **[Upstream Merges](UpstreamMerges.md)**: Tracks changes published by the original `gadec-uk` upstream repository and documents how those modifications have been integrated, adapted, or rejected in this v3.0 object-oriented architecture.
  
- ---
+  ---
  
+
  ## Layout Simulator
  
  To speed up UI development without needing physical hardware for every change, the project includes a **WebAssembly-based Layout Simulator**. This allows you to preview and debug your JSON layout definitions in real-time in your browser.

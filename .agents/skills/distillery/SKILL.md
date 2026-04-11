@@ -1,6 +1,6 @@
 ---
 name: distillery
-description: Trigger this skill whenever the user asks to "distill", "summarize", or "wrap up" a long coding session, OR when implicitly invoked by a workflow (like `/plan-save`). You MUST use this skill anytime a session is concluding. It acts as a progressive-reveal memory paging system, designed to radically save token costs by reorganizing the session's working memory into a highly token-efficient directory structure for future agents.
+description: Trigger this skill whenever the user asks to "distill", "summarize", or "wrap up" a long coding session, OR when implicitly invoked by a workflow (like `/plan-save`). It acts as a progressive-reveal memory paging system, designed to radically save token costs by reorganizing the session's working memory into a highly token-efficient directory structure for future agents.
 ---
 
 # Distillery Skill

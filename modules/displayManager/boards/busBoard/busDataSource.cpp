@@ -112,6 +112,11 @@ void busDataSource::executeFetch() {
     bool bChunked = false;
     lastErrorMsg[0] = '\0';
 
+    // [HYBRID-MEM] Transient parser strings are cleared at the end of every fetch cycle.
+    currentKey.clear();
+    currentObject.clear();
+    longName.clear();
+
     std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
     if (!httpsClient) {
         LOG_ERROR("DATA", "Bus Board: Memory allocation failed for client!");
@@ -219,6 +224,7 @@ void busDataSource::executeFetch() {
 
     while((httpsClient->available() || httpsClient->connected()) && (millis() < dataSendTimeout) && (!maxServicesRead)) {
         while(httpsClient->available() && !maxServicesRead) {
+            // [HYBRID-MEM] Using String for line matching to handle unpredictable HTML row formats.
             String line = httpsClient->readStringUntil('\n');
             dataReceived += line.length() + 1;
             
@@ -392,10 +398,16 @@ void busDataSource::executeFetch() {
         if (renderData && renderData->numServices > 0) interval = 45000;
         setNextFetchTime(millis() + interval);
         LOG_INFOf("DATA", "Bus Source: executeFetch() finished. Next fetch in %dms.", (int)interval);
-        return;
+        goto scrub_and_exit;
     }
     taskStatus = UpdateStatus::DATA_ERROR;
     setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
+
+scrub_and_exit:
+    // [HYBRID-MEM] Scrub the heap before exiting the fetch cycle.
+    currentKey.clear();
+    currentObject.clear();
+    longName.clear();
     return;
 }
 
@@ -528,8 +540,13 @@ void busDataSource::cleanFilter(const char* rawFilter, char* cleanedFilter, size
 
 void busDataSource::whitespace(char c) {}
 void busDataSource::startDocument() {}
-void busDataSource::key(String key) { currentKey = key; }
-void busDataSource::value(String value) { if (currentKey == "long_name") longName = value; }
+void busDataSource::key(String key) { 
+    // [HYBRID-MEM] String used for flexibility in key matching.
+    currentKey = key; 
+}
+void busDataSource::value(String value) { 
+    if (currentKey == "long_name") longName = value; 
+}
 void busDataSource::endArray() {}
 void busDataSource::endObject() {}
 void busDataSource::endDocument() {}
@@ -570,6 +587,11 @@ UpdateStatus busDataSource::getStopLongName(const char *locationId, char *locati
     }
     httpsClient->stop();
     strlcpy(locationName, longName.c_str(), 80); // locationName is size 80 usually
+
+    // [HYBRID-MEM] Scrub strings
+    currentKey.clear();
+    longName.clear();
+
     return UpdateStatus::SUCCESS;
 }
 

@@ -34,13 +34,17 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
 
     private:
         const char* apiHost = "api.openweathermap.org";
+        // [HYBRID-VOLATILE] transient parser state strings
+        // These are cleared via .clear() after every fetch to minimize heap fragmentation.
         String currentKey = "";
         String currentObject = "";
         int weatherItem = 0;
 
         WeatherStatus bgStatus; // Background Double Buffer used during active HTTP parsing
         WeatherStatus* activeStatus = nullptr; // Pointer to the UI-facing active status structure
-        String activeApiKey = ""; // Thread-local copy of the API key for background fetch
+        // [HYBRID-PERSISTENT] API keys are configuration data with known max lengths.
+        // We use a fixed-size buffer to ensure deterministic memory usage.
+        char activeApiKey[48] = ""; 
         
         volatile bool fetchPending = false; // Tracks if a fetch is queued or executing
 
@@ -61,7 +65,7 @@ class weatherClient: public JsonListener, public iConfigurable, public iDataSour
         const char* getLastErrorMsg() const override { return lastErrorMsg; }
         UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override { return UpdateStatus::SUCCESS; }
         uint32_t getNextFetchTime() override { return nextWeatherUpdate; }
-        PriorityTier getPriorityTier() override { return activeApiKey.length() == 0 ? static_cast<PriorityTier>(255) : PriorityTier::PRIO_LOW; } // Weather is low priority
+        PriorityTier getPriorityTier() override { return activeApiKey[0] == '\0' ? static_cast<PriorityTier>(255) : PriorityTier::PRIO_LOW; } // Weather is low priority
         void setNextFetchTime(uint32_t forceTimeMillis) override { nextWeatherUpdate = forceTimeMillis; }
         const char* getAttributionString() const override { return "Weather by OpenWeatherMap"; }
 

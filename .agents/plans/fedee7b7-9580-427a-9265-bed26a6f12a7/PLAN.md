@@ -2,7 +2,7 @@
 name: "Migrate Feeds Configuration into Nested Schema"
 description: ""
 created: "2026-04-05"
-status: "READY"
+status: "WIP"
 commits: []
 ---
 

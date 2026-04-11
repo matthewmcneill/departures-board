@@ -10,7 +10,7 @@ description: Concludes the plan lifecycle including house style checks, validati
    - Remove the plan's entry from `.agents/plans/ACTIVE_PLANS.md`.
    - Append a one-liner entry to `.agents/plans/ARCHIVED_PLANS.md` (Format: `[Date] | [Title] | [Key Impact] | [Link]`).
    - Update the `Module Index` in `project_index.md` by moving the link from the module's `Active Plans` to its `Archive Highlights`.
-6. Run an implicit `/plan-save` to ensure the final 100% completed `task.md` and `implementation_plan.md` and final clean states are safely persisted to `.agents/plans/[ID]/`.
+6. Run an implicit `/plan-save` to ensure the final 100% completed `task.md` and `implementation_plan.md` and final clean states are safely persisted to `.agents/plans/[ID]/` (You MUST explicitly invoke the `distillery` skill and pass `.agents/plans/[ID]/` as the target directory to prevent artifacts from stranding in context_archives).
 7. Finalize the operation by physically moving the completed plan's directory into the archive: `mv .agents/plans/[ID] .agents/plans/done/`
 8. Safely free the hardware mutex protocols per the releasing guidelines in `@[.agents/skills/pio-manager]`.
 9. Delete `task.md`, `implementation_plan.md`, `walkthrough.md` from the active `/brain` directory since the work is completed and persisted offline, concluding the session gracefully.

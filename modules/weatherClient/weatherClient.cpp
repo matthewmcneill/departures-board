@@ -32,12 +32,12 @@ extern class appContext appContext;
  */
 void weatherClient::reapplyConfig(const Config& config) {
     bool hasOwmKey = false;
-    activeApiKey = "";
+    activeApiKey[0] = '\0';
 
     // First try the specifically chosen weatherKeyId
     for (int i = 0; i < config.keyCount; i++) {
         if (strlen(config.weatherKeyId) > 0 && strcmp(config.keys[i].id, config.weatherKeyId) == 0) {
-            activeApiKey = String(config.keys[i].token);
+            strlcpy(activeApiKey, config.keys[i].token, sizeof(activeApiKey));
             hasOwmKey = true;
             break;
         }
@@ -47,7 +47,7 @@ void weatherClient::reapplyConfig(const Config& config) {
     if (!hasOwmKey) {
         for (int i = 0; i < config.keyCount; i++) {
             if (strcmp(config.keys[i].type, "owm") == 0) {
-                activeApiKey = String(config.keys[i].token);
+                strlcpy(activeApiKey, config.keys[i].token, sizeof(activeApiKey));
                 hasOwmKey = true;
                 break;
             }
@@ -130,7 +130,7 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
         return false;
     }
 
-    activeApiKey = apiKey;
+    strlcpy(activeApiKey, apiKey.c_str(), sizeof(activeApiKey));
     activeStatus = &status;
     bgStatus.lat = status.lat;
     bgStatus.lon = status.lon;
@@ -149,7 +149,8 @@ bool weatherClient::updateWeather(WeatherStatus& status, const char* apiKeyId, c
  * Manages sockets, error handling, and memory-safe struct synchronization.
  */
 void weatherClient::executeFetch() {
-    if (activeApiKey.length() == 0) {
+    // [HYBRID-MEM] API keys are relatively static; we use a fixed buffer here.
+    if (activeApiKey[0] == '\0') {
         setNextFetchTime(millis() + 600000);
         return;
     }
@@ -169,6 +170,8 @@ void weatherClient::executeFetch() {
         xSemaphoreTake(weatherMutex, portMAX_DELAY); \
         if (activeStatus) *activeStatus = bgStatus; \
         xSemaphoreGive(weatherMutex); \
+        currentKey.clear(); \
+        currentObject.clear(); \
         fetchPending = false; \
         return; \
     }
@@ -201,7 +204,7 @@ void weatherClient::executeFetch() {
                  "Host: %s\r\n"
                  "User-Agent: ESP32-Departures-Board\r\n"
                  "Connection: close\r\n\r\n",
-                 latBuf, lonBuf, activeApiKey.c_str(), apiHost);
+                 latBuf, lonBuf, activeApiKey, apiHost);
 
         if (len >= (int)sizeof(request)) {
             LOG_ERRORf("DATA", "Weather Client: Request URL too long! (%d bytes)", len);
@@ -307,6 +310,12 @@ void weatherClient::executeFetch() {
     UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
     LOG_DEBUGf("DATA", "Weather Task Stack High Water Mark: %d words", (int)hwm);
 #endif
+    
+    // [HYBRID-MEM] Scrub the heap before exiting the fetch cycle.
+    // This allows us to use String for parser flexibility without long-term fragmentation.
+    currentKey.clear();
+    currentObject.clear();
+
     fetchPending = false;
     return;
 }
@@ -327,6 +336,7 @@ void weatherClient::startDocument() {}
  * @param key The string name of the parsed key.
  */
 void weatherClient::key(String key) {
+    // [HYBRID-MEM] Using String for key matching to handle unpredictable API response ordering.
     currentKey = key;
 }
 
