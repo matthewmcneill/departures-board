@@ -6,10 +6,10 @@
 
 # Temporary file folders
 tmp/
-.agents/tmp/
-#.agents/plans/workspace/
 .gemini/
-#.agents/skills/*-workspace/
+.agents/tmp/
+.agents/plans/workspace/
+.agents/skills/*-workspace/
 
 # Fonts (Generated)
 modules/displayManager/fonts/fonts.cpp
