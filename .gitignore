@@ -7,8 +7,9 @@
 # Temporary file folders
 tmp/
 .agents/tmp/
-.agents/plans/workspace/
+#.agents/plans/workspace/
 .gemini/
+#.agents/skills/*-workspace/
 
 # Fonts (Generated)
 modules/displayManager/fonts/fonts.cpp
@@ -27,6 +28,7 @@ modules/displayManager/boards/*/layouts/*.cpp
 
 # Compiled Tools
 tools/bdfconv/bdfconv
+tools/platformio-mcp/
 
 # OS files
 .DS_Store
@@ -54,4 +56,4 @@ test-results/
 logs/
 .env
 
-tools/platformio-mcp/
+
