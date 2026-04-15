@@ -2,7 +2,7 @@
 name: "Documentation Wizard Auto-Capture"
 description: ""
 created: "2026-04-04"
-status: "SAVED"
+status: "WIP"
 commits: []
 ---
 

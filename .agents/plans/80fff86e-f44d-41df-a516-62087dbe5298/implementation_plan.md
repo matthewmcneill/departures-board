@@ -1,68 +1,42 @@
-# Hardware Framebuffer Remote Capture Architecture
-
-> **Architectural Audit Checklist**
-> - [x] **House Style**: Header structures validated.
-> - [x] **Architecture (SRP/DIP)**: `WebHandlerManager` dependency injection gap identified.
-> - [x] **UI/UX Design**: Added ASCII markup for `screenshot.html`.
-> - [x] **Resource Impact**: Analyzed 8KB heap allocation and thread concurrency risks.
-
+# Documentation Wizard Auto-Capture
 
 ## Goal Description
-Taking physical photos of an OLED screen introduces moiré patterns, glare, and scaling inconsistencies that degrade official documentation quality. Instead of using phones, we will implement an internal webhook on the ESP32 firmware that dynamically dumps the live `U8G2` graphics framebuffer memory over the Wi-Fi network as an `octet-stream`. We will then provide a lightweight client-side renderer (built on HTML5 Canvas) that reconstructs the byte array into a pixel-perfect, color-accurate digital screenshot. 
-
-This enables completely autonomous capture of the device's exact hardware display state directly from a desktop browser.
+The objective is to overhaul `docs/ConfiguringDevice.md` by capturing a complete, step-by-step walkthrough of the ESP32 configuration process. Instead of taking physical photos of the OLED screen, we will utilize the `.agents/skills/device-mcp-client` tools to discover the device, monitor telemetry, and capture pixel-perfect digital screenshots of the hardware display. Concurrently, a Browser Subagent will navigate the web UI and record WebP videos of the user-facing configuration portal.
 
 ## User Review Required
 > [!IMPORTANT]
-> This is a brilliant hardware-software integration concept. It essentially creates a native screen recording capability for a $5 microcontroller!
-> 
-> Review the underlying buffer architecture below. We will use a lightweight HTML5 Canvas app to decode the 1-bit/4-bit U8G2 memory block instead of a heavy WebAssembly payload, ensuring immediate execution. Does this sound like exactly what you envisioned?
+> The hardware backend for screenshots (JSON-RPC) has been successfully deployed. This revised plan relies purely on orchestrating Python scripts (`discovery.py`, `captureU8g2.py`, `diagnostics.py`) and a Browser Subagent to generate the documentation assets. Please review the workflow below and approve via `/plan-start`.
+
+## Open Questions
+> [!WARNING]
+> **Censoring Sensitive Data:** We need to explicitly censor WiFi SSIDs, passwords, and API tokens during the Subagent's web navigation. I propose instructing the Browser Subagent to execute DOM manipulation (e.g. replacing text inputs with asterisks `***`) *before* finalizing the video captures. Are you comfortable with this approach? 
 
 ## Proposed Changes
 
-### [MODIFY] `modules/webServer/webHandlerManager.cpp`
-> [!WARNING]
-> **Dependency Inversion Gap**: `WebHandlerManager` currently lacks native access to `DisplayManager`. As you suggested, rather than injecting `DisplayManager` directly, we will inject a full `appContext&` reference via the constructor. This seamlessly follows the existing architecture without breaking encapsulation or referencing globals.
+We will orchestrate the documentation generation primarily through commands rather than source code changes.
 
-We will inject a new API endpoint into the async web server.
-- **Route**: `GET /api/screenshot`
-- **Implementation**: The handler will access the display via `_context.getDisplayManager()->getRawFramebuffer()`. It will calculate the full frame size (`u8g2.getBufferTileWidth() * 8 * u8g2.getBufferTileHeight()`) and transmit the pure binary payload back to the browser.
+### 1. Device Discovery & Monitoring
+- **Discovery**: Execute `python3 .agents/skills/device-mcp-client/scripts/discovery.py` to auto-detect the dynamically assigned IP from the `pio-manager` spooling cache.
+- **Diagnostics**: Run `python3 .agents/skills/device-mcp-client/scripts/diagnostics.py [IP]` to ensure the device has booted successfully and has enough free heap for capturing.
 
-> [!CAUTION]
-> **Concurrency Risk**: The `AsyncWebServer` callbacks execute on a separate underlying FreeRTOS task from the main Arduino loop. Extracting `u8g2.getBufferPtr()` concurrently while `DisplayManager::tick()` is rendering may result in tearing (half-drawn geometries). Given that this is a lightweight diagnostic screenshot tool, a minor tear is acceptable, but no blocking mutexes should be added to avoid starving the display rendering task.
+### 2. Browser Subagent Integration
+- Instantiate a **Browser Subagent** targeting the ESP32's web portal IP address.
+- The subagent will click through the `WiFiManager` startup and the Main Portal settings.
+- Recordings will be captured and output as high framerate WebP videos for documentation.
 
-### [MODIFY] `modules/displayManager/displayManager.hpp`
-- Add a secure memory accessor method `uint8_t* getRawFramebuffer()` and size helper `size_t getFramebufferSize()` to act as read-only bridges into the `u8g2` object's memory.
+### 3. Hardware Display Capture
+- At each key step (e.g., AP Mode, Connection Success, API Setup), we will execute `python3 .agents/skills/device-mcp-client/scripts/captureU8g2.py [IP] assets/oled_screen_N.png`.
+- This ensures pixel-perfect monochrome representation of the physical 256x64 SSD1322 OLED display.
 
-### [NEW] `web/screenshot.html`
-We will create a lightweight frontend page on the ESP32's web server (accessible via `http://<device-ip>/screenshot.html`).
-
-**UI Mockup:**
-```text
-+-------------------------------------------------+
-| System Screenshot Tool                          |
-|                                                 |
-|  [ Refresh ]                [ Download PNG ]    |
-|                                                 |
-|  +-------------------------------------------+  |
-|  |       [ 256x64 Canvas Display ]           |  |
-|  |           LONDON WATERLOO                 |  |
-|  +-------------------------------------------+  |
-+-------------------------------------------------+
-```
-- **Data Execution**: It will issue an asynchronous `fetch("/api/screenshot")` request.
-- **Visual Rendering**: A custom JavaScript loop will parse the U8G2 chunk memory (which is typically page-aligned in 8-pixel horizontal/vertical slices depending on the specific SSD1322 initialization). It will decode the bits, map them to an HTML5 `<canvas>` element, and tint the high-bits with the exact `#FFB300` (Departure Yellow) HEX code.
-- **Save Capability**: Include a "Download PNG" button that automatically executes `canvas.toDataURL("image/png")` to save the perfect screenshot to the user's desktop.
-
-### [MODIFY] `web/index.html`
-- We will inject a new hyperlinked entry into the general **System Settings dropdown menu** (alongside "Check for Updates" and "Restart System") to act as a direct UI shortcut traversing over to the screenshot tool.
-
-## Output Utility
-Once this pipeline is deployed, creating the `ConfiguringDevice.md` guide becomes trivial: you will simply navigate the web UI with the subagent on screen 1, and concurrently visit the `/screenshot.html` route to auto-export native PNGs of the physical OLED board reacting to those changes.
+### 4. [MODIFY] `docs/ConfiguringDevice.md`
+- Rewrite the documentation narrative to incorporate the newly captured `webp` videos and OLED `png` screens.
+- Replace the legacy descriptions with the updated, highly visual "First Time Configuration" and "General Settings" walkthroughs.
 
 ## Verification Plan
 ### Automated Tests
-- Send a standard CURL request to the `/api/screenshot` endpoint to verify binary payload size and MIME type accuracy.
+- Validate `discovery.py` and `diagnostics.py` successfully connect and return valid JSON output without timing out.
+- Verify `captureU8g2.py` successfully dumps and saves a valid 256x64 PNG artifact without exceptions.
+
 ### Manual Verification
-- Render the `screenshot.html` portal page.
-- Visually verify that the decoded canvas pixels align exactly with the physical OLED display state (correct endianness and row wrapping).
+- Visually review the finalized `docs/ConfiguringDevice.md`.
+- Confirm sensitive API tokens and WiFi passwords are obscured in the generated WebP recordings and images.

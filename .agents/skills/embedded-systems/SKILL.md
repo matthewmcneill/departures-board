@@ -55,6 +55,7 @@ Load detailed guidance based on context:
 | Security | `references/embedded-security-best-practices.md` | Secure boot, root of trust, firmware updates, cryptography |
 | Impact Assessment | `references/planning-impact-assessment.md` | Drafting an implementation plan, evaluating memory/power/security impacts |
 | Web Interfaces | `references/embedded-web-portal.md` | Design, performance, and testing strategies for device web portals |
+| OTA Patterns | `references/ota-implementation-patterns.md` | Over-The-Air (OTA) architectures, auto-rollback, and firmware lifecycle |
 
 ## Constraints
 
