@@ -17,6 +17,9 @@ You are ONLY permitted to skip the formal `PLANNING` mode, `task.md`, and `imple
 ### Scratch Files Constraint:
 - When writing scripts or temporary files, you MUST write them to `.agents/tmp/`. You are **STRICTLY PROHIBITED** from using `/tmp/`.
 
+## Implicit Workflow Prohibition
+You are **STRICTLY PROHIBITED** from automatically executing administrative workflows (e.g., `/plan-wrap`, `/plan-save`, `/plan-start`) based on inference or conversational prompts like "Continue", "Looks good", or "Done". You MUST wait for the user to explicitly type the exact slash command before initiating any plan lifecycle or teardown procedures.
+
 ## Repository-Relative Portability
 You are **STRICTLY PROHIBITED** from using absolute paths to the project repository (e.g., `/Users/myuser/Documents/...`) in ANY scripts, temporary files, plan documents (`implementation_plan.md`, `context_bridge.md`, `task.md`, `PLAN.md`), or terminal commands.
 All authoring MUST use repository-relative paths to ensure portability across developer machines. 

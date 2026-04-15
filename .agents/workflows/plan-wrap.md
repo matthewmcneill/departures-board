@@ -2,6 +2,7 @@
 description: Concludes the plan lifecycle including house style checks, validation, git commits, final plan save, and releasing locks.
 ---
 
+0. **Explicit Authorization Check**: Abort this workflow immediately if the user did not literally execute the `/plan-wrap` command. General conversational prompts like "continue" or "done" do not authorize a plan wrap.
 1. Determine the active Plan ID based on your session lineage (e.g., by checking if this session's ID exists inside any `.agents/plans/*/sessions.md` file).
 2. **Refactoring & Documentation**: Run the `house-style-documentation` and `architectural-refactoring` skills to ensure all modified code and `/docs` files are strictly aligned with project standards.
 3. **Validation & Assessment**: Execute targeted hardware compilation and validation per the guidelines inside `@[.agents/skills/pio-manager]`. Update `.agents/todo_list.md` with any discovered technical debt or necessary test suite additions.

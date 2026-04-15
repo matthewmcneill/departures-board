@@ -31,7 +31,8 @@ When queried to perform any queue management task, map the intent to one of the 
 - **Use when**: You have loaded a plan and are ready to claim the hardware lock and begin coding. (You cannot compile or push code without claiming this lock natively).
 
 ### 5. `/plan-wrap` -> [view `.agents/workflows/plan-wrap.md`]
-- **Use when**: At the end of a session, when all tasks in `implementation_plan.md` are 100% finished. This triggers the massive validation sweep, Git commit generation, and final disk persistence before formally releasing the hardware lock.
+- **Use when**: At the end of a session, when all tasks in `implementation_plan.md` are 100% finished AND the user explicitly issues the `/plan-wrap` slash command.
+- **CRITICAL**: You are STRICTLY PROHIBITED from running this workflow automatically via inference (e.g., if a user just says "continue"). This triggers massive validation sweeps, Git commits, and lock releases. Wait for explicit authorization.
 
 ## Mid-Flight Context Saving (Pencils Down)
 

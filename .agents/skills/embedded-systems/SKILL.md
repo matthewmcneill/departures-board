@@ -6,7 +6,7 @@ metadata:
   author: https://github.com/Jeffallan
   version: "1.0.0"
   domain: specialized
-  triggers: embedded systems, firmware, microcontroller, RTOS, FreeRTOS, STM32, ESP32, bare metal, interrupt, DMA, real-time, security, secure boot, cryptography, OTA updates
+  triggers: embedded systems, firmware, microcontroller, RTOS, FreeRTOS, STM32, ESP32, bare metal, interrupt, DMA, real-time, security, secure boot, cryptography, OTA updates, web portal, captive portal, dashboard
   role: specialist
   scope: implementation
   output-format: code
@@ -46,6 +46,7 @@ Load detailed guidance based on context:
 
 | Topic | Reference | Load When |
 |-------|-----------|-----------|
+| Hardware Safety | `references/embedded-safety.md` | GPIO safety, Pin assignment, build/upload safety |
 | RTOS Patterns | `references/rtos-patterns.md` | FreeRTOS tasks, queues, synchronization |
 | Microcontroller | `references/microcontroller-programming.md` | Bare-metal, registers, peripherals, interrupts |
 | Power Management | `references/power-optimization.md` | Sleep modes, low-power design, battery life |
@@ -53,6 +54,7 @@ Load detailed guidance based on context:
 | Memory & Performance | `references/memory-optimization.md` | Code size, RAM usage, flash management |
 | Security | `references/embedded-security-best-practices.md` | Secure boot, root of trust, firmware updates, cryptography |
 | Impact Assessment | `references/planning-impact-assessment.md` | Drafting an implementation plan, evaluating memory/power/security impacts |
+| Web Interfaces | `references/embedded-web-portal.md` | Design, performance, and testing strategies for device web portals |
 
 ## Constraints
 
