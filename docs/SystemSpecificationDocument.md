@@ -290,6 +290,7 @@ To add a new transport mode (e.g., "Ferry Board"), a developer would:
     - [Embedded Memory Management](reference/EmbeddedMemoryManagement.md)
     - [New Multi-Board Architecture](reference/NewMultiBoardArchitecture.md)
     - [OTA Architecture & Deployment Strategy](reference/OtaArchitecture.md)
+    - [OTA Resilience and Hybrid Build Framework](reference/OTAResilienceAndHybridBuildFramework.md)
     - [Password Field Implementation Guide](reference/PasswordFieldImplementationGuide.md)
     - [Testing Approach](reference/TestingApproach.md)
     - [Visual Designer Code Generation Options](reference/VisualDesignerCodeGenerationOptions.md)
