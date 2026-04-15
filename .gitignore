@@ -56,4 +56,6 @@ test-results/
 logs/
 .env
 
+# Keys and Credentials
+*.pem
 
