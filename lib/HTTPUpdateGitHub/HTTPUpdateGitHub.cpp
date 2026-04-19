@@ -39,8 +39,6 @@
 #include <logger.hpp>
 #include <StreamString.h>
 
-#include <esp_partition.h>
-#include <esp_ota_ops.h>                // get running partition
 #include <md5Utils.hpp>
 
 // Include mbedtls and public key

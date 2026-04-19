@@ -45,6 +45,7 @@
 #include <rssClient.hpp>
 #include <vector>
 #include <weatherClient.hpp>
+#include <SPI.h>
 
 // We must include Board specialized headers internally within the cpp only when
 // absolutely needed to invoke methods that the generic iDisplayBoard does not
@@ -92,6 +93,17 @@ DisplayManager::DisplayManager()
  */
 void DisplayManager::begin(appContext *contextPtr) {
   context = contextPtr;
+
+#if defined(DISPLAY_SPI_SCK) && defined(DISPLAY_SPI_MISO) && defined(DISPLAY_SPI_MOSI)
+  // CRITICAL FIX: The ESP32 Core v3.x "By Arduino Pin" mapping inadvertently maps logical
+  // pins (11,12,13) directly to the CPU's internal Flash/PSRAM hardware bus on S3 Nano,
+  // causing a fatal Task Watchdog crash. We explicitly secure the standard SPI bus
+  // using platform-driven GPIO definitions injected from platformio.ini to prevent collision.
+  SPI.begin(DISPLAY_SPI_SCK, DISPLAY_SPI_MISO, DISPLAY_SPI_MOSI, -1);
+#else
+  // Fallback for unmodified environments
+  SPI.begin();
+#endif
 
   // Initialization remains in begin() as we need u8g2 hardware started
   u8g2.begin();

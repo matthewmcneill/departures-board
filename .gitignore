@@ -3,6 +3,10 @@
 *.bin
 *.hex
 *.elf
+managed_components/
+
+# PlatformIO MCP Server Log Files and Locks
+.pio-mcp-workspace*/
 
 # Temporary file folders
 tmp/
@@ -10,6 +14,8 @@ tmp/
 .agents/tmp/
 .agents/plans/workspace/
 .agents/skills/*-workspace/
+
+
 
 # Fonts (Generated)
 modules/displayManager/fonts/fonts.cpp

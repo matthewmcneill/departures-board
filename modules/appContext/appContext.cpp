@@ -28,7 +28,8 @@
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
 #include <buttonHandler.hpp>
-#include <logger.hpp>
+#include "../../lib/logger/logger.hpp"
+#include "../../lib/boardLED/boardLED.hpp"
 #include <wifiManager.hpp>
 #include <WiFi.h>
 
@@ -58,6 +59,10 @@ appContext::~appContext() = default;
  * @brief Initialize all system services in the required boot order.
  */
 void appContext::begin() {
+  // Turn LED solid ON to represent Booting state
+  BoardLED::init();
+  BoardLED::on();
+
   LOG_SPLASH("APP STATE: BOOTING");
   LOG_INFO("SYSTEM", "Initializing appContext managers...");
 
@@ -230,6 +235,10 @@ void appContext::begin() {
  */
 void appContext::updateBootProgress(int percentage, const char *msg) {
   LOG_INFO("SYSTEM", msg);
+
+  // Briefly pulse the LED OFF for 50ms upon a major loading stage
+  BoardLED::blink(50);
+
   if (auto *load = static_cast<LoadingBoard *>(
           displayManager.getSystemBoard(SystemBoardId::SYS_BOOT_LOADING))) {
     load->setProgress(msg, percentage, 600);

@@ -4,8 +4,9 @@
  *
  * https://github.com/gadec-uk/departures-board
  *
- * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
- * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ * This work is licensed under Creative Commons
+ * Attribution-NonCommercial-ShareAlike 4.0 International. To view a copy of
+ * this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
  * Module: lib/logger/logger.cpp
  * Description: Implementation of the lightweight logging utility.
@@ -19,12 +20,14 @@
  */
 
 #include "logger.hpp"
-#include <Arduino.h>
+#include "boardLED.hpp"
+#include <HardwareSerial.h>
 #include <stdarg.h>
 
 #if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_ERROR
 
-std::vector<String> Logger::secrets; // Registry of sensitive strings to be redacted
+std::vector<String>
+    Logger::secrets; // Registry of sensitive strings to be redacted
 
 /**
  * @brief Initializes the Serial port and waits for it to stabilize.
@@ -32,73 +35,116 @@ std::vector<String> Logger::secrets; // Registry of sensitive strings to be reda
  */
 void Logger::begin(unsigned long baud) {
   Serial.begin(baud);
-  delay(1000);
+  delay(10); // Standard brief delay
+}
+
+/**
+ * @brief Blocks execution until Serial connects or timeout expires, flashing
+ * LED.
+ * @param timeout_ms Maximum time to wait in milliseconds.
+ */
+void Logger::waitForSerial(uint32_t timeout_ms) {
+  BoardLED::init();
+  uint32_t startAt = millis();
+
+  // Simplified wait loop using flip block
+  while (!Serial && (millis() - startAt < timeout_ms)) {
+    BoardLED::flip();
+    delay(500);
+  }
+
+  // If the serial connected, give the host terminal time to latch onto the data
+  // stream.
+  if (Serial) {
+    Serial.print(".");
+    // 7000ms wakeup delay to let the terminal latch and spooler wake up
+    for (int i = 0; i < 7; i++) {
+      BoardLED::blink(500);
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println();
+  }
+
+  // Guarantee LED is OFF when exiting this wait loop
+  BoardLED::off();
 }
 
 /**
  * @brief Logs a framed splash message to the Serial console.
  * @param message The text to be framed.
  */
-void Logger::logSplashMessage(const char* message) {
-  if (message == nullptr) return;
+void Logger::logSplashMessage(const char *message) {
+  if (message == nullptr)
+    return;
   size_t len = strlen(message);
-  
+
   Serial.println("");
-  for (size_t i = 0; i < len + 8; i++) Serial.print("#");
+  for (size_t i = 0; i < len + 8; i++)
+    Serial.print("#");
   Serial.println("");
   Serial.print("### ");
   Serial.print(message);
   Serial.println(" ###");
-  for (size_t i = 0; i < len + 8; i++) Serial.print("#");
+  for (size_t i = 0; i < len + 8; i++)
+    Serial.print("#");
   Serial.println("\n");
 }
 
 /**
- * @brief Registers a sensitive string (e.g., API key) to be redacted from all future log output.
+ * @brief Registers a sensitive string (e.g., API key) to be redacted from all
+ * future log output.
  * @param secret The plaintext string that should not appear in the logs.
  */
-void Logger::registerSecret(const String& secret) {
+void Logger::registerSecret(const String &secret) {
   if (secret.length() > 0) {
     secrets.push_back(secret);
   }
 }
 
 /**
- * @brief Scans a log message and replaces any registered secrets with asterisks.
+ * @brief Scans a log message and replaces any registered secrets with
+ * asterisks.
  * @param message The original unredacted log string.
  * @return A safe version of the string with sensitive data hidden.
  */
-String Logger::redact(const String& message) {
-  if (secrets.empty() || message.length() == 0) return message;
+String Logger::redact(const String &message) {
+  if (secrets.empty() || message.length() == 0)
+    return message;
 
   bool found = false;
-  for (const String& secret : secrets) {
+  for (const String &secret : secrets) {
     if (secret.length() > 0 && message.indexOf(secret) >= 0) {
       found = true;
       break;
     }
   }
-  if (!found) return message;
+  if (!found)
+    return message;
 
   String redactedMessage = message;
-  for (const String& secret : secrets) {
-    if (secret.length() > 0) redactedMessage.replace(secret, "***REDACTED***");
+  for (const String &secret : secrets) {
+    if (secret.length() > 0)
+      redactedMessage.replace(secret, "***REDACTED***");
   }
   return redactedMessage;
 }
 
 /**
- * @brief Scans a char buffer and replaces any registered secrets with asterisks in-place.
+ * @brief Scans a char buffer and replaces any registered secrets with asterisks
+ * in-place.
  */
-void Logger::redactInPlace(char* buffer, size_t bufferSize) {
-  if (secrets.empty() || buffer == nullptr || bufferSize == 0) return;
+void Logger::redactInPlace(char *buffer, size_t bufferSize) {
+  if (secrets.empty() || buffer == nullptr || bufferSize == 0)
+    return;
 
-  for (const String& secret : secrets) {
-    if (secret.length() == 0) continue;
-    const char* secretStr = secret.c_str();
+  for (const String &secret : secrets) {
+    if (secret.length() == 0)
+      continue;
+    const char *secretStr = secret.c_str();
     size_t secretLen = secret.length();
-    
-    char* match = strstr(buffer, secretStr);
+
+    char *match = strstr(buffer, secretStr);
     while (match) {
       // Overwrite with '*' in-place
       for (size_t i = 0; i < secretLen; i++) {
@@ -110,12 +156,14 @@ void Logger::redactInPlace(char* buffer, size_t bufferSize) {
 }
 
 /**
- * @brief Internal function that formats, redacts, and outputs the final log message to Serial (String version).
+ * @brief Internal function that formats, redacts, and outputs the final log
+ * message to Serial (String version).
  * @param icon An emoji icon representing the severity.
  * @param category The subsystem or tag.
  * @param message The raw message to be logged.
  */
-void Logger::printRedacted(const String& icon, const char* category, const String& message) {
+void Logger::printRedacted(const String &icon, const char *category,
+                           const String &message) {
   Serial.print(icon);
   Serial.print(" [");
   Serial.print(category);
@@ -124,18 +172,20 @@ void Logger::printRedacted(const String& icon, const char* category, const Strin
 }
 
 /**
- * @brief Internal function that formats and outputs the final log message to Serial (Literal version).
- * Bypasses String allocation and redaction if no secrets are registered for maximum efficiency.
+ * @brief Internal function that formats and outputs the final log message to
+ * Serial (Literal version). Bypasses String allocation and redaction if no
+ * secrets are registered for maximum efficiency.
  * @param icon An emoji icon representing the severity.
  * @param category The subsystem or tag.
  * @param message The raw literal string to be logged.
  */
-void Logger::printRedacted(const String& icon, const char* category, const char* message) {
+void Logger::printRedacted(const String &icon, const char *category,
+                           const char *message) {
   Serial.print(icon);
   Serial.print(" [");
   Serial.print(category);
   Serial.print("] ");
-  
+
   if (secrets.empty() || message == nullptr) {
     Serial.println(message);
   } else {
@@ -147,17 +197,18 @@ void Logger::printRedacted(const String& icon, const char* category, const char*
 }
 
 /**
- * @brief Logs an informational message. Called internally by the LOG_INFO macro.
+ * @brief Logs an informational message. Called internally by the LOG_INFO
+ * macro.
  */
-void Logger::_info(const char* category, const String& message) {
+void Logger::_info(const char *category, const String &message) {
   printRedacted("🔘", category, message);
 }
 
-void Logger::_info(const char* category, const char* message) {
+void Logger::_info(const char *category, const char *message) {
   printRedacted("🔘", category, message);
 }
 
-void Logger::_infof(const char* category, const char* format, ...) {
+void Logger::_infof(const char *category, const char *format, ...) {
   char buffer[256];
   va_list args;
   va_start(args, format);
@@ -169,15 +220,15 @@ void Logger::_infof(const char* category, const char* format, ...) {
 /**
  * @brief Logs a warning message. Called internally by the LOG_WARN macro.
  */
-void Logger::_warn(const char* category, const String& message) {
+void Logger::_warn(const char *category, const String &message) {
   printRedacted("🟡", category, message);
 }
 
-void Logger::_warn(const char* category, const char* message) {
+void Logger::_warn(const char *category, const char *message) {
   printRedacted("🟡", category, message);
 }
 
-void Logger::_warnf(const char* category, const char* format, ...) {
+void Logger::_warnf(const char *category, const char *format, ...) {
   char buffer[256];
   va_list args;
   va_start(args, format);
@@ -189,15 +240,15 @@ void Logger::_warnf(const char* category, const char* format, ...) {
 /**
  * @brief Logs an error message. Called internally by the LOG_ERROR macro.
  */
-void Logger::_error(const char* category, const String& message) {
+void Logger::_error(const char *category, const String &message) {
   printRedacted("🔴", category, message);
 }
 
-void Logger::_error(const char* category, const char* message) {
+void Logger::_error(const char *category, const char *message) {
   printRedacted("🔴", category, message);
 }
 
-void Logger::_errorf(const char* category, const char* format, ...) {
+void Logger::_errorf(const char *category, const char *format, ...) {
   char buffer[256];
   va_list args;
   va_start(args, format);
@@ -209,15 +260,15 @@ void Logger::_errorf(const char* category, const char* format, ...) {
 /**
  * @brief Logs a debug message. Called internally by the LOG_DEBUG macro.
  */
-void Logger::_debug(const char* category, const String& message) {
+void Logger::_debug(const char *category, const String &message) {
   printRedacted("🔵", category, message);
 }
 
-void Logger::_debug(const char* category, const char* message) {
+void Logger::_debug(const char *category, const char *message) {
   printRedacted("🔵", category, message);
 }
 
-void Logger::_debugf(const char* category, const char* format, ...) {
+void Logger::_debugf(const char *category, const char *format, ...) {
   char buffer[256];
   va_list args;
   va_start(args, format);
@@ -229,15 +280,15 @@ void Logger::_debugf(const char* category, const char* format, ...) {
 /**
  * @brief Logs a verbose message. Called internally by the LOG_VERBOSE macro.
  */
-void Logger::_verbose(const char* category, const String& message) {
+void Logger::_verbose(const char *category, const String &message) {
   printRedacted("🟣", category, message);
 }
 
-void Logger::_verbose(const char* category, const char* message) {
+void Logger::_verbose(const char *category, const char *message) {
   printRedacted("🟣", category, message);
 }
 
-void Logger::_verbosef(const char* category, const char* format, ...) {
+void Logger::_verbosef(const char *category, const char *format, ...) {
   char buffer[256];
   va_list args;
   va_start(args, format);

@@ -15,6 +15,7 @@
  *   - tick: Main lifecycle check loop.
  *   - checkForFirmwareUpdate: Executes the upgrade process.
  *   - checkPostWebUpgrade: Syncs local filesystem resources after updates.
+ *   - markAppValid: Implementation of the validity flag and rollback cancellation.
  */
 
 #include "otaUpdater.hpp"
@@ -28,9 +29,18 @@
 #include <appContext.hpp>
 #include <departuresBoard.hpp>
 #include <timeManager.hpp>
+#include <esp_ota_ops.h>
+
+#ifndef OTA_REPO
+#define OTA_REPO "gadec-uk/departures-board"
+#endif
+
+#ifndef BUILD_ENV
+#define BUILD_ENV "unknown"
+#endif
 
 otaUpdater ota;                       // Global OTA maintenance instance singleton
-github ghUpdate("gadec-uk/departures-board", ""); // Global GitHub client for updates
+github ghUpdate(OTA_REPO, ""); // Global GitHub client for updates
 
 otaUpdater::otaUpdater() : context(nullptr), prevUpdateCheckDay(-1), fwUpdateCheckTimer(0), updatesEnabled(false), dailyCheckEnabled(false), quietHour(3) {
 }
@@ -79,12 +89,15 @@ bool otaUpdater::checkForFirmwareUpdate() {
   bool result = true;
   if (!isFirmwareUpdateAvailable()) return result;
 
+  String expectedBin = String("firmware-") + BUILD_ENV + ".bin";
+  String expectedSig = String("firmware-") + BUILD_ENV + ".sig";
+
   String updatePath="";
   String sigPath="";
   for (int i=0;i<ghUpdate.releaseAssets;i++){
-    if (ghUpdate.releaseAssetName[i] == "firmware.bin") {
+    if (ghUpdate.releaseAssetName[i] == expectedBin) {
       updatePath = ghUpdate.releaseAssetURL[i];
-    } else if (ghUpdate.releaseAssetName[i] == "firmware.sig") {
+    } else if (ghUpdate.releaseAssetName[i] == expectedSig) {
       sigPath = ghUpdate.releaseAssetURL[i];
     }
   }
@@ -161,7 +174,6 @@ bool otaUpdater::forceUpdateNow() {
     return false;
 }
 
-#include <esp_ota_ops.h>
 void otaUpdater::rollbackFirmware() {
     LOG_WARN("OTA", "Rollback endpoint invoked. Executing active partition flip...");
     const esp_partition_t* update_partition = esp_ota_get_next_update_partition(NULL);
@@ -171,6 +183,13 @@ void otaUpdater::rollbackFirmware() {
     } else {
         LOG_ERROR("OTA", "Partition flip failed. Backup sector invalid/missing.");
     }
+}
+
+void otaUpdater::markAppValid() {
+#ifdef CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE
+    esp_ota_mark_app_valid_cancel_rollback();
+    LOG_INFO("SYSTEM", "Firmware marked as valid, cancelling auto-rollback.");
+#endif
 }
 
 void otaUpdater::checkPostWebUpgrade() {

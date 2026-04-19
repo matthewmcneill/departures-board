@@ -4,20 +4,44 @@ This guide covers everything you need to know about navigating the web configura
 
 ## First Time Configuration
 
-WiFiManager is used to set up the initial WiFi connection on first boot. 
-1. The ESP32 will broadcast a temporary WiFi network named **"Departures Board"**.
-2. Connect to the network and follow the on-screen instructions.
-3. You can watch a video walkthrough of the setup and configuration process below:
+When you first power on the device, or after a factory reset, it will start up in setup mode. 
 
-[![Departures Board Setup Video](assets/video_thumbnail.jpg)](https://youtu.be/PZVyE_SoLBU)
+### 1. Connect to the Device
+The OLED display will show that it is broadcasting a temporary WiFi AP:
 
-Once the ESP32 has established an internet connection, the next step is to enter your API keys. Select a station location by typing the location name, and valid choices will be displayed as you type. *(Note: If you do not enter a National Rail token, the board will only operate in Tube and Bus modes).*
+> **[PLACEHOLDER: assets/oled_ap_mode.png - Hardware OLED in AP Mode]**
+<!-- ![OLED AP Mode](assets/oled_ap_mode.png) -->
+
+1. Connect to the temporary WiFi network (usually named **"Departures Board"**).
+2. A captive portal should automatically open. If it doesn't, navigate to `192.168.4.1` in your browser.
+
+### 2. Configure WiFi
+Follow the on-screen instructions in the web portal to connect the board to your local WiFi network.
+
+> **[PLACEHOLDER: assets/web_wifi_config.webp - Browser WebP Video of WiFi Selection]**
+<!-- ![WiFi Portal Walkthrough](assets/web_wifi_config.webp) -->
+
+Once successfully connected, the display will restart and show its new local IP address on your network:
+
+> **[PLACEHOLDER: assets/oled_connection_success.png - Hardware OLED showing assigned IP]**
+<!-- ![OLED Connection Success](assets/oled_connection_success.png) -->
+
+### 3. Setup API Keys
+Navigate to the IP address shown on the screen using your browser to continue setup. You'll be prompted to enter your API keys.
+
+> **[PLACEHOLDER: assets/web_api_keys.webp - Browser WebP Video of API Key Entry]**
+<!-- ![API Keys Setup](assets/web_api_keys.webp) -->
+
+Select a default station location by type the location name; valid choices will be displayed as you type. *(Note: If you do not enter a National Rail token, the board will only operate in Tube and Bus modes).*
 
 ---
 
 ## Web GUI
 
-At start-up, the ESP32's IP address is displayed. To change the station or to configure other miscellaneous settings, open the web page at that address. 
+At any time, the device's IP address is displayed briefly at boot. To change the station or to configure other miscellaneous settings, open the web page at that address.
+
+> **[PLACEHOLDER: assets/web_main_settings.webp - Browser WebP Video scrolling through Main Settings]**
+<!-- ![Web Portal Main Settings](assets/web_main_settings.webp) --> 
 
 ### Basic Settings
 - **Board Mode** - Switch between National Rail Departures, London Underground Arrivals, or UK Bus Stops modes.

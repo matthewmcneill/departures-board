@@ -7,7 +7,32 @@ The objective is to overhaul `docs/ConfiguringDevice.md` by capturing a complete
 > [!IMPORTANT]
 > The hardware backend for screenshots (JSON-RPC) has been successfully deployed. This revised plan relies purely on orchestrating Python scripts (`discovery.py`, `captureU8g2.py`, `diagnostics.py`) and a Browser Subagent to generate the documentation assets. Please review the workflow below and approve via `/plan-start`.
 
+## Phase 3: Hybrid Build Finalization (Linker & Cleanup)
+
+The ESP-IDF aggressively parses `managed_components` and expects `app_main` to be defined unless told otherwise. We will implement the correct compiler mappings for the hybrid build without hacky workarounds.
+
+### User Review Required
+Removing `managed_components` guarantees your binary maintains zero bloat from unrequested ESP Insights / RainMaker connectivity paths. 
+
+### Configurations
+#### [MODIFY] [sdkconfig.defaults](file:///Users/mcneillm/Documents/Projects/departures-board/sdkconfig.defaults)
+- Add `CONFIG_AUTOSTART_ARDUINO=y` (Tells ESP-IDF to automatically map C++ `app_main` to the Arduino `setup/loop` core)
+- Add `CONFIG_ESP_INSIGHTS_ENABLED=n` (Optional defensive measure against RainMaker)
+
+#### [MODIFY] [platformio.ini](file:///Users/mcneillm/Documents/Projects/departures-board/platformio.ini)
+- Remove the `board_build.embed_txtfiles` certificates hack.
+- Add `NetworkClientSecure` to `lib_deps` explicitly to prevent the `_Z16start_ssl_client` unlinked target error.
+
+#### [DELETE] `managed_components/` and `dependencies.lock`
+- Erase the cached ESP-IDF auto-fetched components directory to prevent the Certificate assembly bug gracefully.
+
 ## Open Questions
+- Do you approve of wiping the `managed_components` dir to remove the RainMaker bloating, and applying the `CONFIG_AUTOSTART_ARDUINO` configuration?
+
+## Verification Plan
+1. Delete ESP-IDF cache.
+2. Run `~/.platformio/penv/bin/pio run -t clean`
+3. Run `~/.platformio/penv/bin/pio run -e esp32s3nano`
 > [!WARNING]
 > **Censoring Sensitive Data:** We need to explicitly censor WiFi SSIDs, passwords, and API tokens during the Subagent's web navigation. I propose instructing the Browser Subagent to execute DOM manipulation (e.g. replacing text inputs with asterisks `***`) *before* finalizing the video captures. Are you comfortable with this approach? 
 

@@ -45,23 +45,25 @@
 #define APP_LOG_LEVEL_DEBUG   4
 #define APP_LOG_LEVEL_VERBOSE 5
 
-#ifndef CORE_DEBUG_LEVEL
-#define CORE_DEBUG_LEVEL APP_LOG_LEVEL_NONE
+#ifndef APP_DEBUG_LEVEL
+#define APP_DEBUG_LEVEL APP_LOG_LEVEL_NONE
 #endif
 
-#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_ERROR
+#if APP_DEBUG_LEVEL >= APP_LOG_LEVEL_ERROR
   #define LOG_ERROR(sub, msg)           Logger::_error(sub, msg)
   #define LOG_ERRORf(sub, fmt, ...)     Logger::_errorf(sub, fmt, ##__VA_ARGS__)
   #define LOG_BEGIN(baud)               Logger::begin(baud)
   #define LOG_REGISTER_SECRET(secret)    Logger::registerSecret(secret)
+  #define WAIT_FOR_SERIAL(timeout_ms)   Logger::waitForSerial(timeout_ms)
 #else
   #define LOG_ERROR(sub, msg)
   #define LOG_ERRORf(sub, fmt, ...)
   #define LOG_BEGIN(baud)
   #define LOG_REGISTER_SECRET(secret)
+  #define WAIT_FOR_SERIAL(timeout_ms)
 #endif
 
-#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_WARN
+#if APP_DEBUG_LEVEL >= APP_LOG_LEVEL_WARN
   #define LOG_WARN(sub, msg)  Logger::_warn(sub, msg)
   #define LOG_WARNf(sub, fmt, ...) Logger::_warnf(sub, fmt, ##__VA_ARGS__)
 #else
@@ -69,7 +71,7 @@
   #define LOG_WARNf(sub, fmt, ...)
 #endif
 
-#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO
+#if APP_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO
   #define LOG_INFO(sub, msg)  Logger::_info(sub, msg)
   #define LOG_INFOf(sub, fmt, ...) Logger::_infof(sub, fmt, ##__VA_ARGS__)
   #define LOG_SPLASH(msg)     Logger::logSplashMessage(msg)
@@ -79,7 +81,7 @@
   #define LOG_SPLASH(msg)
 #endif
 
-#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_DEBUG
+#if APP_DEBUG_LEVEL >= APP_LOG_LEVEL_DEBUG
   #define LOG_DEBUG(sub, msg) Logger::_debug(sub, msg)
   #define LOG_DEBUGf(sub, fmt, ...) Logger::_debugf(sub, fmt, ##__VA_ARGS__)
 #else
@@ -87,7 +89,7 @@
   #define LOG_DEBUGf(sub, fmt, ...)
 #endif
 
-#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_VERBOSE
+#if APP_DEBUG_LEVEL >= APP_LOG_LEVEL_VERBOSE
   #define LOG_VERBOSE(sub, msg) Logger::_verbose(sub, msg)
   #define LOG_VERBOSEf(sub, fmt, ...) Logger::_verbosef(sub, fmt, ##__VA_ARGS__)
 #else
@@ -105,6 +107,12 @@ public:
    * @param baud The baud rate for the Serial connection (Default: 115200).
    */
   static void begin(unsigned long baud = 115200);
+
+  /**
+   * @brief Blocks execution until Serial connects or timeout expires, flashing LED.
+   * @param timeout_ms Maximum time to wait in milliseconds.
+   */
+  static void waitForSerial(uint32_t timeout_ms = 3000);
 
   /**
    * @brief Logs a framed splash message to the Serial console.

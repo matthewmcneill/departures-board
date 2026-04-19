@@ -16,6 +16,7 @@
  *   - tick: Daily maintenance log/check.
  *   - checkForFirmwareUpdate: Manual GitHub release probe and install.
  *   - checkPostWebUpgrade: Resource reconciliation after FS updates.
+ *   - markAppValid: Marks the firmware as valid and cancels hardware auto-rollback.
  * - isFirmwareUpdateAvailable: Semantic version comparison helper.
  */
 
@@ -119,6 +120,11 @@ public:
      * @brief Instructs the bootloader to flip the active partition to the backup slot.
      */
     void rollbackFirmware();
+
+    /**
+     * @brief Marks the current running firmware as valid and cancels hardware auto-rollback.
+     */
+    void markAppValid();
 
     /**
      * @brief Checks for a version mismatch between the running firmware's expected

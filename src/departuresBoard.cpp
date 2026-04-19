@@ -40,6 +40,7 @@
  */
 
 #include "departuresBoard.hpp"
+#include "../lib/boardLED/boardLED.hpp"
 
 // PlatformIO LDF workaround for Core 3.x
 #if defined(ESP_IDF_VERSION_MAJOR) && ESP_IDF_VERSION_MAJOR >= 5
@@ -64,9 +65,10 @@
 #include <Arduino.h>
 
 // Internal Modules & Managers
+#include "buildTime.hpp"
 #include <appContext.hpp>
 #include <logger.hpp>
-#include "buildTime.hpp"
+#include <otaUpdater.hpp>
 
 // -----------------------------------------------------------------------------
 // Definitions & Macros
@@ -76,7 +78,8 @@
 // Global Object Instantiations
 // -----------------------------------------------------------------------------
 
-appContext appContext; // Global context managing application state and shared services
+appContext
+    appContext; // Global context managing application state and shared services
 
 // -----------------------------------------------------------------------------
 // Environment Variables & State Management
@@ -90,20 +93,31 @@ appContext appContext; // Global context managing application state and shared s
 
 /**
  * @brief Initialize all system hardware and software components.
- * Configures serial logging, starts the appContext orchestrator, and enters the boot splash sequence.
+ * Configures serial logging, starts the appContext orchestrator, and enters the
+ * boot splash sequence.
  */
 void setup(void) {
   LOG_BEGIN(115200);
+  WAIT_FOR_SERIAL(
+      5000); // Give the Native USB CDC stack time to reconnect for logs
 
 #ifdef BUILD_TIME
-  LOG_INFOf("SYSTEM", "Departures Board Version %d.%d (Build: %s)", VERSION_MAJOR, VERSION_MINOR, BUILD_TIME);
+  LOG_INFOf("SYSTEM", "Departures Board Version %d.%d (Build: %s)",
+            VERSION_MAJOR, VERSION_MINOR, BUILD_TIME);
 #else
-  LOG_INFOf("SYSTEM", "Departures Board Version %d.%d", VERSION_MAJOR, VERSION_MINOR);
+  LOG_INFOf("SYSTEM", "Departures Board Version %d.%d", VERSION_MAJOR,
+            VERSION_MINOR);
 #endif
 
   LOG_INFO("SYSTEM", "Starting boot sequence...");
   appContext.begin();
   LOG_INFO("SYSTEM", "appContext.begin() finished.");
+
+  // --- Step 3: Validate Firmware ---
+  // Notify the bootloader partition manager that this boot was successful
+  // preventing the hardware from automatically rolling back to the previous
+  // firmware.
+  ota.markAppValid();
 }
 
 // -----------------------------------------------------------------------------
@@ -114,19 +128,38 @@ void setup(void) {
  * @brief Executive rendering and state management loop.
  */
 void loop(void) {
-#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO
-  // Print heap usage every 10 seconds if DEBUG flag is at least LOG level.
   static unsigned long lastSerialHeartbeat = 0;
-  if (millis() - lastSerialHeartbeat > 10000) {
+  static unsigned long heartbeatLedPulseTimer = 0;
+  static bool ledPulsing = false;
+
+  unsigned long currentMillis = millis();
+
+  // 10-second heartbeat cycle triggers the 50ms LED pulse (independent of debug
+  // level)
+  if (currentMillis - lastSerialHeartbeat > 10000) {
+    lastSerialHeartbeat = currentMillis;
+
+    // Trigger LED pulse
+    BoardLED::on();
+    ledPulsing = true;
+    heartbeatLedPulseTimer = currentMillis;
+
+#if CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_INFO
     char diagMsg[128];
     snprintf(diagMsg, sizeof(diagMsg),
              "Alive | Heap: %lu (Max Block: %lu) | Temp: %.1fC",
              (unsigned long)ESP.getFreeHeap(),
              (unsigned long)ESP.getMaxAllocHeap(), temperatureRead());
     LOG_INFO("HEARTBEAT", diagMsg);
-    lastSerialHeartbeat = millis();
-  }
 #endif
+  }
+
+  // Turn off the heartbeat LED exactly 50ms after the pulse started
+  if (ledPulsing && (currentMillis - heartbeatLedPulseTimer >= 50)) {
+    BoardLED::off();
+    ledPulsing = false;
+  }
 
   appContext.tick();
+  delay(1); // Yield to FreeRTOS to prevent IDLE1 starvation on Core 3.x
 }
