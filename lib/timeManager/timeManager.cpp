@@ -18,19 +18,9 @@
  */
 
 #include "timeManager.hpp"
-#include <U8g2lib.h>
-#include <widgets/drawingPrimitives.hpp>
-#include <WiFi.h>
-#include <wifiManager.hpp>
 #include <logger.hpp>
-#include <displayManager.hpp>
-#include <boards/systemBoard/loadingBoard.hpp>
-#include <WebServer.h>
-#include <appContext.hpp>
-#include <functional>
 
 // Globals removed in favor of injected TimeManager instance
-const char* weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}; // Weekday labels
 
 const char TimeManager::ntpServer[] = "europe.pool.ntp.org";
 const char TimeManager::ukTimezone[] = "GMT0BST,M3.5.0/1,M10.5.0";

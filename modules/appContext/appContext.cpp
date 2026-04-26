@@ -167,7 +167,6 @@ void appContext::begin() {
 
   // 7. Initialize global helper modules
   otaAssetUpdater.init(this);
-  timeManager.init(this);
 
   updateBootProgress(50, "Stabilizing application...");
   // 8. Connect Observer Callbacks for UI Decoupling
