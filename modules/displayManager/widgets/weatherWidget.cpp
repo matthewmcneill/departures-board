@@ -14,7 +14,6 @@
 
 #include "weatherWidget.hpp"
 #include <appContext.hpp>
-#include <weatherClient.hpp>
 #include <boards/interfaces/iDisplayBoard.hpp>
 #include "drawingPrimitives.hpp"
 

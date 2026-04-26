@@ -18,7 +18,6 @@
  *   - resetSettings: Complete credential cleanup.
  *   - testConnection: Momentary connection probe for verification.
  */
-#include <Arduino.h>
 #include <FS.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
@@ -26,9 +25,9 @@
 #include <DNSServer.h>
 #include <ESPmDNS.h>
 #include <wifiManager.hpp>
+#include <deviceCrypto.hpp>
 #include <logger.hpp>
 #include <esp_wifi.h>
-#include <deviceCrypto.hpp>
 
 
 WifiManager::WifiManager() : wifiDisconnectTimer(0) {

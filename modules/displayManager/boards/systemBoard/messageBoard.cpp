@@ -18,7 +18,6 @@
 
 #include "messageBoard.hpp"
 #include <fonts/fonts.hpp>
-#include "../../widgets/drawingPrimitives.hpp"
 
 MessageBoard::MessageBoard() : showWarningIcon(false) {
     hdr[0] = '\0';

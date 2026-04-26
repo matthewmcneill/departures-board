@@ -50,7 +50,6 @@ class appContext;
 
 #include "departuresBoard.hpp"
 
-#include "departuresBoard.hpp"
 
 
 /**

@@ -22,12 +22,9 @@
 
 #include "busDataSource.hpp"
 #include <WiFiClientSecure.h>
-#include <HTTPClient.h>
 #include <logger.hpp>
-#include <memory>
 #include <appContext.hpp>
 
-#include "../../../dataManager/iDataSource.hpp"
 
 extern class appContext appContext;
 

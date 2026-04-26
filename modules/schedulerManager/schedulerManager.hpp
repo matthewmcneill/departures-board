@@ -21,7 +21,6 @@
 #pragma once
 
 #include <vector>
-#include "configManager.hpp"
 
 // Forward declaration
 class appContext;

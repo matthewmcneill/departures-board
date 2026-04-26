@@ -7,12 +7,12 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/otaUpdater/otaUpdater.hpp
+ * Module: modules/otaUpdateManager/otaUpdateManager.hpp
  * Description: Encapsulates firmware lifecycle targeting GitHub releases
  *              and manages over-the-air updates.
  *
  * Exported Functions/Classes:
- * - otaUpdater: [Class] Wraps maintenance and manual update hooks.
+ * - otaUpdateManager: [Class] Wraps maintenance and manual update hooks.
  *   - tick: Daily maintenance log/check.
  *   - checkForFirmwareUpdate: Manual GitHub release probe and install.
  *   - checkPostWebUpgrade: Resource reconciliation after FS updates.
@@ -24,9 +24,9 @@
 
 #include <Arduino.h>
 #include <WiFiClientSecure.h>
+#include <LittleFS.h>
 #include <githubClient.hpp>
 #include "iConfigurable.hpp"
-#include <LittleFS.h>
 #include <functional>
 
 /**
@@ -53,7 +53,7 @@ bool isFirmwareUpdateAvailable();
 
 class appContext;
 
-class otaUpdater : public iConfigurable {
+class otaUpdateManager : public iConfigurable {
 private:
     appContext* context;               // Pointer to parent context for DI
     int prevUpdateCheckDay;            // Day of month for last successful daily check
@@ -88,7 +88,7 @@ public:
     /**
      * @brief Default constructor.
      */
-    otaUpdater();
+    otaUpdateManager();
 
     /**
      * @brief Main lifecycle maintenance tick. Triggers daily update checks 
@@ -138,4 +138,4 @@ public:
     void reapplyConfig(const Config& config) override;
 };
 
-extern otaUpdater ota; // Global OTA maintenance orchestrator
+extern otaUpdateManager ota; // Global OTA maintenance orchestrator

@@ -23,14 +23,12 @@
 #include "appContext.hpp"
 #include "departuresBoard.hpp"
 #include "buildTime.hpp"
-#include <memory>
 #include <boards/systemBoard/firmwareUpdateBoard.hpp>
 #include <boards/systemBoard/loadingBoard.hpp>
 #include <boards/systemBoard/splashBoard.hpp>
 #include <buttonHandler.hpp>
 #include "../../lib/logger/logger.hpp"
 #include "../../lib/boardLED/boardLED.hpp"
-#include <wifiManager.hpp>
 #include <WiFi.h>
 
 

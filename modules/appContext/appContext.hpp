@@ -39,7 +39,7 @@
 
 #include <configManager.hpp>
 #include <displayManager.hpp>
-#include <otaUpdater.hpp>
+#include <otaUpdateManager.hpp>
 #include <webServer.hpp>
 #include <weatherClient.hpp>
 #include <rssClient.hpp>
@@ -68,7 +68,7 @@ private:
     DeviceCrypto deviceCrypto;      ///< Persistent Master Key Cryptographic Engine
     ConfigManager configManager;    ///< Persistence and settings management
     DisplayManager displayManager;  ///< Rendering and board lifecycle
-    otaUpdater otaAssetUpdater;     ///< Firmware update lifecycle
+    otaUpdateManager otaAssetUpdater;     ///< Firmware update lifecycle
     WebServerManager webServer;     ///< Local GUI and API service
     weatherClient weather;          ///< External weather conditions client
     rssClient rss;                  ///< News feed scroller client
@@ -120,7 +120,7 @@ public:
     /** @brief Get the display and rendering manager. */
     DisplayManager& getDisplayManager() { return displayManager; }
     /** @brief Get the firmware OTA updater. */
-    otaUpdater& getOtaUpdater() { return otaAssetUpdater; }
+    otaUpdateManager& getOtaUpdater() { return otaAssetUpdater; }
     /** @brief Get the local web server and API manager. */
     WebServerManager& getWebServer() { return webServer; }
     /** @brief Get the weather external API client. */

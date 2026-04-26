@@ -41,11 +41,11 @@
 #include <algorithm>
 #include <appContext.hpp>
 #include <logger.hpp>
-#include <otaUpdater.hpp>
+#include <otaUpdateManager.hpp>
 #include <rssClient.hpp>
 #include <vector>
-#include <weatherClient.hpp>
 #include <SPI.h>
+#include <WiFi.h>
 
 // We must include Board specialized headers internally within the cpp only when
 // absolutely needed to invoke methods that the generic iDisplayBoard does not

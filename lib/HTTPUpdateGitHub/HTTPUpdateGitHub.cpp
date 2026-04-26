@@ -35,7 +35,6 @@
 #include <Update.h>
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
 #include <logger.hpp>
 #include <StreamString.h>
 

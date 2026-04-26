@@ -23,7 +23,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include <ArduinoJson.h>
 
 #define CONFIG_VERSION_MAJOR 2 // Primary structural epoch
 #define CONFIG_VERSION_MINOR 6 // Nested feeds schema

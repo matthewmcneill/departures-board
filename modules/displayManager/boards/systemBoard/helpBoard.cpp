@@ -18,7 +18,6 @@
  */
 
 #include "helpBoard.hpp"
-#include "../../widgets/drawingPrimitives.hpp"
 #include <fonts/fonts.hpp>
 #include <string.h>
 

@@ -29,7 +29,7 @@
 class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
-#include <otaUpdater.hpp>
+#include <otaUpdateManager.hpp>
 
 #include "loadingBoard.hpp"
 #include "messageBoard.hpp"

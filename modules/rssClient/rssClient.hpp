@@ -23,9 +23,12 @@
 
 #pragma once
 #include <xmlListener.hpp>
-#include <xmlStreamingParser.hpp>
 #include "iConfigurable.hpp"
 #include <freertos/FreeRTOS.h>
+#include <Arduino.h>
+#include <HTTPClient.h>
+#include <xmlStreamingParser.hpp>
+#include "xmlListener.hpp"
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 

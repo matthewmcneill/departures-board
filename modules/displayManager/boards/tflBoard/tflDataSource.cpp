@@ -24,11 +24,9 @@
 #include <WiFiClientSecure.h>
 #include <logger.hpp>
 #include <algorithm>
-#include <memory>
 #include <appContext.hpp>
 
 // Status codes mapping
-#include "../../../dataManager/iDataSource.hpp"
 
 extern class appContext appContext;
 

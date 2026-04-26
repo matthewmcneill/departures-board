@@ -16,7 +16,6 @@
 
 #include "webServer.hpp"
 #include "webHandlerManager.hpp"
-#include <Arduino.h>
 #include <LittleFS.h>
 #include <WiFi.h>
 #include <appContext.hpp>

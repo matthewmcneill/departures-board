@@ -22,7 +22,6 @@
 
 #include "progressBarWidget.hpp"
 #include "drawingPrimitives.hpp"
-#include <displayManager.hpp>
 #include <string.h>
 
 /**

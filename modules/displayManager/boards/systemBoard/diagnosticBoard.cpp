@@ -16,8 +16,6 @@
 #include "diagnosticBoard.hpp"
 #include <fonts/fonts.hpp>
 #include <appContext.hpp>
-#include <fonts/fonts.hpp>
-#include "layouts/layoutDiagnostic.hpp"
 
 /**
  * @brief Construct a new Diagnostic Board.

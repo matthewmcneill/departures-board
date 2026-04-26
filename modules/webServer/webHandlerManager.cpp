@@ -25,7 +25,6 @@
 #include "../../src/buildTime.hpp"
 #include <ArduinoJson.h>
 #include <logger.hpp>
-#include <wifiManager.hpp>
 #include <WiFi.h>
 #include <esp_task_wdt.h>
 #include <appContext.hpp>
@@ -33,7 +32,9 @@
 #include "../displayManager/boards/nationalRailBoard/nrRDMDataProvider.hpp"
 #include "../displayManager/boards/tflBoard/tflDataSource.hpp"
 #include "../displayManager/boards/busBoard/busDataSource.hpp"
-#include "../../lib/rssClient/rssClient.hpp"
+#include "../../lib/hTTPUpdateGitHub/hTTPUpdateGitHub.hpp"
+#include <rssClient.hpp>
+#include <timeManager.hpp>
 #include "../weatherClient/weatherClient.hpp"
 #include <memory>
 #include <atomic>

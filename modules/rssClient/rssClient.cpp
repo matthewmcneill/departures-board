@@ -21,7 +21,6 @@
  */
 
 #include <rssClient.hpp>
-#include <xmlListener.hpp>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <WiFiClient.h>

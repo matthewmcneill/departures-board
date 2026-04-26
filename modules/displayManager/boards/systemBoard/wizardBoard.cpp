@@ -18,11 +18,10 @@
  *   - render(): Draws branding, SSID, and connection URL.
  */
 
-#include <appContext.hpp>
 #include <fonts/fonts.hpp>
 #include "wizardBoard.hpp"
-#include <fonts/fonts.hpp>
-#include "../../widgets/drawingPrimitives.hpp"
+#include <appContext.hpp>
+#include <logger.hpp>
 
 WizardBoard::WizardBoard() : currentIp(0,0,0,0), lastStageSwitch(0), currentStage(0) {
 }

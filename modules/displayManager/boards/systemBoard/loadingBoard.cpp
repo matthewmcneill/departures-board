@@ -20,7 +20,6 @@
 #include "loadingBoard.hpp"
 #include <fonts/fonts.hpp>
 #include <string.h>
-#include "../../widgets/drawingPrimitives.hpp"
 #include <logger.hpp>
 
 /**

@@ -18,7 +18,6 @@
  */
 
 #include "gadecMigration.hpp"
-#include <Arduino.h>
 
 namespace GadecMigration {
 

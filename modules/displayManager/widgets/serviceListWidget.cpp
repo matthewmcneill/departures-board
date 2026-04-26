@@ -21,8 +21,6 @@
  */
 
 #include "serviceListWidget.hpp"
-#include "drawingPrimitives.hpp"
-#include <displayManager.hpp>
 
 /**
  * @brief Initialize the service list with default fonts and pagination state.

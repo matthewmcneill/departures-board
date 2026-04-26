@@ -68,7 +68,7 @@
 #include "buildTime.hpp"
 #include <appContext.hpp>
 #include <logger.hpp>
-#include <otaUpdater.hpp>
+#include <otaUpdateManager.hpp>
 
 // -----------------------------------------------------------------------------
 // Definitions & Macros
@@ -99,7 +99,7 @@ appContext
 void setup(void) {
   LOG_BEGIN(115200);
   WAIT_FOR_SERIAL(
-      5000); // Give the Native USB CDC stack time to reconnect for logs
+      10000); // Give the Native USB CDC stack time to reconnect for logs
 
 #ifdef BUILD_TIME
   LOG_INFOf("SYSTEM", "Departures Board Version %d.%d (Build: %s)",

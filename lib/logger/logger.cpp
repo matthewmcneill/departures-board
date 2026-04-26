@@ -46,23 +46,31 @@ void Logger::begin(unsigned long baud) {
 void Logger::waitForSerial(uint32_t timeout_ms) {
   BoardLED::init();
   uint32_t startAt = millis();
+  uint32_t lastFlip = 0;
+  uint32_t lastPrint = 0;
 
-  // Simplified wait loop using flip block
-  while (!Serial && (millis() - startAt < timeout_ms)) {
-    BoardLED::flip();
-    delay(500);
+  // Run a single continuous loop for the specified timeout duration
+  while ((millis() - startAt) < timeout_ms) {
+    uint32_t now = millis();
+    uint32_t currentInterval = Serial ? 500 : 100;
+
+    // LED Flip logic
+    if ((now - lastFlip) >= currentInterval) {
+      BoardLED::flip();
+      lastFlip = now;
+    }
+
+    // Terminal print logic (every 1 second)
+    if ((now - lastPrint) >= 1000) {
+      Serial.print(Serial ? "o" : ".");
+      lastPrint = now;
+    }
+
+    // Yield to prevent watchdog starvation
+    delay(50);
   }
 
-  // If the serial connected, give the host terminal time to latch onto the data
-  // stream.
   if (Serial) {
-    Serial.print(".");
-    // 7000ms wakeup delay to let the terminal latch and spooler wake up
-    for (int i = 0; i < 7; i++) {
-      BoardLED::blink(500);
-      delay(500);
-      Serial.print(".");
-    }
     Serial.println();
   }
 

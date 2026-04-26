@@ -21,11 +21,13 @@
 #ifndef WIZARD_BOARD_HPP
 #define WIZARD_BOARD_HPP
 
+#include <string>
+#include <WiFi.h>
+#include <memory>
 class appContext;
 
 #include "../interfaces/iDisplayBoard.hpp"
 #include "../../widgets/drawingPrimitives.hpp"
-#include <WiFi.h>
 
 /**
  * @brief Board that renders multi-step connection wizard screens.

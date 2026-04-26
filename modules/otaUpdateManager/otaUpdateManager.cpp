@@ -7,26 +7,25 @@
  * This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
  * To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
  *
- * Module: lib/otaUpdater/otaUpdater.cpp
+ * Module: modules/otaUpdateManager/otaUpdateManager.cpp
  * Description: Implementation of firmware lifecycle and OTA update sequence.
  *
  * Exported Functions/Classes:
- * - otaUpdater: [Class implementation]
+ * - otaUpdateManager: [Class implementation]
  *   - tick: Main lifecycle check loop.
  *   - checkForFirmwareUpdate: Executes the upgrade process.
  *   - checkPostWebUpgrade: Syncs local filesystem resources after updates.
  *   - markAppValid: Implementation of the validity flag and rollback cancellation.
  */
 
-#include "otaUpdater.hpp"
+#include "otaUpdateManager.hpp"
+#include <appContext.hpp>
 #include <HTTPClient.h>
 #include <hTTPUpdateGitHub.hpp>
-#include <githubClient.hpp>
 #include <time.h>
 #include <logger.hpp>
 #include <configManager.hpp>
 #include <memory>
-#include <appContext.hpp>
 #include <departuresBoard.hpp>
 #include <timeManager.hpp>
 #include <esp_ota_ops.h>
@@ -39,13 +38,13 @@
 #define BUILD_ENV "unknown"
 #endif
 
-otaUpdater ota;                       // Global OTA maintenance instance singleton
+otaUpdateManager ota;                       // Global OTA maintenance instance singleton
 github ghUpdate(OTA_REPO, ""); // Global GitHub client for updates
 
-otaUpdater::otaUpdater() : context(nullptr), prevUpdateCheckDay(-1), fwUpdateCheckTimer(0), updatesEnabled(false), dailyCheckEnabled(false), quietHour(3) {
+otaUpdateManager::otaUpdateManager() : context(nullptr), prevUpdateCheckDay(-1), fwUpdateCheckTimer(0), updatesEnabled(false), dailyCheckEnabled(false), quietHour(3) {
 }
 
-void otaUpdater::tick() {
+void otaUpdateManager::tick() {
     if (dailyCheckEnabled && millis() > fwUpdateCheckTimer) {
         fwUpdateCheckTimer = millis() + 3300000 + random(600000); 
         
@@ -85,7 +84,7 @@ bool isFirmwareUpdateAvailable() {
  * Downloads the binary from GitHub assets and performs a system reboot on success.
  * @return true if the process was successfully initiated.
  */
-bool otaUpdater::checkForFirmwareUpdate() {
+bool otaUpdateManager::checkForFirmwareUpdate() {
   bool result = true;
   if (!isFirmwareUpdateAvailable()) return result;
 
@@ -157,7 +156,7 @@ bool otaUpdater::checkForFirmwareUpdate() {
   return result;
 }
 
-bool otaUpdater::checkUpdateAvailable(String& outVersion) {
+bool otaUpdateManager::checkUpdateAvailable(String& outVersion) {
     if (ghUpdate.getLatestRelease()) {
         if (isFirmwareUpdateAvailable()) {
             outVersion = ghUpdate.releaseId;
@@ -167,14 +166,14 @@ bool otaUpdater::checkUpdateAvailable(String& outVersion) {
     return false;
 }
 
-bool otaUpdater::forceUpdateNow() {
+bool otaUpdateManager::forceUpdateNow() {
     if (ghUpdate.getLatestRelease()) {
         return checkForFirmwareUpdate();
     }
     return false;
 }
 
-void otaUpdater::rollbackFirmware() {
+void otaUpdateManager::rollbackFirmware() {
     LOG_WARN("OTA", "Rollback endpoint invoked. Executing active partition flip...");
     const esp_partition_t* update_partition = esp_ota_get_next_update_partition(NULL);
     if (update_partition) {
@@ -185,14 +184,14 @@ void otaUpdater::rollbackFirmware() {
     }
 }
 
-void otaUpdater::markAppValid() {
+void otaUpdateManager::markAppValid() {
 #ifdef CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE
     esp_ota_mark_app_valid_cancel_rollback();
     LOG_INFO("SYSTEM", "Firmware marked as valid, cancelling auto-rollback.");
 #endif
 }
 
-void otaUpdater::checkPostWebUpgrade() {
+void otaUpdateManager::checkPostWebUpgrade() {
   String prevGUI = "";
   File f = LittleFS.open(F("/webver"), "r");
   if (f) {
@@ -228,7 +227,7 @@ void otaUpdater::checkPostWebUpgrade() {
   }
 }
 
-void otaUpdater::reapplyConfig(const Config& cfg) {
+void otaUpdateManager::reapplyConfig(const Config& cfg) {
     updatesEnabled = cfg.firmwareUpdatesEnabled;
     dailyCheckEnabled = cfg.dailyUpdateCheckEnabled;
     quietHour = cfg.otaQuietHour;

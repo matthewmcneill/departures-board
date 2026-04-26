@@ -22,7 +22,6 @@
  */
 
 #pragma once
-#include <Arduino.h>
 
 class xmlListener {
   private:
