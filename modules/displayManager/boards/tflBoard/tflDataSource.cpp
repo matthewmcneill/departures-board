@@ -28,8 +28,6 @@
 
 // Status codes mapping
 
-extern class appContext appContext;
-
 const char* tflDataSource::serviceNumbers[TFL_MAX_FETCH] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
 
 /**
@@ -83,7 +81,9 @@ UpdateStatus tflDataSource::updateData() {
 
     LOG_INFO("DATA", "TfL Source: Requesting priority fetch from DataManager");
     taskStatus = UpdateStatus::PENDING;
-    appContext.getDataManager().requestPriorityFetch(this);
+    if (pDataManager) {
+        pDataManager->requestPriorityFetch(this);
+    }
     return UpdateStatus::PENDING;
 }
 
@@ -102,8 +102,8 @@ void tflDataSource::executeFetch() {
     lastErrorMsg[0] = '\0';
 
     // [HYBRID-MEM] Scrub transient strings before starting a new fetch
-    currentKey.clear();
-    currentObject.clear();
+    currentKey = "";
+    currentObject = "";
 
     // Offload TflStation and Clients to heap to save stack
     std::unique_ptr<TflStation> xStation(new (std::nothrow) TflStation());
@@ -204,8 +204,8 @@ void tflDataSource::executeFetch() {
         setNextFetchTime(millis() + BASELINE_MIN_INTERVAL);
         
         // [HYBRID-MEM] Scrub strings
-        currentKey.clear();
-        currentObject.clear();
+        currentKey = "";
+        currentObject = "";
         return;
     }
 
@@ -251,7 +251,7 @@ void tflDataSource::executeFetch() {
         for (int i=0; i<stationData->numServices; i++) {
             int m = stationData->service[i].timeToStation / 60;
             if (m == 0) strcpy(stationData->service[i].expectedTime, "Due");
-            else sprintf(stationData->service[i].expectedTime, "%d mins", m);
+            else snprintf(stationData->service[i].expectedTime, sizeof(stationData->service[i].expectedTime), "%d mins", m);
         }
 
         uint32_t hashVal = 2166136261u;
@@ -316,8 +316,8 @@ void tflDataSource::executeFetch() {
 
     // [HYBRID-MEM] Scrub the heap before exiting the fetch cycle.
     // This allows us to use String for parser flexibility without long-term fragmentation.
-    currentKey.clear();
-    currentObject.clear();
+    currentKey = "";
+    currentObject = "";
 
     return;
 }

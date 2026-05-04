@@ -22,8 +22,6 @@
 #include <logger.hpp>
 #include <appContext.hpp>
 
-extern class appContext appContext;
-
 /**
  * @brief Constructor for the Centralized Data Manager.
  */
@@ -51,7 +49,8 @@ dataManager::dataManager() :
  * @brief Initializes the FreeRTOS event queue and spawns the pinned Core 0 worker task.
  * Sets up binary semaphores for thread-safe registry access.
  */
-void dataManager::init() {
+void dataManager::init(class appContext* ctx) {
+    this->context = ctx;
     
     // We only need a tiny queue to wake the worker up early if a priority event occurs
     priorityEventQueue = xQueueCreate(5, sizeof(iDataSource*));
@@ -240,7 +239,7 @@ void dataManager::workerTaskLoop(void* pvParameters) {
 
         if (targetToExecute != nullptr) {
             
-            AppState state = appContext.getAppState();
+            AppState state = manager->context ? manager->context->getAppState() : AppState::BOOTING;
             
             if (state == AppState::WIFI_SETUP) {
                 // Absolute network blockade in AP Mode: No internet exists, DNS requests will lock LwIP.
@@ -250,7 +249,7 @@ void dataManager::workerTaskLoop(void* pvParameters) {
                     xSemaphoreGive(manager->registryMutex);
                 }
                 continue; // Skip execute
-            } else if (state != AppState::RUNNING && !(state == AppState::BOOTING && appContext.getFirstLoad()) && targetToExecute->getPriorityTier() != PriorityTier::PRIO_CRITICAL) {
+            } else if (state != AppState::RUNNING && !(state == AppState::BOOTING && manager->context && manager->context->getFirstLoad()) && targetToExecute->getPriorityTier() != PriorityTier::PRIO_CRITICAL) {
                 // Board setup mode has internet, but block routine fetches until UI finishes adding displays.
                 targetToExecute->setNextFetchTime(millis() + 15000);
                 if (manager->registryMutex && xSemaphoreTake(manager->registryMutex, portMAX_DELAY) == pdPASS) {

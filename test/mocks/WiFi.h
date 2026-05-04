@@ -22,6 +22,12 @@ enum wl_status_t {
     WL_DISCONNECTED
 };
 
+class IPAddressStrMock {
+public:
+    String toString() { return "192.168.1.100"; }
+    operator IPAddress() const { return IPAddress(192, 168, 1, 100); }
+};
+
 class MockWiFi {
 public:
     wl_status_t status() { 
@@ -31,6 +37,8 @@ public:
     int8_t RSSI() { 
         return SystemState::getInstance().getWifiRssi(); 
     }
+    IPAddressStrMock localIP() { return IPAddressStrMock(); }
+    IPAddressStrMock softAPIP() { return IPAddressStrMock(); }
 };
 
 extern MockWiFi WiFi;

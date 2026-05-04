@@ -366,7 +366,7 @@ void NationalRailBoard::populateServices(bool row0Only) {
 
       char *ordinalRef;
       if (i > 0) {
-        sprintf(cachedOrdinals[i - 1], "%d%s", i + 1,
+        snprintf(cachedOrdinals[i - 1], sizeof(cachedOrdinals[i - 1]), "%d%s", i + 1,
                 (i == 1 ? "nd" : (i == 2 ? "rd" : "th")));
         ordinalRef = cachedOrdinals[i - 1];
       } else {

@@ -177,7 +177,11 @@ void nrRDMDataProvider::executeFetch() {
   }
 
   // --- Step 1: Pre-flight Memory Profile ---
+#ifndef UNIT_TEST
   size_t startFreeHeap = ESP.getFreeHeap();
+#else
+  size_t startFreeHeap = 0;
+#endif
   LOG_INFOf("DATA_RDM", "Starting fetch. Free Heap: %d", startFreeHeap);
 
   WiFiClientSecure client;
@@ -201,10 +205,9 @@ void nrRDMDataProvider::executeFetch() {
   if (tstr.length() > 8) {
     String masked =
         tstr.substring(0, 4) + "********" + tstr.substring(tstr.length() - 4);
-    Serial.printf("[DEBUG] MASKED TOKEN [%s]\n", masked.c_str());
+    LOG_DEBUGf("DATA_RDM", "MASKED TOKEN [%s]", masked.c_str());
   } else {
-    Serial.printf("[DEBUG] MASKED TOKEN HAS INVALID LENGTH: %d\n",
-                  tstr.length());
+    LOG_DEBUGf("DATA_RDM", "MASKED TOKEN HAS INVALID LENGTH: %d", tstr.length());
   }
 
   http.begin(client, url);
@@ -423,7 +426,7 @@ void nrRDMDataProvider::executeFetch() {
       String debugPayload = http.getString();
       LOG_ERRORf("DATA_RDM", "HTTP %d. Response: %s", httpCode,
                  debugPayload.c_str());
-      sprintf(lastErrorMessage, "HTTP %d", httpCode);
+      snprintf(lastErrorMessage, sizeof(lastErrorMessage), "HTTP %d", httpCode);
       taskStatus = UpdateStatus::HTTP_ERROR;
     }
   } else {

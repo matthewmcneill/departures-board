@@ -38,7 +38,8 @@ public:
      /**
      * @brief Initializes the FreeRTOS event queue and spawns the pinned Core 0 worker task.
      */
-    void init();
+    void init(class appContext* ctx);
+
 
     /**
      * @brief Registers a data source with the manager.
@@ -103,6 +104,7 @@ private:
     unsigned long lastLoadFailure;
     UpdateStatus lastUpdateResult;
     int lastActiveSlotIndex;
+    class appContext* context = nullptr;
 
     /**
      * @brief Static FreeRTOS Entry Point for the dynamic scheduling loop.

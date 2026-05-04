@@ -1,0 +1,10 @@
+- `[x]` Phase 1: Structural Migration
+  - `[x]` Relocate `lib/otaUpdater` to `modules/otaUpdateManager` (rename folder, cpp, hpp, classes)
+  - `[x]` Relocate `lib/rssClient` to `modules/rssClient`
+  - `[x]` Relocate `lib/timeManager` to `modules/timeManager`
+  - `[x]` Update associated `#include` paths referencing these components across the codebase
+  - `[x]` Update `CMakeLists.txt` or `platformio.ini` include directives
+- `[x]` Phase 2: #include Cleanup & Validation
+  - `[x]` Redundancy Scrub (duplicate headers, redundant headers from hpp)
+  - `[x]` Unused Scrub (headers flagged by static mapping)
+  - `[x]` Compilation Validation (`esp32dev`, `esp32s3nano`)

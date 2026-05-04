@@ -44,7 +44,7 @@ bool ConfigManager::saveFile(String fName, String fData) {
 
   File f = LittleFS.open(fName, "w");
   if (f) {
-    f.print(fData);
+    f.write((const uint8_t*)fData.c_str(), fData.length());
     f.close();
     LOG_INFO("CONFIG", String("Successfully saved file: ") + fName);
     return true;
@@ -525,6 +525,7 @@ void ConfigManager::loadConfig() {
     if (!error) {
       JsonObject settings = doc.as<JsonObject>();
       float loadedVersion = settings[F("version")] | 1.0f;
+      float originalVersion = loadedVersion;
 
       GadecMigration::UpstreamEpoch epoch = GadecMigration::detectConfigEpoch(settings);
 
@@ -673,7 +674,7 @@ void ConfigManager::loadConfig() {
                   sizeof(bc.tflLineFilter));
           bc.tflDirectionFilter = b[F("tflDir")] | 0;
           // Apply migration if board is a clock
-          if (loadedVersion < 2.4f && legacyOledOff && bc.type == MODE_CLOCK) {
+          if (originalVersion < 2.4f && legacyOledOff && bc.type == MODE_CLOCK) {
             bc.oledOff = true;
           } else {
             bc.oledOff = b[F("oledOff")] | false;

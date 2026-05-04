@@ -1,8 +1,0 @@
-- [ ] Identify and fix Native Test Regressions
-  - [ ] Implement missing v3.0 accessors in `test/mocks/appContext.hpp`
-  - [ ] Standardize `WifiManager` naming and update `Stubs.cpp` signatures
-  - [ ] Implement `LittleFS` stubs in `Stubs.cpp` for `ConfigManager`
-  - [ ] Create `test/mocks/WebServer.h` stub
-  - [ ] Update `test/test_native/dataManagerTests.cpp` to use `executeFetch()`
-- [ ] Run `pio test -e unit_testing_host` and verify 100% pass
-- [ ] Verify firmware build for `esp32s3nano` target

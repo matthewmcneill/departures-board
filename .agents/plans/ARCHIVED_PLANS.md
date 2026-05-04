@@ -83,6 +83,7 @@ Comprehensive history of completed plans, grouped by completion date.
 
 | Date | Title | Key Impact | Plan Link |
 | :--- | :--- | :--- | :--- |
+| 2026-04-26 | Refactor: Architectural Migration & Include Scrub | Migrated otaUpdateManager, rssClient, timeManager to modules and executed intense include redundancy scrubbing. | [done/7205c1a3-9c68-4c0b-8ef1-d5bd6e55239f/](done/7205c1a3-9c68-4c0b-8ef1-d5bd6e55239f/PLAN.md) |
 | 2026-04-12 | Secure OTA Deployment Architecture | Implementation of secure mbedtls OTA architecture payload validation and CI tooling. | [done/3b8d0f61-b303-426c-9519-83a397601122/PLAN.md](done/3b8d0f61-b303-426c-9519-83a397601122/PLAN.md) |
 | 2026-04-11 | Library Modernization & Config Migration Debug | Upgraded core libraries, resolved warnings, and diagnosed config migration failure using on-device MCP tooling. | [done/0b755dbd-e15b-455b-b6fe-19849b4ded04/PLAN.md](done/0b755dbd-e15b-455b-b6fe-19849b4ded04/PLAN.md) |
 | 2026-04-11 | Epoch Translation Matrix & Version-Locked Suffixing | Implemented non-destructive v2.6 migration and \"Keep 3\" versioned config storage. | [done/761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md](done/761bb38e-6d2c-4fec-bc40-9afa64e683c4/PLAN.md) |

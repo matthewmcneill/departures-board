@@ -201,10 +201,10 @@ void nrDARWINDataProvider::executeFetch() {
   struct ScrubGuard {
     nrDARWINDataProvider *p;
     ~ScrubGuard() {
-      p->tagName.clear();
-      p->tagPath.clear();
-      p->grandParentTagName.clear();
-      p->parentTagName.clear();
+      p->tagName = "";
+      p->tagPath = "";
+      p->grandParentTagName = "";
+      p->parentTagName = "";
     }
   } guard{this};
 
@@ -545,10 +545,10 @@ void nrDARWINDataProvider::executeFetch() {
     LOG_INFO("DATA",
              "NR Source: executeFetch() finished successfully. Next fetch in " +
                  String(interval) + "ms.");
-#ifdef ENABLE_DEBUG_LOG
+#ifndef UNIT_TEST
     UBaseType_t hwm = uxTaskGetStackHighWaterMark(NULL);
-    LOG_DEBUG("DATA",
-              "NR Task Stack High Water Mark: " + String(hwm) + " words");
+    LOG_DEBUG("DARWIN", "High Water Mark: " + String(hwm) + " words");
+#endif
     if (renderData) {
       LOG_DEBUG("DATA", "--- National Rail Data ---");
       LOG_DEBUG("DATA", String("Location: ") + renderData->location);
@@ -563,7 +563,6 @@ void nrDARWINDataProvider::executeFetch() {
       }
       LOG_DEBUG("DATA", "--------------------------");
     }
-#endif
   }
 
   return;
@@ -928,11 +927,11 @@ UpdateStatus nrDARWINDataProvider::refreshWsdl() {
                                                output);
 
         // [HYBRID-MEM] Scrub discovery strings
-        soapURL.clear();
-        grandParentTagName.clear();
-        parentTagName.clear();
-        tagName.clear();
-        tagPath.clear();
+        soapURL = "";
+        grandParentTagName = "";
+        parentTagName = "";
+        tagName = "";
+        tagPath = "";
 
         return UpdateStatus::SUCCESS;
       }
@@ -943,11 +942,11 @@ UpdateStatus nrDARWINDataProvider::refreshWsdl() {
             "NR Source: Failed to extract soap:address from WSDL response.");
   
   // [HYBRID-MEM] Scrub
-  soapURL.clear();
-  grandParentTagName.clear();
-  parentTagName.clear();
-  tagName.clear();
-  tagPath.clear();
+  soapURL = "";
+  grandParentTagName = "";
+  parentTagName = "";
+  tagName = "";
+  tagPath = "";
 
   return UpdateStatus::DATA_ERROR;
 }

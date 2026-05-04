@@ -53,6 +53,8 @@ enum class UpdateStatus : uint8_t {
     PENDING = 9        ///< Data fetch is currently in progress (async).
 };
 
+class dataManager;
+
 /**
  * @brief Pure virtual interface representing a source of transport data.
  *        Encapsulates the network fetching logic.
@@ -63,6 +65,11 @@ public:
      * @brief Virtual destructor.
      */
     virtual ~iDataSource() = default;
+
+    /**
+     * @brief Sets the centralized data manager reference to eliminate global dependencies.
+     */
+    virtual void setDataManager(dataManager* manager) { pDataManager = manager; }
 
     /**
      * @brief Triggers the underlying mode-specific API client to fetch new data.
@@ -133,6 +140,8 @@ public:
     virtual void serializeData(JsonObject& doc) = 0;
 
 protected:
+    dataManager* pDataManager = nullptr;
+
     uint32_t hashString(const char* str, uint32_t hash = 2166136261u) {
         if (!str) return hash;
         while (*str) {

@@ -96,7 +96,7 @@ void SleepingBoard::render(U8G2& display) {
 
     char timeStr[6];
     char dateStr[20];
-    sprintf(timeStr, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
     strftime(dateStr, sizeof(dateStr), "%d %b %Y", &timeinfo);
 
     // --- Step 2: Offset Rendering ---

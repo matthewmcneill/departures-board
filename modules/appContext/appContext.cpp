@@ -147,7 +147,7 @@ void appContext::begin() {
 #endif
 
   // Initialize Centralized Data Fetch Worker
-  networkManager.init(); // Verbose logging controlled via CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_VERBOSE
+  networkManager.init(this); // Verbose logging controlled via CORE_DEBUG_LEVEL >= APP_LOG_LEVEL_VERBOSE
   networkManager.registerSource(&weather);
   networkManager.registerSource(&rss);
 
@@ -461,9 +461,9 @@ String appContext::getBuildTime() {
   char buildtime[11];
   struct tm tm = {};
 
-  sprintf(timestamp,"%s %s",__DATE__,__TIME__);
+  snprintf(timestamp, sizeof(timestamp), "%s %s",__DATE__,__TIME__);
   strptime(timestamp,"%b %d %Y %H:%M:%S",&tm);
-  sprintf(buildtime,"%02d%02d%02d%02d%02d",tm.tm_year-100,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min);
+  snprintf(buildtime, sizeof(buildtime), "%02d%02d%02d%02d%02d",tm.tm_year-100,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min);
   return String(buildtime);
 #endif
 }

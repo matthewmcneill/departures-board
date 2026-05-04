@@ -67,6 +67,7 @@ class appContext {
 private:
     DeviceCrypto deviceCrypto;      ///< Persistent Master Key Cryptographic Engine
     ConfigManager configManager;    ///< Persistence and settings management
+    dataManager networkManager;     ///< Centralized queue for background HTTP fetches
     DisplayManager displayManager;  ///< Rendering and board lifecycle
     otaUpdateManager otaAssetUpdater;     ///< Firmware update lifecycle
     WebServerManager webServer;     ///< Local GUI and API service
@@ -75,7 +76,6 @@ private:
     WifiManager wifiManager;        ///< WiFi configuration and connectivity manager
     TimeManager timeManager;        ///< System clock and NTP manager
     MessagePool globalMessagePool;  ///< Shared pool for scrolling status messages
-    dataManager networkManager;     ///< Centralized queue for background HTTP fetches
     schedulerManager schedule;      ///< Evaluates which display boards to show
     AppState currentState;          ///< Current tracked system state
     bool webServerInitialized;      ///< Checks if webServer was safely started

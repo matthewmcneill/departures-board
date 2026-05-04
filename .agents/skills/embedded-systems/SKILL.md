@@ -3,8 +3,8 @@ name: embedded-systems
 description: Use when developing firmware for microcontrollers, implementing RTOS applications, or optimizing power consumption. Invoke for STM32, ESP32, FreeRTOS, bare-metal, power optimization, real-time systems.
 license: MIT
 metadata:
-  author: https://github.com/Jeffallan
-  version: "1.0.0"
+  author: https://github.com/Jeffallan (extended by https://github.com/matthewmcneill [ota optiization, embedded web portal], https://github.com/jl-codes [embedded safety])
+  version: "1.0.3"
   domain: specialized
   triggers: embedded systems, firmware, microcontroller, RTOS, FreeRTOS, STM32, ESP32, bare metal, interrupt, DMA, real-time, security, secure boot, cryptography, OTA updates, web portal, captive portal, dashboard
   role: specialist

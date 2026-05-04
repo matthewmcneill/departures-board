@@ -1,0 +1,13 @@
+- `[x]` Phase 1: Configuration
+  - `[x]` Modify `platformio.ini` (ArduinoFake + lib_ignore)
+- `[/]` Phase 2: Mocks Subsystem
+  - `[x]` Implement `test/mocks/WebServer.h`
+  - `[x]` Update `test/mocks/appContext.hpp` signatures
+  - `[x]` Implement `MockFileSystem` natively
+  - `[ ]` Update `Stubs.cpp` with `ArduinoFake` implementation guarded by `__EMSCRIPTEN__`
+- `[ ]` Phase 3: Core Decoupling
+  - `[ ]` Update `test/test_native/dataManagerTests.cpp`
+  - `[ ]` Update `lib/logger/logger.cpp` with `UNIT_TEST` guards
+  - `[ ]` Update `lib/timeManager/timeManager.cpp` WebServer removal
+- `[ ]` Phase 4: Validation
+  - `[ ]` Run `pio test -e unit_testing_host`

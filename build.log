@@ -1,0 +1,169 @@
+Collected 1 tests (test_native)
+
+Processing test_native in unit_testing_host environment
+--------------------------------------------------------------------------------
+Building...
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ strict
+Ignored library /Users/mcneillm/Documents/Projects/departures-board/lib/deviceCrypto
+Framework incompatible library /Users/mcneillm/Documents/Projects/departures-board/.pio/libdeps/unit_testing_host/JsonStreamingParser
+More details about "Library Compatibility Mode": https://docs.platformio.org/page/librarymanager/ldf.html#ldf-compat-mode
+Found 11 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- ArduinoJson @ 7.4.3 (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/.pio/libdeps/unit_testing_host/ArduinoJson)
+|   |-- ArduinoFake @ 0.4.0 (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/.pio/libdeps/unit_testing_host/ArduinoFake)
+|-- ArduinoFake @ 0.4.0 (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/.pio/libdeps/unit_testing_host/ArduinoFake)
+|-- Unity @ 2.6.1 (License: MIT, Path: /Users/mcneillm/Documents/Projects/departures-board/.pio/libdeps/unit_testing_host/Unity)
+|-- buttonHandler (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/lib/buttonHandler)
+|   |-- ArduinoFake @ 0.4.0 (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/.pio/libdeps/unit_testing_host/ArduinoFake)
+|-- logger (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/lib/logger)
+|   |-- ArduinoFake @ 0.4.0 (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/.pio/libdeps/unit_testing_host/ArduinoFake)
+|   |-- boardLED (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/lib/boardLED)
+|   |   |-- ArduinoFake @ 0.4.0 (License: Unknown, Path: /Users/mcneillm/Documents/Projects/departures-board/.pio/libdeps/unit_testing_host/ArduinoFake)
+Building in test mode
+g++ -o .pio/build/unit_testing_host/test/test_native/configManagerTests.o -c -std=gnu++14 -Wno-missing-template-arg-list-after-template-kw -DPLATFORMIO=60119 -DUNIT_TEST -DARDUINOJSON_ENABLE_PROGMEM=0 -DARDUINOJSON_ENABLE_ARDUINO_STRING=1 -DMAX_BOARDS=6 -DMAX_KEYS=8 -DDISPLAY_CS_PIN=26 -DDISPLAY_DC_PIN=5 -DPIO_UNIT_TESTING -DUNIT_TEST -DUNITY_INCLUDE_CONFIG_H -DUNITY_INCLUDE_CONFIG_H -Ilib/boardLED -I.pio/libdeps/unit_testing_host/Unity/src -I.pio/build/unit_testing_host/unity_config -I.pio/libdeps/unit_testing_host/ArduinoFake/src -I.pio/build/unit_testing_host/unity_config -Itest/test_native -Itest -Isrc -Itest/mocks -Ilib/logger -Ilib/deviceCrypto -Ilib/buttonHandler -Imodules/appContext -Imodules/configManager -Imodules/dataManager -Imodules/schedulerManager -Imodules/displayManager -Imodules/webServer -Imodules/displayManager/widgets -Imodules/displayManager/boards -Imodules/displayManager/boards/interfaces -Imodules/weatherClient -Imodules/schedulerManager -Imodules/wifiManager -Imodules/otaUpdateManager -Imodules/timeManager -Imodules/rssClient -Itest/mocks/freertos -I.pio/libdeps/unit_testing_host/JsonStreamingParser -I.pio/libdeps/unit_testing_host/ArduinoJson/src -I.pio/libdeps/unit_testing_host/ArduinoFake/src/arduino test/test_native/configManagerTests.cpp
+g++ -o .pio/build/unit_testing_host/test/test_native/schedulerManagerTests.o -c -std=gnu++14 -Wno-missing-template-arg-list-after-template-kw -DPLATFORMIO=60119 -DUNIT_TEST -DARDUINOJSON_ENABLE_PROGMEM=0 -DARDUINOJSON_ENABLE_ARDUINO_STRING=1 -DMAX_BOARDS=6 -DMAX_KEYS=8 -DDISPLAY_CS_PIN=26 -DDISPLAY_DC_PIN=5 -DPIO_UNIT_TESTING -DUNIT_TEST -DUNITY_INCLUDE_CONFIG_H -DUNITY_INCLUDE_CONFIG_H -Ilib/boardLED -I.pio/libdeps/unit_testing_host/Unity/src -I.pio/build/unit_testing_host/unity_config -I.pio/libdeps/unit_testing_host/ArduinoFake/src -I.pio/build/unit_testing_host/unity_config -Itest/test_native -Itest -Isrc -Itest/mocks -Ilib/logger -Ilib/deviceCrypto -Ilib/buttonHandler -Imodules/appContext -Imodules/configManager -Imodules/dataManager -Imodules/schedulerManager -Imodules/displayManager -Imodules/webServer -Imodules/displayManager/widgets -Imodules/displayManager/boards -Imodules/displayManager/boards/interfaces -Imodules/weatherClient -Imodules/schedulerManager -Imodules/wifiManager -Imodules/otaUpdateManager -Imodules/timeManager -Imodules/rssClient -Itest/mocks/freertos -I.pio/libdeps/unit_testing_host/JsonStreamingParser -I.pio/libdeps/unit_testing_host/ArduinoJson/src -I.pio/libdeps/unit_testing_host/ArduinoFake/src/arduino test/test_native/schedulerManagerTests.cpp
+g++ -o .pio/build/unit_testing_host/test/test_native/test_main.o -c -std=gnu++14 -Wno-missing-template-arg-list-after-template-kw -DPLATFORMIO=60119 -DUNIT_TEST -DARDUINOJSON_ENABLE_PROGMEM=0 -DARDUINOJSON_ENABLE_ARDUINO_STRING=1 -DMAX_BOARDS=6 -DMAX_KEYS=8 -DDISPLAY_CS_PIN=26 -DDISPLAY_DC_PIN=5 -DPIO_UNIT_TESTING -DUNIT_TEST -DUNITY_INCLUDE_CONFIG_H -DUNITY_INCLUDE_CONFIG_H -Ilib/boardLED -I.pio/libdeps/unit_testing_host/Unity/src -I.pio/build/unit_testing_host/unity_config -I.pio/libdeps/unit_testing_host/ArduinoFake/src -I.pio/build/unit_testing_host/unity_config -Itest/test_native -Itest -Isrc -Itest/mocks -Ilib/logger -Ilib/deviceCrypto -Ilib/buttonHandler -Imodules/appContext -Imodules/configManager -Imodules/dataManager -Imodules/schedulerManager -Imodules/displayManager -Imodules/webServer -Imodules/displayManager/widgets -Imodules/displayManager/boards -Imodules/displayManager/boards/interfaces -Imodules/weatherClient -Imodules/schedulerManager -Imodules/wifiManager -Imodules/otaUpdateManager -Imodules/timeManager -Imodules/rssClient -Itest/mocks/freertos -I.pio/libdeps/unit_testing_host/JsonStreamingParser -I.pio/libdeps/unit_testing_host/ArduinoJson/src -I.pio/libdeps/unit_testing_host/ArduinoFake/src/arduino test/test_native/test_main.cpp
+In file included from test/test_native/test_main.cpp:14:
+test/test_native/../../modules/configManager/configManager.cpp:534:52: warning: 'containsKey' is deprecated [-Wdeprecated-declarations]
+  534 |       if (targetFile == "/config.json" && settings.containsKey("version")) {
+      |                                                    ^
+.pio/libdeps/unit_testing_host/ArduinoJson/src/ArduinoJson/Object/JsonObject.hpp:168:8: note: 'containsKey' has been explicitly marked deprecated here
+  168 |   bool containsKey(const TString& key) const {
+      |        ^
+In file included from test/test_native/test_main.cpp:14:
+test/test_native/../../modules/configManager/configManager.cpp:534:52: warning: 'containsKey<char[8], 0>' is deprecated [-Wdeprecated-declarations]
+  534 |       if (targetFile == "/config.json" && settings.containsKey("version")) {
+      |                                                    ^
+.pio/libdeps/unit_testing_host/ArduinoJson/src/ArduinoJson/Object/JsonObject.hpp:167:3: note: 'containsKey<char[8], 0>' has been explicitly marked deprecated here
+  167 |   ARDUINOJSON_DEPRECATED("use obj[key].is<T>() instead")
+      |   ^
+.pio/libdeps/unit_testing_host/ArduinoJson/src/ArduinoJson/Polyfills/attributes.hpp:23:58: note: expanded from macro 'ARDUINOJSON_DEPRECATED'
+   23 | #      define ARDUINOJSON_DEPRECATED(msg) __attribute__((deprecated))
+      |                                                          ^
+In file included from test/test_native/test_main.cpp:14:
+test/test_native/../../modules/configManager/configManager.cpp:736:13: warning: enumeration value 'MODE_DIAGNOSTIC' not handled in switch [-Wswitch]
+  736 |     switch (bc.type) {
+      |             ^~~~~~~
+test/test_native/../../modules/configManager/configManager.cpp:736:13: note: add missing switch cases
+  736 |     switch (bc.type) {
+      |             ^
+In file included from test/test_native/test_main.cpp:18:
+In file included from test/test_native/../../modules/displayManager/displayManager.cpp:58:
+test/test_native/../../modules/displayManager/boards/systemBoard/sleepingBoard.hpp:76:10: warning: 'getOledOff' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   76 |     bool getOledOff() const { return oledOff; }
+      |          ^
+modules/displayManager/boards/interfaces/iDisplayBoard.hpp:126:18: note: overridden virtual function is here
+  126 |     virtual bool getOledOff() const { return false; }
+      |                  ^
+In file included from test/test_native/test_main.cpp:20:
+test/test_native/../../modules/appContext/appContext.cpp:464:3: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  464 |   sprintf(timestamp,"%s %s",__DATE__,__TIME__);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+In file included from test/test_native/test_main.cpp:20:
+test/test_native/../../modules/appContext/appContext.cpp:466:3: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  466 |   sprintf(buildtime,"%02d%02d%02d%02d%02d",tm.tm_year-100,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+In file included from test/test_native/test_main.cpp:31:
+test/test_native/../../modules/displayManager/boards/systemBoard/sleepingBoard.cpp:99:5: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+   99 |     sprintf(timeStr, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+In file included from test/test_native/test_main.cpp:38:
+test/test_native/../../modules/displayManager/boards/nationalRailBoard/nationalRailBoard.cpp:369:9: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  369 |         sprintf(cachedOrdinals[i - 1], "%d%s", i + 1,
+      |         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+In file included from test/test_native/test_main.cpp:40:
+test/test_native/../../modules/displayManager/boards/tflBoard/tflDataSource.cpp:111:70: error: allocating an object of abstract class type 'WiFiClientSecure'
+  111 |     std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
+      |                                                                      ^
+.pio/libdeps/unit_testing_host/ArduinoFake/src/arduino/Print.h:51:20: note: unimplemented pure virtual method 'write' in 'WiFiClientSecure'
+   51 |     virtual size_t write(uint8_t) = 0;
+      |                    ^
+In file included from test/test_native/test_main.cpp:40:
+test/test_native/../../modules/displayManager/boards/tflBoard/tflDataSource.cpp:254:18: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  254 |             else sprintf(stationData->service[i].expectedTime, "%d mins", m);
+      |                  ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+In file included from test/test_native/test_main.cpp:42:
+test/test_native/../../modules/displayManager/boards/busBoard/busDataSource.cpp:117:70: error: allocating an object of abstract class type 'WiFiClientSecure'
+  117 |     std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
+      |                                                                      ^
+test/test_native/../../modules/displayManager/boards/busBoard/busDataSource.cpp:281:37: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  281 |                                     sprintf(xBusStop->service[id].destination, "%s (%s)", xBusStop->service[id].destination, vehicle.c_str());
+      |                                     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+In file included from test/test_native/test_main.cpp:42:
+test/test_native/../../modules/displayManager/boards/busBoard/busDataSource.cpp:561:70: error: allocating an object of abstract class type 'WiFiClientSecure'
+  561 |     std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
+      |                                                                      ^
+In file included from test/test_native/test_main.cpp:65:
+test/test_native/../../modules/displayManager/boards/nationalRailBoard/nrRDMDataProvider.cpp:187:20: error: variable type 'WiFiClientSecure' is an abstract class
+  187 |   WiFiClientSecure client;
+      |                    ^
+test/test_native/../../modules/displayManager/boards/nationalRailBoard/nrRDMDataProvider.cpp:429:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  429 |       sprintf(lastErrorMessage, "HTTP %d", httpCode);
+      |       ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+In file included from test/test_native/test_main.cpp:2:
+In file included from .pio/libdeps/unit_testing_host/ArduinoFake/src/Arduino.h:1:
+In file included from .pio/libdeps/unit_testing_host/ArduinoFake/src/ArduinoFake.h:8:
+In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/unordered_map:595:
+In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__hash_table:29:
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/unique_ptr.h:767:30: error: allocating an object of abstract class type 'WiFiClientSecure'
+  767 |   return unique_ptr<_Tp>(new _Tp(std::forward<_Args>(__args)...));
+      |                              ^
+test/test_native/../../modules/displayManager/boards/nationalRailBoard/nrDARWINDataProvider.cpp:236:27: note: in instantiation of function template specialization 'std::make_unique<WiFiClientSecure, 0>' requested here
+  236 |   auto httpsClient = std::make_unique<WiFiClientSecure>();
+      |                           ^
+11 warnings and 5 errors generated.
+*** [.pio/build/unit_testing_host/test/test_native/test_main.o] Error 1
+Building stage has failed, see errors above. Use `pio test -vvv` option to enable verbose output.
+---------- unit_testing_host:test_native [ERRORED] Took 3.40 seconds ----------
+
+=================================== SUMMARY ===================================
+Environment        Test         Status    Duration
+-----------------  -----------  --------  ------------
+esp32dev           test_native  SKIPPED
+esp32s3nano        test_native  SKIPPED
+unit_testing_host  test_native  ERRORED   00:00:03.396
+================== 1 test cases: 0 succeeded in 00:00:03.396 ==================

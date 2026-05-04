@@ -57,6 +57,17 @@ public:
         return toRead;
     }
 
+    size_t readBytes(char *buffer, size_t length) {
+        return read((uint8_t*)buffer, length);
+    }
+
+    String readString() {
+        if (!_valid) return String("");
+        String s(_content->c_str() + _pos);
+        _pos = _content->size();
+        return s;
+    }
+
     bool seek(uint32_t pos, SeekMode mode = SeekSet) {
         if (!_valid) return false;
         if (mode == SeekSet) _pos = pos;
@@ -69,6 +80,10 @@ public:
     size_t size() const { return _valid ? _content->size() : 0; }
     void close() { _valid = false; }
     operator bool() const { return _valid; }
+
+    bool isDirectory() const { return false; }
+    File openNextFile() { return File(); }
+    String name() const { return String("mock"); }
 
 private:
     std::string* _content;
@@ -107,6 +122,21 @@ public:
         return true;
     }
 
+    bool remove(const String& path) {
+        return remove(path.c_str());
+    }
+
+    bool rename(const char* pathFrom, const char* pathTo) {
+        if (!exists(pathFrom)) return false;
+        _files[pathTo] = _files[pathFrom];
+        _files.erase(pathFrom);
+        return true;
+    }
+
+    bool rename(const String& pathFrom, const String& pathTo) {
+        return rename(pathFrom.c_str(), pathTo.c_str());
+    }
+
     /** @brief Test-only method to inject a file. */
     void _setFile(const char* path, const char* content) {
         _files[path] = content;
@@ -122,5 +152,7 @@ private:
 };
 
 }
+
+using fs::File;
 
 #endif

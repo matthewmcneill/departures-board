@@ -6,6 +6,7 @@
 #include <ArduinoJson.h>
 
 void test_hasConfiguredBoards() {
+    LittleFS._clear(); // Clear filesystem mock state between tests
     appContext ctx;
     ConfigManager& cm = ctx.getConfigManager();
     
@@ -21,19 +22,27 @@ void test_hasConfiguredBoards() {
     c.boardCount = 1;
     c.boards[0].type = MODE_RAIL;
     c.boards[0].id[0] = '\0';
+    cm.validate();
     TEST_ASSERT_FALSE(cm.hasConfiguredBoards());
 
-    // Add a valid board
     strcpy(c.boards[0].id, "PAD");
+    strcpy(c.boards[0].apiKeyId, "k-123");
+    
+    ApiKey k;
+    strcpy(k.id, "k-123");
+    cm.updateKey(k);
+    
+    cm.validate();
     TEST_ASSERT_TRUE(cm.hasConfiguredBoards());
 }
 
 void test_v23_to_v24_migration() {
+    LittleFS._clear();
     appContext ctx;
     ConfigManager& cm = ctx.getConfigManager();
     
     // Inject v2.3 legacy config
-    const char* v23_config = "{\"version\":2.3,\"turnOffOledInSleep\":true,\"boards\":[{\"type\":3,\"id\":\"CLK\",\"name\":\"Clock\"},{\"type\":1,\"id\":\"PAD\",\"name\":\"Rail\"}]}";
+    const char* v23_config = "{\"version\":2.3,\"turnOffOledInSleep\":true,\"boards\":[{\"type\":3,\"id\":\"CLK\",\"name\":\"Clock\"},{\"type\":0,\"id\":\"PAD\",\"name\":\"Rail\"}]}";
     LittleFS._setFile("/config.json", v23_config);
     
     // Load config
@@ -41,7 +50,7 @@ void test_v23_to_v24_migration() {
     
     const Config& c = cm.getConfig();
     TEST_ASSERT_EQUAL(2, c.boardCount);
-    TEST_ASSERT_EQUAL_FLOAT(2.4f, c.configVersion);
+    TEST_ASSERT_EQUAL_FLOAT(2.6f, c.configVersion);
     
     // Board 0 (CLK) should have oledOff = true
     TEST_ASSERT_EQUAL(MODE_CLOCK, c.boards[0].type);
@@ -53,6 +62,7 @@ void test_v23_to_v24_migration() {
 }
 
 void test_save_load_roundtrip() {
+    LittleFS._clear();
     appContext ctx;
     ConfigManager& cm = ctx.getConfigManager();
     

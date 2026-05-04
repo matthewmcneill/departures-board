@@ -2,6 +2,9 @@
 #include "dataManager.hpp"
 #include "iDataSource.hpp"
 #include <string>
+#include <ArduinoFake.h>
+
+using namespace fakeit;
 
 class MockSource : public iDataSource {
 public:
@@ -14,6 +17,7 @@ public:
     void setNextFetchTime(uint32_t t) override { nextFetchTime = t; }
     PriorityTier getPriorityTier() override { return priorityTier; }
     UpdateStatus testConnection(const char* token = nullptr, const char* stationId = nullptr) override { return UpdateStatus::SUCCESS; }
+    void serializeData(JsonObject& doc) override { doc["mock"] = true; }
 
     std::string _name;
     int fetchCount;
@@ -23,19 +27,20 @@ public:
 
 void test_requestPriorityFetch() {
     dataManager dm;
+    dm.init();
     MockSource source("SRC1");
     
     source.setNextFetchTime(100000); // 100s in the future
     
+    // Mock millis() for this test
+    When(Method(ArduinoFake(), millis)).AlwaysReturn(1000);
+    
     // Request priority fetch
+    uint32_t beforeMillis = millis();
     dm.requestPriorityFetch(&source);
     
-    // In our mock dm, it should set nextFetchTime to current or nearly current
-    // Note: dm.init() might be needed if dm starts a task. 
-    // In our FreeRTOS mock, it doesn't.
-    
     // Check if nextFetchTime was updated by dm
-    TEST_ASSERT_TRUE(source.getNextFetchTime() <= 5000); 
+    TEST_ASSERT_TRUE(source.getNextFetchTime() <= beforeMillis + 500); 
 }
 
 void test_registration() {

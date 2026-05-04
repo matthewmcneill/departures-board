@@ -34,8 +34,10 @@ std::vector<String>
  * @param baud The baud rate for the Serial connection.
  */
 void Logger::begin(unsigned long baud) {
+#ifndef UNIT_TEST
   Serial.begin(baud);
   delay(10); // Standard brief delay
+#endif
 }
 
 /**

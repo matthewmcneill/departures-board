@@ -25,9 +25,6 @@
 #include <logger.hpp>
 #include <appContext.hpp>
 
-
-extern class appContext appContext;
-
 const char* busDataSource::serviceNumbers[BUS_MAX_FETCH] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
 
 // HTML Scraper parsing states
@@ -90,7 +87,9 @@ UpdateStatus busDataSource::updateData() {
 
     LOG_INFO("DATA", "Bus Source: Requesting priority fetch from DataManager");
     taskStatus = UpdateStatus::PENDING;
-    appContext.getDataManager().requestPriorityFetch(this);
+    if (pDataManager) {
+        pDataManager->requestPriorityFetch(this);
+    }
     return UpdateStatus::PENDING;
 }
 
@@ -110,9 +109,9 @@ void busDataSource::executeFetch() {
     lastErrorMsg[0] = '\0';
 
     // [HYBRID-MEM] Transient parser strings are cleared at the end of every fetch cycle.
-    currentKey.clear();
-    currentObject.clear();
-    longName.clear();
+    currentKey = "";
+    currentObject = "";
+    longName = "";
 
     std::unique_ptr<WiFiClientSecure> httpsClient(new (std::nothrow) WiFiClientSecure());
     if (!httpsClient) {
@@ -278,7 +277,9 @@ void busDataSource::executeFetch() {
                                     vehicle.trim();
                                 }
                                 if ((strlen(xBusStop->service[id].destination) + vehicle.length() + 3) < BUS_MAX_LOCATION) {
-                                    sprintf(xBusStop->service[id].destination, "%s (%s)", xBusStop->service[id].destination, vehicle.c_str());
+                                    char tempDest[80]; // Typically BUS_MAX_LOCATION is around 60-80
+                                    snprintf(tempDest, sizeof(tempDest), "%s (%s)", xBusStop->service[id].destination, vehicle.c_str());
+                                    strlcpy(xBusStop->service[id].destination, tempDest, sizeof(xBusStop->service[id].destination));
                                 }
                             }
                             break;
@@ -402,9 +403,9 @@ void busDataSource::executeFetch() {
 
 scrub_and_exit:
     // [HYBRID-MEM] Scrub the heap before exiting the fetch cycle.
-    currentKey.clear();
-    currentObject.clear();
-    longName.clear();
+    currentKey = "";
+    currentObject = "";
+    longName = "";
     return;
 }
 
@@ -586,8 +587,8 @@ UpdateStatus busDataSource::getStopLongName(const char *locationId, char *locati
     strlcpy(locationName, longName.c_str(), 80); // locationName is size 80 usually
 
     // [HYBRID-MEM] Scrub strings
-    currentKey.clear();
-    longName.clear();
+    currentKey = "";
+    longName = "";
 
     return UpdateStatus::SUCCESS;
 }

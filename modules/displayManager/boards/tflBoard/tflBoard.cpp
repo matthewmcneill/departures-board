@@ -42,6 +42,7 @@ TfLBoard::TfLBoard(appContext *contextPtr)
   // Register this board's source with the predictive DataManager
   if (context) {
     context->getDataManager().registerSource(&dataSource);
+    dataSource.setDataManager(&context->getDataManager());
   }
 }
 

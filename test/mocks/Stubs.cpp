@@ -1,68 +1,112 @@
-#include <Arduino.h>
+#ifndef __EMSCRIPTEN__
+#include <ArduinoFake.h>
+#undef F
+#define F(s) (s)
+using namespace fakeit;
+#endif
+
+const uint8_t u8g2_font_5x7_tr[] = { 0 };
+
+#include "appContext.hpp"
 #include <logger.hpp>
 #include <timeManager.hpp>
-#include <wifiManager.hpp>
-#include <appContext.hpp>
+#include <deviceCrypto.hpp>
+#include <displayManager.hpp>
+#include <dataManager.hpp>
+#include "MockLittleFS.hpp"
+
+// Forward Mocks that are not natively compiled
+#include "WebServer.h"
+
+#ifndef __EMSCRIPTEN__
+void setupArduinoFake() {
+    ArduinoFakeReset();
+    When(OverloadedMethod(ArduinoFake(Serial), print, size_t(const char*))).AlwaysReturn(1);
+    When(OverloadedMethod(ArduinoFake(Serial), print, size_t(const String&))).AlwaysReturn(1);
+    When(OverloadedMethod(ArduinoFake(Serial), println, size_t(void))).AlwaysReturn(1);
+    When(OverloadedMethod(ArduinoFake(Serial), println, size_t(const char*))).AlwaysReturn(1);
+    When(OverloadedMethod(ArduinoFake(Serial), println, size_t(const String&))).AlwaysReturn(1);
+}
+#endif
 
 // --- Logger Stub ---
-void Logger::log(const char* level, const char* module, const char* msg) {
-    printf("[%s][%s] %s\n", level, module, msg);
+#ifdef __EMSCRIPTEN__
+void Logger::registerSecret(const String& secret) {}
+#endif
+
+// --- Global ESP32 time mock ---
+bool getLocalTime(struct tm * info, uint32_t ms=5000) { return true; }
+void configTime(long gmtOffset_sec, int daylightOffset_sec, const char* server1, const char* server2 = nullptr, const char* server3 = nullptr) {}
+
+// --- DeviceCrypto Stub ---
+#include "deviceCrypto.hpp"
+void DeviceCrypto::begin() {}
+void DeviceCrypto::applyPKCS7Padding(uint8_t* buffer, size_t originalLen, size_t paddedLen) {}
+size_t DeviceCrypto::removePKCS7Padding(const uint8_t* buffer, size_t paddedLen) { return paddedLen; }
+std::unique_ptr<char[]> DeviceCrypto::encrypt(const char* plaintext, size_t inputLen, size_t* outLen) {
+    if (outLen) *outLen = inputLen;
+    std::unique_ptr<char[]> buf(new char[inputLen + 1]);
+    if (inputLen > 0) memcpy(buf.get(), plaintext, inputLen);
+    buf.get()[inputLen] = '\0';
+    return buf;
 }
-void Logger::registerSecret(const char* secret) {}
+std::unique_ptr<char[]> DeviceCrypto::decrypt(const char* ciphertext, size_t inputLen, size_t* outLen) {
+    if (outLen) *outLen = inputLen;
+    std::unique_ptr<char[]> buf(new char[inputLen + 1]);
+    if (inputLen > 0) memcpy(buf.get(), ciphertext, inputLen);
+    buf.get()[inputLen] = '\0';
+    return buf;
+}
 
-// --- TimeManager Stub ---
-const char* TimeManager::ukTimezone = "GMT0BST,M3.5.0/1,M10.5.0";
 
-// --- WiFiManager Stub ---
-WiFiManager::WiFiManager() {}
-void WiFiManager::begin(appContext* context) {}
-void WiFiManager::tick(unsigned long currentMillis) {}
-bool WiFiManager::isConnected() { return true; }
-String WiFiManager::getIpAddress() { return "127.0.0.1"; }
 
-// --- AppContext Stub ---
-appContext::appContext() : schedule(this) {}
-void appContext::begin() {}
-void appContext::tick() {}
-AppState appContext::getAppState() const { return AppState::RUNNING; }
-ConfigManager& appContext::getConfigManager() { static ConfigManager cm; return cm; }
-TimeManager& appContext::getTimeManager() { static TimeManager tm; return tm; }
-schedulerManager& appContext::getSchedulerManager() { return schedule; }
-dataManager& appContext::getDataManager() { static dataManager dm; return dm; }
-displayManager& appContext::getDisplayManager() { static displayManager dsm(*this); return dsm; }
-wifiManager& appContext::getWifiManager() { static wifiManager wm; return wm; }
-weatherClient& appContext::getWeather() { static weatherClient wc; return wc; }
-rssClient& appContext::getRss() { static rssClient rc; return rc; }
-MessagePool& appContext::getGlobalMessagePool() { static MessagePool mp(1); return mp; }
-Portal& appContext::getPortal() { static Portal p; return p; }
+// --- WifiManager Stub ---
 
-// --- LittleFS Mock ---
+#include <webServer.hpp>
+#include "WiFi.h"
+
+MockWiFi WiFi;
+
+class AsyncWebServer {};
+class WebHandlerManager {};
+WebServerManager::WebServerManager() {}
+WebServerManager::~WebServerManager() {}
+void WebServerManager::init() {}
+void WebServerManager::updateCurrentWeather(float lat, float lon) {}
+
+#include <otaUpdateManager.hpp>
+otaUpdateManager::otaUpdateManager() {}
+void otaUpdateManager::tick() {}
+bool otaUpdateManager::checkForFirmwareUpdate() { return false; }
+bool otaUpdateManager::checkUpdateAvailable(String& outVersion) { return false; }
+bool otaUpdateManager::forceUpdateNow() { return false; }
+void otaUpdateManager::rollbackFirmware() {}
+void otaUpdateManager::markAppValid() {}
+void otaUpdateManager::checkPostWebUpgrade() {}
+void otaUpdateManager::reapplyConfig(const Config& config) {}
+
+#include <buttonHandler.hpp>
+buttonHandler::buttonHandler(unsigned char) {}
+void buttonHandler::update() {}
+bool buttonHandler::wasShortTapped() { return false; }
+bool buttonHandler::wasLongTapped() { return false; }
+
 #include <LittleFS.h>
-#include <map>
+LittleFSFS LittleFS;
 
-class MockFile : public File {
-    std::string _name;
-    std::string _data;
-    size_t _pos = 0;
-public:
-    MockFile(std::string name, std::string data) : _name(name), _data(data) {}
-    size_t write(const uint8_t *buf, size_t size) override { return size; }
-    int read() override { return (_pos < _data.length()) ? _data[_pos++] : -1; }
-    void close() override {}
-    size_t size() const override { return _data.length(); }
-    operator bool() const override { return true; }
-};
-
-class MockFS : public fs::FS {
-    std::map<std::string, std::string> _files;
-public:
-    bool begin(bool formatOnFail = false, const char *basePath = "/littlefs", uint8_t maxOpenFiles = 10, const char *partitionLabel = "spiffs") { return true; }
-    void _setFile(std::string path, std::string data) { _files[path] = data; }
-    File open(const char* path, const char* mode = "r") override {
-        if (_files.count(path)) return MockFile(path, _files[path]);
-        return File(); 
+extern "C" {
+    void* xQueueCreate(uint32_t length, uint32_t itemSize) { return (void*)1; }
+    long xQueueSendToFront(void* queue, const void* item, TickType_t ticksToWait) { return pdPASS; }
+    long xQueueSend(void* queue, const void* item, TickType_t ticksToWait) { return pdPASS; }
+    long xQueueReceive(void* queue, void* buffer, TickType_t ticksToWait) { return pdFAIL; }
+    void* xSemaphoreCreateBinary() { return (void*)1; }
+    void* xSemaphoreCreateMutex() { return (void*)1; }
+    long xSemaphoreTake(void* semaphore, TickType_t ticksToWait) { return pdPASS; }
+    long xSemaphoreGive(void* semaphore) { return pdPASS; }
+    
+    long xTaskCreatePinnedToCore(TaskFunction_t pvTaskCode, const char* const pcName, const uint32_t usStackDepth, void* const pvParameters, UBaseType_t uxPriority, TaskHandle_t* const pvCreatedTask, const BaseType_t xCoreID) {
+        if (pvCreatedTask) *pvCreatedTask = (void*)1;
+        return pdPASS;
     }
-    bool exists(const char* path) override { return _files.count(path) > 0; }
-};
-
-MockFS LittleFS;
+    void vTaskDelay(TickType_t xTicksToDelay) { }
+}
