@@ -3017,6 +3017,7 @@ void setup(void) {
   strlcpy(wsdlHost,"lite.realtime.nationalrail.co.uk",sizeof(wsdlHost));
   strlcpy(wsdlAPI,"/OpenLDBWS/wsdl.aspx?ver=2021-11-01",sizeof(wsdlAPI));
   u8g2.begin();                       // Start the OLED panel
+  LOG_INFO("DISPLAY", "Display initialized");
   u8g2.setContrast(brightness);       // Initial brightness
   u8g2.setDrawColor(1);               // Only a monochrome display, so set the colour to "on"
   u8g2.setFontMode(1);                // Transparent fonts
@@ -3027,12 +3028,18 @@ void setup(void) {
   String notice = "\x80 " + buildDate.substring(buildDate.length()-4) + " Gadec Software (github.com/gadec-uk)";
 
   bool isFSMounted = LittleFS.begin(true);    // Start the File System, format if necessary
+  if (isFSMounted) {
+    LOG_INFO("FS", "LittleFS Mounted");
+  } else {
+    LOG_WARN("FS", "LittleFS Mount Failed, formatting may be required");
+  }
   strcpy(station.location,"");                // No default location
   strcpy(weatherMsg,"");                      // No weather message
   strcpy(nrToken,"");                         // No default National Rail token
   strcpy(tflAppKey,"");                       // No default TfL app_key
   loadApiKeys();                              // Load the API keys from the apiKeys.json
   loadConfig(true);                           // Load the configuration settings from config.json
+  LOG_INFO("SYS", "Configuration and API Keys loaded");
   u8g2.setContrast(brightness);               // Set the panel brightness to the user saved level
   if (flipScreen) u8g2.setFlipMode(1);
   u8g2.clearBuffer();
@@ -3050,6 +3057,7 @@ void setup(void) {
   WiFi.hostname(hostname);          // Set the hostname ("Departures Board")
   WiFi.mode(WIFI_STA);              // Enter WiFi station mode
 
+  LOG_INFO("WIFI", "WiFi Manager starting...");
   WiFiManager wm;                             // Start WiFiManager
   wm.setAPCallback(wmConfigModeCallback);     // Set the callback for config mode notification
   wm.setWiFiAutoReconnect(true);              // Attempt to auto-reconnect WiFi
@@ -3076,6 +3084,7 @@ void setup(void) {
   }
 
   wifiConnected=true;
+  LOG_INFOf("WIFI", "Connected. IP: %s", WiFi.localIP().toString().c_str());
   WiFi.setAutoReconnect(true);
   u8g2.clearBuffer();                                             // Clear the display
   drawStartupHeading();                                           // Draw the startup heading
@@ -3286,6 +3295,7 @@ void setup(void) {
   });
 
   server.begin();     // Start the local web server
+  LOG_INFO("WEB", "Local web server started");
 
   // Check for Firmware updates?
   if (firmwareUpdates) {
@@ -3319,6 +3329,7 @@ void setup(void) {
   }
 
   // Check the clock has been set successfully before continuing
+  LOG_INFO("TIME", "Starting NTP Time Sync...");
   int p=50;
   int ntpAttempts=0;
   bool ntpResult=true;
@@ -3341,6 +3352,7 @@ void setup(void) {
   }
   prevUpdateCheckDay = timeinfo.tm_mday;
   sprintf(currentTime,"%02d:%02d:%02d",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec);
+  LOG_INFOf("TIME", "NTP Sync Complete. Current Time: %s", currentTime);
 
   // Reload settings (clock has now been set)
   loadConfig();
@@ -3356,6 +3368,7 @@ void setup(void) {
     updateCurrentWeather(locationLat,locationLon);
   }
 
+  LOG_INFO("SYS", "Background fetch task created");
   // Create the background task pinned to Core 0
   xTaskCreatePinnedToCore(
     fetchDeparturesTask,  // Task function
