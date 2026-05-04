@@ -17,7 +17,6 @@ import os
 import glob
 import sys
 import subprocess
-from txt_to_bdf import parse_font_txt, write_bdf
 
 # PlatformIO 'env' instance is globally available when run as an extra_script
 try:
@@ -30,6 +29,15 @@ except ImportError:
     env = MockEnv()
 
 ROOT_DIR = env.get("PROJECT_DIR", os.getcwd())
+
+# Ensure scripts directory is in sys.path so we can import local modules
+script_dir = os.path.join(ROOT_DIR, "scripts")
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
+
+from txt_to_bdf import parse_font_txt, write_bdf
+
+
 BDFCONV_DIR = os.path.join(ROOT_DIR, "tools", "bdfconv")
 BDFCONV_EXE = os.path.join(BDFCONV_DIR, "bdfconv")
 
@@ -179,5 +187,10 @@ def build_fonts():
         for tf in temp_c_files:
             if os.path.exists(tf): os.remove(tf)
 
-if __name__ == "__main__":
+# PlatformIO Hook
+try:
+    Import("env")
     build_fonts()
+except NameError:
+    if __name__ == "__main__":
+        build_fonts()

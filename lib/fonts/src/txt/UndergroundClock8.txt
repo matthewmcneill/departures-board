@@ -1,0 +1,131 @@
+Font: UndergroundClock8
+Glyph count: 12
+b0: 3, b1: 3
+
+Character U+0030 (Char: '0')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+.#####.
+##...##
+##...##
+##...##
+##...##
+##...##
+##...##
+.#####.
+
+Character U+0031 (Char: '1')
+Width: 4, Height: 8, X-Offset: 1, Y-Offset: 0, dX: 8
+..##
+.###
+####
+..##
+..##
+..##
+..##
+..##
+
+Character U+0032 (Char: '2')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+.#####.
+##...##
+.....##
+....##.
+..###..
+.##....
+##...##
+#######
+
+Character U+0033 (Char: '3')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+.#####.
+##...##
+.....##
+..####.
+.....##
+##...##
+##...##
+.#####.
+
+Character U+0034 (Char: '4')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+....##.
+...###.
+..####.
+.##.##.
+##..##.
+#######
+....##.
+....##.
+
+Character U+0035 (Char: '5')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+#######
+##...##
+##.....
+######.
+.....##
+##...##
+##...##
+.#####.
+
+Character U+0036 (Char: '6')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+.#####.
+##...##
+##.....
+######.
+##...##
+##...##
+##...##
+.#####.
+
+Character U+0037 (Char: '7')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+#######
+##...##
+....##.
+...##..
+..##...
+.##....
+##.....
+##.....
+
+Character U+0038 (Char: '8')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+.#####.
+##...##
+##...##
+.#####.
+##...##
+##...##
+##...##
+.#####.
+
+Character U+0039 (Char: '9')
+Width: 7, Height: 8, X-Offset: 0, Y-Offset: 0, dX: 8
+.#####.
+##...##
+##...##
+.######
+.....##
+##...##
+##...##
+.#####.
+
+Character U+003A (Char: ':')
+Width: 2, Height: 6, X-Offset: 1, Y-Offset: 1, dX: 5
+##
+##
+..
+..
+##
+##
+
+Character U+0020 (Char: ' ')
+Width: 2, Height: 6, X-Offset: 1, Y-Offset: 1, dX: 5
+..
+..
+..
+..
+..
+..

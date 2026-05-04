@@ -1,0 +1,1089 @@
+Font: NatRailSmall9
+Glyph count: 145
+b0: 3, b1: 2
+
+Character U+0020 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 9, dX: 4
+
+Character U+0021 (Char: '!')
+Width: 1, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 2
+#
+#
+#
+#
+#
+.
+#
+
+Character U+0022 (Char: '"')
+Width: 3, Height: 3, X-Offset: 0, Y-Offset: 6, dX: 4
+#.#
+#.#
+#.#
+
+Character U+0023 (Char: '#')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.#.#.
+.#.#.
+#####
+.#.#.
+#####
+.#.#.
+.#.#.
+
+Character U+0024 (Char: '$')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+..#..
+.###.
+#.#..
+.###.
+..#.#
+.###.
+..#..
+
+Character U+0025 (Char: '%')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+#..#
+#.##
+..#.
+.##.
+.#..
+##.#
+#..#
+
+Character U+0026 (Char: '&')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.##..
+#..#.
+.##..
+#.#.#
+#..#.
+#..#.
+.##.#
+
+Character U+0027 (Char: ''')
+Width: 1, Height: 3, X-Offset: 0, Y-Offset: 6, dX: 2
+#
+#
+#
+
+Character U+0028 (Char: '(')
+Width: 3, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 4
+..#
+.#.
+#..
+#..
+#..
+.#.
+..#
+
+Character U+0029 (Char: ')')
+Width: 3, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 4
+#..
+.#.
+..#
+..#
+..#
+.#.
+#..
+
+Character U+002A (Char: '*')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 3, dX: 6
+#.#.#
+.###.
+##.##
+.###.
+#.#.#
+
+Character U+002B (Char: '+')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 3, dX: 6
+..#..
+..#..
+#####
+..#..
+..#..
+
+Character U+002C (Char: ',')
+Width: 2, Height: 3, X-Offset: 0, Y-Offset: 0, dX: 3
+.#
+.#
+#.
+
+Character U+002D (Char: '-')
+Width: 3, Height: 1, X-Offset: 0, Y-Offset: 5, dX: 4
+###
+
+Character U+002E (Char: '.')
+Width: 1, Height: 1, X-Offset: 0, Y-Offset: 2, dX: 2
+#
+
+Character U+002F (Char: '/')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+...#
+..##
+..#.
+.##.
+.#..
+##..
+#...
+
+Character U+0030 (Char: '0')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+Character U+0031 (Char: '1')
+Width: 3, Height: 7, X-Offset: 1, Y-Offset: 2, dX: 6
+.#.
+##.
+.#.
+.#.
+.#.
+.#.
+###
+
+Character U+0032 (Char: '2')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+....#
+...#.
+..#..
+.#...
+#####
+
+Character U+0033 (Char: '3')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+....#
+..##.
+....#
+#...#
+.###.
+
+Character U+0034 (Char: '4')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+...#.
+..##.
+.#.#.
+#..#.
+#####
+...#.
+...#.
+
+Character U+0035 (Char: '5')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#####
+#....
+####.
+....#
+....#
+#...#
+.###.
+
+Character U+0036 (Char: '6')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#....
+####.
+#...#
+#...#
+.###.
+
+Character U+0037 (Char: '7')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#####
+....#
+...#.
+..#..
+..#..
+..#..
+..#..
+
+Character U+0038 (Char: '8')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#...#
+.###.
+#...#
+#...#
+.###.
+
+Character U+0039 (Char: '9')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#...#
+.####
+....#
+#...#
+.###.
+
+Character U+003A (Char: ':')
+Width: 1, Height: 4, X-Offset: 0, Y-Offset: 3, dX: 2
+#
+.
+.
+#
+
+Character U+003B (Char: ';')
+Width: 2, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 3
+.#
+..
+..
+.#
+#.
+
+Character U+003C (Char: '<')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+...#
+..#.
+.#..
+#...
+.#..
+..#.
+...#
+
+Character U+003D (Char: '=')
+Width: 4, Height: 3, X-Offset: 0, Y-Offset: 4, dX: 5
+####
+....
+####
+
+Character U+003E (Char: '>')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+#...
+.#..
+..#.
+...#
+..#.
+.#..
+#...
+
+Character U+003F (Char: '?')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+....#
+..##.
+..#..
+.....
+..#..
+
+Character U+0040 (Char: '@')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#...#
+#.#.#
+#.###
+#....
+.###.
+
+Character U+0041 (Char: 'A')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#...#
+#####
+#...#
+#...#
+#...#
+
+Character U+0042 (Char: 'B')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+####.
+#...#
+#...#
+####.
+#...#
+#...#
+####.
+
+Character U+0043 (Char: 'C')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#....
+#....
+#....
+#...#
+.###.
+
+Character U+0044 (Char: 'D')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+####.
+#...#
+#...#
+#...#
+#...#
+#...#
+####.
+
+Character U+0045 (Char: 'E')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#####
+#....
+#....
+####.
+#....
+#....
+#####
+
+Character U+0046 (Char: 'F')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#####
+#....
+#....
+####.
+#....
+#....
+#....
+
+Character U+0047 (Char: 'G')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#....
+#.###
+#...#
+#...#
+.###.
+
+Character U+0048 (Char: 'H')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#...#
+#...#
+#####
+#...#
+#...#
+#...#
+
+Character U+0049 (Char: 'I')
+Width: 3, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 4
+###
+.#.
+.#.
+.#.
+.#.
+.#.
+###
+
+Character U+004A (Char: 'J')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+....#
+....#
+....#
+....#
+....#
+#...#
+.###.
+
+Character U+004B (Char: 'K')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#..#.
+#.#..
+##...
+#.#..
+#..#.
+#...#
+
+Character U+004C (Char: 'L')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#....
+#....
+#....
+#....
+#....
+#....
+#####
+
+Character U+004D (Char: 'M')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+##.##
+#.#.#
+#...#
+#...#
+#...#
+#...#
+
+Character U+004E (Char: 'N')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+##..#
+#.#.#
+#..##
+#...#
+#...#
+#...#
+
+Character U+004F (Char: 'O')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+Character U+0050 (Char: 'P')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+####.
+#...#
+#...#
+####.
+#....
+#....
+#....
+
+Character U+0051 (Char: 'Q')
+Width: 5, Height: 9, X-Offset: 0, Y-Offset: 0, dX: 6
+.###.
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+...#.
+....#
+
+Character U+0052 (Char: 'R')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+####.
+#...#
+#...#
+####.
+#.#..
+#..#.
+#...#
+
+Character U+0053 (Char: 'S')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#....
+.###.
+....#
+#...#
+.###.
+
+Character U+0054 (Char: 'T')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#####
+..#..
+..#..
+..#..
+..#..
+..#..
+..#..
+
+Character U+0055 (Char: 'U')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+Character U+0056 (Char: 'V')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#...#
+#...#
+#...#
+#...#
+.#.#.
+..#..
+
+Character U+0057 (Char: 'W')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#...#
+#...#
+#.#.#
+#.#.#
+##.##
+#...#
+
+Character U+0058 (Char: 'X')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#...#
+.#.#.
+..#..
+.#.#.
+#...#
+#...#
+
+Character U+0059 (Char: 'Y')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#...#
+.#.#.
+..#..
+..#..
+..#..
+..#..
+
+Character U+005A (Char: 'Z')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#####
+....#
+...#.
+..#..
+.#...
+#....
+#####
+
+Character U+005B (Char: '[')
+Width: 2, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 3
+##
+#.
+#.
+#.
+#.
+#.
+##
+
+Character U+005C (Char: '\')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+#...
+##..
+.#..
+.##.
+..#.
+..##
+...#
+
+Character U+005D (Char: ']')
+Width: 2, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 9
+##
+.#
+.#
+.#
+.#
+.#
+##
+
+Character U+005E (Char: '^')
+Width: 3, Height: 2, X-Offset: 0, Y-Offset: 7, dX: 4
+.#.
+#.#
+
+Character U+005F (Char: '_')
+Width: 4, Height: 1, X-Offset: 0, Y-Offset: 1, dX: 5
+####
+
+Character U+0060 (Char: '`')
+Width: 2, Height: 2, X-Offset: 0, Y-Offset: 7, dX: 3
+#.
+.#
+
+Character U+0061 (Char: 'a')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+....#
+.####
+#...#
+.####
+
+Character U+0062 (Char: 'b')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#....
+#....
+#.##.
+##..#
+#...#
+#...#
+####.
+
+Character U+0063 (Char: 'c')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+.####
+#....
+#....
+#....
+.####
+
+Character U+0064 (Char: 'd')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+....#
+....#
+.##.#
+#..##
+#...#
+#...#
+.####
+
+Character U+0065 (Char: 'e')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#####
+#....
+.####
+
+Character U+0066 (Char: 'f')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+..#.
+.#.#
+.#..
+###.
+.#..
+.#..
+.#..
+
+Character U+0067 (Char: 'g')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 0, dX: 6
+.####
+#...#
+#...#
+#...#
+.####
+....#
+####.
+
+Character U+0068 (Char: 'h')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#....
+#....
+#.##.
+##..#
+#...#
+#...#
+#...#
+
+Character U+0069 (Char: 'i')
+Width: 3, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 4
+.#.
+...
+##.
+.#.
+.#.
+.#.
+###
+
+Character U+006A (Char: 'j')
+Width: 4, Height: 9, X-Offset: 0, Y-Offset: 0, dX: 5
+...#
+....
+...#
+...#
+...#
+...#
+...#
+#..#
+.##.
+
+Character U+006B (Char: 'k')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+#...
+#...
+#..#
+#.#.
+##..
+#.#.
+#..#
+
+Character U+006C (Char: 'l')
+Width: 3, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 4
+##.
+.#.
+.#.
+.#.
+.#.
+.#.
+###
+
+Character U+006D (Char: 'm')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+.#.#.
+#.#.#
+#.#.#
+#...#
+#...#
+
+Character U+006E (Char: 'n')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+#.##.
+##..#
+#...#
+#...#
+#...#
+
+Character U+006F (Char: 'o')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+.###.
+#...#
+#...#
+#...#
+.###.
+
+Character U+0070 (Char: 'p')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 0, dX: 6
+####.
+#...#
+#...#
+#...#
+####.
+#....
+#....
+
+Character U+0071 (Char: 'q')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 0, dX: 6
+.####
+#...#
+#...#
+#...#
+.####
+....#
+....#
+
+Character U+0072 (Char: 'r')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+#.##.
+##..#
+#....
+#....
+#....
+
+Character U+0073 (Char: 's')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+.####
+#....
+.###.
+....#
+####.
+
+Character U+0074 (Char: 't')
+Width: 4, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 5
+.#..
+.#..
+####
+.#..
+.#..
+.#..
+..##
+
+Character U+0075 (Char: 'u')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#...#
+#...#
+#..##
+.##.#
+
+Character U+0076 (Char: 'v')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#...#
+#...#
+.#.#.
+..#..
+
+Character U+0077 (Char: 'w')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+#.#.#
+#.#.#
+#.#.#
+.#.#.
+
+Character U+0078 (Char: 'x')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+#...#
+.#.#.
+..#..
+.#.#.
+#...#
+
+Character U+0079 (Char: 'y')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 0, dX: 6
+#...#
+#...#
+#...#
+#...#
+.####
+....#
+####.
+
+Character U+007A (Char: 'z')
+Width: 5, Height: 5, X-Offset: 0, Y-Offset: 2, dX: 6
+#####
+...#.
+..#..
+.#...
+#####
+
+Character U+007B (Char: '{')
+Width: 3, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 4
+..#
+.#.
+.#.
+#..
+.#.
+.#.
+..#
+
+Character U+007C (Char: '|')
+Width: 1, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 2
+#
+#
+#
+#
+#
+#
+#
+
+Character U+007D (Char: '}')
+Width: 3, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 4
+#..
+.#.
+.#.
+..#
+.#.
+.#.
+#..
+
+Character U+007E (Char: '~')
+Width: 5, Height: 2, X-Offset: 0, Y-Offset: 5, dX: 6
+.##.#
+#..#.
+
+Character U+0020 (Char: ' ')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+#.#..
+.#...
+#.#.#
+....#
+..#.#
+..#.#
+#.#.#
+
+Character U+0080 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+0081 (Char: ' ')
+Width: 5, Height: 6, X-Offset: 1, Y-Offset: 2, dX: 8
+...#.
+#####
+...#.
+.#...
+#####
+.#...
+
+Character U+0082 (Char: ' ')
+Width: 2, Height: 4, X-Offset: 0, Y-Offset: 0, dX: 3
+.#
+.#
+.#
+#.
+
+Character U+0083 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+0084 (Char: ' ')
+Width: 4, Height: 4, X-Offset: 0, Y-Offset: 0, dX: 5
+.#.#
+.#.#
+.#.#
+#.#.
+
+Character U+0085 (Char: ' ')
+Width: 5, Height: 1, X-Offset: 0, Y-Offset: 2, dX: 6
+#.#.#
+
+Character U+0086 (Char: ' ')
+Width: 6, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 7
+.####.
+#....#
+#....#
+#....#
+######
+######
+.#..#.
+
+Character U+0087 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+0088 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+0089 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+008A (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+008B (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+008C (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+008D (Char: ' ')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 7
+#####
+#..##
+#.#.#
+#...#
+#.###
+#.###
+#####
+
+Character U+008E (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+008F (Char: ' ')
+Width: 7, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 8
+#######
+##...##
+#..#..#
+#..##.#
+#.....#
+##...##
+#######
+
+Character U+0090 (Char: ' ')
+Width: 3, Height: 3, X-Offset: 6, Y-Offset: 4, dX: 15
+###
+###
+###
+
+Character U+0091 (Char: ' ')
+Width: 2, Height: 3, X-Offset: 0, Y-Offset: 6, dX: 3
+#.
+#.
+.#
+
+Character U+0092 (Char: ' ')
+Width: 2, Height: 3, X-Offset: 0, Y-Offset: 6, dX: 3
+.#
+.#
+#.
+
+Character U+0093 (Char: ' ')
+Width: 4, Height: 3, X-Offset: 0, Y-Offset: 6, dX: 5
+#.#.
+#.#.
+.#.#
+
+Character U+0094 (Char: ' ')
+Width: 4, Height: 3, X-Offset: 0, Y-Offset: 6, dX: 5
+.#.#
+.#.#
+#.#.
+
+Character U+0095 (Char: ' ')
+Width: 3, Height: 3, X-Offset: 0, Y-Offset: 4, dX: 4
+###
+###
+###
+
+Character U+0096 (Char: ' ')
+Width: 5, Height: 1, X-Offset: 0, Y-Offset: 5, dX: 6
+#####
+
+Character U+0097 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+0098 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+0099 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+009A (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+009B (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+009C (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+009D (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+009E (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+009F (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A0 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A1 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A2 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A3 (Char: ' ')
+Width: 5, Height: 7, X-Offset: 0, Y-Offset: 2, dX: 6
+..##.
+.#..#
+.#...
+####.
+.#...
+.#...
+#####
+
+Character U+00A4 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A5 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A6 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A7 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A8 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00A9 (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00AA (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00AB (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00AC (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00AD (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00AE (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00AF (Char: ' ')
+Width: 0, Height: 0, X-Offset: 0, Y-Offset: 0, dX: 0
+
+Character U+00B0 (Char: ' ')
+Width: 4, Height: 4, X-Offset: 0, Y-Offset: 5, dX: 5
+.##.
+#..#
+#..#
+.##.
