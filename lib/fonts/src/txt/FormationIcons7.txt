@@ -1,0 +1,35 @@
+/*
+ * TrainDisplayIcons16.txt - Custom Pixel Art Train Icons
+ * Extracted from dot-matrix passenger information screens.
+ */
+Font: FormationIcons7
+
+Character U+E001 (Char: '1')
+Width: 10, Height: 7, X-Offset: 0, Y-Offset: 0, dX: 10
+.#.....#..
+##.....#..
+.#..##.###
+.#.#...#..
+.#..#..#..
+.#...#.#..
+.#.##...##
+
+Character U+E002 (Char: 'W')
+Width: 10, Height: 7, X-Offset: 0, Y-Offset: 0, dX: 10
+...#......
+...####...
+.#.#......
+#...####..
+#.......#.
+#....#..#.
+.####...##
+
+Character U+E003 (Char: 'B')
+Width: 12, Height: 7, X-Offset: 0, Y-Offset: 0, dX: 12
+.####..##...
+...###...#..
+.###..#####.
+#.#.#..#.#.#
+#.######.#.#
+#...#..#...#
+.###....###.
